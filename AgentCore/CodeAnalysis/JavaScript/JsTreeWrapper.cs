@@ -6,7 +6,7 @@ using Jint.Native;
 using Esprima;
 using Esprima.Ast;
 
-namespace CefDotnetApp.AgentCore.CodeAnalysis.JavaScript
+namespace AgentCore.CodeAnalysis.JavaScript
 {
     /// <summary>
     /// Wrapper for JavaScript AST parsed by Jint/Esprima

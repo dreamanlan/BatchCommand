@@ -5,8 +5,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using AgentCore.CodeAnalysis.TreeSitter.Adapters;
 using AgentCore.CodeAnalysis.TreeSitter.Interfaces;
-using CefDotnetApp.AgentCore.Models;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Models;
+using AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {

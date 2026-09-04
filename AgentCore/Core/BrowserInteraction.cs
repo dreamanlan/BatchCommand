@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ScriptableFramework;
 
-using AgentPlugin.Abstractions;
-
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// BrowserInteraction - Unified entry point for browser interactions
@@ -15,9 +14,9 @@ namespace CefDotnetApp.AgentCore.Core
     public class BrowserInteraction
     {
         private Action<string>? _sendJsCodeAction;
-        private Action<string, string[]>? _sendJsCallAction;
+        private Action<string, IList<BoxedValue>>? _sendJsCallAction;
 
-        public BrowserInteraction(Action<string>? sendJsCodeAction = null, Action<string, string[]>? sendJsCallAction = null)
+        public BrowserInteraction(Action<string>? sendJsCodeAction = null, Action<string, IList<BoxedValue>>? sendJsCallAction = null)
         {
             _sendJsCodeAction = sendJsCodeAction;
             _sendJsCallAction = sendJsCallAction;
@@ -322,7 +321,7 @@ namespace CefDotnetApp.AgentCore.Core
             _sendJsCodeAction?.Invoke(script);
         }
 
-        public void SendJsCall(string functionName, params string[] args)
+        public void SendJsCall(string functionName, params BoxedValue[] args)
         {
             _sendJsCallAction?.Invoke(functionName, args);
         }
@@ -334,7 +333,7 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
         // Set or update the send JavaScript call action
-        public void SetSendJsCallAction(Action<string, string[]> sendJsCallAction)
+        public void SetSendJsCallAction(Action<string, IList<BoxedValue>> sendJsCallAction)
         {
             _sendJsCallAction = sendJsCallAction;
         }

@@ -1,12 +1,12 @@
 ﻿using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// stdio transport: launches a local process and communicates via stdin/stdout.

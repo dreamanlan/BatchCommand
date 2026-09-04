@@ -1,12 +1,12 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TreeSitter;
-using CefDotnetApp.AgentCore.Models;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Models;
+using AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {

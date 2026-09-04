@@ -1,5 +1,5 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// WebSocket server with dual queue message management

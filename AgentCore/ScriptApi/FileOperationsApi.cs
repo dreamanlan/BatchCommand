@@ -1,15 +1,15 @@
 using System;
 using System.Text;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Core;
-using CefDotnetApp.AgentCore.Utils;
+using AgentCore.Core;
+using AbstractAgent.Utils;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // read_file(path[, encoding]) - read file content
     sealed class ReadFileExp : SimpleExpressionBase
@@ -23,7 +23,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                Encoding? encoding = operands.Count > 1 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[1], path) : null;
+                Encoding? encoding = operands.Count > 1 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[1], path) : null;
                 string content = Core.AgentCore.Instance.FileOps.ReadFile(path, encoding);
                 return BoxedValue.FromString(content ?? string.Empty);
             }
@@ -46,9 +46,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string content = operands[1].AsString;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
+                Encoding? encoding = operands.Count > 2 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
                 if (string.IsNullOrEmpty(content)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values to a file !!! To delete certain lines, use the 'delete_lines' function.");
                     return BoxedValue.From(false);
@@ -295,9 +295,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string content = operands[1].AsString;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
+                Encoding? encoding = operands.Count > 2 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
                 if (string.IsNullOrEmpty(content)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot append empty values to a file !!!");
                     return BoxedValue.From(false);
@@ -666,7 +666,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string searchRegex = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
-                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[4], logFile) : null;
+                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[4], logFile) : null;
                 string result = Core.AgentCore.Instance.FileOps.SearchLogFile(logFile, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
                 return BoxedValue.FromString(result);
             }
@@ -692,7 +692,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string searchRegex = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
-                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[4], logFile) : null;
+                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[4], logFile) : null;
                 var blocks = Core.AgentCore.Instance.FileOps.SearchLogFileAsList(logFile, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
                 var result = new List<object>();
                 foreach (var b in blocks) {
@@ -720,7 +720,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string logFile = operands[0].AsString;
                 int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], logFile) : null;
+                Encoding? encoding = operands.Count > 2 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[2], logFile) : null;
                 string result = Core.AgentCore.Instance.FileOps.TailLogFile(logFile, lines, encoding);
                 return BoxedValue.FromString(result);
             }
@@ -744,7 +744,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string logFile = operands[0].AsString;
                 int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], logFile) : null;
+                Encoding? encoding = operands.Count > 2 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[2], logFile) : null;
                 string result = Core.AgentCore.Instance.FileOps.HeadLogFile(logFile, lines, encoding);
                 return BoxedValue.FromString(result);
             }
@@ -768,7 +768,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string file = operands[0].AsString;
                 int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], file) : null;
+                Encoding? encoding = operands.Count > 2 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[2], file) : null;
                 string result = Core.AgentCore.Instance.FileOps.TailFile(file, lines, encoding);
                 return BoxedValue.FromString(result);
             }
@@ -792,7 +792,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string file = operands[0].AsString;
                 int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], file) : null;
+                Encoding? encoding = operands.Count > 2 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[2], file) : null;
                 string result = Core.AgentCore.Instance.FileOps.HeadFile(file, lines, encoding);
                 return BoxedValue.FromString(result);
             }
@@ -813,7 +813,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             try {
                 string path = operands[0].AsString;
-                Encoding? encoding = operands.Count > 1 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[1], path) : null;
+                Encoding? encoding = operands.Count > 1 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[1], path) : null;
                 string content = Core.AgentCore.Instance.FileOps.ReadFile(path, encoding) ?? string.Empty;
                 var rows = new List<List<string>>();
                 var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
@@ -877,7 +877,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 int startLine = operands[1].GetInt();
                 int endLine = operands[2].GetInt();
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], path) : null;
+                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[3], path) : null;
                 string content = Core.AgentCore.Instance.FileOps.ReadFile(path, encoding) ?? string.Empty;
                 string newline = "\n";
                 if (content.Contains("\r\n")) newline = "\r\n";

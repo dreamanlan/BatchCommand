@@ -1,7 +1,7 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Helper to check HTTP response status and throw detailed error info on failure.

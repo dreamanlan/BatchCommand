@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace CefDotnetApp.AgentCore.Models
+namespace AgentCore.Models
 {
     public class FileInfoModel
     {

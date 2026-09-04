@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text;
 using Esprima;
 using Esprima.Ast;
-using CefDotnetApp.AgentCore.CodeAnalysis.JavaScript;
+using AgentCore.CodeAnalysis.JavaScript;
 
 namespace AgentCore.Tools
 {

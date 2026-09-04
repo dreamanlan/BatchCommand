@@ -1,11 +1,11 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using System.Linq;
 using AgentCore.CodeAnalysis;
-using CefDotnetApp.AgentCore.Models;
+using AgentCore.Models;
 
-namespace CefDotnetApp.AgentCore.CodeAnalysis
+namespace AgentCore.CodeAnalysis
 {
     // DSL API wrapper for code analysis functionality
     public class CodeAnalysisApi
@@ -150,7 +150,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         public static void PrintClassInfo(object classInfo)
         {
             if (classInfo is RoslynClassInfo ci) {
-                var logger = CefDotnetApp.AgentCore.Core.AgentCore.Instance.Logger;
+                var logger = AgentCore.Core.AgentCore.Instance.Logger;
                 logger.Info($"Class: {ci.FullName}");
                 logger.Info($"  Modifiers: {ci.Modifiers}");
                 logger.Info($"  Location: {ci.Location}");
@@ -165,7 +165,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         public static void PrintMethodInfo(object methodInfo)
         {
             if (methodInfo is RoslynMethodInfo mi) {
-                var logger = CefDotnetApp.AgentCore.Core.AgentCore.Instance.Logger;
+                var logger = AgentCore.Core.AgentCore.Instance.Logger;
                 logger.Info($"Method: {mi.Name}");
                 logger.Info($"  Return Type: {mi.ReturnType}");
                 logger.Info($"  Modifiers: {mi.Modifiers}");
@@ -285,7 +285,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         /// </summary>
         public static string ExploreTreeSitterCApi()
         {
-            return CefDotnetApp.AgentCore.Tools.TestTreeSitter.ExploreTreeSitterCApi();
+            return AgentCore.Tools.TestTreeSitter.ExploreTreeSitterCApi();
         }
 
         /// <summary>
@@ -293,7 +293,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         /// </summary>
         public static string ExploreTreeSitterCppApi()
         {
-            return CefDotnetApp.AgentCore.Tools.TestTreeSitter.ExploreTreeSitterCppApi();
+            return AgentCore.Tools.TestTreeSitter.ExploreTreeSitterCppApi();
         }
 
         /// <summary>
@@ -301,7 +301,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         /// </summary>
         public static string ExploreAllTreeSitterApis()
         {
-            return CefDotnetApp.AgentCore.Tools.TestTreeSitter.ExploreAllTreeSitterApis();
+            return AgentCore.Tools.TestTreeSitter.ExploreAllTreeSitterApis();
         }
 
         /// <summary>
@@ -309,7 +309,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         /// </summary>
         public static string TestCreateCParser()
         {
-            return CefDotnetApp.AgentCore.Tools.TestTreeSitter.TestCreateCParser();
+            return AgentCore.Tools.TestTreeSitter.TestCreateCParser();
         }
 
         /// <summary>
@@ -317,12 +317,12 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         /// </summary>
         public static string TestCreateCppParser()
         {
-            return CefDotnetApp.AgentCore.Tools.TestTreeSitter.TestCreateCppParser();
+            return AgentCore.Tools.TestTreeSitter.TestCreateCppParser();
         }
 
         public static string TestGetNodeText()
         {
-            return CefDotnetApp.AgentCore.Tools.TestTreeSitter.TestGetNodeText();
+            return AgentCore.Tools.TestTreeSitter.TestGetNodeText();
         }
     }
 }

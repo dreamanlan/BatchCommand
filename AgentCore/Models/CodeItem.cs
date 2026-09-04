@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CefDotnetApp.AgentCore.Models
+namespace AgentCore.Models
 {
     /// <summary>
     /// Flat structured item returned by all find_*_as_list APIs.

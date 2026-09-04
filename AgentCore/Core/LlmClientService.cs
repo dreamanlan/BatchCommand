@@ -1,10 +1,11 @@
 ﻿using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Threading.Tasks;
+using ScriptableFramework;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Unified interface for all LLM providers.
@@ -181,7 +182,7 @@ namespace CefDotnetApp.AgentCore.Core
                 try
                 {
                     string reply = await provider.ChatAsync(tag, topic, message, cts.Token);
-                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, reply });
+                    nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, reply });
                 }
                 catch (Exception ex)
                 {
@@ -189,7 +190,7 @@ namespace CefDotnetApp.AgentCore.Core
                         ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
                         : ex.Message;
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] Chat error for '{providerId}/{tag}': {errMsg}");
-                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, $"[error] {errMsg}" });
+                    nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, $"[error] {errMsg}" });
                 }
                 finally
                 {
@@ -273,7 +274,7 @@ namespace CefDotnetApp.AgentCore.Core
                 try
                 {
                     string reply = await provider.ChatWithImagesAsync(tag, topic, message, imageUrls, cts.Token);
-                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, reply });
+                    nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, reply });
                 }
                 catch (Exception ex)
                 {
@@ -281,7 +282,7 @@ namespace CefDotnetApp.AgentCore.Core
                         ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
                         : ex.Message;
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImages error for '{providerId}/{tag}': {errMsg}");
-                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, $"[error] {errMsg}" });
+                    nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, $"[error] {errMsg}" });
                 }
                 finally
                 {

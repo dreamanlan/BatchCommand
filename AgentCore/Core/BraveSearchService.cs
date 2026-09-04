@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LitJson;
+using AbstractAgent.Utils;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Service for Brave Search API integration.
@@ -109,7 +110,7 @@ namespace CefDotnetApp.AgentCore.Core
         private string FormatResults(string json, string query)
         {
             try {
-                if (!Utils.JsonHelper.TryParseJson(json, out var root) || root == null || !root.IsObject)
+                if (!JsonHelper.TryParseJson(json, out var root) || root == null || !root.IsObject)
                     return "[error] Failed to parse search response.";
 
                 var sb = new StringBuilder();

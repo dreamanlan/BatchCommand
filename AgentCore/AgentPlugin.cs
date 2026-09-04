@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
-using AgentPlugin.Abstractions;
-using CefDotnetApp.AgentCore.Core;
+using AbstractAgent;
+using AgentCore.Core;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Utils;
+using AbstractAgent.Utils;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace CefDotnetApp.AgentCore
+namespace AgentCore
 {
     /// <summary>
     /// Implementation of IAgentPlugin interface for agent functionality
@@ -69,7 +69,7 @@ namespace CefDotnetApp.AgentCore
         {
             try {
                 // Register all script APIs including MetaDSL
-                CefDotnetApp.AgentCore.ScriptApiRegistrar.RegisterAllApis();
+                AgentCore.ScriptApiRegistrar.RegisterAllApis();
                 Core.AgentCore.Instance.Logger.Info("Script APIs registered successfully");
             }
             catch (Exception ex) {

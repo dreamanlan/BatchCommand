@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CefDotnetApp.AgentCore.Utils
+namespace AgentCore.Utils
 {
     /// <summary>
     /// P/Invoke wrapper for Everything SDK.

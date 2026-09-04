@@ -1,14 +1,14 @@
 ﻿using System;
-using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Utils;
+using AbstractAgent;
+using AgentCore.Utils;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     /// <summary>
     /// find_file(query[, max_count])

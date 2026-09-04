@@ -1,12 +1,11 @@
-﻿using AgentPlugin.Abstractions;
+﻿using AbstractAgent;
 using System;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.ScriptApi;
 using AgentCore.ScriptApi;
 
-namespace CefDotnetApp.AgentCore
+namespace AgentCore
 {
     /// <summary>
     /// Registers all Script APIs to the DSL script engine

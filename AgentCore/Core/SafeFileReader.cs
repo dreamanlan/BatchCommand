@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Provides file read methods that open with FileShare.ReadWrite,

@@ -1,12 +1,12 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Utils;
+using AbstractAgent.Utils;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     /// <summary>
     /// DSL API wrapper for AgentBridge functionality

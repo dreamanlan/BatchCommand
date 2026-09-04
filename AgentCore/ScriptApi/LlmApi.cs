@@ -2,12 +2,12 @@
 using System.Threading.Tasks;
 
 using System.Collections.Generic;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     /// <summary>
     /// llm_set_provider(provider_id, type, url, api_key, model)

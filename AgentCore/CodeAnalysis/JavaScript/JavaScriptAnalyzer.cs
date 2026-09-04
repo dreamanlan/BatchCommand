@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using Esprima;
 using Esprima.Ast;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Core;
 
-namespace CefDotnetApp.AgentCore.CodeAnalysis.JavaScript
+namespace AgentCore.CodeAnalysis.JavaScript
 {
     /// <summary>
     /// JavaScript code analyzer

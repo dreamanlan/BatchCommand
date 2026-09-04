@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// AutoMetaDSL provider (AGUI protocol: http://knot.woa.com/apigw/api/v1/agents/agui/{agent_id})

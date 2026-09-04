@@ -213,7 +213,7 @@ script(on_receive_cef_message)params($msg,$args,$srcProcId)
         }
         else {
             redirectcall("handle_" + $msg, $args);
-            //nativeapi.SendJavascriptCallForDSL("alert", [$msg]);
+            //nativeapi.SendJavascriptCall("alert", [$msg]);
         };
     };
 };
@@ -477,9 +477,9 @@ script(induction_freebie_info)params($batch, $infos, $session, $port)
 {
     nativelog("[dsl] induction_freebie_info, batch: {0}, infos: {1}, session: {2}, port: {3}", $batch, count($infos), $session, $port);
 
-    $operationQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.MetaDSLBridge.getOperationQueueCount",[]));
-    $sendQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.MetaDSLBridge.getSendQueueCount",[]));
-    $receiveQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.MetaDSLBridge.getReceiveQueueCount",[]));
+    $operationQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRenderer("window.MetaDSLBridge.getOperationQueueCount",[]));
+    $sendQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRenderer("window.MetaDSLBridge.getSendQueueCount",[]));
+    $receiveQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRenderer("window.MetaDSLBridge.getReceiveQueueCount",[]));
     $ct = $operationQueueCount + $receiveQueueCount;
 
     $histId = "_decurion_history";

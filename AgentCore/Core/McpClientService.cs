@@ -1,13 +1,14 @@
 ﻿using System;
-using AgentPlugin.Abstractions;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ScriptableFramework;
+using AbstractAgent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Abstraction for MCP transport layer (stdio, HTTP+SSE, streamable-http, etc.).
@@ -420,12 +421,12 @@ namespace CefDotnetApp.AgentCore.Core
                                 string reconnResult = Connect(serverId, conn.Type, conn.Target);
                                 if (!reconnResult.StartsWith("ok"))
                                 {
-                                nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, $"[error] reconnect failed: {reconnResult}" });
+                                nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, $"[error] reconnect failed: {reconnResult}" });
                                 return;
                                 }
                                 if (!_servers.TryGetValue(serverId, out conn!))
                                 {
-                                nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, "[error] server not found after reconnect" });
+                                nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, "[error] server not found after reconnect" });
                                 return;
                                 }
                             }
@@ -450,12 +451,12 @@ namespace CefDotnetApp.AgentCore.Core
                         throw new OperationCanceledException("MCP tool call cancelled");
                     string resp = await sendTask;
                     string result = ExtractToolResult(resp);
-                    nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, result });
+                    nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, result });
                 }
                 catch (Exception ex)
                 {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
-                    nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, $"[error] {ex.Message}" });
+                    nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, $"[error] {ex.Message}" });
                 }
                 finally
                 {

@@ -365,7 +365,7 @@ script(on_receive_cef_message)params($msg,$args,$srcProcId)
     if (processtype == 0) {
         //Browser: forward all cef messages back to renderer
         //Note: The API in AgentCore.dll cannot be used.
-        nativeapi.SendCefMessageForDSL($msg,$args,$srcProcId);
+        nativeapi.SendCefMessage($msg,$args,$srcProcId);
     };
 };
 

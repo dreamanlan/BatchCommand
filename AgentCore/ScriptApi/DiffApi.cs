@@ -1,12 +1,12 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Core;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // apply_diff(targetPath, diffPath[, isContent[, exactMatch]]) - apply unified diff patch to target file
     sealed class ApplyDiffExp : SimpleExpressionBase

@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace AgentPlugin.Abstractions
+namespace AbstractAgent
 {
     /// <summary>
     /// Abstraction for API error reporting (replaces NativeApi static error methods).

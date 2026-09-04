@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// HybridTrie: shared trie data structures and helpers.

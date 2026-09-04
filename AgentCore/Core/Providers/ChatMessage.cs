@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Simple role/content chat message used by OpenAI/Claude/Ollama providers

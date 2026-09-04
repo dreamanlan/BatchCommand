@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-namespace AgentPlugin.Abstractions
+namespace AbstractAgent
 {
     /// <summary>
     /// Monitor file changes and trigger hot reload

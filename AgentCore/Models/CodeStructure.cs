@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CefDotnetApp.AgentCore.Models
+namespace AgentCore.Models
 {
     // Represents location information in source code
     public class CodeLocation

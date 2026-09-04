@@ -1,4 +1,6 @@
-namespace AgentPlugin.Abstractions
+using ScriptableFramework;
+
+namespace AbstractAgent
 {
     /// <summary>
     /// Abstraction for native browser interaction (NativeLog, JS execution, async callbacks).
@@ -8,8 +10,8 @@ namespace AgentPlugin.Abstractions
         void NativeLog(string msg);
         void JavascriptLog(string msg);
         void SendJavascriptCode(string code);
-        void SendJavascriptCall(string func, string[] args);
-        void EnqueueCefMessage(string msgName, string[] args);
+        void SendJavascriptCall(string func, IList<BoxedValue> args);
+        void EnqueueCefMessage(string msgName, IList<BoxedValue> args);
         string GetStringInLength(string str, int len, int beginOrEndOrBeginEnd);
         string QuoteString(string? value);
         System.Collections.Generic.IEnumerable<string> GetHelpDocs();

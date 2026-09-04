@@ -14,7 +14,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.Net;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Linq;
@@ -157,9 +157,9 @@ public delegate bool HostSendJavascriptCodeDelegation([MarshalAs(UnmanagedType.L
 [return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostSendJavascriptCallDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func, IntPtr args, int argCount, IntPtr browser, IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr HostCallJavascriptFuncInRendererDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func, IntPtr args, int argCount, IntPtr browser, IntPtr frame);
+public delegate IntPtr HostCallJavascriptFuncInRendererDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func, IntPtr args, int argCount, IntPtr browser, IntPtr frame, out int outLen);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr HostExecuteJavascriptInRendererDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string code, IntPtr browser, IntPtr frame);
+public delegate IntPtr HostExecuteJavascriptInRendererDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string code, IntPtr browser, IntPtr frame, out int outLen);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostFreeNativeStringDelegation(IntPtr str);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -1152,39 +1152,25 @@ namespace DotNetLib
                 }
             }
         }
-        public void SendCefMessage(string msg, string[] args, int cef_process_id)
+        public void SendCefMessage(string msg, IList<BoxedValue> args, int cef_process_id)
         {
             if (m_SendCefMessageApi == null) {
                 return;
             }
-            IntPtr[] argPtrs = new IntPtr[args.Length];
+            SendCefMessageBlob(msg, JsArgCodec.SerializeBoxedValues(args), cef_process_id);
+        }
+        private void SendCefMessageBlob(string msg, byte[] blob, int cef_process_id)
+        {
+            if (m_SendCefMessageApi == null) {
+                return;
+            }
+            GCHandle handle = GCHandle.Alloc(blob, GCHandleType.Pinned);
             try {
-                for (int i = 0; i < args.Length; i++) {
-                    argPtrs[i] = Marshal.StringToCoTaskMemUTF8(args[i]);
-                }
-                GCHandle handle = GCHandle.Alloc(argPtrs, GCHandleType.Pinned);
-                try {
-                    m_SendCefMessageApi.Invoke(msg, handle.AddrOfPinnedObject(), args.Length, Browser, Frame, cef_process_id);
-                }
-                finally {
-                    handle.Free();
-                }
+                m_SendCefMessageApi.Invoke(msg, handle.AddrOfPinnedObject(), blob.Length, Browser, Frame, cef_process_id);
             }
             finally {
-                foreach (var ptr in argPtrs) {
-                    if (ptr != IntPtr.Zero) {
-                        Marshal.FreeCoTaskMem(ptr);
-                    }
-                }
+                handle.Free();
             }
-        }
-        public void SendCefMessageForDSL(string msg, IList<BoxedValue> args, int cef_process_id)
-        {
-            string[] strArgs = new string[args.Count];
-            for (int i = 0; i < args.Count; i++) {
-                strArgs[i] = args[i].AsString;
-            }
-            SendCefMessage(msg, strArgs, cef_process_id);
         }
         public void SendJavascriptCode(string code)
         {
@@ -1199,150 +1185,81 @@ namespace DotNetLib
                 s_JavascriptCodeQueue.Enqueue(code);
             }
         }
-        public void SendJavascriptCall(string func, string[] args)
+        public void SendJavascriptCall(string func, IList<BoxedValue> args)
         {
             if (m_SendJavascriptCallApi == null) {
                 return;
             }
+            SendJavascriptCallCore(func, JsArgCodec.SerializeBoxedValues(args));
+        }
+        private void SendJavascriptCallCore(string func, byte[] blob)
+        {
             bool isMainThread = Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId;
             if (isMainThread) {
-                IntPtr[] argPtrs = new IntPtr[args.Length];
-                try {
-                    for (int i = 0; i < args.Length; i++) {
-                        argPtrs[i] = Marshal.StringToCoTaskMemUTF8(args[i]);
-                    }
-                    GCHandle handle = GCHandle.Alloc(argPtrs, GCHandleType.Pinned);
-                    try {
-                        m_SendJavascriptCallApi.Invoke(func, handle.AddrOfPinnedObject(), args.Length, Browser, Frame);
-                    }
-                    finally {
-                        handle.Free();
-                    }
-                }
-                finally {
-                    foreach (var ptr in argPtrs) {
-                        if (ptr != IntPtr.Zero) {
-                            Marshal.FreeCoTaskMem(ptr);
-                        }
-                    }
-                }
+                SendJavascriptCallBlob(func, blob);
             }
             else {
-                s_JavascriptFuncQueue.Enqueue(new Tuple<string, string[]>(func, args));
+                s_JavascriptFuncQueue.Enqueue(new Tuple<string, byte[]>(func, blob));
             }
         }
-        public void SendJavascriptCallForDSL(string func, IList<BoxedValue> args)
+        private void SendJavascriptCallBlob(string func, byte[] blob)
         {
-            string[] strArgs = new string[args.Count];
-            for (int i = 0; i < args.Count; i++) {
-                strArgs[i] = args[i].AsString;
+            if (m_SendJavascriptCallApi == null) {
+                return;
             }
-            SendJavascriptCall(func, strArgs);
+            GCHandle handle = GCHandle.Alloc(blob, GCHandleType.Pinned);
+            try {
+                m_SendJavascriptCallApi.Invoke(func, handle.AddrOfPinnedObject(), blob.Length, Browser, Frame);
+            }
+            finally {
+                handle.Free();
+            }
         }
-        public string CallJavascriptFuncInRenderer(string func, string[] args)
+        public BoxedValue CallJavascriptFuncInRenderer(string func, IList<BoxedValue> args)
         {
             if (m_CallJavascriptFuncInRendererApi == null) {
-                return "";
+                return BoxedValue.NullObject;
             }
-            IntPtr[] argPtrs = new IntPtr[args.Length];
+            byte[] blob = JsArgCodec.SerializeBoxedValues(args);
             IntPtr resultPtr = IntPtr.Zero;
+            int outLen = 0;
+            GCHandle handle = GCHandle.Alloc(blob, GCHandleType.Pinned);
             try {
-                for (int i = 0; i < args.Length; i++) {
-                    argPtrs[i] = Marshal.StringToCoTaskMemUTF8(args[i]);
-                }
-                GCHandle handle = GCHandle.Alloc(argPtrs, GCHandleType.Pinned);
-                try {
-                    resultPtr = m_CallJavascriptFuncInRendererApi.Invoke(func, handle.AddrOfPinnedObject(), args.Length, Browser, Frame);
-                }
-                finally {
-                    handle.Free();
-                }
+                resultPtr = m_CallJavascriptFuncInRendererApi.Invoke(func, handle.AddrOfPinnedObject(), blob.Length, Browser, Frame, out outLen);
             }
             finally {
-                foreach (var ptr in argPtrs) {
-                    if (ptr != IntPtr.Zero) {
-                        Marshal.FreeCoTaskMem(ptr);
-                    }
-                }
+                handle.Free();
             }
-
-            if (resultPtr == IntPtr.Zero) {
-                return "";
-            }
-
-            try {
-                string result = Marshal.PtrToStringUTF8(resultPtr) ?? "";
-                return result;
-            }
-            finally {
-                // Free the native string
-                if (m_FreeNativeStringApi != null) {
-                    m_FreeNativeStringApi.Invoke(resultPtr);
-                }
-            }
+            return ReadResultBlob(resultPtr, outLen);
         }
-        public string CallJavascriptFuncInRendererForDSL(string func, IList<BoxedValue> args)
-        {
-            string[] strArgs = new string[args.Count];
-            for (int i = 0; i < args.Count; i++) {
-                strArgs[i] = args[i].AsString;
-            }
-            return CallJavascriptFuncInRenderer(func, strArgs);
-        }
-        public string ExecuteJavascriptInRenderer(string code)
+        public BoxedValue ExecuteJavascriptInRenderer(string code)
         {
             if (m_ExecuteJavascriptInRendererApi == null) {
-                return "";
+                return BoxedValue.NullObject;
             }
-            IntPtr resultPtr = m_ExecuteJavascriptInRendererApi.Invoke(code, Browser, Frame);
-            if (resultPtr == IntPtr.Zero) {
-                return "";
+            int outLen = 0;
+            IntPtr resultPtr = m_ExecuteJavascriptInRendererApi.Invoke(code, Browser, Frame, out outLen);
+            return ReadResultBlob(resultPtr, outLen);
+        }
+        // Reads a native-owned JsArg result blob (allocated by the renderer bridge,
+        // not NUL terminated) of exactly |outLen| bytes into a single BoxedValue,
+        // then frees the native buffer via FreeNativeString.
+        private BoxedValue ReadResultBlob(IntPtr resultPtr, int outLen)
+        {
+            if (resultPtr == IntPtr.Zero || outLen <= 0) {
+                return BoxedValue.NullObject;
             }
             try {
-                string result = Marshal.PtrToStringUTF8(resultPtr) ?? "";
-                return result;
+                byte[] resultBytes = new byte[outLen];
+                Marshal.Copy(resultPtr, resultBytes, 0, outLen);
+                return JsArgCodec.DeserializeSingle(resultBytes);
             }
             finally {
-                // Free the native string
                 if (m_FreeNativeStringApi != null) {
                     m_FreeNativeStringApi.Invoke(resultPtr);
                 }
             }
         }
-
-        public void ClearApiErrorInfoForDSL()
-        {
-            ApiErrorInfo.Clear();
-        }
-        public void AppendApiErrorInfoForDSL(string msg)
-        {
-            ApiErrorInfo.Append(msg);
-        }
-        public void AppendApiErrorInfoLineForDSL(string msg)
-        {
-            ApiErrorInfo.AppendLine(msg);
-        }
-        public void AppendApiErrorInfoFormatForDSL(string fmt, params object[] args)
-        {
-            if (args.Length == 0) {
-                ApiErrorInfo.Append(fmt);
-            }
-            else {
-                ApiErrorInfo.AppendFormat(fmt, args);
-            }
-        }
-        public void AppendApiErrorInfoFormatLineForDSL(string fmt, params object[] args)
-        {
-            if (args.Length == 0) {
-                ApiErrorInfo.AppendLine(fmt);
-            }
-            else {
-                ApiErrorInfo.AppendFormat(fmt, args);
-                ApiErrorInfo.AppendLine();
-            }
-        }
-        public bool HasApiErrorInfoForDSL => ApiErrorInfo.Length > 0;
-        public string GetApiErrorInfoForDSL() => ApiErrorInfo.ToString();
 
         public BrowserProxy? GetBrowser()
         {
@@ -1368,7 +1285,7 @@ namespace DotNetLib
                 return CefDotnetAppApi.LoadFunc(func, code, paramNames, update);
             }
         }
-        internal static string CallDslFunc(string func, List<string> args)
+        internal static string CallDslFunc(string func, IList<BoxedValue> args)
         {
             var bvals = BatchScript.NewCalculatorValueList();
             foreach (var arg in args) {
@@ -1504,7 +1421,7 @@ namespace DotNetLib
 
         // IDslEngine explicit interface implementation (delegates to static methods)
         string IDslEngine.LoadDslFunc(string func, string code, IList<string> paramNames, bool update) => LoadDslFunc(func, code, paramNames, update);
-        string IDslEngine.CallDslFunc(string func, List<string> args) => CallDslFunc(func, args);
+        string IDslEngine.CallDslFunc(string func, IList<BoxedValue> args) => CallDslFunc(func, args);
         string IDslEngine.ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError) => CefDotnetAppApi.ExecuteMetaDslScript(script, maxResultSize, out hasError);
         void IDslEngine.Register(string name, string doc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, factory);
         void IDslEngine.Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, addToUserApiDoc, factory);
@@ -2066,9 +1983,9 @@ namespace DotNetLib
             if (handle == 0 || m_NativeCallbackCompleteApi == null) return false;
             return m_NativeCallbackCompleteApi(handle, ok ? 1 : 0, data, code) != 0;
         }
-        public void EnqueueCefMessage(string msgName, string[] args)
+        public void EnqueueCefMessage(string msgName, IList<BoxedValue> args)
         {
-            s_CefMessageQueue.Enqueue(new Tuple<string, string[]>(msgName, args));
+            s_CefMessageQueue.Enqueue(new Tuple<string, IList<BoxedValue>>(msgName, args));
         }
 
         internal void HandleAllQueues(int maxNativeCount, int maxJsCount, int maxCodeCount, int maxFuncCount)
@@ -2119,7 +2036,7 @@ namespace DotNetLib
                 int funcCountdown = maxFuncCount;
                 while (funcCountdown > 0 && s_JavascriptFuncQueue.TryDequeue(out var funcItem)) {
                     try {
-                        SendJavascriptCall(funcItem.Item1, funcItem.Item2);
+                        SendJavascriptCallBlob(funcItem.Item1, funcItem.Item2);
                         --funcCountdown;
                     }
                     catch (Exception ex) {
@@ -2158,7 +2075,7 @@ namespace DotNetLib
         }
         private void JavascriptLogImpl(string msg)
         {
-            SendJavascriptCall("console.log", new string[] { msg });
+            SendJavascriptCall("console.log", new BoxedValue[] { msg });
         }
 
         private HostNativeLogDelegation? m_NativeLogApi;
@@ -2284,9 +2201,9 @@ namespace DotNetLib
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_NativeLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_JsLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_JavascriptCodeQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
-        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>> s_JavascriptFuncQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>>();
+        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, byte[]>> s_JavascriptFuncQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, byte[]>>();
         // Unified CefMessage callback queue: (msgName, args)
-        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>> s_CefMessageQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>>();
+        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, IList<BoxedValue>>> s_CefMessageQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, IList<BoxedValue>>>();
 
         private const int c_max_path_length = 1024;
         private const int c_max_info_length = 4096;
@@ -4330,31 +4247,44 @@ namespace DotNetLib
 
         internal static bool OnCallMetaDSL(string func_name, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
         {
-            string[] argArray = new string[argCount];
-            for (int i = 0; i < argCount; i++) {
-                IntPtr strPtr = Marshal.ReadIntPtr(args, i * IntPtr.Size);
-                argArray[i] = Marshal.PtrToStringUTF8(strPtr) ?? string.Empty;
-            }
+            var vargs = JsArgCodec.DeserializeToBoxedList(ReadNativeBlob(args, argCount));
+            BoxedValue result = OnCallMetaDSL(func_name, vargs, browser, frame);
+            return WriteResultBlob(result, resultStr, ref resultSize);
+        }
 
-            string result = OnCallMetaDSL(func_name, new List<string>(argArray), browser, frame);
-            if (string.IsNullOrEmpty(result)) {
+        // Copies a native-owned JsArg argument blob (|len| bytes at |ptr|, may be
+        // NULL/empty) into a managed buffer.
+        private static byte[] ReadNativeBlob(IntPtr ptr, int len)
+        {
+            if (ptr == IntPtr.Zero || len <= 0) {
+                return Array.Empty<byte>();
+            }
+            byte[] buf = new byte[len];
+            Marshal.Copy(ptr, buf, 0, len);
+            return buf;
+        }
+
+        // Serializes a single DSL return value into the caller-provided result
+        // buffer as a JsArg blob (raw bytes, not NUL terminated). Mirrors the old
+        // two-phase protocol: a NullObject result reports "no result", and a buffer
+        // that is too small reports the required size and returns false.
+        private static bool WriteResultBlob(BoxedValue value, IntPtr resultStr, ref int resultSize)
+        {
+            if (value.IsNullObject) {
                 resultSize = 0;
                 return false;
             }
-
-            byte[] resultBytes = System.Text.Encoding.UTF8.GetBytes(result);
-            if (resultSize < resultBytes.Length + 1) {
-                resultSize = resultBytes.Length + 1;
+            byte[] blob = JsArgCodec.SerializeSingle(value);
+            if (resultSize < blob.Length) {
+                resultSize = blob.Length;
                 return false;
             }
-
-            Marshal.Copy(resultBytes, 0, resultStr, resultBytes.Length);
-            Marshal.WriteByte(resultStr, resultBytes.Length, 0);
-            resultSize = resultBytes.Length;
+            Marshal.Copy(blob, 0, resultStr, blob.Length);
+            resultSize = blob.Length;
             return true;
         }
 
-        internal static string OnCallMetaDSL(string func_name, List<string> args, IntPtr browser, IntPtr frame)
+        internal static BoxedValue OnCallMetaDSL(string func_name, IList<BoxedValue> args, IntPtr browser, IntPtr frame)
         {
             // No lock is taken here. Every C++ -> C# entry used to be serialized by
             // s_Lock, but the bodies only touch state that is already thread safe
@@ -4369,8 +4299,8 @@ namespace DotNetLib
 
                     bool funcExists = BatchScript.Calculator.TryGetFuncInfo(func_name, out var finfo);
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                    foreach (var arg in args) {
-                        vargs.Add(BoxedValue.FromString(arg));
+                    for (int i = 0; i < args.Count; i++) {
+                        vargs.Add(args[i]);
                     }
                     BoxedValue r;
                     if (funcExists) {
@@ -4382,7 +4312,7 @@ namespace DotNetLib
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        return r.ToString();
+                        return r;
                     }
                 }
             }
@@ -4392,7 +4322,7 @@ namespace DotNetLib
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
-            return string.Empty;
+            return BoxedValue.NullObject;
         }
 
         // A worker thread of the call_metadsl_task pool. Long lived on purpose: BatchScript
@@ -4583,38 +4513,21 @@ namespace DotNetLib
 
         internal static void OnReceiveCefMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id)
         {
-            string[] argArray = new string[argCount];
-            for (int i = 0; i < argCount; i++) {
-                IntPtr strPtr = Marshal.ReadIntPtr(args, i * IntPtr.Size);
-                argArray[i] = Marshal.PtrToStringUTF8(strPtr) ?? string.Empty;
-            }
-            OnReceiveCefMessage(msg, new List<string>(argArray), browser, frame, source_process_id);
+            var vargs = JsArgCodec.DeserializeToBoxedList(ReadNativeBlob(args, argCount));
+            OnReceiveCefMessage(msg, vargs, browser, frame, source_process_id);
         }
 
         internal static bool OnExecuteMetaDSL(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
         {
-            string[] argArray = new string[argCount];
-            for (int i = 0; i < argCount; i++) {
-                IntPtr strPtr = Marshal.ReadIntPtr(args, i * IntPtr.Size);
-                argArray[i] = Marshal.PtrToStringUTF8(strPtr) ?? string.Empty;
+            var vargs = JsArgCodec.DeserializeToBoxedList(ReadNativeBlob(args, argCount));
+            var strArgs = new List<string>(vargs.Count);
+            for (int i = 0; i < vargs.Count; i++) {
+                strArgs.Add(vargs[i].IsString ? vargs[i].AsString : vargs[i].ToString());
             }
 
-            string result = OnExecuteMetaDSL(new List<string>(argArray), browser, frame);
-            if (string.IsNullOrEmpty(result)) {
-                resultSize = 0;
-                return false;
-            }
-
-            byte[] resultBytes = System.Text.Encoding.UTF8.GetBytes(result);
-            if (resultSize < resultBytes.Length + 1) {
-                resultSize = resultBytes.Length + 1;
-                return false;
-            }
-
-            Marshal.Copy(resultBytes, 0, resultStr, resultBytes.Length);
-            Marshal.WriteByte(resultStr, resultBytes.Length, 0);
-            resultSize = resultBytes.Length;
-            return true;
+            string result = OnExecuteMetaDSL(strArgs, browser, frame);
+            BoxedValue resultValue = string.IsNullOrEmpty(result) ? BoxedValue.NullObject : BoxedValue.FromString(result);
+            return WriteResultBlob(resultValue, resultStr, ref resultSize);
         }
 
         internal static string OnExecuteMetaDSL(List<string> args, IntPtr browser, IntPtr frame)
@@ -4644,7 +4557,7 @@ namespace DotNetLib
             return string.Empty;
         }
 
-        internal static void OnReceiveCefMessage(string msg, List<string> args, IntPtr browser, IntPtr frame, int source_process_id)
+        internal static void OnReceiveCefMessage(string msg, IList<BoxedValue> args, IntPtr browser, IntPtr frame, int source_process_id)
         {
             NativeApi.SetContext(browser, frame);
             NativeApi.LastSourceProcessId = source_process_id;
@@ -4656,8 +4569,8 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                    foreach (var arg in args) {
-                        vargs.Add(BoxedValue.FromString(arg));
+                    for (int i = 0; i < args.Count; i++) {
+                        vargs.Add(args[i]);
                     }
                     // In C#, we do not directly invoke `msg` as a function, because `cef_message` may be received
                     // in either the browser process or the renderer process—and is typically forwarded internally
@@ -4750,7 +4663,7 @@ namespace DotNetLib
             switchValue = spaceIdx > start ? cmdLine.Substring(start, spaceIdx - start) : cmdLine.Substring(start);
             return true;
         }
-        internal static bool EnqueueCefMessage(string msg, params string[] args)
+        internal static bool EnqueueCefMessage(string msg, params BoxedValue[] args)
         {
             if (null != s_NativeApi) {
                 s_NativeApi.EnqueueCefMessage(msg, args);
@@ -4787,7 +4700,7 @@ namespace DotNetLib
         {
             if (null == s_NativeApi)
                 return false;
-            s_NativeApi.SendJavascriptCallForDSL(func, args);
+            s_NativeApi.SendJavascriptCall(func, args);
             return true;
         }
         // Renders the in-page AgentDialog for a JS dialog taken over by the
@@ -5196,7 +5109,7 @@ namespace DotNetLib
             return sb.ToString();
         }
 
-        private static string GetStringInLength(List<string> args)
+        private static string GetStringInLength(IList<BoxedValue> args)
         {
             var sb = new StringBuilder();
             bool first = true;
@@ -5207,7 +5120,7 @@ namespace DotNetLib
                 else {
                     sb.Append('|');
                 }
-                sb.Append(GetStringInLength(arg));
+                sb.Append(GetStringInLength(arg.IsString ? arg.AsString : arg.ToString()));
             }
             return sb.ToString();
         }

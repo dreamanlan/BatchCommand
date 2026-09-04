@@ -1,18 +1,18 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Core;
-using CefDotnetApp.AgentCore.Models;
-using CefDotnetApp.AgentCore.Utils;
+using AgentCore.Core;
+using AgentCore.Models;
+using AbstractAgent.Utils;
 using System.Text;
 using System.Collections;
 using J2N;
 using J2N.Collections.Generic.Extensions;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // Clipboard Operations
     sealed class GetClipboardExp : SimpleExpressionBase

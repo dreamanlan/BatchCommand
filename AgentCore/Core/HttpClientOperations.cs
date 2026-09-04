@@ -5,11 +5,11 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using CefDotnetApp.AgentCore.Utils;
+using AbstractAgent.Utils;
 
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     public class HttpClientOperations
     {

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Text;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Utils;
-using CefDotnetApp.AgentCore.Core;
+using AbstractAgent.Utils;
+using AgentCore.Core;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     /// <summary>
     /// Regular Expression Script APIs
@@ -281,7 +281,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string pattern = operands[1].AsString;
                 string replacement = operands[2].AsString;
                 bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() || operands[3].ToString() == "i" : true;
-                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[4], path) : null;
+                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[4], path) : null;
 
                 if (!System.IO.File.Exists(path)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");
@@ -296,7 +296,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string newContent = StringHelper.ReplacePattern(content, pattern, replacement, ignoreCase);
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: false);
+                var writeEncoding = encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: false);
                 System.IO.File.WriteAllText(path, newContent, writeEncoding);
                 return BoxedValue.From(true);
             }
@@ -328,7 +328,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 int skipCount = operands.Count > 4 ? operands[4].GetInt() : 0;
                 if (skipCount < 0) skipCount = 0;
                 bool ignoreCase = operands.Count > 5 ? operands[5].GetBool() || operands[5].ToString() == "i" : true;
-                Encoding? encoding = operands.Count > 6 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[6], path) : null;
+                Encoding? encoding = operands.Count > 6 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[6], path) : null;
 
                 if (count <= 0) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"regex_replace_in_file_with_count: count must be > 0, got {count}");
@@ -353,7 +353,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string newContent = RegexReplaceWithCountExp.ReplaceRange(regex, content, replacement, skipCount, count);
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: false);
+                var writeEncoding = encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: false);
                 System.IO.File.WriteAllText(path, newContent, writeEncoding);
                 return BoxedValue.From(true);
             }
@@ -380,7 +380,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
                 bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() || operands[2].ToString() == "i" : true;
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], path) : null;
+                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[3], path) : null;
 
                 if (!System.IO.File.Exists(path)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");

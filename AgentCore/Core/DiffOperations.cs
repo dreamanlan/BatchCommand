@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using CefDotnetApp.AgentCore.Utils;
+using AbstractAgent.Utils;
 
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Diff operations for applying patches to files

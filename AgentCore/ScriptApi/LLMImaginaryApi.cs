@@ -1,14 +1,14 @@
 using System;
 using System.Collections;
 using System.Text;
-using CefDotnetApp.AgentCore.Utils;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using AgentPlugin.Abstractions;
-using CefDotnetApp.AgentCore.Core;
+using AbstractAgent;
+using AbstractAgent.Utils;
+using AgentCore.Core;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     sealed class AppendExp : SimpleExpressionBase
     {

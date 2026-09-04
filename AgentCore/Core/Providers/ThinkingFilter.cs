@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Helper that removes "thinking" / "reasoning" segments from LLM

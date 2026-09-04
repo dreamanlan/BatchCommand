@@ -3,7 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>AgentPlugin.Abstractions</RootNamespace>
+    <RootNamespace>AbstractAgent</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Common">
@@ -11,6 +11,9 @@
     </Reference>
     <Reference Include="Dsl">
       <HintPath>..\deps\Dsl.dll</HintPath>
+    </Reference>
+    <Reference Include="LitJson">
+      <HintPath>..\deps\LitJson.dll</HintPath>
     </Reference>
     <Reference Include="ScriptFrameworkLibrary">
       <HintPath>..\deps\ScriptFrameworkLibrary.dll</HintPath>

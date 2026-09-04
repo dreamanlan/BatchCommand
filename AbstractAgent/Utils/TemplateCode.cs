@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CefDotnetApp.AgentCore.Utils
+namespace AbstractAgent.Utils
 {
     /// <summary>
     /// Template substitution utility for block strings with configurable delimiters.

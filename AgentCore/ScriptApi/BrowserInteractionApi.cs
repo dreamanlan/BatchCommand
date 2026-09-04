@@ -1,12 +1,12 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Core;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // Base class for browser interaction expressions with initialization check
     abstract class BrowserInteractionExpBase : SimpleExpressionBase

@@ -1,4 +1,4 @@
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     public enum SearchEngineType
     {

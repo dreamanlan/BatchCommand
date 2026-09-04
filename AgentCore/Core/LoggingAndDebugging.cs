@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     public enum LogLevel
     {

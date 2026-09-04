@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Represents a single agent instance keyed by port number.

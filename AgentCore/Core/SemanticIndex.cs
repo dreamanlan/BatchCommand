@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using ScriptableFramework;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// A single search/retrieval result item.

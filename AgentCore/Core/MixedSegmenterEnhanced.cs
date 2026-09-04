@@ -8,7 +8,7 @@ using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Transforms.Text;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     // MixedSegmenterEnhanced.cs
     // Mixed segmenter that supports optional injection of an existing WordSegmenterHybridTrie.

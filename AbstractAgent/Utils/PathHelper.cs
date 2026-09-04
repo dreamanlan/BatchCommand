@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace CefDotnetApp.AgentCore.Utils
+namespace AbstractAgent.Utils
 {
     public static class PathHelper
     {

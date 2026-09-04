@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TreeSitter;
-using CefDotnetApp.AgentCore.Core;
-using CefDotnetApp.AgentCore.Models;
+using AgentCore.Core;
+using AgentCore.Models;
 
 namespace AgentCore.CodeAnalysis
 {

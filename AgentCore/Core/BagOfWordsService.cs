@@ -16,7 +16,7 @@ using Lucene.Net.Search.Similarities;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// BM25-based bag-of-words search service backed by Lucene.Net (in-memory index).

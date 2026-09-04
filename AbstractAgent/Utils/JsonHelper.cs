@@ -1,7 +1,7 @@
 using System;
 using LitJson;
 
-namespace CefDotnetApp.AgentCore.Utils
+namespace AbstractAgent.Utils
 {
     public static class JsonHelper
     {

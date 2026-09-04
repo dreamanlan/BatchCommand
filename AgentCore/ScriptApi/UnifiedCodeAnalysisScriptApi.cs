@@ -1,4 +1,4 @@
-﻿using AgentPlugin.Abstractions;
+﻿using AbstractAgent;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -6,9 +6,9 @@ using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
 using AgentCore.CodeAnalysis;
-using CefDotnetApp.AgentCore.Models;
+using AgentCore.Models;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // Unified code analysis DSL APIs for multi-language support
     public static partial class UnifiedCodeAnalysisScriptApi

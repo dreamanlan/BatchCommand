@@ -5,7 +5,7 @@ using System.Text;
 using TreeSitter;
 using AgentCore.CodeAnalysis.TreeSitter.Adapters;
 
-namespace CefDotnetApp.AgentCore.Tools
+namespace AgentCore.Tools
 {
     /// <summary>
     /// TreeSitter API testing and exploration utilities using TreeSitter.DotNet

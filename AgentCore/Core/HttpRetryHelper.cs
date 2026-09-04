@@ -1,10 +1,10 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Shared HTTP retry helper with exponential backoff.

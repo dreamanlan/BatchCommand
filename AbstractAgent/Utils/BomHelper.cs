@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using System.Text;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using ScriptableFramework;
 
-namespace CefDotnetApp.AgentCore.Utils
+namespace AbstractAgent.Utils
 {
     /// <summary>
     /// BOM detection and BOM-preserving encoding helpers.

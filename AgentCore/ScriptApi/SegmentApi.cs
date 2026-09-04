@@ -4,12 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // tokenize(text) - segment mixed Chinese/English text into a list of tokens
     sealed class TokenizeExp : SimpleExpressionBase

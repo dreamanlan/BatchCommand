@@ -1,5 +1,5 @@
 ﻿using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -10,10 +10,11 @@ using Microsoft.Win32;
 using ScriptableFramework;
 using System.Diagnostics;
 using System.Threading;
-using CefDotnetApp.AgentCore.Utils;
+using AbstractAgent.Utils;
+using AgentCore.Utils;
 
 #pragma warning disable CA1416
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     /// <summary>
     /// everything_exists()

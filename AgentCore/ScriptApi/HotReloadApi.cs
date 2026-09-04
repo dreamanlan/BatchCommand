@@ -1,11 +1,11 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using ScriptableFramework;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Core;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     /// <summary>
     /// Hot reload expression

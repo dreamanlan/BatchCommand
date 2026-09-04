@@ -1,5 +1,5 @@
 ﻿using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using AgentCore.Tools;
@@ -79,7 +79,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.NullObject;
             }
             try {
-                var result = CefDotnetApp.AgentCore.CodeAnalysis.CodeAnalysisApi.ExploreTreeSitterCApi();
+                var result = AgentCore.CodeAnalysis.CodeAnalysisApi.ExploreTreeSitterCApi();
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -99,7 +99,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.NullObject;
             }
             try {
-                var result = CefDotnetApp.AgentCore.CodeAnalysis.CodeAnalysisApi.ExploreTreeSitterCppApi();
+                var result = AgentCore.CodeAnalysis.CodeAnalysisApi.ExploreTreeSitterCppApi();
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -119,7 +119,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.NullObject;
             }
             try {
-                var result = CefDotnetApp.AgentCore.CodeAnalysis.CodeAnalysisApi.TestCreateCParser();
+                var result = AgentCore.CodeAnalysis.CodeAnalysisApi.TestCreateCParser();
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -139,7 +139,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.NullObject;
             }
             try {
-                var result = CefDotnetApp.AgentCore.CodeAnalysis.CodeAnalysisApi.TestCreateCppParser();
+                var result = AgentCore.CodeAnalysis.CodeAnalysisApi.TestCreateCppParser();
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -159,7 +159,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.NullObject;
             }
             try {
-                var result = CefDotnetApp.AgentCore.CodeAnalysis.CodeAnalysisApi.ExploreAllTreeSitterApis();
+                var result = AgentCore.CodeAnalysis.CodeAnalysisApi.ExploreAllTreeSitterApis();
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -188,7 +188,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                var report = CefDotnetApp.AgentCore.CodeAnalysis.CodeAnalysisApi.ExploreAllTreeSitterApis();
+                var report = AgentCore.CodeAnalysis.CodeAnalysisApi.ExploreAllTreeSitterApis();
 
                 // Ensure directory exists
                 var directory = Path.GetDirectoryName(outputPath);
@@ -196,7 +196,7 @@ namespace AgentCore.ScriptApi
                     Directory.CreateDirectory(directory);
                 }
 
-                File.WriteAllText(outputPath, report, CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(outputPath, defaultBom: false));
+                File.WriteAllText(outputPath, report, AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(outputPath, defaultBom: false));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
@@ -215,7 +215,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.NullObject;
             }
             try {
-                var result = CefDotnetApp.AgentCore.CodeAnalysis.CodeAnalysisApi.TestGetNodeText();
+                var result = AgentCore.CodeAnalysis.CodeAnalysisApi.TestGetNodeText();
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {

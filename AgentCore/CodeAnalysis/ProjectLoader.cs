@@ -1,12 +1,12 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {

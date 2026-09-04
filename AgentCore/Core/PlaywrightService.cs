@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Singleton service that wraps Microsoft.Playwright for DSL script access.

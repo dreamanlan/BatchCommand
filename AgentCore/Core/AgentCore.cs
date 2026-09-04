@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using AgentPlugin.Abstractions;
+using ScriptableFramework;
+using AbstractAgent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     public enum HelpSearchType
     {
@@ -530,7 +531,7 @@ namespace CefDotnetApp.AgentCore.Core
                 }
             };
 
-            Action<string, string[]> callJsAction = (funcName, args) => {
+            Action<string, IList<BoxedValue>> callJsAction = (funcName, args) => {
                 try {
                     nativeApi.SendJavascriptCall(funcName, args);
                 }

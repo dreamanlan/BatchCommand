@@ -5,10 +5,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using ScriptableFramework;
 
-namespace CefDotnetApp.AgentCore.Utils
+namespace AbstractAgent.Utils
 {
     public static class DslHelper
     {

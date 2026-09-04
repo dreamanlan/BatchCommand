@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using CefDotnetApp.AgentCore.CodeAnalysis.JavaScript;
-using CefDotnetApp.AgentCore.Models;
+using AgentCore.CodeAnalysis.JavaScript;
+using AgentCore.Models;
 using Esprima;
 using Esprima.Ast;
 

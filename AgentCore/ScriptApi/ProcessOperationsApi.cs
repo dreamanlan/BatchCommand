@@ -2,17 +2,17 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Core;
-using CefDotnetApp.AgentCore.Utils;
+using AgentCore.Core;
+using AbstractAgent.Utils;
 using Dsl;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // Base class for process/script command expressions that use params/delimiter/template
     abstract class ProcessCommandExpBase : AbstractExpression

@@ -1,5 +1,5 @@
 ﻿using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,10 +10,10 @@ using System.Security.Cryptography;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Core;
 
 #pragma warning disable 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     using TupleValue1 = Tuple<BoxedValue>;
     using TupleValue2 = Tuple<BoxedValue, BoxedValue>;
@@ -4396,7 +4396,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         }
                         else {
                             // Level 3: Normalized whitespace matching (DiffOps fallback)
-                            var normResult = CefDotnetApp.AgentCore.Core.DiffOperations.ReplaceFullLinesText(str, key, val, true);
+                            var normResult = AgentCore.Core.DiffOperations.ReplaceFullLinesText(str, key, val, true);
                             if (normResult.Success) {
                                 return BoxedValue.From(normResult.ResultContent);
                             }
@@ -6984,7 +6984,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         Encoding encoding = Encoding.UTF8;
                         if (operands.Count >= 2) {
                             var v = operands[1];
-                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(v, path);
+                            encoding = AbstractAgent.Utils.BomHelper.GetEncoding(v, path);
                         }
                         return BoxedValue.FromObject(SafeFileReader.ReadAllLines(path, encoding));
                     }
@@ -7007,10 +7007,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         path = Environment.ExpandEnvironmentVariables(path);
                         // When encoding parameter is omitted, preserve original BOM state
                         // for existing files (default to with-BOM for new files to keep legacy behavior).
-                        Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
+                        Encoding encoding = AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
-                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(v, path);
+                            encoding = AbstractAgent.Utils.BomHelper.GetEncodingForWrite(v, path);
                         }
                         var strs = new List<string>();
                         foreach (var line in lines) {
@@ -7051,7 +7051,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         Encoding encoding = Encoding.UTF8;
                         if (operands.Count >= 2) {
                             var v = operands[1];
-                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(v, path);
+                            encoding = AbstractAgent.Utils.BomHelper.GetEncoding(v, path);
                         }
                         return SafeFileReader.ReadAllText(path, encoding);
                     }
@@ -7074,10 +7074,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         path = Environment.ExpandEnvironmentVariables(path);
                         // When encoding parameter is omitted, preserve original BOM state
                         // for existing files (default to with-BOM for new files to keep legacy behavior).
-                        Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
+                        Encoding encoding = AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
-                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(v, path);
+                            encoding = AbstractAgent.Utils.BomHelper.GetEncodingForWrite(v, path);
                         }
                         if (string.IsNullOrEmpty(text)) {
                             AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");

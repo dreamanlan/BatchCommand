@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using CefDotnetApp.AgentCore.Models;
+using AgentCore.Models;
 
 namespace AgentCore.CodeAnalysis
 {

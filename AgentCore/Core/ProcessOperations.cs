@@ -6,10 +6,10 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ScriptableFramework;
+using AbstractAgent;
 
-using AgentPlugin.Abstractions;
-
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     public class ProcessOperations
     {
@@ -217,7 +217,7 @@ namespace CefDotnetApp.AgentCore.Core
                         error = result.Error,
                         executionTime = result.ExecutionTime.TotalMilliseconds
                     });
-                    nativeApi.EnqueueCefMessage(callbackMsg, new string[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, resultJson });
+                    nativeApi.EnqueueCefMessage(callbackMsg, new BoxedValue[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, resultJson });
                 }
                 catch (Exception ex)
                 {
@@ -229,7 +229,7 @@ namespace CefDotnetApp.AgentCore.Core
                         error = $"Exception: {ex.Message}",
                         executionTime = 0.0
                     });
-                    nativeApi.EnqueueCefMessage(callbackMsg, new string[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, errorJson });
+                    nativeApi.EnqueueCefMessage(callbackMsg, new BoxedValue[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, errorJson });
                 }
                 finally
                 {

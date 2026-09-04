@@ -5,7 +5,7 @@ using System.Threading;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     // Input schema for ML.NET pipeline
     internal class TfIdfDoc

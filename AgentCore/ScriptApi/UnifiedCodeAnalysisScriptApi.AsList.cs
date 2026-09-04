@@ -1,13 +1,13 @@
-﻿using AgentPlugin.Abstractions;
+﻿using AbstractAgent;
 using System;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
 using AgentCore.CodeAnalysis;
-using CefDotnetApp.AgentCore.Models;
+using AgentCore.Models;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // List-returning DSL APIs (each item corresponds to one matching target).
     // On error or no result, an empty list is returned.

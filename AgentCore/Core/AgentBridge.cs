@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using DotnetStoryScript;
+using ScriptableFramework;
+using AbstractAgent;
 
-using AgentPlugin.Abstractions;
-
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Command structure from inject.js
@@ -45,17 +44,17 @@ namespace CefDotnetApp.AgentCore.Core
     /// </summary>
     public class AgentBridge
     {
-        private Action<string, string[]>? _sendJsCallAction;
+        private Action<string, IList<BoxedValue>>? _sendJsCallAction;
         private readonly Action<string> _log;
 
-        public AgentBridge(Action<string, string[]>? sendJsCallAction, Action<string> log)
+        public AgentBridge(Action<string, IList<BoxedValue>>? sendJsCallAction, Action<string> log)
         {
             _sendJsCallAction = sendJsCallAction;
             _log = log;
         }
 
         // Set the callback to send JavaScript call
-        public void SetSendJsCallAction(Action<string, string[]> sendJsCallAction)
+        public void SetSendJsCallAction(Action<string, IList<BoxedValue>> sendJsCallAction)
         {
             _sendJsCallAction = sendJsCallAction;
         }
@@ -79,7 +78,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 // All C# to JS calls go through window object methods
                 // Pass JSON as array parameter
-                _sendJsCallAction?.Invoke("window.onAgentCommand", new string[] { json });
+                _sendJsCallAction?.Invoke("window.onAgentCommand", new BoxedValue[] { json });
                 _log($"[AgentCommand] Sending command to inject.js: {command}");
             }
             catch (Exception ex) {
@@ -95,7 +94,7 @@ namespace CefDotnetApp.AgentCore.Core
             try {
                 // All C# to JS calls go through window object methods
                 // Pass JSON as array parameter
-                _sendJsCallAction?.Invoke("window.onAgentResponse", new string[] { responseJson });
+                _sendJsCallAction?.Invoke("window.onAgentResponse", new BoxedValue[] { responseJson });
                 _log($"[AgentResponse] Sending response to inject.js");
             }
             catch (Exception ex) {

@@ -1,6 +1,6 @@
 using System;
 
-namespace CefDotnetApp.AgentCore.Models
+namespace AgentCore.Models
 {
     /// <summary>
     /// Represents a contiguous block of matched lines (with context) from a file search.

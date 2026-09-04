@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // refresh_embedding()
     sealed class RefreshEmbeddingExp : SimpleExpressionBase

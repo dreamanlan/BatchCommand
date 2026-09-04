@@ -1,13 +1,13 @@
 using System;
 using System.Text;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Core;
 
-namespace CefDotnetApp.AgentCore.ScriptApi
+namespace AgentCore.ScriptApi
 {
     // replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]) - replace string in file; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class ReplaceInFileExp : SimpleExpressionBase
@@ -21,12 +21,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string oldString = operands[1].AsString;
                 string newString = operands[2].AsString;
                 bool replaceAll = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
+                Encoding? encoding = operands.Count > 5 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(oldString)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_in_file: oldString cannot be empty");
@@ -58,14 +58,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string oldString = operands[1].AsString;
                 string newString = operands[2].AsString;
                 int count = operands[3].GetInt();
                 int skipCount = operands.Count > 4 ? operands[4].GetInt() : 0;
                 if (skipCount < 0) skipCount = 0;
                 bool exactMatch = operands.Count > 5 ? operands[5].GetBool() : false;
-                Encoding? encoding = operands.Count > 6 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[6], fullPath) : null;
+                Encoding? encoding = operands.Count > 6 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[6], fullPath) : null;
 
                 if (string.IsNullOrEmpty(oldString)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_in_file_with_count: oldString cannot be empty");
@@ -95,7 +95,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     }
                     if (replaced == 0) {
                         // Fallback level 3: normalized whitespace match via DiffOps.
-                        var normResult = CefDotnetApp.AgentCore.Core.DiffOperations.ReplaceFullLinesText(content, oldString, newString, false);
+                        var normResult = AgentCore.Core.DiffOperations.ReplaceFullLinesText(content, oldString, newString, false);
                         if (normResult.Success) {
                             newContent = normResult.ResultContent;
                             replaced = 1;
@@ -110,7 +110,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, newContent ?? content, writeEncoding);
                 return BoxedValue.From(true);
             }
@@ -177,8 +177,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                Encoding? encoding = operands.Count > 2 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
 
                 var edits = ParseEdits(operands[1]);
                 if (edits == null || edits.Count == 0) {
@@ -240,7 +240,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         }
                     }
                     // Level 3: Normalized whitespace matching (DiffOps fallback)
-                    var normResult = CefDotnetApp.AgentCore.Core.DiffOperations.ReplaceFullLinesText(content, oldString, newString, replaceAll);
+                    var normResult = AgentCore.Core.DiffOperations.ReplaceFullLinesText(content, oldString, newString, replaceAll);
                     if (normResult.Success) {
                         content = normResult.ResultContent;
                         continue;
@@ -249,7 +249,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                System.IO.File.WriteAllText(fullPath, content, encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true));
+                System.IO.File.WriteAllText(fullPath, content, encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
@@ -382,11 +382,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 int startLine = operands[1].GetInt();
                 int endLine = operands[2].GetInt();
                 string newContent = operands[3].AsString;
-                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[4], fullPath) : null;
+                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[4], fullPath) : null;
 
                 bool result = Core.AgentCore.Instance.FileOps.ReplaceLines(path, startLine, endLine, newContent, encoding);
                 return BoxedValue.From(result);
@@ -410,12 +410,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string searchLiteralText = operands[1].AsString;
                 string content = operands[2].AsString;
                 bool allOccurrences = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
+                Encoding? encoding = operands.Count > 5 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(searchLiteralText)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The search string cannot be empty !!!");
@@ -443,12 +443,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string searchLiteralText = operands[1].AsString;
                 string content = operands[2].AsString;
                 bool allOccurrences = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
+                Encoding? encoding = operands.Count > 5 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(searchLiteralText)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The search string cannot be empty !!!");
@@ -476,10 +476,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 int startLine = operands[1].GetInt();
                 int endLine = operands[2].GetInt();
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
+                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 bool result = Core.AgentCore.Instance.FileOps.DeleteLines(path, startLine, endLine, encoding);
                 return BoxedValue.From(result);
@@ -505,7 +505,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
                 bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() : true;
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], path) : null;
+                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[3], path) : null;
 
                 var lines = Core.AgentCore.Instance.FileOps.SearchLinesInFile(path, pattern, ignoreCase, encoding);
                 var result = new List<object>();
@@ -537,7 +537,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 int startLine = operands.Count > 1 ? operands[1].GetInt() : 1;
                 int endLine = operands.Count > 2 ? operands[2].GetInt() : -1;
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], path) : null;
+                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[3], path) : null;
 
                 if (endLine == -1) {
                     // Read all lines
@@ -576,7 +576,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                Encoding? encoding = operands.Count > 1 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[1], path) : null;
+                Encoding? encoding = operands.Count > 1 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[1], path) : null;
                 int count = Core.AgentCore.Instance.FileOps.GetLineCount(path, encoding);
                 return BoxedValue.From(count);
             }
@@ -602,7 +602,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string pattern = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
-                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[4], path) : null;
+                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[4], path) : null;
                 string result = Core.AgentCore.Instance.FileOps.SearchFile(path, pattern, contextLinesAfter, contextLinesBefore, encoding);
                 return BoxedValue.FromString(result);
             }
@@ -671,7 +671,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
-                Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], path);
+                Encoding encoding = AbstractAgent.Utils.BomHelper.GetEncoding(operands[2], path);
                 int contextLinesAfter = operands.Count > 3 ? operands[3].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 4 ? operands[4].GetInt() : 0;
                 List<string>? filterAndNewExts = null;
@@ -719,7 +719,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string pattern = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
-                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[4], path) : null;
+                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[4], path) : null;
                 var blocks = Core.AgentCore.Instance.FileOps.SearchFileAsList(path, pattern, contextLinesAfter, contextLinesBefore, encoding);
                 var result = new List<object>();
                 foreach (var b in blocks) {
@@ -796,7 +796,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
-                Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], path);
+                Encoding encoding = AbstractAgent.Utils.BomHelper.GetEncoding(operands[2], path);
                 int contextLinesAfter = operands.Count > 3 ? operands[3].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 4 ? operands[4].GetInt() : 0;
                 List<string>? filterAndNewExts = null;
@@ -845,13 +845,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 if (!System.IO.File.Exists(fullPath)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_file_indentations: file not found: {path}");
                     return BoxedValue.FromString($"Error: file not found: {path}");
                 }
 
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], fullPath) : null;
+                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[3], fullPath) : null;
                 string[] allLines = SafeFileReader.ReadAllLines(fullPath, encoding ?? System.Text.Encoding.UTF8);
                 int totalLines = allLines.Length;
                 if (totalLines == 0) {
@@ -962,8 +962,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 int line = operands[1].GetInt();
                 string insertContent = operands[2].AsString;
 
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 if (!System.IO.File.Exists(fullPath)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line: file not found: {path}");
@@ -986,7 +986,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), writeEncoding);
                 return BoxedValue.From(true);
             }
@@ -1012,8 +1012,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 int line = operands[1].GetInt();
                 string insertContent = operands[2].AsString;
 
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
+                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 if (!System.IO.File.Exists(fullPath)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line: file not found: {path}");
@@ -1036,7 +1036,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), writeEncoding);
                 return BoxedValue.From(true);
             }

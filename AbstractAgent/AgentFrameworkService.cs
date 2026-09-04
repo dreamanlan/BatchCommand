@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace AgentPlugin.Abstractions
+namespace AbstractAgent
 {
     /// <summary>
     /// Singleton service that provides framework-level abstractions to AgentCore.
@@ -251,7 +251,7 @@ namespace AgentPlugin.Abstractions
                 Log($"[csharp] Loaded assembly: {pluginAssembly.FullName}");
 
                 // Find the AgentPlugin type
-                Type? pluginType = pluginAssembly.GetType("CefDotnetApp.AgentCore.AgentPlugin");
+                Type? pluginType = pluginAssembly.GetType("AgentCore.AgentPlugin");
                 if (pluginType == null) {
                     Log("[csharp] AgentPlugin type not found in AgentCore.dll");
                     Log("[csharp] Available types in AgentCore.dll:");

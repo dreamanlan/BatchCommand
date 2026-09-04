@@ -4,11 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using CefDotnetApp.AgentCore.Models;
-using CefDotnetApp.AgentCore.Utils;
-using AgentPlugin.Abstractions;
+using AgentCore.Models;
+using AbstractAgent.Utils;
+using AbstractAgent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     public class FileOperations
     {

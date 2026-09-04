@@ -1,7 +1,8 @@
 ﻿using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
+using ScriptableFramework;
 
-namespace AgentPlugin.Abstractions
+namespace AbstractAgent
 {
     /// <summary>
     /// Abstraction for DSL script engine operations (load and call DSL functions).
@@ -11,7 +12,7 @@ namespace AgentPlugin.Abstractions
         void Register(string name, string doc, IExpressionFactory factory);
         void Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory);
         string LoadDslFunc(string func, string code, IList<string> paramNames, bool update);
-        string CallDslFunc(string func, List<string> args);
+        string CallDslFunc(string func, IList<BoxedValue> args);
         string ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError);
     }
 }

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace CefDotnetApp.AgentCore.Utils
+namespace AgentCore.Utils
 {
     /// <summary>
     /// Cross-platform file search utility.

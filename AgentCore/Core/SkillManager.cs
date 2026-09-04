@@ -5,11 +5,12 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using AgentPlugin.Abstractions;
-using CefDotnetApp.AgentCore.Utils;
+using AbstractAgent;
+using AbstractAgent.Utils;
 using Dsl;
+using ScriptableFramework;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     public class SkillToolInfo
     {
@@ -398,7 +399,7 @@ namespace CefDotnetApp.AgentCore.Core
 
             if (skill.IsMetaDSL) {
                 // substitute params by position
-                var argVals = new List<string>();
+                var argVals = new List<BoxedValue>();
                 string cmd = skill.CommandScript;
                 for (int i = 0; i < skill.Params.Count; i++) {
                     string paramName = skill.Params[i]; // e.g. $image_path

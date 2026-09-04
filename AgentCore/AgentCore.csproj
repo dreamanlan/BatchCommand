@@ -3,7 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>CefDotnetApp.AgentCore</RootNamespace>
+    <RootNamespace>AgentCore</RootNamespace>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Include node drivers for all platforms (darwin-arm64/x64, linux-arm64/x64, win32_x64) so Mac deployment works out-of-the-box. -->

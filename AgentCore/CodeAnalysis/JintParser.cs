@@ -4,9 +4,9 @@ using Jint.Native;
 using Jint.Runtime;
 using Esprima;
 using Esprima.Ast;
-using CefDotnetApp.AgentCore.CodeAnalysis.JavaScript;
+using AgentCore.CodeAnalysis.JavaScript;
 
-namespace CefDotnetApp.AgentCore.CodeAnalysis
+namespace AgentCore.CodeAnalysis
 {
     /// <summary>
     /// JavaScript parser using Jint engine and Esprima

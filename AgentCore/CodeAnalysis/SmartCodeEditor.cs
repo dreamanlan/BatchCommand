@@ -1,5 +1,5 @@
 using System;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
-using CefDotnetApp.AgentCore.Core;
+using AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {
@@ -67,7 +67,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -139,7 +139,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -213,7 +213,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -273,7 +273,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -322,7 +322,7 @@ namespace AgentCore.CodeAnalysis
                     var workspace = new AdhocWorkspace();
                     var formattedRoot = Formatter.Format(newRoot, workspace);
                     // Preserve original BOM state when overwriting existing file.
-                    File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                    File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                 }
                 else {
                     // Check for file-scoped namespace
@@ -335,7 +335,7 @@ namespace AgentCore.CodeAnalysis
                         var workspace = new AdhocWorkspace();
                         var formattedRoot = Formatter.Format(newRoot, workspace);
                         // Preserve original BOM state when overwriting existing file.
-                        File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                        File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                     }
                     else {
                         // No namespace, add to root
@@ -345,7 +345,7 @@ namespace AgentCore.CodeAnalysis
                         var workspace = new AdhocWorkspace();
                         var formattedRoot = Formatter.Format(newRoot, workspace);
                         // Preserve original BOM state when overwriting existing file.
-                        File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                        File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                     }
                 }
 
@@ -381,7 +381,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -423,7 +423,7 @@ namespace AgentCore.CodeAnalysis
                 var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
 
                 if (errors.Any()) {
-                    var logger = CefDotnetApp.AgentCore.Core.AgentCore.Instance.Logger;
+                    var logger = AgentCore.Core.AgentCore.Instance.Logger;
                     logger.Warning($"[SmartCodeEditor] Code has {errors.Count} compilation errors:");
                     foreach (var error in errors.Take(5)) {
                         logger.Warning($"  {error.GetMessage()}");

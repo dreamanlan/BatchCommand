@@ -1,9 +1,9 @@
 using System;
 using TextCopy;
 
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     public class ClipboardOperations
     {

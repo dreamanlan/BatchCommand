@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CefDotnetApp.AgentCore.Core
+namespace AgentCore.Core
 {
     /// <summary>
     /// Simplified context management that only handles variable storage.

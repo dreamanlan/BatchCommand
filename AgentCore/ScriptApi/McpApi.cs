@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using AgentPlugin.Abstractions;
+using AbstractAgent;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
@@ -22,7 +22,7 @@ namespace AgentCore.ScriptApi
             string serverId = operands[0].AsString;
             string type = operands[1].AsString;
             string target = operands[2].AsString;
-            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.McpClientService.Instance.Connect(serverId, type, target));
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.Connect(serverId, type, target));
         }
     }
 
@@ -38,7 +38,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_disconnect requires (serverId)");
                 return BoxedValue.FromBool(false);
             }
-            CefDotnetApp.AgentCore.Core.McpClientService.Instance.Disconnect(operands[0].AsString);
+            AgentCore.Core.McpClientService.Instance.Disconnect(operands[0].AsString);
             return BoxedValue.FromBool(true);
         }
     }
@@ -55,7 +55,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_is_connected requires (serverId)");
                 return BoxedValue.FromBool(false);
             }
-            return BoxedValue.FromBool(CefDotnetApp.AgentCore.Core.McpClientService.Instance.IsConnected(operands[0].AsString));
+            return BoxedValue.FromBool(AgentCore.Core.McpClientService.Instance.IsConnected(operands[0].AsString));
         }
     }
 
@@ -72,7 +72,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_list_tools requires (serverId)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.McpClientService.Instance.ListTools(operands[0].AsString));
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ListTools(operands[0].AsString));
         }
     }
 
@@ -95,7 +95,7 @@ namespace AgentCore.ScriptApi
             string toolName = operands[1].AsString;
             string argsJson = operands[2].AsString;
             string tag = operands[3].AsString;
-            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.McpClientService.Instance.CallToolCallback(serverId, toolName, argsJson, tag));
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.CallToolCallback(serverId, toolName, argsJson, tag));
         }
     }
 
@@ -117,7 +117,7 @@ namespace AgentCore.ScriptApi
             string serverId = operands[0].AsString;
             string key = operands[1].AsString;
             string value = operands[2].ToString();
-            CefDotnetApp.AgentCore.Core.McpClientService.Instance.SetOption(serverId, key, value);
+            AgentCore.Core.McpClientService.Instance.SetOption(serverId, key, value);
             return BoxedValue.FromBool(true);
         }
     }
@@ -135,7 +135,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_clear_options requires (serverId)");
                 return BoxedValue.FromBool(false);
             }
-            CefDotnetApp.AgentCore.Core.McpClientService.Instance.ClearOptions(operands[0].AsString);
+            AgentCore.Core.McpClientService.Instance.ClearOptions(operands[0].AsString);
             return BoxedValue.FromBool(true);
         }
     }
@@ -157,7 +157,7 @@ namespace AgentCore.ScriptApi
             string toolName = operands[1].AsString;
             string argsJson = operands[2].AsString;
             try {
-                string result = CefDotnetApp.AgentCore.Core.McpClientService.Instance.CallTool(serverId, toolName, argsJson).GetAwaiter().GetResult();
+                string result = AgentCore.Core.McpClientService.Instance.CallTool(serverId, toolName, argsJson).GetAwaiter().GetResult();
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
@@ -181,7 +181,7 @@ namespace AgentCore.ScriptApi
             }
             string serverId = operands[0].AsString;
             string tag = operands[1].AsString;
-            return BoxedValue.From(CefDotnetApp.AgentCore.Core.McpClientService.Instance.GetBusyDuration(serverId, tag));
+            return BoxedValue.From(AgentCore.Core.McpClientService.Instance.GetBusyDuration(serverId, tag));
         }
     }
 
@@ -200,7 +200,7 @@ namespace AgentCore.ScriptApi
             }
             string serverId = operands[0].AsString;
             string tag = operands[1].AsString;
-            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.McpClientService.Instance.Cancel(serverId, tag));
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.Cancel(serverId, tag));
         }
     }
 

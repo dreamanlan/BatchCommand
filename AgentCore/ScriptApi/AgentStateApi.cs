@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using AgentPlugin.Abstractions;
-using CefDotnetApp.AgentCore.ScriptApi;
+using AbstractAgent;
+using AgentCore.ScriptApi;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
@@ -18,7 +18,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_project_dir requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.ProjectDir = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -35,7 +35,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_project_dir requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.ProjectDir);
         }
     }
@@ -51,7 +51,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_project_identity requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.ProjectIdentity = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -68,7 +68,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_project_identity requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.ProjectIdentity);
         }
     }
@@ -84,7 +84,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_foundation_prompt requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.FoundationPrompt = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -101,7 +101,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_foundation_prompt requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.FoundationPrompt);
         }
     }
@@ -117,7 +117,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_project_prompt requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.ProjectPrompt = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -134,7 +134,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_project_prompt requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.ProjectPrompt);
         }
     }
@@ -150,7 +150,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_emphasize requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.Emphasize = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -167,7 +167,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_emphasize requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.Emphasize);
         }
     }
@@ -183,7 +183,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_soul requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.Soul = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -200,7 +200,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_soul requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.Soul);
         }
     }
@@ -216,7 +216,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_plan requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.Plan = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -233,7 +233,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_plan requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.Plan);
         }
     }
@@ -249,7 +249,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_todo requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.ToDo = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -266,7 +266,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_todo requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.ToDo);
         }
     }
@@ -282,7 +282,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_context requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.Context = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -299,7 +299,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_context requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.Context);
         }
     }
@@ -315,7 +315,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_history requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.History = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -332,7 +332,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_history requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.History);
         }
     }
@@ -348,7 +348,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_max_lines_deleted_by_write_file requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            CefDotnetApp.AgentCore.Core.AgentCore.Instance.MaxLinesDeletedByWriteFile = operands[0].GetInt();
+            AgentCore.Core.AgentCore.Instance.MaxLinesDeletedByWriteFile = operands[0].GetInt();
             return BoxedValue.FromString("ok");
         }
     }
@@ -360,7 +360,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            return BoxedValue.From(CefDotnetApp.AgentCore.Core.AgentCore.Instance.MaxLinesDeletedByWriteFile);
+            return BoxedValue.From(AgentCore.Core.AgentCore.Instance.MaxLinesDeletedByWriteFile);
         }
     }
 
@@ -375,7 +375,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_max_result_size requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.MaxResultSize = operands[1].GetInt();
             return BoxedValue.FromString("ok");
         }
@@ -392,7 +392,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_max_result_size requires (port)");
                 return BoxedValue.From(0);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.From(inst.MaxResultSize);
         }
     }
@@ -408,7 +408,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_max_context_rounds requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.MaxContextRounds = operands[1].GetInt();
             return BoxedValue.FromString("ok");
         }
@@ -425,7 +425,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_max_context_rounds requires (port)");
                 return BoxedValue.From(3);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.From(inst.MaxContextRounds);
         }
     }
@@ -441,7 +441,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_cur_context_rounds requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.CurContextRounds = operands[1].GetInt();
             return BoxedValue.FromString("ok");
         }
@@ -458,7 +458,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_cur_context_rounds requires (port)");
                 return BoxedValue.From(0);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.From(inst.CurContextRounds);
         }
     }
@@ -474,7 +474,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_add_cur_context_rounds requires (port)");
                 return BoxedValue.From(0);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.From(inst.AddCurContextRounds());
         }
     }
@@ -490,7 +490,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_enable_context_injection requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             var val = operands[1].GetString();
             inst.ContextInjectionEnabled = val == "true" || val == "1" || val == "True";
             return BoxedValue.FromString("ok");
@@ -508,7 +508,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_is_context_injection_enabled requires (port)");
                 return BoxedValue.From(true);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.From(inst.ContextInjectionEnabled);
         }
     }
@@ -577,7 +577,7 @@ namespace AgentCore.ScriptApi
             string group = operands[1].AsString;
             string key = operands[2].AsString;
             string value = operands[3].ToString();
-            CefDotnetApp.AgentCore.Core.AgentCore.Instance.SetAgentEnvironment(category, group, key, value);
+            AgentCore.Core.AgentCore.Instance.SetAgentEnvironment(category, group, key, value);
             return BoxedValue.FromBool(true);
         }
     }
@@ -596,7 +596,7 @@ namespace AgentCore.ScriptApi
             string category = operands[0].AsString;
             string group = operands[1].AsString;
             string key = operands[2].AsString;
-            int len = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetAgentEnvironmentLength(category, group, key);
+            int len = AgentCore.Core.AgentCore.Instance.GetAgentEnvironmentLength(category, group, key);
             return BoxedValue.From(len);
         }
     }
@@ -614,7 +614,7 @@ namespace AgentCore.ScriptApi
             }
             string category = operands[0].AsString;
             string group = operands[1].AsString;
-            CefDotnetApp.AgentCore.Core.AgentCore.Instance.ApplyAgentEnvironment(category, group);
+            AgentCore.Core.AgentCore.Instance.ApplyAgentEnvironment(category, group);
             return BoxedValue.FromBool(true);
         }
     }
@@ -632,7 +632,7 @@ namespace AgentCore.ScriptApi
             }
             string category = operands[0].AsString;
             string group = operands[1].AsString;
-            CefDotnetApp.AgentCore.Core.AgentCore.Instance.ClearAgentEnvironment(category, group);
+            AgentCore.Core.AgentCore.Instance.ClearAgentEnvironment(category, group);
             return BoxedValue.FromBool(true);
         }
     }
@@ -648,7 +648,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_inject_js_code requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             inst.InjectJsCode = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
@@ -665,7 +665,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_inject_js_code requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.InjectJsCode);
         }
     }
@@ -681,7 +681,7 @@ namespace AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_inject_js_code_size requires (port)");
                 return BoxedValue.From(0);
             }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.From(inst.InjectJsCode.Length);
         }
     }

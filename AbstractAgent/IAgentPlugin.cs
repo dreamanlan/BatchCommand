@@ -1,7 +1,7 @@
 ﻿using ScriptableFramework;
 using System.Text.RegularExpressions;
 
-namespace AgentPlugin.Abstractions
+namespace AbstractAgent
 {
     /// <summary>
     /// Interface for agent core functionality

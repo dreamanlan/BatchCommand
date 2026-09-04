@@ -1054,7 +1054,7 @@ class MetaDSLMonitor {
         // Pre-tag: attach data-metadsl-status='pending' synchronously BEFORE
         // enqueue, so a concurrent archive scan (extractNewConversations ->
         // getVisibleTextForHistory) can already recognize this block as
-        // MetaDSL and collapse it to the [metadsl]...[/metadsl] placeholder,
+        // MetaDSL and collapse it to the [...metadsl...] placeholder,
         // instead of racing with the state machine and capturing raw code
         // into SQLite. The state machine overwrites this to 'executed' or
         // 'history' once the operation runs; only the existence of the

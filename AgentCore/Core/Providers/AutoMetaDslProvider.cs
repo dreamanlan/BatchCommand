@@ -152,7 +152,7 @@ namespace AgentCore.Core
                         var (role, content) = history[i];
                         // Clean historical user messages that are execution results (keep current round intact)
                         if (role == "user" && i < lastIdx && content.StartsWith("\u3010Agent\u56de\u590d\u3011"))
-                            content = "...";
+                            content = "[Agent reply omitted]";
                         sb.Append('[').Append(role).Append("]: ").Append(content).Append('\n');
                     }
                 }

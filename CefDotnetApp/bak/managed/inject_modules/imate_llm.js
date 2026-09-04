@@ -229,7 +229,7 @@
 
   // Build the assistant text used for SQLite history persistence: like
   // aiMsgEl.textContent, but every MetaDSL code block is collapsed into a
-  // fixed "[metadsl]\n...\n[/metadsl]" placeholder. Detection uses the
+  // fixed "[...metadsl...]" placeholder. Detection uses the
   // existing hasExecuteMarker heuristic on the raw code text, so non-MetaDSL
   // fenced snippets (rare in agent mode) are preserved verbatim.
   function readAssistantHistoryText(aiMsgEl) {
@@ -241,7 +241,7 @@
       if (!hasExecuteMarker(raw)) return;
       const parent = blk.parentNode;
       if (!parent) return;
-      const placeholder = document.createTextNode('\n[metadsl]\n...\n[/metadsl]\n');
+      const placeholder = document.createTextNode('\n[...metadsl...]\n');
       parent.replaceChild(placeholder, blk);
     });
     return clone.textContent || '';
@@ -824,9 +824,10 @@
    */
   function chatSend(text, isAgentResult) {
     // Remember the prompt for freebie_save_conversation_history.
-    // Agent-injected messages (exec results) keep an empty user, mirroring the
-    // main agent's agentCollapsed handling in page_adapter.extractNewConversations.
-    ST.lastSentPrompt = isAgentResult ? '' : String(text || '');
+    // Agent-injected messages (exec results) use the [Agent reply omitted]
+    // placeholder, mirroring the main agent's agentCollapsed handling in
+    // page_adapter.extractNewConversations.
+    ST.lastSentPrompt = isAgentResult ? '[Agent reply omitted]' : String(text || '');
     const ta = pickVisible(SEL.inputTA);
     if (!ta) { markSendFail('chat input not found'); return; }
     try { setReactValue(ta, text); }

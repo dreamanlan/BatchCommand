@@ -126,7 +126,7 @@ class PageAdapter {
 
   // Collect visible text from an element subtree (skip display:none /
   // visibility:hidden), collapsing every MetaDSL code block into a fixed
-  // placeholder "[metadsl]\n...\n[/metadsl]". Used when building conversation
+  // placeholder "[...metadsl...]". Used when building conversation
   // snapshots destined for SQLite history storage AND for the "recent
   // conversations" section injected into the main LLM prompt via
   // agent_get_history(port), so the persisted / re-injected prose does not
@@ -148,7 +148,7 @@ class PageAdapter {
       const isMetadslCode = tag === 'CODE' && node.dataset && node.dataset.metadslStatus;
       const isMetadslPre = tag === 'PRE' && node.querySelector('code[data-metadsl-status]');
       if (isMetadslCode || isMetadslPre) {
-        text += '\n[metadsl]\n...\n[/metadsl]\n';
+        text += '\n[...metadsl...]\n';
         continue;
       }
       text += this.getVisibleTextForHistory(node);
@@ -193,10 +193,11 @@ class PageAdapter {
           currentUserWrapper.dataset.agentSaved = '1';
           currentAssistantWrapper.dataset.agentSaved = '1';
         }
-        // Use empty string for agent-injected messages, real text for human user messages.
-        // getVisibleTextForHistory collapses MetaDSL code bodies into a fixed
-        // "[metadsl]...[/metadsl]" placeholder so SQLite history stays lean.
-        const userText = messageBox.dataset.agentCollapsed ? '' : this.cleanText(this.getVisibleTextForHistory(wrapper));
+        // Use the [Agent reply omitted] placeholder for agent-injected messages,
+        // real text for human user messages. getVisibleTextForHistory collapses
+        // MetaDSL code bodies into a fixed "[...metadsl...]" placeholder so
+        // SQLite history stays lean.
+        const userText = messageBox.dataset.agentCollapsed ? '[Agent reply omitted]' : this.cleanText(this.getVisibleTextForHistory(wrapper));
         currentPair = { user: userText, assistant: '' };
         currentUserWrapper = wrapper;
         currentAssistantWrapper = null;
@@ -241,9 +242,9 @@ class PageAdapter {
         }
         // Use placeholder for agent-injected messages, real text for human user messages.
         // Use getVisibleTextForHistory so MetaDSL bodies are collapsed to a fixed
-        // "[metadsl]...[/metadsl]" placeholder; this is the same data source that
+        // "[...metadsl...]" placeholder; this is the same data source that
         // feeds SQLite history via extractNewConversations, so both must match.
-        const userText = messageBox.dataset.agentCollapsed ? '...' : this.getVisibleTextForHistory(wrapper);
+        const userText = messageBox.dataset.agentCollapsed ? '[Agent reply omitted]' : this.getVisibleTextForHistory(wrapper);
         currentPair = { user: userText, assistant: '' };
       } else if (currentPair) {
         // Assistant message - LLM reply, read visible text (MetaDSL collapsed)
@@ -283,9 +284,9 @@ class PageAdapter {
         }
         // Use placeholder for agent-injected messages, real text for human user messages.
         // Use getVisibleTextForHistory so MetaDSL bodies are collapsed to a fixed
-        // "[metadsl]...[/metadsl]" placeholder; this is the same data source that
+        // "[...metadsl...]" placeholder; this is the same data source that
         // feeds SQLite history via extractNewConversations, so both must match.
-        const userText = messageBox.dataset.agentCollapsed ? '...' : this.getVisibleTextForHistory(wrapper);
+        const userText = messageBox.dataset.agentCollapsed ? '[Agent reply omitted]' : this.getVisibleTextForHistory(wrapper);
         currentPair = { user: userText, assistant: '' };
       } else if (currentPair) {
         // Assistant message - LLM reply, read visible text (MetaDSL collapsed)

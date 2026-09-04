@@ -171,7 +171,7 @@ class MessageHandler {
             // Replace MetaDSL execution results (agent reply) with placeholder to reduce context size
             const agentReplyMarker = '\u3010Agent\u56de\u590d\u3011'; // Agent reply marker
             if (content.startsWith(agentReplyMarker)) {
-                return '...';
+                return '[Agent reply omitted]';
             }
             return content;
         }
@@ -181,7 +181,7 @@ class MessageHandler {
             // avoid stale code accumulating in context. The most recent
             // assistant message is preserved uncleaned by getConversationContext,
             // so the LLM still sees the currently executing round's code.
-            const placeholder = '[metadsl]\n...\n[/metadsl]';
+            const placeholder = '[...metadsl...]';
             return content
                 .replace(/<metadsl\b[^>]*>[\s\S]*?<\/metadsl\s*>/gi, placeholder)
                 .replace(/```[ \t]*metadsl\b[^\n]*\n[\s\S]*?```/gi, placeholder)

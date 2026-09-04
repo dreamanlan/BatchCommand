@@ -261,10 +261,17 @@ namespace AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("hex_to_ulong", "hex_to_ulong(str)", new ExpressionFactoryHelper<Hex2UlongExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("date_time_string", "date_time_string([fmt])", new ExpressionFactoryHelper<DatetimeStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("date_time_str", "date_time_str([fmt])", new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("datetime_str", "datetime_str([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("current_date_time", "current_date_time([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_current_date_time", "get_current_date_time([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("current_datetime", "current_datetime([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_current_datetime", "get_current_datetime([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("current_date", "current_date([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_current_date", "get_current_date([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("current_time", "current_time([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_current_time", "get_current_time([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_date_time", "get_date_time([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_datetime", "get_datetime([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("long_date_string", "long_date_string()", new ExpressionFactoryHelper<LongDateStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("long_date_str", "long_date_str()", new ExpressionFactoryHelper<LongDateStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("long_time_string", "long_time_string()", new ExpressionFactoryHelper<LongTimeStrExp>());

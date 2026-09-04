@@ -185,15 +185,17 @@ class MessageHandler {
             return content
                 .replace(/<metadsl\b[^>]*>[\s\S]*?<\/metadsl\s*>/gi, placeholder)
                 .replace(/```[ \t]*metadsl\b[^\n]*\n[\s\S]*?```/gi, placeholder)
-                // Bare fenced code block whose FIRST content line is the MetaDSL
-                // execute marker (// @execute or # @execute). This is the form
-                // foundation_prompt.txt teaches the LLM to use, so it dominates
-                // in the wild. Backreference \1 lets the outer fence be 4+
-                // backticks OR tildes when the body itself contains ``` (see
-                // foundation_prompt.txt point 4: "different or more characters").
-                // The character class [`~] combined with the backreference
-                // guarantees the opening and closing fences use the same char.
-                .replace(/([`~]{3,})[^\n]*\n[ \t]*(?:\/\/|#)[ \t]*@execute\b[\s\S]*?\1/gi, placeholder);
+                // Bare fenced code block whose first non-blank content line is
+                // the MetaDSL execute marker (// @execute or # @execute). This
+                // is the form foundation_prompt.txt teaches the LLM to use, so
+                // it dominates in the wild. Blank lines between the fence and
+                // the marker are skipped. Backreference \1 lets the outer fence
+                // be 4+ backticks OR tildes when the body itself contains ```
+                // (see foundation_prompt.txt point 4: "different or more
+                // characters"). The character class [`~] combined with the
+                // backreference guarantees the opening and closing fences use
+                // the same char.
+                .replace(/([`~]{3,})[^\n]*\n(?:[ \t]*\n)*[ \t]*(?:\/\/|#)[ \t]*@execute\b[\s\S]*?\1/gi, placeholder);
         }
 
         return content;

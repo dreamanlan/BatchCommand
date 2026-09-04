@@ -1132,10 +1132,14 @@
 
   function hasExecuteMarker(code) {
     const lines = code.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed === '') continue;
-      return EXECUTE_MARKERS.includes(trimmed);
+    for (let i = 0; i < lines.length; i++) {
+      const ln = lines[i].trim();
+      if (!ln) continue;
+      for (const m of EXECUTE_MARKERS) {
+        if (ln.startsWith(m)) return true;
+      }
+      // Only inspect the very first non-empty line.
+      return false;
     }
     return false;
   }

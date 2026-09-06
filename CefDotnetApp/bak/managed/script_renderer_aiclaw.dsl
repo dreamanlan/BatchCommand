@@ -124,6 +124,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "hyarena_opus.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -132,6 +133,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "venus_llm.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -140,6 +142,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "imate_llm.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -148,6 +151,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "with_llm.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -156,6 +160,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "google_gemini.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -172,6 +177,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "openai_chat.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -180,6 +186,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "google_ai_search.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -863,7 +870,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展使用MetaDSL更新到todo.txt（页面浏览器本地，非远端工作空间）后再继续工作了";
+            $prompt = "可以将最新进展使用MetaDSL更新到todo.txt（页面浏览器本地，非远端工作空间）后再继续工作了，同时清理已完成todo";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }

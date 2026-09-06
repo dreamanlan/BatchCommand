@@ -306,7 +306,7 @@ window.onAgentCommand = function (commandJson) {
           files: [
             {
               source: 'd:\\GitHub\\BatchCommand\\AgentCore\\bin\\Debug\\net8.0\\AgentCore.dll',
-              dest: 'd:\\GitHub\\CEF_Src_Build\\cefclient\\managed\\AgentCore.dll'
+              dest: 'd:\\GitHub\\WebAgent\\cefclient\\managed\\AgentCore.dll'
             }
           ],
           custom_process_killer: false

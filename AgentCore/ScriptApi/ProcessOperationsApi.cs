@@ -124,6 +124,22 @@ namespace AgentCore.ScriptApi
                 cmd = "bash";
                 args = file;
             }
+            else if (ext == ".zsh") {
+                cmd = "zsh";
+                args = file;
+            }
+            else if (ext == ".js") {
+                cmd = "node";
+                args = file;
+            }
+            else if (ext == ".pl") {
+                cmd = "perl";
+                args = file;
+            }
+            else if (ext == ".rb") {
+                cmd = "ruby";
+                args = file;
+            }
             else if (ext == ".ps1") {
                 cmd = isWindows ? "powershell" : "pwsh";
                 args = "-File " + file;
@@ -251,6 +267,11 @@ namespace AgentCore.ScriptApi
         internal static Dictionary<string, string> s_Extensions = new Dictionary<string, string> {
             { "python", ".py" },
             { "bash", ".sh" },
+            { "zsh", ".zsh" },
+            { "nodejs", ".js" },
+            { "node", ".js" },
+            { "perl", ".pl" },
+            { "ruby", ".rb" },
             { "powershell", ".ps1" },
             { "bat", ".bat" },
             { "cmd", ".cmd" }
@@ -277,7 +298,7 @@ namespace AgentCore.ScriptApi
                 string? cmdAndArgs = operands.Count > 3 ? operands[3].AsString : null;
 
                 if (!s_Extensions.TryGetValue(language, out var ext)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("We only support Python, PowerShell, BAT, and Bash scripts. !");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
                     return BoxedValue.NullObject;
                 }
 
@@ -361,7 +382,7 @@ namespace AgentCore.ScriptApi
                 string? cmdAndArgs = operands.Count > 4 ? operands[4].AsString : null;
 
                 if (!s_Extensions.TryGetValue(language, out var ext)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("We only support Python, PowerShell, BAT, and Bash scripts. !");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
                     return BoxedValue.NullObject;
                 }
 

@@ -192,6 +192,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "hyarena_opus.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -200,6 +201,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "venus_llm.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -208,6 +210,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "imate_llm.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -216,6 +219,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "with_llm.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -224,6 +228,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "google_gemini.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -240,6 +245,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "openai_chat.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -248,6 +254,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "google_ai_search.js")));
+	append_line($sb, read_file(combine_path($base, "relay_agent_lite.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
@@ -902,10 +909,10 @@ script(trigger_plan)params($autoPlan,$lockAgent)
         nativelog("[dsl] plan triggered");
 
         if ($lockAgent) {
-            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新plan.txt状态，然后选取计划工作更新todo.txt后继续";
+            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新plan.txt状态；同时清理已经完成的plan与不在plan里的todo，然后选取计划工作更新todo.txt后继续";
         }
         else {
-            $prompt = "没有识别到代码。请更新todo.txt与plan.txt状态。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止agent以避免重复提醒";
+            $prompt = "没有识别到代码。请更新todo.txt与plan.txt状态；同时清理已经完成的plan与不在plan里的todo。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止agent以避免重复提醒";
         };
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }
@@ -1462,7 +1469,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展使用MetaDSL更新到todo.txt（页面浏览器本地，非远端工作空间）后再继续工作了";
+            $prompt = "可以将最新进展使用MetaDSL更新到todo.txt（页面浏览器本地，非远端工作空间）后再继续工作了，同时清理已完成todo";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -1565,7 +1572,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展更新到plan.txt后再继续计划工作了（不要停agent!）";
+            $prompt = "可以将最新进展更新到plan.txt后再继续计划工作了，同时清理已完成plan（不要停agent!）";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }

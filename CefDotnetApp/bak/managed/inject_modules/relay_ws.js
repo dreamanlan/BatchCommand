@@ -15,6 +15,7 @@ class RelayWs {
     this._heartbeatTimer = null;
     this._onMessage = null;    // user callback: (data) => void
     this._onStatus = null;     // user callback: (status) => void  status: 'connected'|'disconnected'|'error'|'auth_ok'
+    this._clientId = null;     // stable per-page client identity (R3)
   }
 
   _getUrl() {
@@ -27,6 +28,15 @@ class RelayWs {
 
   _getSession() {
     return CONFIG.get('relay.session') || '';
+  }
+
+  // Stable client identity for R3: prefer relay.session, else generate once and reuse.
+  _getClientId() {
+    if (!this._clientId) {
+      const s = this._getSession();
+      this._clientId = s || ('agent_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10));
+    }
+    return this._clientId;
   }
 
   // ---- public API ----
@@ -59,7 +69,7 @@ class RelayWs {
       // Auto-authenticate if apiKey is set
       const key = this._getApiKey();
       if (key) {
-        this._send({ type: 'auth', token: key });
+        this._send({ type: 'auth', token: key, clientId: this._getClientId() });
       }
       this._startHeartbeat();
     };
@@ -164,6 +174,12 @@ class RelayWs {
   // Set callback for connection status changes
   onStatus(fn) {
     this._onStatus = fn;
+  }
+
+  // Send a custom command type to the relay server (fire-and-forget).
+  sendCommand(type, extra) {
+    const obj = Object.assign({ type: type }, extra || {});
+    return this._send(obj);
   }
 
   // ---- internal ----

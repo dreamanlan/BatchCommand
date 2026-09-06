@@ -240,6 +240,7 @@
   // state_machine.js save_conversation_history) but keyed by agentId: each
   // single-page freebie agent reports with its fixed module identity.
   const AGENT_ID = 'hyarena';
+  window.agentId = AGENT_ID;
 
   function notifyContextCountDown() {
     bridgeSendNotification('freebie_context_count_down', {
@@ -270,6 +271,20 @@
 
   function notifyConversationHistory(aiMsgEl) {
     if (!aiMsgEl) return;
+    // Relay reply (option A): forward only the executor slot reply text.
+    if (window.relayLite && window.relayLite.sendReply) {
+      const mc = aiMsgEl.querySelector(SEL.multiContent);
+      if (mc) {
+        Array.from(mc.children).forEach((it, i) => {
+          if (slotIdOf(i) === ST.executorSlot) {
+            const slotText = readSlotReplyText(it);
+            if (slotText && slotText.trim()) {
+              window.relayLite.sendReply(slotText);
+            }
+          }
+        });
+      }
+    }
     const assistantText = readAssistantHistoryText(aiMsgEl);
     bridgeSendNotification('freebie_save_conversation_history', {
       agentId: AGENT_ID,

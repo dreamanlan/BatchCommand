@@ -102,7 +102,8 @@ namespace AgentCore.ScriptApi
     /// <summary>
     /// mcp_set_option(serverId, key, value)
     /// Sets a connection option. Can be called before or after mcp_connect.
-    /// key="timeout" (ms) or key="header" (Name:Value) or key="max_busy_seconds" (watchdog threshold).
+    /// key="timeout" (ms) or key="header" (Name:Value) or key="max_busy_seconds" (watchdog threshold)
+    /// or key="max_queue_len" (per-session async call waiting-queue depth, default 10).
     /// Can be called multiple times for headers.
     /// Returns true.
     /// </summary>
@@ -227,7 +228,7 @@ namespace AgentCore.ScriptApi
                 "mcp_call_tool_callback(serverId, toolName, argsJson, tag) - call MCP tool async, result via mcp_callback CEF message",
                 new ExpressionFactoryHelper<McpCallToolCallbackExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("mcp_set_option",
-                "mcp_set_option(serverId, key, value) - set connection option, key='timeout'(ms)/'header'(Name:Value)/'max_busy_seconds'(watchdog threshold)",
+                "mcp_set_option(serverId, key, value) - set connection option, key='timeout'(ms)/'header'(Name:Value)/'max_busy_seconds'(watchdog threshold)/'max_queue_len'(async call queue depth)",
                 new ExpressionFactoryHelper<McpSetOptionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("mcp_clear_options",
                 "mcp_clear_options(serverId) - clear all pending connection options for a server",

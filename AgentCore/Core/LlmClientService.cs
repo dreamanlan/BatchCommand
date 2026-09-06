@@ -51,7 +51,12 @@ namespace AgentCore.Core
         public static LlmClientService Instance => s_instance.Value;
 
         private readonly ConcurrentDictionary<string, ILlmProvider> _providers = new();
-        private readonly ConcurrentDictionary<string, bool> _busySessions = new();
+        // Per-session serial queues (key = "providerId:tag"). Each session runs
+        // its items one at a time; up to max_queue_len items may wait in line, and
+        // further submissions are rejected with "busy".
+        private const int c_defaultQueueSize = 10;
+        private readonly ConcurrentDictionary<string, LlmSession> _sessions = new();
+        private readonly ConcurrentDictionary<string, int> _providerQueueSizes = new();
         // meta: type, url, model per provider
         private readonly ConcurrentDictionary<string, (string type, string url, string model)> _providerMeta = new();
         // options per provider (sensitive keys like username are excluded)
@@ -119,6 +124,19 @@ namespace AgentCore.Core
             if (!_providers.TryGetValue(providerId, out var provider))
                 return $"error: provider '{providerId}' not configured";
             provider.SetOption(key, value);
+            // max_queue_len controls the per-session waiting-queue depth (default
+            // c_defaultQueueSize). Applied to future sessions and any existing
+            // sessions of this provider.
+            if (key == "max_queue_len" && int.TryParse(value, out var qs) && qs >= 0)
+            {
+                _providerQueueSizes[providerId] = qs;
+                string prefix = $"{providerId}:";
+                foreach (var kv in _sessions)
+                {
+                    if (kv.Key.StartsWith(prefix))
+                        kv.Value.MaxQueue = qs;
+                }
+            }
             // record non-sensitive options
             if (!s_sensitiveKeys.Contains(key))
             {
@@ -157,98 +175,62 @@ namespace AgentCore.Core
 
         /// <summary>
         /// Sends a chat message asynchronously.
-        /// Returns "ok" immediately; result arrives via llm_callback(providerId, tag, topic, reply).
+        /// The request is appended to the session's serial queue; up to
+        /// max_queue_len (default 10) requests may wait in line. When the queue is
+        /// full "busy" is returned; otherwise "ok" is returned immediately and
+        /// the reply arrives via llm_callback(providerId, tag, topic, reply).
         /// </summary>
         public string ChatCallback(string providerId, string tag, string topic, string message)
         {
             if (!_providers.TryGetValue(providerId, out var provider))
                 return $"error: provider '{providerId}' not configured";
 
-            string sessionKey = $"{providerId}:{tag}";
-            if (_busySessions.TryGetValue(sessionKey, out var busy) && busy)
-                return "busy";
-
             var nativeApi = AgentCore.Instance.GetNativeApi();
             if (nativeApi == null)
                 return "error: nativeApi not available";
 
-            _busySessions[sessionKey] = true;
-            _busySince[sessionKey] = DateTime.UtcNow;
-            var cts = new CancellationTokenSource();
-            _activeCts[sessionKey] = cts;
-
-            Task.Run(async () =>
+            var session = GetSession(providerId, tag);
+            var item = new WorkItem
             {
-                try
-                {
-                    string reply = await provider.ChatAsync(tag, topic, message, cts.Token);
-                    nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, reply });
-                }
-                catch (Exception ex)
-                {
-                    string errMsg = (ex is OperationCanceledException)
-                        ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
-                        : ex.Message;
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] Chat error for '{providerId}/{tag}': {errMsg}");
-                    nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, $"[error] {errMsg}" });
-                }
-                finally
-                {
-                    _busySessions[sessionKey] = false;
-                    _busySince.TryRemove(sessionKey, out _);
-                    _activeCts.TryRemove(sessionKey, out var oldCts);
-                    oldCts?.Dispose();
-                }
-            });
-
-            return "ok";
+                ProviderId = providerId,
+                Tag = tag,
+                Topic = topic,
+                Run = ct => provider.ChatAsync(tag, topic, message, ct),
+                Deliver = result => nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, result })
+            };
+            return Submit(session, item) ? "ok" : "busy";
         }
         /// <summary>
         /// Sends a chat message and returns the reply directly via Task.
-        /// Used by async script expressions (llm_chat_async).
+        /// Used by async script expressions (llm_chat_async). The request is
+        /// queued per session; when the queue is full the returned task
+        /// completes with "error: busy".
         /// </summary>
         public Task<string> ChatAsync(string providerId, string tag, string topic, string message)
         {
             if (!_providers.TryGetValue(providerId, out var provider))
                 return Task.FromResult($"error: provider '{providerId}' not configured");
 
-            string sessionKey = $"{providerId}:{tag}";
-            if (_busySessions.TryGetValue(sessionKey, out var busy) && busy)
-                return Task.FromResult("error: busy");
-
-            _busySessions[sessionKey] = true;
-            _busySince[sessionKey] = DateTime.UtcNow;
-            var cts = new CancellationTokenSource();
-            _activeCts[sessionKey] = cts;
-
-            return Task.Run(async () =>
+            var session = GetSession(providerId, tag);
+            var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var item = new WorkItem
             {
-                try
-                {
-                    return await provider.ChatAsync(tag, topic, message, cts.Token);
-                }
-                catch (Exception ex)
-                {
-                    string errMsg = (ex is OperationCanceledException)
-                        ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
-                        : ex.Message;
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatForScriptAsync error for '{providerId}/{tag}': {errMsg}");
-                    return $"[error] {errMsg}";
-                }
-                finally
-                {
-                    _busySessions[sessionKey] = false;
-                    _busySince.TryRemove(sessionKey, out _);
-                    _activeCts.TryRemove(sessionKey, out var oldCts);
-                    oldCts?.Dispose();
-                }
-            });
+                ProviderId = providerId,
+                Tag = tag,
+                Topic = topic,
+                Run = ct => provider.ChatAsync(tag, topic, message, ct),
+                Deliver = result => tcs.TrySetResult(result)
+            };
+            if (!Submit(session, item))
+                return Task.FromResult("error: busy");
+            return tcs.Task;
         }
 
 
         /// <summary>
         /// Sends a chat message with attached image URLs asynchronously.
-        /// Returns "ok" immediately; result arrives via llm_callback.
+        /// Queued per session like ChatCallback. Returns "ok"/"busy"; result
+        /// arrives via llm_callback.
         /// Only auto_metadsl actually sends images; other providers ignore them.
         /// </summary>
         public string ChatWithImagesCallback(string providerId, string tag, string topic, string message, string[] imageUrls)
@@ -256,84 +238,117 @@ namespace AgentCore.Core
             if (!_providers.TryGetValue(providerId, out var provider))
                 return $"error: provider '{providerId}' not configured";
 
-            string sessionKey = $"{providerId}:{tag}";
-            if (_busySessions.TryGetValue(sessionKey, out var busy) && busy)
-                return "busy";
-
             var nativeApi = AgentCore.Instance.GetNativeApi();
             if (nativeApi == null)
                 return "error: nativeApi not available";
 
-            _busySessions[sessionKey] = true;
-            _busySince[sessionKey] = DateTime.UtcNow;
-            var cts = new CancellationTokenSource();
-            _activeCts[sessionKey] = cts;
-
-            Task.Run(async () =>
+            var session = GetSession(providerId, tag);
+            var item = new WorkItem
             {
-                try
-                {
-                    string reply = await provider.ChatWithImagesAsync(tag, topic, message, imageUrls, cts.Token);
-                    nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, reply });
-                }
-                catch (Exception ex)
-                {
-                    string errMsg = (ex is OperationCanceledException)
-                        ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
-                        : ex.Message;
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImages error for '{providerId}/{tag}': {errMsg}");
-                    nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, $"[error] {errMsg}" });
-                }
-                finally
-                {
-                    _busySessions[sessionKey] = false;
-                    _busySince.TryRemove(sessionKey, out _);
-                    _activeCts.TryRemove(sessionKey, out var oldCts);
-                    oldCts?.Dispose();
-                }
-            });
-
-            return "ok";
+                ProviderId = providerId,
+                Tag = tag,
+                Topic = topic,
+                Run = ct => provider.ChatWithImagesAsync(tag, topic, message, imageUrls, ct),
+                Deliver = result => nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, result })
+            };
+            return Submit(session, item) ? "ok" : "busy";
         }
 
         /// <summary>
         /// Sends a chat message with images and returns the reply directly via Task.
-        /// Used by async script expressions (llm_chat_with_images_async).
+        /// Used by async script expressions (llm_chat_with_images_async). Queued
+        /// per session; when the queue is full the task completes with "error: busy".
         /// </summary>
         public Task<string> ChatWithImagesAsync(string providerId, string tag, string topic, string message, string[] imageUrls)
         {
             if (!_providers.TryGetValue(providerId, out var provider))
                 return Task.FromResult($"error: provider '{providerId}' not configured");
 
-            string sessionKey = $"{providerId}:{tag}";
-            if (_busySessions.TryGetValue(sessionKey, out var busy) && busy)
-                return Task.FromResult("error: busy");
-
-            _busySessions[sessionKey] = true;
-            _busySince[sessionKey] = DateTime.UtcNow;
-            var cts = new CancellationTokenSource();
-            _activeCts[sessionKey] = cts;
-
-            return Task.Run(async () =>
+            var session = GetSession(providerId, tag);
+            var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var item = new WorkItem
             {
-                try
+                ProviderId = providerId,
+                Tag = tag,
+                Topic = topic,
+                Run = ct => provider.ChatWithImagesAsync(tag, topic, message, imageUrls, ct),
+                Deliver = result => tcs.TrySetResult(result)
+            };
+            if (!Submit(session, item))
+                return Task.FromResult("error: busy");
+            return tcs.Task;
+        }
+
+        /// <summary>
+        /// Returns the per-session queue (creating it lazily). The queue depth
+        /// limit is taken from the provider's max_queue_len option, defaulting to
+        /// c_defaultQueueSize.
+        /// </summary>
+        private LlmSession GetSession(string providerId, string tag)
+        {
+            string sessionKey = $"{providerId}:{tag}";
+            return _sessions.GetOrAdd(sessionKey, k =>
+                new LlmSession(k, _providerQueueSizes.TryGetValue(providerId, out var qs) ? qs : c_defaultQueueSize));
+        }
+
+        /// <summary>
+        /// Enqueues a work item and starts the session worker if it is idle.
+        /// Returns false when the session queue is full (caller should report busy).
+        /// </summary>
+        private bool Submit(LlmSession session, WorkItem item)
+        {
+            if (!session.TryEnqueue(item, out bool startWorker))
+                return false;
+            if (startWorker)
+                StartWorker(session);
+            return true;
+        }
+
+        /// <summary>
+        /// Drains a session's queue on a background task, running items one at a
+        /// time. Busy/cancellation tracking is maintained per running item so the
+        /// watchdog and llm_cancel keep working as before.
+        /// </summary>
+        private void StartWorker(LlmSession session)
+        {
+            Task.Run(async () =>
+            {
+                while (true)
                 {
-                    return await provider.ChatWithImagesAsync(tag, topic, message, imageUrls, cts.Token);
-                }
-                catch (Exception ex)
-                {
-                    string errMsg = (ex is OperationCanceledException)
-                        ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
-                        : ex.Message;
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImagesForScriptAsync error for '{providerId}/{tag}': {errMsg}");
-                    return $"[error] {errMsg}";
-                }
-                finally
-                {
-                    _busySessions[sessionKey] = false;
-                    _busySince.TryRemove(sessionKey, out _);
-                    _activeCts.TryRemove(sessionKey, out var oldCts);
-                    oldCts?.Dispose();
+                    var item = session.Dequeue();
+                    if (item == null)
+                        break;
+
+                    string sessionKey = session.Key;
+                    var cts = new CancellationTokenSource();
+                    _busySince[sessionKey] = DateTime.UtcNow;
+                    _activeCts[sessionKey] = cts;
+
+                    string result;
+                    try
+                    {
+                        result = await item.Run(cts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        string errMsg = (ex is OperationCanceledException)
+                            ? $"LLM request cancelled (busy for {GetBusyDuration(item.ProviderId, item.Tag)}s)"
+                            : ex.Message;
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] Chat error for '{item.ProviderId}/{item.Tag}': {errMsg}");
+                        result = $"[error] {errMsg}";
+                    }
+                    finally
+                    {
+                        _busySince.TryRemove(sessionKey, out _);
+                        _activeCts.TryRemove(sessionKey, out var oldCts);
+                        oldCts?.Dispose();
+                    }
+
+                    try { item.Deliver(result); }
+                    catch (Exception ex)
+                    {
+                        AgentFrameworkService.Instance.Log($"[LlmClientService] Deliver error for '{item.ProviderId}/{item.Tag}': {ex.Message}");
+                    }
                 }
             });
         }
@@ -345,7 +360,6 @@ namespace AgentCore.Core
                 return $"error: provider '{providerId}' not configured";
             provider.ClearHistory(tag);
             string sessionKey = $"{providerId}:{tag}";
-            _busySessions.TryRemove(sessionKey, out _);
             _busySince.TryRemove(sessionKey, out _);
             _activeCts.TryRemove(sessionKey, out var oldCts);
             oldCts?.Dispose();
@@ -361,11 +375,11 @@ namespace AgentCore.Core
             return "ok";
         }
 
-        /// <summary>Returns true if the session is currently waiting for a reply.</summary>
+        /// <summary>Returns true if the session is currently running or has queued requests.</summary>
         public bool IsBusy(string providerId, string tag)
         {
             string sessionKey = $"{providerId}:{tag}";
-            return _busySessions.TryGetValue(sessionKey, out var busy) && busy;
+            return _sessions.TryGetValue(sessionKey, out var session) && session.IsActive;
         }
 
         /// <summary>Add a chat_extra entry for the given provider+tag session.</summary>
@@ -447,6 +461,85 @@ namespace AgentCore.Core
             catch (Exception ex)
             {
                 AgentFrameworkService.Instance.Log($"[LlmClientService] Watchdog error: {ex.Message}");
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // Per-session serial queue support
+        // -----------------------------------------------------------------
+
+        /// <summary>A single queued chat request.</summary>
+        private sealed class WorkItem
+        {
+            public string ProviderId = "";
+            public string Tag = "";
+            public string Topic = "";
+            public Func<CancellationToken, Task<string>> Run = _ => Task.FromResult("");
+            public Action<string> Deliver = _ => { };
+        }
+
+        /// <summary>
+        /// A per-session FIFO queue with a single active worker. At most one item
+        /// runs at a time; up to MaxQueue additional items may wait in line.
+        /// </summary>
+        private sealed class LlmSession
+        {
+            public readonly string Key;
+            public int MaxQueue;
+            private readonly Queue<WorkItem> _pending = new();
+            private bool _running;
+
+            public LlmSession(string key, int maxQueue)
+            {
+                Key = key;
+                MaxQueue = maxQueue;
+            }
+
+            public bool IsActive
+            {
+                get { lock (_pending) { return _running || _pending.Count > 0; } }
+            }
+
+            /// <summary>
+            /// Enqueues an item. When the session is idle the item is accepted and
+            /// startWorker is set true. When busy the item is queued unless the
+            /// queue already holds MaxQueue waiting items, in which case false is
+            /// returned (caller should report busy).
+            /// </summary>
+            public bool TryEnqueue(WorkItem item, out bool startWorker)
+            {
+                startWorker = false;
+                lock (_pending)
+                {
+                    if (_running)
+                    {
+                        if (_pending.Count >= MaxQueue)
+                            return false;
+                        _pending.Enqueue(item);
+                        return true;
+                    }
+                    _pending.Enqueue(item);
+                    _running = true;
+                    startWorker = true;
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// Returns the next item, or null when the queue is empty (which also
+            /// marks the session idle so a future submit restarts a worker).
+            /// </summary>
+            public WorkItem? Dequeue()
+            {
+                lock (_pending)
+                {
+                    if (_pending.Count == 0)
+                    {
+                        _running = false;
+                        return null;
+                    }
+                    return _pending.Dequeue();
+                }
             }
         }
     }

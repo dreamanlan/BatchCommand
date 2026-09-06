@@ -38,7 +38,8 @@ namespace AgentCore.ScriptApi
 
     /// <summary>
     /// llm_set_provider_option(provider_id, key, value)
-    /// Sets a provider-specific option. Supported keys: max_tokens (claude only).
+    /// Sets a provider-specific option. Supported keys: max_tokens (claude only),
+    /// max_queue_len (per-session chat waiting-queue depth, default 10).
     /// Returns "ok" or an error string.
     /// </summary>
     sealed class LlmSetProviderOptionExp : SimpleExpressionBase
@@ -413,7 +414,7 @@ namespace AgentCore.ScriptApi
                 "llm_set_provider(provider_id, type, url, api_key, model) - configure LLM provider (type: openai/claude/auto_metadsl)",
                 new ExpressionFactoryHelper<LlmSetProviderExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("llm_set_provider_option",
-                "llm_set_provider_option(provider_id, key, value) - set provider option (e.g. max_tokens for claude)",
+                "llm_set_provider_option(provider_id, key, value) - set provider option (e.g. max_tokens for claude, max_queue_len for chat queue depth)",
                 new ExpressionFactoryHelper<LlmSetProviderOptionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_callback",
                 "llm_chat_callback(provider_id, tag, topic, message) - send message to LLM, full reply via llm_callback CEF message",

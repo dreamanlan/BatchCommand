@@ -175,6 +175,7 @@
   // state_machine.js save_conversation_history) but keyed by agentId: each
   // single-page freebie agent reports with its fixed module identity.
   const AGENT_ID = 'venus';
+  window.agentId = AGENT_ID;
 
   function notifyContextCountDown() {
     bridgeSendNotification('freebie_context_count_down', {
@@ -206,6 +207,9 @@
   function notifyConversationHistory(aiMsgEl) {
     if (!aiMsgEl) return;
     const assistantText = readAssistantHistoryText(aiMsgEl);
+    if (window.relayLite && window.relayLite.sendReply) {
+      window.relayLite.sendReply(assistantText);
+    }
     bridgeSendNotification('freebie_save_conversation_history', {
       agentId: AGENT_ID,
       conversations: [{ user: ST.lastSentPrompt || '', assistant: assistantText }]

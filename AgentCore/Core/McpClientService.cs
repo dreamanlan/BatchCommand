@@ -143,6 +143,12 @@ namespace AgentCore.Core
         private readonly ConcurrentDictionary<string, Dictionary<string, List<string>>> _pendingOptions = new();
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _reconnectLocks = new();
 
+        // Per-session serial queues for async callback calls (key = "serverId:tag").
+        // Each session runs its items one at a time; up to max_queue_len items may
+        // wait in line, and further submissions are rejected with "busy".
+        private readonly ConcurrentDictionary<string, McpSession> _sessions = new();
+        private const int c_defaultQueueSize = 10;
+
         // Busy-call tracking: records when each call became busy (for stuck detection)
         private readonly ConcurrentDictionary<string, bool> _busyCalls = new();
         private readonly ConcurrentDictionary<string, DateTime> _busySince = new();
@@ -380,94 +386,84 @@ namespace AgentCore.Core
             if (nativeApi == null)
                 return "error: nativeApi not available";
 
-            string callKey = $"{serverId}:{tag}";
-            if (_busyCalls.TryGetValue(callKey, out var busy) && busy)
-                return "busy";
-
-            _busyCalls[callKey] = true;
-            _busySince[callKey] = DateTime.UtcNow;
-            var cts = new CancellationTokenSource();
-            _activeCts[callKey] = cts;
-
-            Task.Run(async () =>
+            var session = GetSession(serverId, tag);
+            var item = new WorkItem
             {
-                try
+                ServerId = serverId,
+                Tag = tag,
+                Run = ct => ExecuteToolCall(serverId, toolName, argsJson, tag, ct),
+                Deliver = result => nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, result })
+            };
+            return Submit(session, item) ? "ok" : "busy";
+        }
+
+        /// <summary>
+        /// Performs a single MCP tool call (with auto-reconnect) and returns the
+        /// result text (or "[error] ...") . Used by the per-session queue worker.
+        /// </summary>
+        private async Task<string> ExecuteToolCall(string serverId, string toolName, string argsJson, string tag, CancellationToken token)
+        {
+            if (!_servers.TryGetValue(serverId, out var conn))
+                return $"[error] server '{serverId}' not connected";
+            try
+            {
+                object? args = null;
+                if (!string.IsNullOrWhiteSpace(argsJson) && argsJson != "{}")
                 {
-                    object? args = null;
-                    if (!string.IsNullOrWhiteSpace(argsJson) && argsJson != "{}")
-                    {
-                        using var doc = System.Text.Json.JsonDocument.Parse(argsJson);
-                        args = doc.RootElement.Clone();
-                    }
+                    using var doc = System.Text.Json.JsonDocument.Parse(argsJson);
+                    args = doc.RootElement.Clone();
+                }
 
-                    string req = JsonRpcHelper.BuildRequest("tools/call", new
-                    {
-                        name = toolName,
-                        arguments = args ?? new { }
-                    }, conn.NextId());
+                string req = JsonRpcHelper.BuildRequest("tools/call", new
+                {
+                    name = toolName,
+                    arguments = args ?? new { }
+                }, conn.NextId());
 
-                    // Auto-reconnect if transport is no longer connected (with lock to prevent concurrent reconnects)
-                    if (!conn.Transport.IsConnected)
+                // Auto-reconnect if transport is no longer connected (with lock to prevent concurrent reconnects)
+                if (!conn.Transport.IsConnected)
+                {
+                    var reconnectLock = _reconnectLocks.GetOrAdd(serverId, _ => new SemaphoreSlim(1, 1));
+                    await reconnectLock.WaitAsync();
+                    try
                     {
-                        var reconnectLock = _reconnectLocks.GetOrAdd(serverId, _ => new SemaphoreSlim(1, 1));
-                        await reconnectLock.WaitAsync();
-                        try
+                        if (_servers.TryGetValue(serverId, out var latest))
+                            conn = latest;
+                        if (!conn.Transport.IsConnected) // double-check inside lock
                         {
-                            if (_servers.TryGetValue(serverId, out var latest))
-                                conn = latest;
-                            if (!conn.Transport.IsConnected) // double-check inside lock
-                            {
-                                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
-                                string reconnResult = Connect(serverId, conn.Type, conn.Target);
-                                if (!reconnResult.StartsWith("ok"))
-                                {
-                                nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, $"[error] reconnect failed: {reconnResult}" });
-                                return;
-                                }
-                                if (!_servers.TryGetValue(serverId, out conn!))
-                                {
-                                nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, "[error] server not found after reconnect" });
-                                return;
-                                }
-                            }
-                            req = JsonRpcHelper.BuildRequest("tools/call", new
-                            {
-                                name = toolName,
-                                arguments = args ?? new { }
-                            }, conn.NextId());
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
+                            string reconnResult = Connect(serverId, conn.Type, conn.Target);
+                            if (!reconnResult.StartsWith("ok"))
+                                return $"[error] reconnect failed: {reconnResult}";
+                            if (!_servers.TryGetValue(serverId, out conn!))
+                                return "[error] server not found after reconnect";
                         }
-                        finally
+                        req = JsonRpcHelper.BuildRequest("tools/call", new
                         {
-                            reconnectLock.Release();
-                        }
+                            name = toolName,
+                            arguments = args ?? new { }
+                        }, conn.NextId());
                     }
-
-
-                    cts.Token.ThrowIfCancellationRequested();
-                    var sendTask = conn.Transport.SendRequestAsync(req);
-                    var cancelTask = Task.Delay(Timeout.Infinite, cts.Token);
-                    var completed = await Task.WhenAny(sendTask, cancelTask);
-                    if (completed == cancelTask)
-                        throw new OperationCanceledException("MCP tool call cancelled");
-                    string resp = await sendTask;
-                    string result = ExtractToolResult(resp);
-                    nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, result });
+                    finally
+                    {
+                        reconnectLock.Release();
+                    }
                 }
-                catch (Exception ex)
-                {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
-                    nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, $"[error] {ex.Message}" });
-                }
-                finally
-                {
-                    _busyCalls[callKey] = false;
-                    _busySince.TryRemove(callKey, out _);
-                    _activeCts.TryRemove(callKey, out var oldCts);
-                    oldCts?.Dispose();
-                }
-            });
 
-            return "ok";
+                token.ThrowIfCancellationRequested();
+                var sendTask = conn.Transport.SendRequestAsync(req);
+                var cancelTask = Task.Delay(Timeout.Infinite, token);
+                var completed = await Task.WhenAny(sendTask, cancelTask);
+                if (completed == cancelTask)
+                    throw new OperationCanceledException("MCP tool call cancelled");
+                string resp = await sendTask;
+                return ExtractToolResult(resp);
+            }
+            catch (Exception ex)
+            {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
+                return $"[error] {ex.Message}";
+            }
         }
 
         /// <summary>
@@ -578,6 +574,94 @@ namespace AgentCore.Core
                 return "ok";
             }
             return "error: call not active";
+        }
+
+        /// <summary>
+        /// Returns the per-session queue (creating it lazily). The queue depth
+        /// limit is refreshed from the server's max_queue_len option each call,
+        /// so changes via mcp_set_option take effect immediately.
+        /// </summary>
+        private McpSession GetSession(string serverId, string tag)
+        {
+            string sessionKey = $"{serverId}:{tag}";
+            var session = _sessions.GetOrAdd(sessionKey, k => new McpSession(k, GetMaxQueueLen(serverId)));
+            session.MaxQueue = GetMaxQueueLen(serverId);
+            return session;
+        }
+
+        /// <summary>
+        /// Enqueues a work item and starts the session worker if it is idle.
+        /// Returns false when the session queue is full (caller should report busy).
+        /// </summary>
+        private bool Submit(McpSession session, WorkItem item)
+        {
+            if (!session.TryEnqueue(item, out bool startWorker))
+                return false;
+            if (startWorker)
+                StartWorker(session);
+            return true;
+        }
+
+        /// <summary>
+        /// Drains a session's queue on a background task, running items one at a
+        /// time. Busy/cancellation tracking is maintained per running item so the
+        /// watchdog and mcp_cancel keep working as before.
+        /// </summary>
+        private void StartWorker(McpSession session)
+        {
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    var item = session.Dequeue();
+                    if (item == null)
+                        break;
+
+                    string sessionKey = session.Key;
+                    var cts = new CancellationTokenSource();
+                    _busyCalls[sessionKey] = true;
+                    _busySince[sessionKey] = DateTime.UtcNow;
+                    _activeCts[sessionKey] = cts;
+
+                    string result;
+                    try
+                    {
+                        result = await item.Run(cts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        result = $"[error] {ex.Message}";
+                    }
+                    finally
+                    {
+                        _busyCalls[sessionKey] = false;
+                        _busySince.TryRemove(sessionKey, out _);
+                        _activeCts.TryRemove(sessionKey, out var oldCts);
+                        oldCts?.Dispose();
+                    }
+
+                    try { item.Deliver(result); }
+                    catch (Exception ex)
+                    {
+                        AgentFrameworkService.Instance.Log($"[McpClientService] Deliver error for '{item.ServerId}/{item.Tag}': {ex.Message}");
+                    }
+                }
+            });
+        }
+
+        /// <summary>Reads max_queue_len option for a server (default c_defaultQueueSize).</summary>
+        private int GetMaxQueueLen(string serverId)
+        {
+            if (_pendingOptions.TryGetValue(serverId, out var opts))
+            {
+                lock (opts)
+                {
+                    if (opts.TryGetValue("max_queue_len", out var list) && list.Count > 0 &&
+                        int.TryParse(list[list.Count - 1], out var len) && len >= 0)
+                        return len;
+                }
+            }
+            return c_defaultQueueSize;
         }
 
         /// <summary>Reads max_busy_seconds option for a server (default 600s).</summary>
@@ -772,6 +856,75 @@ namespace AgentCore.Core
             }
 
             return result.Value.GetRawText();
+        }
+
+        /// <summary>A single queued MCP tool call.</summary>
+        private sealed class WorkItem
+        {
+            public string ServerId = "";
+            public string Tag = "";
+            public Func<CancellationToken, Task<string>> Run = _ => Task.FromResult("");
+            public Action<string> Deliver = _ => { };
+        }
+
+        /// <summary>
+        /// A per-session FIFO queue with a single active worker. At most one item
+        /// runs at a time; up to MaxQueue additional items may wait in line.
+        /// </summary>
+        private sealed class McpSession
+        {
+            public readonly string Key;
+            public int MaxQueue;
+            private readonly Queue<WorkItem> _pending = new();
+            private bool _running;
+
+            public McpSession(string key, int maxQueue)
+            {
+                Key = key;
+                MaxQueue = maxQueue;
+            }
+
+            /// <summary>
+            /// Enqueues an item. When the session is idle the item is accepted and
+            /// startWorker is set true. When busy the item is queued unless the
+            /// queue already holds MaxQueue waiting items, in which case false is
+            /// returned (caller should report busy).
+            /// </summary>
+            public bool TryEnqueue(WorkItem item, out bool startWorker)
+            {
+                startWorker = false;
+                lock (_pending)
+                {
+                    if (_running)
+                    {
+                        if (_pending.Count >= MaxQueue)
+                            return false;
+                        _pending.Enqueue(item);
+                        return true;
+                    }
+                    _pending.Enqueue(item);
+                    _running = true;
+                    startWorker = true;
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// Returns the next item, or null when the queue is empty (which also
+            /// marks the session idle so a future submit restarts a worker).
+            /// </summary>
+            public WorkItem? Dequeue()
+            {
+                lock (_pending)
+                {
+                    if (_pending.Count == 0)
+                    {
+                        _running = false;
+                        return null;
+                    }
+                    return _pending.Dequeue();
+                }
+            }
         }
     }
 }

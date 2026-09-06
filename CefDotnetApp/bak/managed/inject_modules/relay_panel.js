@@ -309,6 +309,17 @@ class RelayPanel {
       this._updateStatus(status);
     });
     ws.onMessage((data) => {
+      // WeChat QR code push: render floating image panel on page body
+      if (data.type === 'wx_qrcode') {
+        this._showWxQrcode(data.data);
+        return;
+      }
+      // WeChat status push: log with [wx] prefix
+      if (data.type === 'wx_status') {
+        const wxStatus = data.data || {};
+        this._chatLog('[wx] ' + wxStatus.status + (wxStatus.message ? ' ' + wxStatus.message : ''));
+        return;
+      }
       // Display server-push messages in chat log
       const msgText = data.content || data.text;
       if (data.type === 'message' && msgText) {
@@ -326,6 +337,16 @@ class RelayPanel {
           this._clickClearHistoryButton();
           return;
         }
+        if (cmd === '/wx_login' || cmd === '/wx_logout') {
+          this._chatLog('[wx] Received ' + cmd + ' command, sending to bridge');
+          const wsApi = window.Relay && window.Relay.ws;
+          if (wsApi && wsApi.sendCommand) {
+            wsApi.sendCommand(cmd === '/wx_login' ? 'wx_login' : 'wx_logout');
+          } else {
+            this._chatLog('[wx] sendCommand not available, bridge command ignored');
+          }
+          return;
+        }
         this._chatLog('[server] ' + msgText);
         // Remote mode: forward relay message to LLM (no agent marker)
         if (this.remoteEnabled && this.metadslWorker) {
@@ -338,6 +359,42 @@ class RelayPanel {
         this._chatLog('[server] ' + JSON.stringify(data));
       }
     });
+  }
+
+  _showWxQrcode(payload) {
+    let imgData = (payload && (payload.qrcode_img || payload.qrcodeimg)) || '';
+    if (!imgData) {
+      this._chatLog('[wx] QR code push received but image data is empty');
+      return;
+    }
+    if (imgData.indexOf('data:image') !== 0) {
+      imgData = 'data:image/png;base64,' + imgData;
+    }
+    let overlay = document.getElementById('wx-qrcode-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'wx-qrcode-overlay';
+      overlay.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
+        'z-index:99999;background:#fff;padding:16px;border-radius:8px;' +
+        'box-shadow:0 4px 24px rgba(0,0,0,0.35);font-family:sans-serif;text-align:center;';
+      const title = document.createElement('div');
+      title.textContent = 'WeChat Login QR Code';
+      title.style.cssText = 'margin-bottom:8px;font-size:14px;color:#333;';
+      const img = document.createElement('img');
+      img.id = 'wx-qrcode-img';
+      img.style.cssText = 'max-width:280px;max-height:280px;display:block;';
+      const btn = document.createElement('button');
+      btn.textContent = 'Close';
+      btn.style.cssText = 'margin-top:10px;padding:4px 16px;border:1px solid #ccc;' +
+        'border-radius:4px;background:#f5f5f5;cursor:pointer;';
+      btn.onclick = function () { overlay.remove(); };
+      overlay.appendChild(title);
+      overlay.appendChild(img);
+      overlay.appendChild(btn);
+      document.body.appendChild(overlay);
+    }
+    overlay.querySelector('#wx-qrcode-img').src = imgData;
+    this._chatLog('[wx] QR code received, shown in floating panel');
   }
 
   _updateStatus(status) {

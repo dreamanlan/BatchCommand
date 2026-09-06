@@ -47,8 +47,8 @@ help("file","dir","process","command","diff");
 ```
 // @execute
 $str = new_string_builder();
-append_format_line($str, "{0}", to_string(list_dirs(basepath)));
-append_format_line($str, "{0}", to_string(list_dirs(combine_path(basepath, "managed"))));
+append_line($str, to_string(list_dirs(basepath))); // 无格式化串使用append_line
+append_format_line($str, "{0}", to_string(list_dirs(combine_path(basepath, "managed")))); // 有格式化串使用append_format_line
 return(string_builder_to_string($str));
 ```
 

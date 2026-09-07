@@ -206,7 +206,40 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// agent_set_plan(port, value) - set the current plan text
+    /// agent_set_backlog(port, value) - set the current requirement text
+    /// </summary>
+    sealed class AgentSetBacklogExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_backlog requires (port, value)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            inst.Backlog = operands[1].AsString;
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    /// <summary>
+    /// agent_get_backlog(port) - get the current requirement text
+    /// </summary>
+    sealed class AgentGetBacklogExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_backlog requires (port)");
+                return BoxedValue.FromString(string.Empty);
+            }
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            return BoxedValue.FromString(inst.Backlog);
+        }
+    }
+
+    /// <summary>
+    /// agent_set_plan(port, value) - set the plan text
     /// </summary>
     sealed class AgentSetPlanExp : SimpleExpressionBase
     {
@@ -223,7 +256,7 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// agent_get_plan(port) - get the current plan text
+    /// agent_get_plan(port) - get the plan text
     /// </summary>
     sealed class AgentGetPlanExp : SimpleExpressionBase
     {
@@ -235,39 +268,6 @@ namespace AgentCore.ScriptApi
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.Plan);
-        }
-    }
-
-    /// <summary>
-    /// agent_set_todo(port, value) - set the todo text
-    /// </summary>
-    sealed class AgentSetToDoExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_todo requires (port, value)");
-                return BoxedValue.FromString("error: missing parameters");
-            }
-            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
-            inst.ToDo = operands[1].AsString;
-            return BoxedValue.FromString("ok");
-        }
-    }
-
-    /// <summary>
-    /// agent_get_todo(port) - get the todo text
-    /// </summary>
-    sealed class AgentGetToDoExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_todo requires (port)");
-                return BoxedValue.FromString(string.Empty);
-            }
-            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
-            return BoxedValue.FromString(inst.ToDo);
         }
     }
 
@@ -734,20 +734,20 @@ namespace AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("agent_get_soul",
                 "agent_get_soul(port) - get the soul text",
                 new ExpressionFactoryHelper<AgentGetSoulExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_backlog",
+                "agent_set_backlog(port, value) - set the current requirement text",
+                false,
+                new ExpressionFactoryHelper<AgentSetBacklogExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_backlog",
+                "agent_get_backlog(port) - get the current requirement text",
+                new ExpressionFactoryHelper<AgentGetBacklogExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("agent_set_plan",
-                "agent_set_plan(port, value) - set the current plan text",
+                "agent_set_plan(port, value) - set the plan text",
                 false,
                 new ExpressionFactoryHelper<AgentSetPlanExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("agent_get_plan",
-                "agent_get_plan(port) - get the current plan text",
+                "agent_get_plan(port) - get the plan text",
                 new ExpressionFactoryHelper<AgentGetPlanExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_todo",
-                "agent_set_todo(port, value) - set the todo text",
-                false,
-                new ExpressionFactoryHelper<AgentSetToDoExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_todo",
-                "agent_get_todo(port) - get the todo text",
-                new ExpressionFactoryHelper<AgentGetToDoExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("agent_set_context",
                 "agent_set_context(port, value) - set the context text",
                 false,

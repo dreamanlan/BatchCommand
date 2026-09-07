@@ -7,10 +7,36 @@ class AgentBridge {
     this.commandId = 0;
     this.callbacks = new Map();
     this.autoPlanEnabled = true; // Auto plan enabled by default
-    this.lockAgentEnabled = false; // Lock agent disabled by default
+    this._lockUntil = 0; // Lock deadline timestamp (ms); 0 means not locked
 
     // Initialize CEF native API
     this.initNativeApi();
+  }
+
+  // Lock agent state is driven by a deadline. It stays locked only until
+  // _lockUntil; reading it after the deadline auto-clears the lock.
+  get lockAgentEnabled() {
+    if (this._lockUntil > 0 && Date.now() >= this._lockUntil) {
+      this._lockUntil = 0;
+    }
+    return this._lockUntil > 0;
+  }
+
+  // Setting true locks for lockTimeMin minutes from now; false unlocks.
+  set lockAgentEnabled(val) {
+    if (val) {
+      const min = CONFIG.lockTimeMin || 0;
+      this._lockUntil = Date.now() + min * 60000;
+    } else {
+      this._lockUntil = 0;
+    }
+  }
+
+  get lockUntil() {
+    if (this._lockUntil > 0 && Date.now() >= this._lockUntil) {
+      this._lockUntil = 0;
+    }
+    return this._lockUntil;
   }
 
   initNativeApi() {
@@ -147,10 +173,10 @@ class AgentBridge {
         }
         return;
       case 'command':
-        if (decision.command === 'start_agent' && typeof window !== 'undefined'
+        if (decision.command === 'start_auto_plan' && typeof window !== 'undefined'
           && window.AgentAPI && typeof window.AgentAPI.startAgent === 'function') {
           window.AgentAPI.startAgent();
-        } else if (decision.command === 'stop_agent' && typeof window !== 'undefined'
+        } else if (decision.command === 'stop_auto_plan' && typeof window !== 'undefined'
           && window.AgentAPI && typeof window.AgentAPI.stopAgent === 'function') {
           window.AgentAPI.stopAgent();
         }

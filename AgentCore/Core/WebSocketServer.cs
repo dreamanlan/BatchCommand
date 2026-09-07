@@ -445,8 +445,8 @@ namespace AgentCore.Core
                             sb.AppendLine(inst.Soul);
                             sb.AppendLine();
                         }
-                        if (!string.IsNullOrEmpty(inst.ToDo)) {
-                            sb.AppendLine(inst.ToDo);
+                        if (!string.IsNullOrEmpty(inst.Plan)) {
+                            sb.AppendLine(inst.Plan);
                             sb.AppendLine();
                         }
                         if (!string.IsNullOrEmpty(inst.Context)) {

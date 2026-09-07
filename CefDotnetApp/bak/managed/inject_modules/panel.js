@@ -770,21 +770,6 @@ class AgentPanel {
     this.jsHotReloadButton.onclick = () => this.toggleJsHotReload();
     optionBar.appendChild(this.jsHotReloadButton);
 
-    // Lock Agent toggle button (default off)
-    this.lockAgentButton = document.createElement('button');
-    this.lockAgentButton.textContent = '\u2717 Lock Agent';
-    this.lockAgentButton.style.cssText = `
-        padding: 3px 7px;
-        background: #666;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 11px;
-      `;
-    this.lockAgentButton.onclick = () => this.toggleLockAgent();
-    optionBar.appendChild(this.lockAgentButton);
-
     this.panel.appendChild(optionBar);
 
     // LLM response timeout slider bar
@@ -834,6 +819,60 @@ class AgentPanel {
       const val = parseInt(timeoutSlider.value, 10);
       CONFIG.set('panel.llmResponseTimeoutMin', val);
       this.log('LLM response timeout set to ' + val + ' min');
+    });
+
+    // Lock Agent toggle button (default off) - shares the timeout row
+    this.lockAgentButton = document.createElement('button');
+    this.lockAgentButton.textContent = '\u2717 Lock Agent';
+    this.lockAgentButton.style.cssText = `
+        padding: 3px 7px;
+        background: #666;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        white-space: nowrap;
+      `;
+    this.lockAgentButton.onclick = () => this.toggleLockAgent();
+    timeoutBar.appendChild(this.lockAgentButton);
+
+    // Lock Time label
+    const lockTimeLabel = document.createElement('span');
+    lockTimeLabel.textContent = 'Lock Time';
+    lockTimeLabel.style.cssText = `white-space: nowrap;`;
+    timeoutBar.appendChild(lockTimeLabel);
+
+    // Lock Time slider (1 ~ 7200 minutes)
+    const lockTimeSlider = document.createElement('input');
+    lockTimeSlider.type = 'range';
+    lockTimeSlider.min = '1';
+    lockTimeSlider.max = '7200';
+    lockTimeSlider.step = '1';
+    lockTimeSlider.value = String(CONFIG.config.panel.lockTimeMin);
+    lockTimeSlider.style.cssText = `
+        flex: 1;
+        cursor: pointer;
+        accent-color: #ff5722;
+      `;
+    timeoutBar.appendChild(lockTimeSlider);
+
+    const lockTimeValue = document.createElement('span');
+    lockTimeValue.textContent = CONFIG.config.panel.lockTimeMin + ' min';
+    lockTimeValue.style.cssText = `min-width: 60px; text-align: right; white-space: nowrap;`;
+    timeoutBar.appendChild(lockTimeValue);
+
+    lockTimeSlider.addEventListener('input', () => {
+      const v = parseInt(lockTimeSlider.value, 10);
+      lockTimeValue.textContent = v + ' min';
+      // Update config live so a new lock uses the latest value
+      CONFIG.config.panel.lockTimeMin = v;
+      CONFIG.saveConfig();
+    });
+    lockTimeSlider.addEventListener('change', () => {
+      const val = parseInt(lockTimeSlider.value, 10);
+      CONFIG.set('panel.lockTimeMin', val);
+      this.log('Lock time set to ' + val + ' min');
     });
 
     this.panel.appendChild(timeoutBar);
@@ -948,6 +987,9 @@ class AgentPanel {
     if (!this.stateLabel || !this.stateInfo) {
       return;
     }
+
+    // Refresh lock agent button so auto-expiry is reflected in the UI
+    this.updateLockAgentButtonState();
 
     if (!this.metadslMonitor) {
       return;
@@ -1288,15 +1330,29 @@ class AgentPanel {
   }
 
   toggleLockAgent() {
-    this.bridge.lockAgentEnabled = !this.bridge.lockAgentEnabled;
     if (this.bridge.lockAgentEnabled) {
-      this.lockAgentButton.textContent = '✓ Lock Agent';
-      this.lockAgentButton.style.background = '#ff5722';
-      this.log('✓ Lock Agent enabled - stop_agent requests will be rejected');
+      this.bridge.lockAgentEnabled = false;
+      this.log('\u2717 Lock Agent disabled');
     } else {
-      this.lockAgentButton.textContent = '✗ Lock Agent';
+      this.bridge.lockAgentEnabled = true;
+      const min = CONFIG.lockTimeMin || 0;
+      const until = new Date(this.bridge.lockUntil).toLocaleTimeString();
+      this.log('\u2713 Lock Agent enabled for ' + min + ' min (until ' + until + ') - stop_auto_plan requests will be rejected');
+    }
+    this.updateLockAgentButtonState();
+  }
+
+  updateLockAgentButtonState() {
+    if (!this.lockAgentButton) {
+      return;
+    }
+    if (this.bridge.lockAgentEnabled) {
+      const remainMin = Math.max(0, Math.ceil((this.bridge.lockUntil - Date.now()) / 60000));
+      this.lockAgentButton.textContent = '\u2713 Lock Agent (' + remainMin + 'm)';
+      this.lockAgentButton.style.background = '#ff5722';
+    } else {
+      this.lockAgentButton.textContent = '\u2717 Lock Agent';
       this.lockAgentButton.style.background = '#666';
-      this.log('✗ Lock Agent disabled');
     }
   }
 

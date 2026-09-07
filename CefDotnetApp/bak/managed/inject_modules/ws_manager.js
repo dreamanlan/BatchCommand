@@ -146,78 +146,79 @@ class MetaDSLWorkerManager {
     if (data.type === 'message') {
       // Queue message from worker (WebSocket messages default to noAgentMarker=false)
       this.fromWorkerQueue.push({
-        message: data.data + "\n\nMetaDSL代码与结果不会存入历史，请简要复述本次执行要点以留存。", noAgentMarker: false });
+        message: data.data + "\n\n请简要复述本次执行要点以留存；同时发新的MetaDSL代码避免当前代码与结果在下轮消失后你变傻。", noAgentMarker: false
+      });
       this.logger.info('Message from worker queued (length: ' + data.data.length + '): ' + data.data.substring(0, 100) + '...');
-      } else if (data.type === 'connected') {
-        this.isConnected = true;
-        this.logger.info('MetaDSL Worker connected to server');
-      } else if (data.type === 'disconnected') {
-        this.isConnected = false;
-        this.logger.warn('MetaDSL Worker disconnected from server');
-        // Auto-reconnect if enabled
-        if (this.autoReconnect) {
-          this.scheduleReconnect();
-        }
-      } else if (data.type === 'error') {
-        this.isConnected = false;
-        this.logger.error('MetaDSL Worker error: ' + data.error);
-        // Auto-reconnect if enabled
-        if (this.autoReconnect) {
-          this.scheduleReconnect();
-        }
-      } else if (data.type === 'log') {
-        this.logger[data.level]('[Worker] ' + data.message, data.data);
+    } else if (data.type === 'connected') {
+      this.isConnected = true;
+      this.logger.info('MetaDSL Worker connected to server');
+    } else if (data.type === 'disconnected') {
+      this.isConnected = false;
+      this.logger.warn('MetaDSL Worker disconnected from server');
+      // Auto-reconnect if enabled
+      if (this.autoReconnect) {
+        this.scheduleReconnect();
       }
-    }
-
-    // Queue message to send via WebSocket (called by C#)
-    queueMessage(message) {
-      if (!this.isRunning) {
-        this.logger.warn('Cannot queue message: Worker not running');
-        return false;
+    } else if (data.type === 'error') {
+      this.isConnected = false;
+      this.logger.error('MetaDSL Worker error: ' + data.error);
+      // Auto-reconnect if enabled
+      if (this.autoReconnect) {
+        this.scheduleReconnect();
       }
-      this.toWorkerQueue.push(message);
-      this.logger.info('Message queued to send (length: ' + message.length + ', queue size: ' + this.toWorkerQueue.length + ')');
-      return true;
-    }
-
-    queueReply(message, noAgentMarker = false, channelId = null) {
-      if (!this.isRunning) {
-        this.logger.warn('Cannot queue reply: Worker not running');
-        return false;
-      }
-      this.fromWorkerQueue.push({ message: message, noAgentMarker: noAgentMarker, channelId: channelId });
-      this.logger.info('Reply queued (length: ' + message.length + ', noAgentMarker: ' + noAgentMarker + ', queue size: ' + this.fromWorkerQueue.length + ')');
-      return true;
-    }
-
-    // Dequeue message received from WebSocket
-    // Returns { message: string, noAgentMarker: boolean } or null
-    dequeueMessage() {
-      if (this.fromWorkerQueue.length > 0) {
-        const item = this.fromWorkerQueue.shift();
-        // Normalize: legacy string entries become { message, noAgentMarker: false }
-        if (typeof item === 'string') {
-          this.logger.info('Message dequeued (legacy string, length: ' + item.length + ', remaining: ' + this.fromWorkerQueue.length + ')');
-          return { message: item, noAgentMarker: false };
-        }
-        this.logger.info('Message dequeued (length: ' + item.message.length + ', noAgentMarker: ' + item.noAgentMarker + ', remaining: ' + this.fromWorkerQueue.length + ')');
-        return item;
-      }
-      return null;
-    }
-    // Get queue counts
-    getReceiveQueueCount() {
-      return this.fromWorkerQueue.length;
-    }
-
-    getSendQueueCount() {
-      return this.toWorkerQueue.length;
+    } else if (data.type === 'log') {
+      this.logger[data.level]('[Worker] ' + data.message, data.data);
     }
   }
 
-  // Create global MetaDSL Worker manager instance
-  const metadslWorker = new MetaDSLWorkerManager();
+  // Queue message to send via WebSocket (called by C#)
+  queueMessage(message) {
+    if (!this.isRunning) {
+      this.logger.warn('Cannot queue message: Worker not running');
+      return false;
+    }
+    this.toWorkerQueue.push(message);
+    this.logger.info('Message queued to send (length: ' + message.length + ', queue size: ' + this.toWorkerQueue.length + ')');
+    return true;
+  }
+
+  queueReply(message, noAgentMarker = false, channelId = null) {
+    if (!this.isRunning) {
+      this.logger.warn('Cannot queue reply: Worker not running');
+      return false;
+    }
+    this.fromWorkerQueue.push({ message: message, noAgentMarker: noAgentMarker, channelId: channelId });
+    this.logger.info('Reply queued (length: ' + message.length + ', noAgentMarker: ' + noAgentMarker + ', queue size: ' + this.fromWorkerQueue.length + ')');
+    return true;
+  }
+
+  // Dequeue message received from WebSocket
+  // Returns { message: string, noAgentMarker: boolean } or null
+  dequeueMessage() {
+    if (this.fromWorkerQueue.length > 0) {
+      const item = this.fromWorkerQueue.shift();
+      // Normalize: legacy string entries become { message, noAgentMarker: false }
+      if (typeof item === 'string') {
+        this.logger.info('Message dequeued (legacy string, length: ' + item.length + ', remaining: ' + this.fromWorkerQueue.length + ')');
+        return { message: item, noAgentMarker: false };
+      }
+      this.logger.info('Message dequeued (length: ' + item.message.length + ', noAgentMarker: ' + item.noAgentMarker + ', remaining: ' + this.fromWorkerQueue.length + ')');
+      return item;
+    }
+    return null;
+  }
+  // Get queue counts
+  getReceiveQueueCount() {
+    return this.fromWorkerQueue.length;
+  }
+
+  getSendQueueCount() {
+    return this.toWorkerQueue.length;
+  }
+}
+
+// Create global MetaDSL Worker manager instance
+const metadslWorker = new MetaDSLWorkerManager();
 
 // Listen for postMessage and queue string messages as replies to LLM
 window.addEventListener('message', (event) => {

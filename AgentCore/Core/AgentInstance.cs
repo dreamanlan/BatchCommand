@@ -19,8 +19,8 @@ namespace AgentCore.Core
         public string ProjectPrompt { get; set; } = string.Empty;
         public string Emphasize { get; set; } = string.Empty;
         public string Soul { get; set; } = string.Empty;
+        public string Backlog { get; set; } = string.Empty;
         public string Plan { get; set; } = string.Empty;
-        public string ToDo { get; set; } = string.Empty;
         public string Context { get; set; } = string.Empty;
         public string History { get; set; } = string.Empty;
         public string InjectJsCode { get; set; } = string.Empty;

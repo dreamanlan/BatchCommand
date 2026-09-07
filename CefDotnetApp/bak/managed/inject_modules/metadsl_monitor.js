@@ -28,6 +28,11 @@ class MetaDSLMonitor {
     this.isProcessingQueue = false;
     this.pageStableDelay = CONFIG.config.panel.streamingPage ? CONFIG.pageStableDelay : 1500;
     this.operationDelay = CONFIG.operationDelay;
+    // Timeout fallback for onPageStable's unrendered-fence wait: if a residual
+    // (unpairable / malformed) code fence lingers, count retries and force-continue
+    // after the limit to avoid a permanent deadlock (no self-heal).
+    this.unrenderedFenceRetryCount = 0;
+    this.unrenderedFenceRetryLimit = 3;
 
     // Block ID cache for stable ID generation
     this.blockIdCache = new WeakMap();
@@ -238,7 +243,7 @@ class MetaDSLMonitor {
     this.enqueueOperation(operation);
   }
 
-  startAgent() {
+  startAutoPlan() {
     if (this.panel.bridge.autoPlanEnabled) {
       this.sendResultToLLM('Agent already started');
       return;
@@ -246,7 +251,7 @@ class MetaDSLMonitor {
     this.panel.toggleAutoPlan();
     this.sendResultToLLM('Agent started');
   }
-  stopAgent() {
+  stopAutoPlan() {
     if (this.panel.bridge.lockAgentEnabled) {
       this.sendResultToLLM('Lock Agent is ON: user has set long-term development mode, agent planning must not be stopped.');
       return;
@@ -778,10 +783,20 @@ class MetaDSLMonitor {
 
     // Check if markdown rendering is complete by looking for unrendered code fences
     if (this.hasUnrenderedCodeFences()) {
-      this.info('Markdown code blocks not fully rendered yet, waiting...');
-      this.resetPageStableTimer();
-      return;
+      this.unrenderedFenceRetryCount++;
+      if (this.unrenderedFenceRetryCount < this.unrenderedFenceRetryLimit) {
+        this.info(`Markdown code blocks not fully rendered yet, waiting... (retry ${this.unrenderedFenceRetryCount}/${this.unrenderedFenceRetryLimit})`);
+        this.resetPageStableTimer();
+        return;
+      }
+      // Timeout fallback: LLM has already stopped generating (checked above), so a
+      // fence that still lingers is a malformed/unpairable one that will never render
+      // (e.g. a ``` glued to the end of a prose line). Force-continue to self-heal
+      // instead of deadlocking forever.
+      this.warn(`Unrendered fence marker(s) persisted after ${this.unrenderedFenceRetryLimit} retries; forcing continue to avoid deadlock`);
     }
+    // Reached a stable, scannable state: reset the fence retry counter for the next round.
+    this.unrenderedFenceRetryCount = 0;
 
     // Validate MetaDSL formatting in the latest LLM response before scanning code blocks.
     // On failure, feedback is sent to LLM and code block scan is skipped for this round
@@ -1385,7 +1400,10 @@ class MetaDSLMonitor {
    * would look like plain text and its formatting error would go unreported.
    */
   stripMetaDSLMarker(code) {
-    const sourceCode = String(code || '').replace(/^\uFEFF/, '');
+    // Strip BOM and any leading blank lines so the marker is matched against the
+    // first non-blank line (mirrors the page adapters' hasExecuteMarker), avoiding
+    // a false miss when the code block starts with an empty line.
+    const sourceCode = String(code || '').replace(/^\uFEFF/, '').replace(/^(?:[ \t]*\r?\n)+/, '');
     const firstNewline = sourceCode.indexOf('\n');
     const firstLine = firstNewline === -1
       ? sourceCode
@@ -1399,7 +1417,9 @@ class MetaDSLMonitor {
   extractMetaDSLCode(code) {
     if (!code) return null;
 
-    const sourceCode = String(code).replace(/^\uFEFF/, '');
+    // Strip BOM and any leading blank lines so the marker is matched against the
+    // first non-blank line, avoiding a false miss when the block starts blank.
+    const sourceCode = String(code).replace(/^\uFEFF/, '').replace(/^(?:[ \t]*\r?\n)+/, '');
     const firstNewline = sourceCode.indexOf('\n');
     const firstLine = firstNewline === -1
       ? sourceCode
@@ -1509,12 +1529,12 @@ class MetaDSLMonitor {
         }
         this.info('JavaScript request detected:', jsRequest);
 
-        if (jsRequest === "start_agent") {
-          this.startAgent();
+        if (jsRequest === "start_auto_plan") {
+          this.startAutoPlan();
           return;
         }
-        else if (jsRequest === "stop_agent") {
-          this.stopAgent();
+        else if (jsRequest === "stop_auto_plan") {
+          this.stopAutoPlan();
           return;
         }
         else if (jsRequest === "keep_llm_context") {

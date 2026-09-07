@@ -263,7 +263,10 @@
       if (!hasExecuteMarker(raw)) return;
       const parent = blk.parentNode;
       if (!parent) return;
-      const placeholder = document.createTextNode('\n[...metadsl...]\n');
+      const _mdLines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
+      if (_mdLines.length && _mdLines[_mdLines.length - 1] === '') _mdLines.pop();
+      const _mdBody = _mdLines.slice(0, 30).join('\n') + (_mdLines.length > 30 ? '\n...' : '');
+      const placeholder = document.createTextNode('\n```\n' + _mdBody + '\n```\n');
       parent.replaceChild(placeholder, blk);
     });
     return clone.textContent || '';
@@ -421,7 +424,7 @@
     if (!text) return;
     if (ST.execInflight && ST.execInflight[slotId] > 0) ST.execInflight[slotId]--;
     if (!ST.pendingResults[slotId]) ST.pendingResults[slotId] = [];
-    ST.pendingResults[slotId].push(text + "\n\nMetaDSL代码与结果不会存入历史，请简要复述本次执行要点以留存。");
+    ST.pendingResults[slotId].push(text + "\n\n请简要复述本次执行要点以留存；同时发新的MetaDSL代码避免当前代码与结果在下轮消失后你变傻。");
     scheduleFlush();
   }
 
@@ -634,25 +637,25 @@
     chatSend(text, true);
   }
 
-  // Unlike sendPromptToChat, todo is always sent as a chat message, never
+  // Unlike sendPromptToChat, plan is always sent as a chat message, never
   // routed through the settings dialog, and is recorded as a user prompt.
-  function sendTodo() {
+  function sendPlan() {
     if (typeof callMetaDSL !== 'function') {
-      warn('[todo] callMetaDSL unavailable, skip');
+      warn('[plan] callMetaDSL unavailable, skip');
       return;
     }
     let text = '';
     try {
-      text = callMetaDSL('get_todo', AGENT_ID);
+      text = callMetaDSL('get_plan', AGENT_ID);
     } catch (e) {
-      err('[todo] call get_todo failed', e);
+      err('[plan] call get_plan failed', e);
       return;
     }
     if (!text || typeof text !== 'string' || !text.trim()) {
-      warn('[todo] get_todo returned empty, skip');
+      warn('[plan] get_plan returned empty, skip');
       return;
     }
-    log(`[todo] send (${text.length} chars)`);
+    log(`[plan] send (${text.length} chars)`);
     chatSend(text);
   }
 
@@ -805,7 +808,7 @@
       <div style="display:flex; gap:4px;">
         <button data-act="identity" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#1976d2; color:#fff; border:none; border-radius:3px;" ${blind ? '' : 'disabled'}>identity</button>
         <button data-act="prompt"   style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#7b1fa2; color:#fff; border:none; border-radius:3px;">prompt</button>
-        <button data-act="todo"     style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#00695c; color:#fff; border:none; border-radius:3px;">todo</button>
+        <button data-act="plan"     style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#00695c; color:#fff; border:none; border-radius:3px;">plan</button>
       </div>
     `;
     body.querySelectorAll('button[disabled]').forEach(b => {
@@ -835,7 +838,7 @@
         else if (act === 'resume') manualResume();
         else if (act === 'identity') sendIdentity();
         else if (act === 'prompt') sendPromptToChat();
-        else if (act === 'todo') sendTodo();
+        else if (act === 'plan') sendPlan();
         else if (act === 'longrun') {
           ST.longRunMode = !ST.longRunMode;
           log(`[longrun] ${ST.longRunMode ? 'enabled' : 'disabled'}`);

@@ -198,7 +198,10 @@
       if (!hasExecuteMarker(raw)) return;
       const parent = blk.parentNode;
       if (!parent) return;
-      const placeholder = document.createTextNode('\n[...metadsl...]\n');
+      const _mdLines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
+      if (_mdLines.length && _mdLines[_mdLines.length - 1] === '') _mdLines.pop();
+      const _mdBody = _mdLines.slice(0, 30).join('\n') + (_mdLines.length > 30 ? '\n...' : '');
+      const placeholder = document.createTextNode('\n```\n' + _mdBody + '\n```\n');
       parent.replaceChild(placeholder, blk);
     });
     return clone.textContent || '';
@@ -331,7 +334,7 @@
     log(`[ws] recv ${text.length}B`);
     if (!text) return;
     if (ST.execInflight > 0) ST.execInflight--;
-    ST.pendingResults.push(text + "\n\nMetaDSL代码与结果不会存入历史，请简要复述本次执行要点以留存。");
+    ST.pendingResults.push(text + "\n\n请简要复述本次执行要点以留存；同时发新的MetaDSL代码避免当前代码与结果在下轮消失后你变傻。");
     scheduleFlush();
   }
 
@@ -592,7 +595,7 @@
     const row4 = document.createElement('div');
     row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
     const btnP = mkBtn('Prompt', () => sendPrompt());
-    const btnTodo = mkBtn('todo', () => sendTodo());
+    const btnTodo = mkBtn('plan', () => sendPlan());
     row4.appendChild(btnP);
     row4.appendChild(btnTodo);
     body.appendChild(row4);
@@ -624,15 +627,15 @@
     log('[prompt] setSystemPrompt ' + (ok ? 'OK' : 'FAIL') + ' (' + String(txt).length + ' chars)');
   }
 
-  // Unlike sendPrompt, todo goes through the chat input instead of the
+  // Unlike sendPrompt, plan goes through the chat input instead of the
   // system-prompt settings dialog.
-  function sendTodo() {
+  function sendPlan() {
     let txt = '';
-    try { txt = callMetaDSL('get_todo', AGENT_ID) || ''; }
-    catch (e) { log('[todo] callMetaDSL error: ' + (e && e.message)); return; }
-    if (!txt || !String(txt).trim()) { log('[todo] empty, skip'); return; }
+    try { txt = callMetaDSL('get_plan', AGENT_ID) || ''; }
+    catch (e) { log('[plan] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[plan] empty, skip'); return; }
     chatSend(String(txt));
-    log('[todo] sent (' + String(txt).length + ' chars)');
+    log('[plan] sent (' + String(txt).length + ' chars)');
   }
 
   function setSystemPrompt(text) {

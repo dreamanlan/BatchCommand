@@ -285,16 +285,16 @@ script(get_with_prompt)params()
     $withPrompt = read_file(combine_path(basepath,"docs/with_prompt.txt"));
     return(format("{0}",$withPrompt));
 };
-script(get_todo)params($agentId)
+script(get_plan)params($agentId)
 {
     // $agentId is a key of @AgentPorts (see init_global_consts), e.g. "imate".
-    // Unlike the prompt files under basepath/docs, todo.txt lives in the
+    // Unlike the prompt files under basepath/docs, plan.txt lives in the
     // per-agent project directory set by agent_set_project_dir.
     $port = hashtableget(@AgentPorts, $agentId);
     $dir = agent_get_project_dir($port);
     $soulPrompt = read_file(combine_path($dir, "docs/soul.md"));
-    $todoPrompt = read_file(combine_path($dir, "docs/todo.txt"));
-    return(format("{0}\n\n{1}", $soulPrompt, $todoPrompt));
+    $planPrompt = read_file(combine_path($dir, "docs/plan.txt"));
+    return(format("{0}\n\n{1}", $soulPrompt, $planPrompt));
 };
 
 // Handle nativelog batch
@@ -865,12 +865,12 @@ script(handle_agent_notification)params($jsonData)
         trigger_freebie_reflection($port);
         save_freebie_context($count, $port);
 
-        $todoFile = combine_path($projectDirectory, "docs/todo.txt");
-        $time1 = get_file_last_write_time($todoFile);
+        $planFile = combine_path($projectDirectory, "docs/plan.txt");
+        $time1 = get_file_last_write_time($planFile);
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展使用MetaDSL更新到todo.txt（页面浏览器本地，非远端工作空间）后再继续工作了，同时清理已完成todo";
+            $prompt = "可以将最新进展使用MetaDSL更新到plan.txt（页面浏览器本地，非远端工作空间）后再继续工作，同时清理已完成plan条目";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -895,7 +895,7 @@ script(handle_agent_notification)params($jsonData)
         $legionnaireHistory = $projectIdentity + "_legionnaire_history";
         $episodicMemory = $projectIdentity + "_episodic_memory";
 
-        agent_set_todo($port, read_file(combine_path($projectDirectory, "docs/todo.txt")));
+        agent_set_plan($port, read_file(combine_path($projectDirectory, "docs/plan.txt")));
         agent_set_context($port, read_file(combine_path($projectDirectory, "docs/context.txt")));
 
         // The sqlite writes and the history file update are handed to a background worker.
@@ -943,7 +943,7 @@ script(handle_agent_notification)params($jsonData)
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
         if (agent_is_context_injection_enabled($port) && agent_add_cur_context_rounds($port) == 0) {
-            $prompt = format("【todo】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_todo($port), agent_get_context($port), agent_get_history($port));
+            $prompt = format("【计划】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_plan($port), agent_get_context($port), agent_get_history($port));
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }

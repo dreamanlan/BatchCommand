@@ -118,9 +118,9 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
     $cmdLine.AppendSwitch("disable-backgrounding-occluded-windows");
 
     //--disable-chrome-login-prompt --proxy-pac-url=http://www.gamexyz.net/google_proxy.pac --ignore-certificate-errors-spki-list=2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=
-    $cmdLine.AppendSwitch("disable-chrome-login-prompt");
-    $cmdLine.AppendSwitchWithValue("proxy-pac-url", "http://www.gamexyz.net/google_proxy.pac");
-    $cmdLine.AppendSwitchWithValue("ignore-certificate-errors-spki-list", "2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=");
+    //$cmdLine.AppendSwitch("disable-chrome-login-prompt");
+    //$cmdLine.AppendSwitchWithValue("proxy-pac-url", "http://www.gamexyz.net/google_proxy.pac");
+    //$cmdLine.AppendSwitchWithValue("ignore-certificate-errors-spki-list", "2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=");
 
     // Override user-agent-product to look like standard Chrome
     $cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/150.0.7871.187");
@@ -353,16 +353,16 @@ script(get_with_prompt)params()
     $withPrompt = read_file(combine_path(basepath,"docs/with_prompt.txt"));
     return(format("{0}",$withPrompt));
 };
-script(get_todo)params($agentId)
+script(get_plan)params($agentId)
 {
     // $agentId is a key of @AgentPorts (see init_global_consts), e.g. "imate".
-    // Unlike the prompt files under basepath/docs, todo.txt lives in the
+    // Unlike the prompt files under basepath/docs, plan.txt lives in the
     // per-agent project directory set by agent_set_project_dir.
     $port = hashtableget(@AgentPorts, $agentId);
     $dir = agent_get_project_dir($port);
     $soulPrompt = read_file(combine_path($dir, "docs/soul.md"));
-    $todoPrompt = read_file(combine_path($dir, "docs/todo.txt"));
-    return(format("{0}\n\n{1}", $soulPrompt, $todoPrompt));
+    $planPrompt = read_file(combine_path($dir, "docs/plan.txt"));
+    return(format("{0}\n\n{1}", $soulPrompt, $planPrompt));
 };
 
 // Handle nativelog batch
@@ -409,9 +409,9 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
     nativelog("[dsl] llm_callback: provider={0} tag={1} topic={2} reply_len={3} operation={4} send={5} receive={6} active_workers={7}", $providerId, $tag, $topic, strlen($reply), $operationQueueCount, $sendQueueCount, $receiveQueueCount, $activeWorkers);
 
     if ($tag == "llm_pm_align") {
-        $todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
-        write_file($todoFile, $reply);
-        agent_set_todo(@AgentPort, $reply);
+        $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
+        write_file($planFile, $reply);
+        agent_set_plan(@AgentPort, $reply);
         llm_clear_history(@LlmProviderId, $tag);
     }
     elif ($tag == "reflection") {
@@ -711,8 +711,8 @@ script(update_system_prompt)params($pageType,$isFirst)
     $emphasizeFile = combine_path(basepath, "docs/emphasize.txt");
     $soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
     $projectPromptFile = combine_path(@ProjectDirectory, "docs/project_prompt.txt");
+    $backlogFile = combine_path(@ProjectDirectory, "docs/backlog.txt");
     $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
-    $todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
     $contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
     $historyFile = combine_path(@ProjectDirectory, "docs/history.txt");
 
@@ -721,8 +721,8 @@ script(update_system_prompt)params($pageType,$isFirst)
     $emphasize = read_file($emphasizeFile);
     $soul = read_file($soulFile);
     $projectPrompt = read_file($projectPromptFile);
+    $backlog = read_file($backlogFile);
     $plan = read_file($planFile);
-    $todo = read_file($todoFile);
     $context = read_file($contextFile);
     $history = read_file($historyFile);
 
@@ -731,15 +731,15 @@ script(update_system_prompt)params($pageType,$isFirst)
     nativelog("[dsl] Emphasize length: {0}", $emphasize.Length);
     nativelog("[dsl] Soul length: {0}", $soul.Length);
     nativelog("[dsl] Project prompt length: {0}", $projectPrompt.Length);
+    nativelog("[dsl] Backlog length: {0}", $backlog.Length);
     nativelog("[dsl] Plan length: {0}", $plan.Length);
-    nativelog("[dsl] Todo length: {0}", $todo.Length);
     nativelog("[dsl] Context length: {0}", $context.Length);
     nativelog("[dsl] History length: {0}", $history.Length);
 
     $llmCategory = nativeapi.CallJavascriptFuncInRenderer("window.AgentAPI.getLLMCategory",[]);
     //now we use dynamic system prompts
     if ($pageType == "local-agent") {
-        $prompt = $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $todo + "\n\n" + $context;
+        $prompt = $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $plan + "\n\n" + $context;
         if ($isFirst) {
             $prompt = $prompt + "\n\n" + $history;
         };
@@ -747,7 +747,7 @@ script(update_system_prompt)params($pageType,$isFirst)
             $prompt = $foundationPrompt + "\n\n" + $toplevelRules + "\n\n" + $prompt;
         };
     } else {
-        $prompt = $foundationPrompt + "\n\n" + $toplevelRules + "\n\n" + $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $todo + "\n\n" + $context + "\n\n" + $history;
+        $prompt = $foundationPrompt + "\n\n" + $toplevelRules + "\n\n" + $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $plan + "\n\n" + $context + "\n\n" + $history;
     };
     agent_set_foundation_prompt(@AgentPort, $foundationPrompt);
     agent_set_project_prompt(@AgentPort, $projectPrompt);
@@ -755,8 +755,8 @@ script(update_system_prompt)params($pageType,$isFirst)
     if ($isFirst) {
         agent_set_emphasize(@AgentPort, $emphasize);
         agent_set_soul(@AgentPort, $soul);
+        agent_set_backlog(@AgentPort, $backlog);
         agent_set_plan(@AgentPort, $plan);
-        agent_set_todo(@AgentPort, $todo);
         agent_set_context(@AgentPort, $context);
         agent_set_history(@AgentPort, $history);
     };
@@ -870,19 +870,19 @@ script(induction_decision)params($lastMsg,$autoPlan,$lockAgent)
     };
 };
 
-script(induction_todo)params($count,$pageType)
+script(induction_plan)params($count,$pageType)
 {
-    $todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
+    $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
     // Load recent conversation history from semantic index
     $conversationHistory = to_pretty_string(semantic_get_recent(@LegionnaireHistory, $count));
 
-    $todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
+    $planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
     $contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
 
     $prompt = format("【以下是最近的待办事项】：\n{0}\n" +
         "【以下是最近上下文信息】：\n{1}\n" +
-        "【以下是最近对话历史】：\n{2}", $todoHistory, $contextHistory, $conversationHistory);
-    $prompt = format("{0}\n\n根据以上信息，复述当前todo工作，只以事实为准更新完成状态，缺少相关信息默认未完成，" +
+        "【以下是最近对话历史】：\n{2}", $planHistory, $contextHistory, $conversationHistory);
+    $prompt = format("{0}\n\n根据以上信息，复述当前plan工作，只以事实为准更新完成状态，缺少相关信息默认未完成，" +
         "已完成内容使用简要描述条目并标记完成状态，当前工作保留详细信息（工作介绍与进展细节），未完成工作保留条目信息" +
         "（一次回复输出完成,字数控制到300~500字左右）。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $prompt);
 
@@ -891,28 +891,28 @@ script(induction_todo)params($count,$pageType)
     }
     else {
         $prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
-            "记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $todoFile);
+            "记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $planFile);
         send_command_to_inject("send_message", to_json({text: $prompt}));
     };
 };
 
 script(trigger_plan)params($autoPlan,$lockAgent)
 {
-    $planPath = combine_path(@ProjectDirectory, "docs/plan.txt");
+    $backlogPath = combine_path(@ProjectDirectory, "docs/backlog.txt");
     $soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
 
     agent_set_soul(@AgentPort, read_file($soulPath));
 
     nativelog("[dsl] trigger_plan: auto_plan:{0} lock_agent:{1}", $autoPlan, $lockAgent);
 
-    if (file_exists($planPath) && $autoPlan) {
+    if (file_exists($backlogPath) && $autoPlan) {
         nativelog("[dsl] plan triggered");
 
         if ($lockAgent) {
-            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新plan.txt状态；同时清理已经完成的plan与不在plan里的todo，然后选取计划工作更新todo.txt后继续";
+            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新需求库backlog.txt与计划plan.txt状态（清理backlog条目，更新plan条目状态），然后选取新工作更新plan.txt后继续";
         }
         else {
-            $prompt = "没有识别到代码。请更新todo.txt与plan.txt状态；同时清理已经完成的plan与不在plan里的todo。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止agent以避免重复提醒";
+            $prompt = "没有识别到代码。请更新需求库backlog.txt与计划plan.txt状态（清理backlog条目，更新plan条目状态）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
         };
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }
@@ -927,10 +927,10 @@ script(trigger_reflection)params()
 
     // Collect recent conversation history
     $legionnaireHistory = getstringinlength(to_pretty_string(semantic_get_recent(@LegionnaireHistory, 20)), 75 * 1024, 1);
-    $todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
+    $planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
     $contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
 
-    $prompt = format("【最近对话历史】：\n{0}\n\n【当前待办】：\n{1}\n\n【当前上下文】：\n{2}", $legionnaireHistory, $todoHistory, $contextHistory);
+    $prompt = format("【最近对话历史】：\n{0}\n\n【当前待办】：\n{1}\n\n【当前上下文】：\n{2}", $legionnaireHistory, $planHistory, $contextHistory);
 
     // Set reflection system prompt
     $sysPrompt = read_file(combine_path(basepath, "docs/reflection_prompt.txt"));
@@ -1464,12 +1464,12 @@ script(handle_agent_notification)params($jsonData)
         trigger_freebie_reflection($port);
         save_freebie_context($count, $port);
 
-        $todoFile = combine_path($projectDirectory, "docs/todo.txt");
-        $time1 = get_file_last_write_time($todoFile);
+        $planFile = combine_path($projectDirectory, "docs/plan.txt");
+        $time1 = get_file_last_write_time($planFile);
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展使用MetaDSL更新到todo.txt（页面浏览器本地，非远端工作空间）后再继续工作了，同时清理已完成todo";
+            $prompt = "可以将最新进展使用MetaDSL更新到plan.txt（页面浏览器本地，非远端工作空间）后再继续工作，同时清理已完成plan条目";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -1494,7 +1494,7 @@ script(handle_agent_notification)params($jsonData)
         $legionnaireHistory = $projectIdentity + "_legionnaire_history";
         $episodicMemory = $projectIdentity + "_episodic_memory";
 
-        agent_set_todo($port, read_file(combine_path($projectDirectory, "docs/todo.txt")));
+        agent_set_plan($port, read_file(combine_path($projectDirectory, "docs/plan.txt")));
         agent_set_context($port, read_file(combine_path($projectDirectory, "docs/context.txt")));
 
         // The sqlite writes and the history file update are handed to a background worker.
@@ -1542,7 +1542,7 @@ script(handle_agent_notification)params($jsonData)
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
         if (agent_is_context_injection_enabled($port) && agent_add_cur_context_rounds($port) == 0) {
-            $prompt = format("【todo】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_todo($port), agent_get_context($port), agent_get_history($port));
+            $prompt = format("【计划】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_plan($port), agent_get_context($port), agent_get_history($port));
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -1572,7 +1572,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展更新到plan.txt后再继续计划工作了，同时清理已完成plan（不要停agent!）";
+            $prompt = "可以将最新进展更新到plan.txt后再继续工作，同时清理已完成plan条目（不要停自动计划!）";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -1585,7 +1585,7 @@ script(handle_agent_notification)params($jsonData)
 
         nativelog("[dsl] llm_align_target pageType: {0}, count: {1}", $pageType, $count);
 
-        induction_todo($count, $pageType);
+        induction_plan($count, $pageType);
     }
     elif ($type == "episodic_reflection") {
         nativelog("[dsl] episodic_reflection notification received");
@@ -1599,8 +1599,8 @@ script(handle_agent_notification)params($jsonData)
         $pageType = get_message_param($data, "pageType");
         $count = size($conversations);
 
+        agent_set_backlog(@AgentPort, read_file(combine_path(@ProjectDirectory, "docs/backlog.txt")));
         agent_set_plan(@AgentPort, read_file(combine_path(@ProjectDirectory, "docs/plan.txt")));
-        agent_set_todo(@AgentPort, read_file(combine_path(@ProjectDirectory, "docs/todo.txt")));
         agent_set_context(@AgentPort, read_file(combine_path(@ProjectDirectory, "docs/context.txt")));
 
         // Same split as the freebie branch: the sqlite writes and the history file update
@@ -1645,7 +1645,7 @@ script(handle_agent_notification)params($jsonData)
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
         if (agent_is_context_injection_enabled(@AgentPort) && agent_add_cur_context_rounds(@AgentPort) == 0) {
-            $prompt = format("【todo】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_todo(@AgentPort), agent_get_context(@AgentPort), agent_get_history(@AgentPort));
+            $prompt = format("【plan】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_plan(@AgentPort), agent_get_context(@AgentPort), agent_get_history(@AgentPort));
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
 

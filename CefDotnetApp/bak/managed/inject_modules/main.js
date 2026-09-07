@@ -269,12 +269,12 @@ window.onAgentCommand = function (commandJson) {
       return;
     }
 
-    if (cmd.command === 'start_agent') {
+    if (cmd.command === 'start_auto_plan') {
       this.AgentAPI.startAgent();
       return;
     }
 
-    if (cmd.command === 'stop_agent') {
+    if (cmd.command === 'stop_auto_plan') {
       this.AgentAPI.stopAgent();
       return;
     }

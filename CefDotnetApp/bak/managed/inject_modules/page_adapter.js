@@ -134,6 +134,20 @@ class PageAdapter {
   // Detection: <code data-metadsl-status="..."> (attached synchronously by
   // metadsl_monitor); a <pre> that contains such a code element is also
   // treated as a whole block.
+  // Collapse a MetaDSL code block for history/context: keep the first 30 lines
+  // (enough for the LLM to recall what it did) and append a "..." line when the
+  // code is longer, wrapped in a fenced code block (``` on their own lines).
+  // Replaces the old fixed "[...metadsl...]" placeholder, which starved the LLM
+  // of context and made it noticeably less effective across rounds.
+  collapseMetaDSLForHistory(codeText) {
+    const lines = String(codeText || '').replace(/\r\n?/g, '\n').split('\n');
+    if (lines.length && lines[lines.length - 1] === '') lines.pop();
+    const MAX_LINES = 30;
+    const kept = lines.slice(0, MAX_LINES);
+    if (lines.length > MAX_LINES) kept.push('...');
+    return '```\n' + kept.join('\n') + '\n```';
+  }
+
   getVisibleTextForHistory(el) {
     let text = '';
     for (const node of el.childNodes) {
@@ -148,7 +162,9 @@ class PageAdapter {
       const isMetadslCode = tag === 'CODE' && node.dataset && node.dataset.metadslStatus;
       const isMetadslPre = tag === 'PRE' && node.querySelector('code[data-metadsl-status]');
       if (isMetadslCode || isMetadslPre) {
-        text += '\n[...metadsl...]\n';
+        const codeEl = isMetadslCode ? node : node.querySelector('code[data-metadsl-status]');
+        const codeText = codeEl ? codeEl.textContent : node.textContent;
+        text += '\n' + this.collapseMetaDSLForHistory(codeText) + '\n';
         continue;
       }
       text += this.getVisibleTextForHistory(node);

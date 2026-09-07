@@ -178,7 +178,7 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 **其它工具**
 
 - `agent_get_project_identity(9527)` — 项目标识
-- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`todo.txt`/`plan.txt`/`project_prompt.txt`等状态文件
+- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`plan.txt`/`backlog.txt`/`project_prompt.txt`等状态文件
 - `count_lines(path[, encoding])` — 查看文件行数
 - `count_indentations(path[, startLine, endLine, encoding])` - 查看带行号与缩进信息的文件内容
 - `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容
@@ -228,16 +228,16 @@ format("{0} {1} {2} {3} {4}",agent_get_project_dir(9527),agent_get_project_ident
 
 ##特别关注
 
-停止agent的计划提醒
+停止自动计划的计划提醒
 ```
 // @execute
-js_request:stop_agent
+js_request:stop_auto_plan
 ```
 
-启动agent的计划提醒
+启动自动计划的计划提醒
 ```
 // @execute
-js_request:start_agent
+js_request:start_auto_plan
 ```
 
 **切记：js_request请求代码也要放在 Markdown 代码块中, 同时要加上注释标记；js_request不是metadsl代码，不要与其它metadsl代码混在一起**

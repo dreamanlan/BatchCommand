@@ -177,25 +177,32 @@ class MessageHandler {
         }
 
         if (role === 'assistant') {
-            // Historical assistant messages: strip MetaDSL code bodies to
-            // avoid stale code accumulating in context. The most recent
-            // assistant message is preserved uncleaned by getConversationContext,
-            // so the LLM still sees the currently executing round's code.
-            const placeholder = '[...metadsl...]';
+            // Historical assistant messages: collapse MetaDSL code bodies to
+            // the first 30 lines (wrapped in a fenced code block) so the LLM
+            // keeps enough context to stay effective across rounds, while
+            // avoiding unbounded accumulation of stale code.
+            // The most recent assistant message is preserved uncleaned by
+            // getConversationContext, so the LLM always sees the currently
+            // executing round's full code.
+            const collapseBody = (body) => {
+                const lines = body.replace(/\r\n?/g, '\n').split('\n');
+                if (lines.length && lines[lines.length - 1] === '') lines.pop();
+                const MAX = 30;
+                const kept = lines.slice(0, MAX);
+                if (lines.length > MAX) kept.push('...');
+                return '```\n' + kept.join('\n') + '\n```';
+            };
             return content
-                .replace(/<metadsl\b[^>]*>[\s\S]*?<\/metadsl\s*>/gi, placeholder)
-                .replace(/```[ \t]*metadsl\b[^\n]*\n[\s\S]*?```/gi, placeholder)
+                .replace(/<metadsl\b[^>]*>([\s\S]*?)<\/metadsl\s*>/gi,
+                    (_, body) => collapseBody(body))
+                .replace(/```[ \t]*metadsl\b[^\n]*\n([\s\S]*?)```/gi,
+                    (_, body) => collapseBody(body))
                 // Bare fenced code block whose first non-blank content line is
-                // the MetaDSL execute marker (// @execute or # @execute). This
-                // is the form foundation_prompt.txt teaches the LLM to use, so
-                // it dominates in the wild. Blank lines between the fence and
-                // the marker are skipped. Backreference \1 lets the outer fence
-                // be 4+ backticks OR tildes when the body itself contains ```
-                // (see foundation_prompt.txt point 4: "different or more
-                // characters"). The character class [`~] combined with the
-                // backreference guarantees the opening and closing fences use
-                // the same char.
-                .replace(/([`~]{3,})[^\n]*\n(?:[ \t]*\n)*[ \t]*(?:\/\/|#)[ \t]*@execute\b[\s\S]*?\1/gi, placeholder);
+                // the MetaDSL execute marker (// @execute or # @execute).
+                // Backreference \1 handles 4+ backtick/tilde fences that wrap
+                // a body containing ```.
+                .replace(/([`~]{3,})[^\n]*\n((?:[ \t]*\n)*[ \t]*(?:\/\/|#)[ \t]*@execute\b[\s\S]*?)\1/gi,
+                    (_, _fence, body) => collapseBody(body));
         }
 
         return content;

@@ -4,7 +4,7 @@
 // Decision output (action):
 //   - 'skip'          : do nothing
 //   - 'reply'         : reply a text to LLM (text in decision.text)
-//   - 'command'       : issue inject command (cmd/start_agent or stop_agent)
+//   - 'command'       : issue inject command (cmd/start_auto_plan or stop_auto_plan)
 //   - 'reply_ref'     : reply with ref-wrapped prompt (text in decision.text)
 //   - 'trigger_decision' : ask DSL to run induction_decision (notify agent_need_to_decide)
 //   - 'none'          : fall-through, nothing to do
@@ -65,11 +65,11 @@ class ResponseDecider {
       if (this.containsAll(msg, 'Error', 'Occur')) {
         return { action: 'reply', text: '继续' };
       }
-      if (msg.indexOf('启动Agent') >= 0 && msgLen <= 32) {
-        return { action: 'command', command: 'start_agent' };
+      if (msg.indexOf('启动自动计划') >= 0 && msgLen <= 32) {
+        return { action: 'command', command: 'start_auto_plan' };
       }
-      if (msg.indexOf('停止Agent') >= 0 && msgLen <= 32) {
-        return { action: 'command', command: 'stop_agent' };
+      if (msg.indexOf('停止自动计划') >= 0 && msgLen <= 32) {
+        return { action: 'command', command: 'stop_auto_plan' };
       }
 
       // MetaDSL Result
@@ -118,7 +118,7 @@ class ResponseDecider {
         return { action: 'skip', reason: 'metadsl submitted' };
       }
 
-      // Default for lastFromLLM=true: trigger planning (DSL checks plan.txt existence)
+      // Default for lastFromLLM=true: trigger planning (DSL checks backlog.txt existence)
       return { action: 'trigger_decision' };
     }
 

@@ -20,7 +20,8 @@ class ConfigManager {
         streamingPage: true,
         jsHotReload: false,
         maxConversationRounds: 12,
-        llmResponseTimeoutMin: 5
+        llmResponseTimeoutMin: 5,
+        lockTimeMin: 60
       },
 
       // Timing settings
@@ -90,6 +91,7 @@ class ConfigManager {
       'panel.jsHotReload',
       'panel.maxConversationRounds',
       'panel.llmResponseTimeoutMin',
+      'panel.lockTimeMin',
 
       'relay.wsUrl'
     ];
@@ -274,6 +276,7 @@ class ConfigManager {
   get userTypingDelay() { return this.config.timing.userTypingDelay; }
   get maxLogLines() { return this.config.panel.maxLogLines; }
   get llmResponseTimeoutMin() { return this.config.panel.llmResponseTimeoutMin; }
+  get lockTimeMin() { return this.config.panel.lockTimeMin; }
 }
 
 // Create global config instance

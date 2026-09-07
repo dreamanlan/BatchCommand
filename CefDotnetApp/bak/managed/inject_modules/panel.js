@@ -770,6 +770,32 @@ class AgentPanel {
     this.jsHotReloadButton.onclick = () => this.toggleJsHotReload();
     optionBar.appendChild(this.jsHotReloadButton);
 
+    // Keep MetaDSL Lines toggle button (default off: use [...metadsl...] placeholder)
+    this.keepMetaDslLinesButton = document.createElement('button');
+    this.keepMetaDslLinesButton.textContent = CONFIG.config.panel.keepMetaDslLines ? '\u2713 Keep DSL' : '\u2717 Keep DSL';
+    this.keepMetaDslLinesButton.style.cssText = `
+        padding: 3px 7px;
+        background: ${CONFIG.config.panel.keepMetaDslLines ? '#4caf50' : '#666'};
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    this.keepMetaDslLinesButton.onclick = () => this.toggleKeepMetaDslLines();
+    optionBar.appendChild(this.keepMetaDslLinesButton);
+
+    // Sync the persisted state to the local-agent MessageHandler once it exists
+    // (script init order between the injected panel and the page app varies).
+    const _syncKeepMetaDsl = () => {
+      if (window.messageHandler && typeof window.messageHandler.setKeepMetaDslLines === 'function') {
+        window.messageHandler.setKeepMetaDslLines(CONFIG.config.panel.keepMetaDslLines);
+        return true;
+      }
+      return false;
+    };
+    if (!_syncKeepMetaDsl()) setTimeout(_syncKeepMetaDsl, 2000);
+
     this.panel.appendChild(optionBar);
 
     // LLM response timeout slider bar
@@ -1427,6 +1453,20 @@ class AgentPanel {
     this.jsHotReloadButton.textContent = on ? '\u2713 JS Reload' : '\u2717 JS Reload';
     this.jsHotReloadButton.style.background = on ? '#4caf50' : '#666';
     this.log(on ? '\u2713 JS hot reload enabled' : '\u2717 JS hot reload disabled');
+  }
+
+  toggleKeepMetaDslLines() {
+    CONFIG.config.panel.keepMetaDslLines = !CONFIG.config.panel.keepMetaDslLines;
+    CONFIG.saveConfig();
+    const on = CONFIG.config.panel.keepMetaDslLines;
+    this.keepMetaDslLinesButton.textContent = on ? '\u2713 Keep DSL' : '\u2717 Keep DSL';
+    this.keepMetaDslLinesButton.style.background = on ? '#4caf50' : '#666';
+    // Sync to the local-agent page script (MessageHandler) if present, so its
+    // in-app context builder matches the injected panel's setting.
+    if (window.messageHandler && typeof window.messageHandler.setKeepMetaDslLines === 'function') {
+      window.messageHandler.setKeepMetaDslLines(on);
+    }
+    this.log(on ? '\u2713 Keep MetaDSL lines (max 30)' : '\u2717 Collapse MetaDSL to [...metadsl...]');
   }
 
   clearOperationQueue() {

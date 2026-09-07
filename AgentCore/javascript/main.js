@@ -24,6 +24,10 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
         const messageHandler = new MessageHandler();
         const uiController = new UIController(messageHandler, apiClient);
 
+        // Expose messageHandler globally so the inject panel's "Keep DSL"
+        // toggle (panel.js) can call messageHandler.setKeepMetaDslLines(on).
+        window.messageHandler = messageHandler;
+
         // Expose API for inject.js PageAdapter compatibility
         window.AgentLLM = {
             apiClient: apiClient,

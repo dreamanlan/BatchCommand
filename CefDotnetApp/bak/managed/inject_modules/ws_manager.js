@@ -146,7 +146,7 @@ class MetaDSLWorkerManager {
     if (data.type === 'message') {
       // Queue message from worker (WebSocket messages default to noAgentMarker=false)
       this.fromWorkerQueue.push({
-        message: data.data + "\n\n请简要复述本次执行要点以留存；同时发新的MetaDSL代码避免当前代码与结果在下轮消失后你变傻。", noAgentMarker: false
+        message: data.data + "\n\n请简要复述本次执行要点以留存；如有新的MetaDSL代码同一轮发出（有才发，不要重复发），避免下轮结果遗忘傻眼。", noAgentMarker: false
       });
       this.logger.info('Message from worker queued (length: ' + data.data.length + '): ' + data.data.substring(0, 100) + '...');
     } else if (data.type === 'connected') {

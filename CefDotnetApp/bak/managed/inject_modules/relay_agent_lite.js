@@ -55,9 +55,11 @@
   var reconnectDelay = 3000;
   var reqN = 0;
   var manualClose = false;
-    var badgeEl = null;
-    var pendingReply = false;
-    var pendingChannelId = null;
+  var badgeEl = null;
+  var pendingReply = false;
+  var pendingChannelId = null;
+  var pendingContextToken = null;
+  var pendingReplyRounds = 0; // 10-round budget decremented per successful sendReply
 
   function log() {
     try {
@@ -90,7 +92,7 @@
     } catch (e) { /* badge is best-effort */ }
   }
 
-  // Phase 2 gate chain: bridge exists -> armed -> breaker off -> sendChat.
+  // Phase 2 gate chain: bridge exists -> sendChat.
   function handleAgentMessage(text) {
     if (!text) return;
     var bridge = window.MetaDSLBridge;
@@ -98,23 +100,14 @@
       log('MetaDSLBridge not available, message dropped');
       return;
     }
-    var st = null;
-    try { st = bridge.status ? bridge.status() : null; } catch (e) { st = null; }
-    if (!st || !st.armed) {
-      log('bridge not armed, message dropped');
-      return;
-    }
-    if (st.breakerOn) {
-      log('bridge breaker on, message dropped');
-      return;
-    }
     try {
-              bridge.sendChat(text, true);
-              pendingReply = true; // reply expected: adapters call sendReply after this
-              log('message dispatched to page via sendChat');
-            } catch (e) {
-              log('sendChat failed:', e);
-            }
+      bridge.sendChat(text, true);
+      pendingReply = true; // reply expected: adapters call sendReply after this
+      pendingReplyRounds = 10; // reset round budget on each incoming message
+      log('message dispatched to page via sendChat');
+    } catch (e) {
+      log('sendChat failed:', e);
+    }
   }
 
   function nextId() {
@@ -123,31 +116,33 @@
   }
 
   function send(obj) {
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(obj));
-            return true;
-          }
-          return false;
-        }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(obj));
+      return true;
+    }
+    return false;
+  }
 
-        // Reply pass-through: adapters call sendReply(assistantText) once an
-        // agent message was dispatched, so the answer flows back to the bridge.
-        function sendReply(text) {
-          if (!pendingReply) return false;
-          pendingReply = false;
-          var ch = pendingChannelId;
-          pendingChannelId = null;
-          if (text === undefined || text === null) text = '';
-          var payload = { type: 'message', content: String(text) };
-          if (ch) payload.channelId = ch;
-          var ok = send(payload);
-          if (!ok) {
-            pendingReply = true;
-            pendingChannelId = ch;
-          }
-          log('sendReply', ok ? 'sent' : 'ws not open, reply kept pending');
-          return ok;
-        }
+  // Reply pass-through: adapters call sendReply(assistantText) once an
+  // agent message was dispatched, so the answer flows back to the bridge.
+  function sendReply(text) {
+    if (!pendingReply) return false;
+    var ch = pendingChannelId;
+    var tok = pendingContextToken;
+    if (text === undefined || text === null) text = '';
+    var payload = { type: 'wx_reply', data: { to_user: ch, text: String(text), context_token: tok } };
+    var ok = send(payload);
+    if (ok) {
+      pendingReplyRounds = Math.max(0, pendingReplyRounds - 1);
+      if (pendingReplyRounds === 0) {
+        pendingReply = false;
+        pendingChannelId = null;
+        pendingContextToken = null;
+      }
+    }
+    log('sendReply', ok ? 'sent' : 'ws not open, reply kept pending');
+    return ok;
+  }
 
   function startPing() {
     stopPing();
@@ -210,8 +205,11 @@
         case 'pong':
           break;
         case 'message':
-          pendingChannelId = (msg.channelId !== undefined && msg.channelId !== null) ? msg.channelId : null;
-          handleAgentMessage(msg.content);
+          var mCh = (msg.channelId !== undefined && msg.channelId !== null) ? msg.channelId : msg.from_user;
+          pendingChannelId = (mCh !== undefined && mCh !== null) ? mCh : null;
+          var mText = (msg.content !== undefined && msg.content !== null) ? msg.content : msg.text;
+          if (msg.context_token !== undefined && msg.context_token !== null) pendingContextToken = msg.context_token;
+          handleAgentMessage(mText);
           break;
         case 'wx_qrcode':
         case 'wx_status':
@@ -267,8 +265,8 @@
       saveConfig(config);
     },
     send: send,
-            sendReply: sendReply
-          };
+    sendReply: sendReply
+  };
 
   // Auto-start on injection.
   connect();

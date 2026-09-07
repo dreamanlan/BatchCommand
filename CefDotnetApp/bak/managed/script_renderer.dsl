@@ -123,7 +123,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
     //$cmdLine.AppendSwitchWithValue("ignore-certificate-errors-spki-list", "2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=");
 
     // Override user-agent-product to look like standard Chrome
-    $cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/150.0.7871.187");
+    $cmdLine.AppendSwitchWithValue("user-agent-product", "Chromium/150.0.7871.187");
 
     $platform = osplatform();
     nativelog("[dsl] on_before_command_line_processing platform:{0}", $platform);

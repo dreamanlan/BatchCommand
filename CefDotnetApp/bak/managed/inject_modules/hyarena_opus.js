@@ -263,10 +263,16 @@
       if (!hasExecuteMarker(raw)) return;
       const parent = blk.parentNode;
       if (!parent) return;
-      const _mdLines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
-      if (_mdLines.length && _mdLines[_mdLines.length - 1] === '') _mdLines.pop();
-      const _mdBody = _mdLines.slice(0, 30).join('\n') + (_mdLines.length > 30 ? '\n...' : '');
-      const placeholder = document.createTextNode('\n```\n' + _mdBody + '\n```\n');
+      let _repl;
+      if (localStorage.getItem('metadsl_keep_dsl_lines') === 'true') {
+        const _mdLines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
+        if (_mdLines.length && _mdLines[_mdLines.length - 1] === '') _mdLines.pop();
+        const _mdBody = _mdLines.slice(0, 30).join('\n') + (_mdLines.length > 30 ? '\n...' : '');
+        _repl = '\n```\n' + _mdBody + '\n```\n';
+      } else {
+        _repl = '[...metadsl...]';
+      }
+      const placeholder = document.createTextNode(_repl);
       parent.replaceChild(placeholder, blk);
     });
     return clone.textContent || '';
@@ -424,7 +430,7 @@
     if (!text) return;
     if (ST.execInflight && ST.execInflight[slotId] > 0) ST.execInflight[slotId]--;
     if (!ST.pendingResults[slotId]) ST.pendingResults[slotId] = [];
-    ST.pendingResults[slotId].push(text + "\n\n请简要复述本次执行要点以留存；同时发新的MetaDSL代码避免当前代码与结果在下轮消失后你变傻。");
+    ST.pendingResults[slotId].push(text + "\n\n请简要复述本次执行要点以留存；如有新的MetaDSL代码同一轮发出（有才发，不要重复发），避免下轮结果遗忘傻眼。");
     scheduleFlush();
   }
 
@@ -810,6 +816,9 @@
         <button data-act="prompt"   style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#7b1fa2; color:#fff; border:none; border-radius:3px;">prompt</button>
         <button data-act="plan"     style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#00695c; color:#fff; border:none; border-radius:3px;">plan</button>
       </div>
+      <div style="margin-top:4px;">
+        <button data-act="keepdsl" style="padding:2px 5px; font-size:9px; cursor:pointer; background:${localStorage.getItem('metadsl_keep_dsl_lines') === 'true' ? '#4caf50' : '#555'}; color:#fff; border:none; border-radius:3px;">${localStorage.getItem('metadsl_keep_dsl_lines') === 'true' ? 'Keep DSL: ON' : 'Keep DSL: OFF'}</button>
+      </div>
     `;
     body.querySelectorAll('button[disabled]').forEach(b => {
       b.style.opacity = '0.4';
@@ -854,6 +863,12 @@
         }
         else if (act === 'trim') {
           trimHistory(CFG.KEEP_ROUNDS);
+        }
+        else if (act === 'keepdsl') {
+          const next = localStorage.getItem('metadsl_keep_dsl_lines') !== 'true';
+          localStorage.setItem('metadsl_keep_dsl_lines', String(next));
+          log('[keepdsl] ' + (next ? 'keep first 30 lines' : 'collapse to [...metadsl...]'));
+          updatePanel();
         }
       };
     });
@@ -1376,6 +1391,35 @@
     if (!ST.armed) {
       chatList.querySelectorAll(SEL.codeBlock).forEach(el => {
         if (!ST.processedCodes.has(el)) ST.processedCodes.add(el);
+      });
+      // forward completed AI messages while disarmed (text replies only)
+      chatList.querySelectorAll(SEL.aiMsg).forEach(aiMsg => {
+        if (ST.processedMsgs.has(aiMsg)) return;
+        const mc = aiMsg.querySelector(SEL.multiContent);
+        if (!mc) return;
+        const items = Array.from(mc.children);
+        if (items.length === 0) return;
+        if (items.length > ST.slotCount) ensureSlots(items.length);
+        for (const it of items) {
+          if (!isSideComplete(it)) return;
+        }
+        const curLen = (aiMsg.textContent || '').length;
+        const rec = ST.emptyAt.get(aiMsg);
+        if (rec === undefined) {
+          ST.emptyAt.set(aiMsg, { startTime: Date.now(), textLen: curLen });
+          return;
+        }
+        if (curLen !== rec.textLen) {
+          rec.startTime = Date.now();
+          rec.textLen = curLen;
+          return;
+        }
+        if (Date.now() - rec.startTime >= 5000) {
+          notifyConversationHistory(aiMsg);
+          ST.processedMsgs.add(aiMsg);
+          ST.emptyAt.delete(aiMsg);
+          log('[msg] disarmed forward confirmed, marked. slots=' + items.length + ' textLen=' + curLen);
+        }
       });
       return;
     }

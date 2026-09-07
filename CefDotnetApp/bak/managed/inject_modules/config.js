@@ -19,6 +19,10 @@ class ConfigManager {
         hideMetaDslBlock: true,
         streamingPage: true,
         jsHotReload: false,
+        // When false (default), historical LLM MetaDSL code is collapsed to a
+        // fixed "[...metadsl...]" placeholder. When true, keep the first 30
+        // lines wrapped in a fenced code block so the LLM retains context.
+        keepMetaDslLines: false,
         maxConversationRounds: 12,
         llmResponseTimeoutMin: 5,
         lockTimeMin: 60
@@ -89,6 +93,7 @@ class ConfigManager {
       'panel.hideMetaDslBlock',
       'panel.streamingPage',
       'panel.jsHotReload',
+      'panel.keepMetaDslLines',
       'panel.maxConversationRounds',
       'panel.llmResponseTimeoutMin',
       'panel.lockTimeMin',

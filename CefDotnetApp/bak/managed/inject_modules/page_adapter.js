@@ -140,6 +140,7 @@ class PageAdapter {
   // Replaces the old fixed "[...metadsl...]" placeholder, which starved the LLM
   // of context and made it noticeably less effective across rounds.
   collapseMetaDSLForHistory(codeText) {
+    if (!CONFIG.config.panel.keepMetaDslLines) return '[...metadsl...]';
     const lines = String(codeText || '').replace(/\r\n?/g, '\n').split('\n');
     if (lines.length && lines[lines.length - 1] === '') lines.pop();
     const MAX_LINES = 30;

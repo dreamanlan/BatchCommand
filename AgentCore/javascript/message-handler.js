@@ -10,6 +10,7 @@ class MessageHandler {
     constructor() {
         this.messages = [];
         this.dialogPrompt = ''; // Dialog prompt that will be sent as first message
+        this.keepMetaDslLines = false; // Controlled by inject panel "Keep DSL" toggle
         this.config = {
             contextRounds: 6, // Number of conversation rounds to include in auto context
             maxContextChars: 128 * 1024, // Maximum characters for auto context (128KB)
@@ -177,14 +178,16 @@ class MessageHandler {
         }
 
         if (role === 'assistant') {
-            // Historical assistant messages: collapse MetaDSL code bodies to
-            // the first 30 lines (wrapped in a fenced code block) so the LLM
-            // keeps enough context to stay effective across rounds, while
-            // avoiding unbounded accumulation of stale code.
+            // Historical assistant messages: collapse MetaDSL code bodies.
+            // When keepMetaDslLines is false (default), replace with a fixed
+            // placeholder to minimise context. When true (toggled via the
+            // inject panel "Keep DSL" button), keep the first 30 lines
+            // so the LLM retains enough context across rounds.
             // The most recent assistant message is preserved uncleaned by
             // getConversationContext, so the LLM always sees the currently
             // executing round's full code.
             const collapseBody = (body) => {
+                if (!this.keepMetaDslLines) return '[...metadsl...]';
                 const lines = body.replace(/\r\n?/g, '\n').split('\n');
                 if (lines.length && lines[lines.length - 1] === '') lines.pop();
                 const MAX = 30;
@@ -237,6 +240,16 @@ class MessageHandler {
     clearDialogPrompt() {
         this.dialogPrompt = '';
         if (msgLogger) msgLogger.info('Cleared dialog prompt');
+    }
+
+    /**
+     * Called by the inject panel "Keep DSL" toggle to sync this setting.
+     * When on is true, historical MetaDSL code bodies are kept (max 30 lines).
+     * When false (default), they are replaced with a fixed placeholder.
+     */
+    setKeepMetaDslLines(on) {
+        this.keepMetaDslLines = !!on;
+        if (msgLogger) msgLogger.info('setKeepMetaDslLines:', this.keepMetaDslLines);
     }
 }
 

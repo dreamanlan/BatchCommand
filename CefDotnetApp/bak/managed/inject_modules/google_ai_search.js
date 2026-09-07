@@ -265,10 +265,16 @@
       if (!hasExecuteMarker(raw)) return;
       const parent = blk.parentNode;
       if (!parent) return;
-      const _mdLines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
-      if (_mdLines.length && _mdLines[_mdLines.length - 1] === '') _mdLines.pop();
-      const _mdBody = _mdLines.slice(0, 30).join('\n') + (_mdLines.length > 30 ? '\n...' : '');
-      const placeholder = document.createTextNode('\n```\n' + _mdBody + '\n```\n');
+      let _repl;
+      if (localStorage.getItem('metadsl_keep_dsl_lines') === 'true') {
+        const _mdLines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
+        if (_mdLines.length && _mdLines[_mdLines.length - 1] === '') _mdLines.pop();
+        const _mdBody = _mdLines.slice(0, 30).join('\n') + (_mdLines.length > 30 ? '\n...' : '');
+        _repl = '\n```\n' + _mdBody + '\n```\n';
+      } else {
+        _repl = '[...metadsl...]';
+      }
+      const placeholder = document.createTextNode(_repl);
       parent.replaceChild(placeholder, blk);
     });
     return clone.textContent || '';
@@ -401,7 +407,7 @@
     log(`[ws] recv ${text.length}B`);
     if (!text) return;
     if (ST.execInflight > 0) ST.execInflight--;
-    ST.pendingResults.push(text + "\n\n请简要复述本次执行要点以留存；同时发新的MetaDSL代码避免当前代码与结果在下轮消失后你变傻。");
+    ST.pendingResults.push(text + "\n\n请简要复述本次执行要点以留存；如有新的MetaDSL代码同一轮发出（有才发，不要重复发），避免下轮结果遗忘傻眼。");
     scheduleFlush();
   }
 
@@ -669,6 +675,24 @@
     row4.appendChild(btnPrompt3);
     row4.appendChild(btnTodo);
     body.appendChild(row4);
+
+    // Button row: history collapse mode
+    const rowKeepDsl = document.createElement('div');
+    rowKeepDsl.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
+    const btnKeepDsl = mkBtn(
+      localStorage.getItem('metadsl_keep_dsl_lines') === 'true' ? '\u2713 Keep DSL' : '\u2717 Keep DSL',
+      () => {
+        const next = localStorage.getItem('metadsl_keep_dsl_lines') !== 'true';
+        localStorage.setItem('metadsl_keep_dsl_lines', String(next));
+        btnKeepDsl.textContent = next ? '\u2713 Keep DSL' : '\u2717 Keep DSL';
+        btnKeepDsl.style.background = next ? '#4caf50' : '#3a4a6b';
+      }
+    );
+    btnKeepDsl.style.padding = '2px 5px';
+    btnKeepDsl.style.fontSize = '9px';
+    if (localStorage.getItem('metadsl_keep_dsl_lines') === 'true') btnKeepDsl.style.background = '#4caf50';
+    rowKeepDsl.appendChild(btnKeepDsl);
+    body.appendChild(rowKeepDsl);
 
     panel.appendChild(header);
     panel.appendChild(body);
@@ -1143,13 +1167,17 @@
     if (aiMsgs.length === 0) return;
 
     // Disarmed mode: rolling baseline - absorb every visible code block as
-    // already processed; do not mark messages, do not send to WS.
+    // already processed; forward completed AI messages while disarmed.
     if (!ST.armed) {
       aiMsgs.forEach(msg => {
         const blocks = getMessageCodeBlocks(msg);
         blocks.forEach(blk => {
           if (!ST.processedCodes.has(blk)) ST.processedCodes.add(blk);
         });
+        if (ST.processedMsgs.has(msg)) return;
+        if (!isMessageComplete(msg)) return;
+        notifyConversationHistory(msg);
+        ST.processedMsgs.add(msg);
       });
       return;
     }

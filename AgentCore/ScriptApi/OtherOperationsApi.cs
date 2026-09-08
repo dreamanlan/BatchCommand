@@ -261,6 +261,506 @@ namespace AgentCore.ScriptApi
         }
     }
 
+    sealed class HttpGetBytesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_get_bytes(url) or http_get_bytes(url, headers)");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                try {
+                    string url = operands[0].AsString;
+                    Dictionary<string, string>? headers = null;
+                    if (operands.Count > 1) {
+                        headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
+                        if (headers == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_get_bytes(url, headers), headers must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    byte[] result = Core.AgentCore.Instance.HttpClient.GetBytes(url, headers);
+                    return BoxedValue.FromObject(result);
+                }
+                catch (Exception ex) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_get_bytes error: {ex.Message}");
+                }
+            }
+            return BoxedValue.NullObject;
+        }
+    }
+
+    sealed class HttpPutExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_put(url, content) or http_put(url, content, contentType) or http_put(url, content, contentType, headers)");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                try {
+                    string url = operands[0].AsString;
+                    string content = operands[1].AsString;
+                    string contentType = "application/json";
+                    if (operands.Count > 2) {
+                        if (operands[2].IsString) {
+                            contentType = operands[2].ToString();
+                        }
+                        else {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_put(url, content, contentType) or http_put(url, content, contentType, headers), contentType must be string");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    Dictionary<string, string>? headers = null;
+                    if (operands.Count > 3) {
+                        headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
+                        if (headers == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_put(url, content, contentType, headers), headers must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    string result = Core.AgentCore.Instance.HttpClient.Put(url, content, contentType, headers);
+                    return BoxedValue.FromString(result);
+                }
+                catch (Exception ex) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_put error: {ex.Message}");
+                }
+            }
+            return BoxedValue.NullObject;
+        }
+    }
+
+    sealed class HttpDeleteExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_delete(url) or http_delete(url, headers)");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                try {
+                    string url = operands[0].AsString;
+                    Dictionary<string, string>? headers = null;
+                    if (operands.Count > 1) {
+                        headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
+                        if (headers == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_delete(url, headers), headers must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    string result = Core.AgentCore.Instance.HttpClient.Delete(url, headers);
+                    return BoxedValue.FromString(result);
+                }
+                catch (Exception ex) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_delete error: {ex.Message}");
+                }
+            }
+            return BoxedValue.NullObject;
+        }
+    }
+
+    sealed class HttpPostFormExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_form(url, formData) or http_post_form(url, formData, headers)");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                try {
+                    string url = operands[0].AsString;
+                    var formData = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
+                    if (formData == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_form(url, formData[, headers]), formData must be hashtable");
+                        return BoxedValue.NullObject;
+                    }
+                    Dictionary<string, string>? headers = null;
+                    if (operands.Count > 2) {
+                        headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
+                        if (headers == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_form(url, formData, headers), headers must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    string result = Core.AgentCore.Instance.HttpClient.PostForm(url, formData, headers);
+                    return BoxedValue.FromString(result);
+                }
+                catch (Exception ex) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_post_form error: {ex.Message}");
+                }
+            }
+            return BoxedValue.NullObject;
+        }
+    }
+
+    sealed class HttpUploadFileExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_upload_file(url, filePath) or http_upload_file(url, filePath, fieldName) or http_upload_file(url, filePath, fieldName, formData) or http_upload_file(url, filePath, fieldName, formData, headers)");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                try {
+                    string url = operands[0].AsString;
+                    string filePath = operands[1].AsString;
+                    string fieldName = "file";
+                    if (operands.Count > 2) {
+                        if (operands[2].IsString) {
+                            fieldName = operands[2].ToString();
+                        }
+                        else {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_upload_file(url, filePath, fieldName, ...), fieldName must be string");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    Dictionary<string, string>? formData = null;
+                    if (operands.Count > 3) {
+                        formData = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
+                        if (formData == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_upload_file(url, filePath, fieldName, formData, ...), formData must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    Dictionary<string, string>? headers = null;
+                    if (operands.Count > 4) {
+                        headers = HttpHeaderHelper.ExtractStringHeaders(operands[4]);
+                        if (headers == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_upload_file(url, filePath, fieldName, formData, headers), headers must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    string result = Core.AgentCore.Instance.HttpClient.UploadFile(url, filePath, fieldName, formData, headers);
+                    return BoxedValue.FromString(result);
+                }
+                catch (Exception ex) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_upload_file error: {ex.Message}");
+                }
+            }
+            return BoxedValue.NullObject;
+        }
+    }
+
+    sealed class SetHttpDefaultHeaderExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_http_default_header(name, value)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            Core.AgentCore.Instance.HttpClient.SetDefaultHeader(operands[0].AsString, operands[1].AsString);
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    sealed class RemoveHttpDefaultHeaderExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: remove_http_default_header(name)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            Core.AgentCore.Instance.HttpClient.RemoveDefaultHeader(operands[0].AsString);
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    // HTTP async callback expressions. tag is always the last operand. Each
+    // returns "ok" immediately; result arrives via a same-named CEF message
+    // with 3 string args: (url, tag, result).
+    sealed class HttpGetCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_get_callback(url, tag) or http_get_callback(url, headers, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            try {
+                string url = operands[0].AsString;
+                string tag = operands[operands.Count - 1].AsString;
+                Dictionary<string, string>? headers = null;
+                if (operands.Count == 3) {
+                    headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
+                    if (headers == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_get_callback(url, headers, tag), headers must be hashtable");
+                        return BoxedValue.FromString("error: invalid headers");
+                    }
+                }
+                Core.AgentCore.Instance.HttpClient.GetWithCallback(url, headers, tag);
+                return BoxedValue.FromString("ok");
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_get_callback error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    // Async binary GET. result in the http_get_bytes_callback CEF message is the
+    // response body encoded as a base64 string (or "error: ..." on failure).
+    sealed class HttpGetBytesCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_get_bytes_callback(url, tag) or http_get_bytes_callback(url, headers, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            try {
+                string url = operands[0].AsString;
+                string tag = operands[operands.Count - 1].AsString;
+                Dictionary<string, string>? headers = null;
+                if (operands.Count == 3) {
+                    headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
+                    if (headers == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_get_bytes_callback(url, headers, tag), headers must be hashtable");
+                        return BoxedValue.FromString("error: invalid headers");
+                    }
+                }
+                Core.AgentCore.Instance.HttpClient.GetBytesWithCallback(url, headers, tag);
+                return BoxedValue.FromString("ok");
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_get_bytes_callback error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    sealed class HttpPostCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_callback(url, content, tag) or http_post_callback(url, content, contentType, tag) or http_post_callback(url, content, contentType, headers, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            try {
+                string url = operands[0].AsString;
+                string content = operands[1].AsString;
+                string tag = operands[operands.Count - 1].AsString;
+                string contentType = "application/json";
+                if (operands.Count >= 4) {
+                    if (operands[2].IsString) {
+                        contentType = operands[2].ToString();
+                    }
+                    else {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_callback(url, content, contentType, ...), contentType must be string");
+                        return BoxedValue.FromString("error: invalid contentType");
+                    }
+                }
+                Dictionary<string, string>? headers = null;
+                if (operands.Count == 5) {
+                    headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
+                    if (headers == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_callback(url, content, contentType, headers, tag), headers must be hashtable");
+                        return BoxedValue.FromString("error: invalid headers");
+                    }
+                }
+                Core.AgentCore.Instance.HttpClient.PostWithCallback(url, content, contentType, headers, tag);
+                return BoxedValue.FromString("ok");
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_post_callback error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    sealed class HttpPostFormCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_form_callback(url, formData, tag) or http_post_form_callback(url, formData, headers, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            try {
+                string url = operands[0].AsString;
+                string tag = operands[operands.Count - 1].AsString;
+                var formData = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
+                if (formData == null) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_form_callback(url, formData, ...), formData must be hashtable");
+                    return BoxedValue.FromString("error: invalid formData");
+                }
+                Dictionary<string, string>? headers = null;
+                if (operands.Count == 4) {
+                    headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
+                    if (headers == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post_form_callback(url, formData, headers, tag), headers must be hashtable");
+                        return BoxedValue.FromString("error: invalid headers");
+                    }
+                }
+                Core.AgentCore.Instance.HttpClient.PostFormWithCallback(url, formData, headers, tag);
+                return BoxedValue.FromString("ok");
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_post_form_callback error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    sealed class HttpPutCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_put_callback(url, content, tag) or http_put_callback(url, content, contentType, tag) or http_put_callback(url, content, contentType, headers, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            try {
+                string url = operands[0].AsString;
+                string content = operands[1].AsString;
+                string tag = operands[operands.Count - 1].AsString;
+                string contentType = "application/json";
+                if (operands.Count >= 4) {
+                    if (operands[2].IsString) {
+                        contentType = operands[2].ToString();
+                    }
+                    else {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_put_callback(url, content, contentType, ...), contentType must be string");
+                        return BoxedValue.FromString("error: invalid contentType");
+                    }
+                }
+                Dictionary<string, string>? headers = null;
+                if (operands.Count == 5) {
+                    headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
+                    if (headers == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_put_callback(url, content, contentType, headers, tag), headers must be hashtable");
+                        return BoxedValue.FromString("error: invalid headers");
+                    }
+                }
+                Core.AgentCore.Instance.HttpClient.PutWithCallback(url, content, contentType, headers, tag);
+                return BoxedValue.FromString("ok");
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_put_callback error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    sealed class HttpDeleteCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_delete_callback(url, tag) or http_delete_callback(url, headers, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            try {
+                string url = operands[0].AsString;
+                string tag = operands[operands.Count - 1].AsString;
+                Dictionary<string, string>? headers = null;
+                if (operands.Count == 3) {
+                    headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
+                    if (headers == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_delete_callback(url, headers, tag), headers must be hashtable");
+                        return BoxedValue.FromString("error: invalid headers");
+                    }
+                }
+                Core.AgentCore.Instance.HttpClient.DeleteWithCallback(url, headers, tag);
+                return BoxedValue.FromString("ok");
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_delete_callback error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    sealed class HttpUploadFileCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3 || operands.Count > 6) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_upload_file_callback(url, filePath, tag) or (url, filePath, fieldName, tag) or (url, filePath, fieldName, formData, tag) or (url, filePath, fieldName, formData, headers, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            try {
+                string url = operands[0].AsString;
+                string filePath = operands[1].AsString;
+                string tag = operands[operands.Count - 1].AsString;
+                string fieldName = "file";
+                if (operands.Count >= 4) {
+                    if (operands[2].IsString) {
+                        fieldName = operands[2].ToString();
+                    }
+                    else {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_upload_file_callback(url, filePath, fieldName, ...), fieldName must be string");
+                        return BoxedValue.FromString("error: invalid fieldName");
+                    }
+                }
+                Dictionary<string, string>? formData = null;
+                if (operands.Count >= 5) {
+                    formData = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
+                    if (formData == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_upload_file_callback(url, filePath, fieldName, formData, ...), formData must be hashtable");
+                        return BoxedValue.FromString("error: invalid formData");
+                    }
+                }
+                Dictionary<string, string>? headers = null;
+                if (operands.Count == 6) {
+                    headers = HttpHeaderHelper.ExtractStringHeaders(operands[4]);
+                    if (headers == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_upload_file_callback(url, filePath, fieldName, formData, headers, tag), headers must be hashtable");
+                        return BoxedValue.FromString("error: invalid headers");
+                    }
+                }
+                Core.AgentCore.Instance.HttpClient.UploadFileWithCallback(url, filePath, fieldName, formData, headers, tag);
+                return BoxedValue.FromString("ok");
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"http_upload_file_callback error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    sealed class DownloadFileCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: download_file_callback(url, savePath, tag) or download_file_callback(url, savePath, headers, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            try {
+                string url = operands[0].AsString;
+                string savePath = operands[1].AsString;
+                string tag = operands[operands.Count - 1].AsString;
+                Dictionary<string, string>? headers = null;
+                if (operands.Count == 4) {
+                    headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
+                    if (headers == null) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: download_file_callback(url, savePath, headers, tag), headers must be hashtable");
+                        return BoxedValue.FromString("error: invalid headers");
+                    }
+                }
+                Core.AgentCore.Instance.HttpClient.DownloadFileWithCallback(url, savePath, headers, tag);
+                return BoxedValue.FromString("ok");
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"download_file_callback error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
     sealed class SetHttpUserAgentExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)

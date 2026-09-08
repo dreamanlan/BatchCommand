@@ -514,6 +514,14 @@ script(handle_command_callback)params($cmdStr, $argStr, $workDir, $resultText)
     send_command_to_inject("send_message", to_json({text: $text}));
 };
 
+script(handle_http_auth_callback)params($url, $tag, $response)
+{
+    nativelog("[dsl] http_auth_callback: url={0} tag={1} response={2}", $url, $tag, getstringinlength($response,100));
+
+    $text = format("[http Auth Result] url={0} tag={1}\n{2}", $url, $tag, $response);
+    send_command_to_inject("send_message", to_json({text: $text}));
+};
+
 // Handle agent command
 script(handle_agent_command)params($jsonData)
 {
@@ -951,6 +959,57 @@ script(trigger_reflection)params()
     nativelog("[dsl] trigger_reflection: reflection request sent");
 };
 
+script(freebie_get_induction_prompt)params($port)
+{
+    if ($port == "") {
+        $port = 9527;
+    };
+    nativelog("[dsl] freebie_get_induction_prompt, port: {0}", $port);
+    $legionnaireHistory = agent_get_project_identity($port) + "_legionnaire_history";
+    $infos = semantic_get_recent_as_list($legionnaireHistory, 10);
+    $induction = new_string_builder();
+    looplist($infos) {
+        $rec = $$;
+        if ($rec.Content == ".") {
+            continue;
+        };
+        append_format_line($induction, "{0} {1}", $rec.Content, $rec.Metadata);
+    };
+    $histId = "_decurion_history";
+    $maxLen = 30 * 1024;
+    if ($port == 9535) {
+        $maxLen = 4 * 1024;
+    };
+    $prompt = format("{0}\n\n以上是最近工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", getstringinlength(to_pretty_string(string_builder_to_string($induction)), $maxLen, 1),
+        format("semantic_add(agent_get_project_identity({0})+'{1}', [[归纳内容]], to_json({{source: 'inject', date: date_time_str()}}));", $port, $histId)
+        );
+    return($prompt);
+};
+
+script(freebie_get_reflection_prompt)params($port)
+{
+    if ($port == "") {
+        $port = 9527;
+    };
+    nativelog("[dsl] freebie_get_reflection_prompt, port: {0}", $port);
+    $projectDirectory = agent_get_project_dir($port);
+    $contextHistory = read_file(combine_path($projectDirectory, "docs/context.txt"));
+    $prompt = format("{0}\n\n请结合你的上下文记忆，提取结构化的经验记录（300字以内），然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $contextHistory,
+        format("semantic_add(agent_get_project_identity({0})+'_episodic_memory', [[经验记录]], to_json({{source: 'reflection', date: date_time_str(), type: 'episodic'}}));", $port)
+        );
+    return($prompt);
+};
+
+script(freebie_get_pattern_prompt)params($port)
+{
+    if ($port == "") {
+        $port = 9527;
+    };
+    nativelog("[dsl] freebie_get_pattern_prompt, port: {0}", $port);
+    $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先读 read_file(\"{0}/docs/patterns.md\") 了解已有模式，再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳新增/修订模式后追加到 patterns.md（保持简洁，无空话套话）。", agent_get_project_dir($port), agent_get_project_identity($port));
+    return($prompt);
+};
+
 script(save_context)params($count,$pageType)
 {
     $contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
@@ -1077,7 +1136,8 @@ script(induction_freebie_info)params($batch, $infos, $session, $port)
                 format("semantic_add(agent_get_project_identity({0})+'{1}', [[归纳内容]], to_json({{source: 'inject', date: date_time_str()}}));", $port, $histId)
                 );
             // Fallback when PM is disabled: just send "continue" to keep LLM moving.
-            send_command_to_inject("send_message", to_json({text: $prompt}));
+            // Notify page to enable the induce button instead of auto sending
+            nativeapi.CallJavascriptFuncInRenderer("window.MetaDSLBridge.enableFreebieButton", ["induce"]);
 
             nativelog("[dsl] induction_freebie_info, prompt: {0}, history id: {1}", get_string_in_length($prompt, 100), $histId);
         };
@@ -1099,7 +1159,8 @@ script(trigger_freebie_reflection)params($port)
     $prompt = format("{0}\n\n请结合你的上下文记忆，提取结构化的经验记录（300字以内），然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $contextHistory,
         format("semantic_add(agent_get_project_identity({0})+'_episodic_memory', [[经验记录]], to_json({{source: 'reflection', date: date_time_str(), type: 'episodic'}}));", $port)
         );
-    send_command_to_inject("send_message", to_json({text: $prompt}));
+    // Notify page to enable the reflect button instead of auto sending
+    nativeapi.CallJavascriptFuncInRenderer("window.MetaDSLBridge.enableFreebieButton", ["reflect"]);
 
     nativelog("[dsl] trigger_reflection: reflection request sent");
 };
@@ -1469,7 +1530,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展使用MetaDSL更新到plan.txt（页面浏览器本地，非远端工作空间）后再继续工作，同时清理已完成plan条目";
+            $prompt = format("可以将最新进展使用MetaDSL更新到{0}（页面浏览器本地，非远端工作空间）后再继续工作，同时清理已完成plan条目", $planFile);
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -1539,7 +1600,8 @@ script(handle_agent_notification)params($jsonData)
             agent_set_context_var($port, "LastFreebiePatternEpisodicCount", $episodicCount);
             nativelog("[dsl] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
             $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先读 read_file(\"{0}/docs/patterns.md\") 了解已有模式，再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳新增/修订模式后追加到 patterns.md（保持简洁，无空话套话）。", agent_get_project_dir($port), agent_get_project_identity($port));
-            send_command_to_inject("send_message", to_json({text: $prompt}));
+            // Notify page to enable the pattern button instead of auto sending
+            nativeapi.CallJavascriptFuncInRenderer("window.MetaDSLBridge.enableFreebieButton", ["pattern"]);
         };
         if (agent_is_context_injection_enabled($port) && agent_add_cur_context_rounds($port) == 0) {
             $prompt = format("【计划】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_plan($port), agent_get_context($port), agent_get_history($port));

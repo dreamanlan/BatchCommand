@@ -199,6 +199,21 @@ namespace AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("http_get", "http_get(url) or http_get(url, headers)", new ExpressionFactoryHelper<HttpGetExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("http_post", "http_post(url, content) or http_post(url, content, contentType) or http_post(url, content, contentType, headers)", new ExpressionFactoryHelper<HttpPostExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("download_file", "download_file(url, savePath) or download_file(url, savePath, headers)", new ExpressionFactoryHelper<DownloadFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_get_bytes", "http_get_bytes(url) or http_get_bytes(url, headers) - GET and return byte array", new ExpressionFactoryHelper<HttpGetBytesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_put", "http_put(url, content) or http_put(url, content, contentType) or http_put(url, content, contentType, headers)", new ExpressionFactoryHelper<HttpPutExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_delete", "http_delete(url) or http_delete(url, headers)", new ExpressionFactoryHelper<HttpDeleteExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_post_form", "http_post_form(url, formData) or http_post_form(url, formData, headers) - formData is a hashtable of form fields", new ExpressionFactoryHelper<HttpPostFormExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_upload_file", "http_upload_file(url, filePath) or http_upload_file(url, filePath, fieldName) or http_upload_file(url, filePath, fieldName, formData) or http_upload_file(url, filePath, fieldName, formData, headers)", new ExpressionFactoryHelper<HttpUploadFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("set_http_default_header", "set_http_default_header(name, value) - set a default request header for all http operations", new ExpressionFactoryHelper<SetHttpDefaultHeaderExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("remove_http_default_header", "remove_http_default_header(name) - remove a default request header", new ExpressionFactoryHelper<RemoveHttpDefaultHeaderExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_get_callback", "http_get_callback(url, tag) or http_get_callback(url, headers, tag) - async GET, result via http_get_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpGetCallbackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_get_bytes_callback", "http_get_bytes_callback(url, tag) or http_get_bytes_callback(url, headers, tag) - async binary GET, result is base64 of response body via http_get_bytes_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpGetBytesCallbackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_post_callback", "http_post_callback(url, content, tag) or (url, content, contentType, tag) or (url, content, contentType, headers, tag) - async POST, result via http_post_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpPostCallbackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_post_form_callback", "http_post_form_callback(url, formData, tag) or (url, formData, headers, tag) - async POST form, result via http_post_form_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpPostFormCallbackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_put_callback", "http_put_callback(url, content, tag) or (url, content, contentType, tag) or (url, content, contentType, headers, tag) - async PUT, result via http_put_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpPutCallbackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_delete_callback", "http_delete_callback(url, tag) or (url, headers, tag) - async DELETE, result via http_delete_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpDeleteCallbackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_upload_file_callback", "http_upload_file_callback(url, filePath, tag) or (url, filePath, fieldName, tag) or (url, filePath, fieldName, formData, tag) or (url, filePath, fieldName, formData, headers, tag) - async upload, result via http_upload_file_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpUploadFileCallbackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("download_file_callback", "download_file_callback(url, savePath, tag) or (url, savePath, headers, tag) - async download, result 'ok' or 'error: ...' via download_file_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<DownloadFileCallbackExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("set_http_user_agent", "set_http_user_agent(user_agent) - set User-Agent header for http_get/http_post/download_file", new ExpressionFactoryHelper<SetHttpUserAgentExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_http_user_agent", "get_http_user_agent() - get current User-Agent header string", new ExpressionFactoryHelper<GetHttpUserAgentExp>());
 
@@ -449,6 +464,9 @@ namespace AgentCore
 
             // MCP Client API
             McpApi.RegisterApis();
+
+            // HTTP Auth Server API (OAuth loopback redirect capture)
+            HttpAuthServerApi.RegisterApis();
 
             // Playwright Browser Automation API
             PlaywrightApi.RegisterApis();

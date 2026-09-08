@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using AbstractAgent.Utils;
 
 using AbstractAgent;
+using ScriptableFramework;
 
 namespace AgentCore.Core
 {
@@ -203,6 +204,81 @@ namespace AgentCore.Core
             catch (Exception ex) {
                 throw new HttpRequestException($"Upload file failed: {url}, {ex.Message}", ex);
             }
+        }
+
+        // Async callback variants: run the corresponding sync operation on a
+        // background thread, then deliver (url, tag, result) via EnqueueCefMessage.
+        // The CEF message name equals the async DSL API name. result is the
+        // response body on success, or "error: <message>" on failure.
+        public void GetWithCallback(string url, Dictionary<string, string>? headers, string tag)
+        {
+            RunWithCallback("http_get_callback", url, tag, () => Get(url, headers));
+        }
+
+        // Binary GET: result is the response body encoded as a base64 string.
+        public void GetBytesWithCallback(string url, Dictionary<string, string>? headers, string tag)
+        {
+            RunWithCallback("http_get_bytes_callback", url, tag, () => Convert.ToBase64String(GetBytes(url, headers)));
+        }
+
+        public void PostWithCallback(string url, string content, string contentType,
+            Dictionary<string, string>? headers, string tag)
+        {
+            RunWithCallback("http_post_callback", url, tag, () => Post(url, content, contentType, headers));
+        }
+
+        public void PostFormWithCallback(string url, Dictionary<string, string> formData,
+            Dictionary<string, string>? headers, string tag)
+        {
+            RunWithCallback("http_post_form_callback", url, tag, () => PostForm(url, formData, headers));
+        }
+
+        public void PutWithCallback(string url, string content, string contentType,
+            Dictionary<string, string>? headers, string tag)
+        {
+            RunWithCallback("http_put_callback", url, tag, () => Put(url, content, contentType, headers));
+        }
+
+        public void DeleteWithCallback(string url, Dictionary<string, string>? headers, string tag)
+        {
+            RunWithCallback("http_delete_callback", url, tag, () => Delete(url, headers));
+        }
+
+        public void UploadFileWithCallback(string url, string filePath, string fieldName,
+            Dictionary<string, string>? formData, Dictionary<string, string>? headers, string tag)
+        {
+            RunWithCallback("http_upload_file_callback", url, tag, () => UploadFile(url, filePath, fieldName, formData, headers));
+        }
+
+        public void DownloadFileWithCallback(string url, string savePath,
+            Dictionary<string, string>? headers, string tag)
+        {
+            RunWithCallback("download_file_callback", url, tag, () => {
+                DownloadFile(url, savePath, headers);
+                return "ok";
+            });
+        }
+
+        private void RunWithCallback(string callbackMsg, string url, string tag, Func<string> action)
+        {
+            var nativeApi = Core.AgentCore.Instance.GetNativeApi();
+            if (nativeApi == null)
+                return;
+
+            Task.Run(() => {
+                string result;
+                try {
+                    result = action();
+                }
+                catch (Exception ex) {
+                    result = $"error: {ex.Message}";
+                }
+                try {
+                    nativeApi.EnqueueCefMessage(callbackMsg, new BoxedValue[] { url, tag, result });
+                }
+                catch (Exception) {
+                }
+            });
         }
 
         private void AddHeaders(HttpRequestMessage request, Dictionary<string, string>? headers)

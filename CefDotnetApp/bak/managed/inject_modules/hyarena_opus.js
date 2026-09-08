@@ -816,6 +816,11 @@
         <button data-act="prompt"   style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#7b1fa2; color:#fff; border:none; border-radius:3px;">prompt</button>
         <button data-act="plan"     style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#00695c; color:#fff; border:none; border-radius:3px;">plan</button>
       </div>
+      <div style="display:flex; gap:4px; margin-top:4px;">
+        <button data-act="induce"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#8e24aa; color:#fff; border:none; border-radius:3px;" ${ST.freebieInduce ? '' : 'disabled'}>induce</button>
+        <button data-act="reflect" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#f57c00; color:#fff; border:none; border-radius:3px;" ${ST.freebieReflect ? '' : 'disabled'}>reflect</button>
+        <button data-act="pattern" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#0288d1; color:#fff; border:none; border-radius:3px;" ${ST.freebiePattern ? '' : 'disabled'}>pattern</button>
+      </div>
       <div style="margin-top:4px;">
         <button data-act="keepdsl" style="padding:2px 5px; font-size:9px; cursor:pointer; background:${localStorage.getItem('metadsl_keep_dsl_lines') === 'true' ? '#4caf50' : '#555'}; color:#fff; border:none; border-radius:3px;">${localStorage.getItem('metadsl_keep_dsl_lines') === 'true' ? 'Keep DSL: ON' : 'Keep DSL: OFF'}</button>
       </div>
@@ -848,6 +853,9 @@
         else if (act === 'identity') sendIdentity();
         else if (act === 'prompt') sendPromptToChat();
         else if (act === 'plan') sendPlan();
+        else if (act === 'induce') sendInduce();
+        else if (act === 'reflect') sendReflect();
+        else if (act === 'pattern') sendPattern();
         else if (act === 'longrun') {
           ST.longRunMode = !ST.longRunMode;
           log(`[longrun] ${ST.longRunMode ? 'enabled' : 'disabled'}`);
@@ -891,6 +899,42 @@
    * `keepRounds` rounds. A round is one userMsg + one aiMsg pair.
    * Works for both explicit-compare and blind-compare page layouts.
    */
+  function sendInduce() {
+    let txt = '';
+    try { txt = callMetaDSL('freebie_get_induction_prompt') || ''; }
+    catch (e) { log('[induce] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[induce] empty, skip'); return; }
+    chatSend(String(txt));
+    log('[induce] sent (' + String(txt).length + ' chars)');
+    // re-disable after click until next DSL notification
+    ST.freebieInduce = false;
+    updatePanel();
+  }
+
+  function sendReflect() {
+    let txt = '';
+    try { txt = callMetaDSL('freebie_get_reflection_prompt') || ''; }
+    catch (e) { log('[reflect] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[reflect] empty, skip'); return; }
+    chatSend(String(txt));
+    log('[reflect] sent (' + String(txt).length + ' chars)');
+    // re-disable after click until next DSL notification
+    ST.freebieReflect = false;
+    updatePanel();
+  }
+
+  function sendPattern() {
+    let txt = '';
+    try { txt = callMetaDSL('freebie_get_pattern_prompt') || ''; }
+    catch (e) { log('[pattern] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[pattern] empty, skip'); return; }
+    chatSend(String(txt));
+    log('[pattern] sent (' + String(txt).length + ' chars)');
+    // re-disable after click until next DSL notification
+    ST.freebiePattern = false;
+    updatePanel();
+  }
+
   function trimHistory(keepRounds) {
     const chatList = document.querySelector(SEL.chatList);
     if (!chatList) return;
@@ -1780,6 +1824,12 @@
     // Bridge API
     sendCommand: bridgeSendCommand,
     sendNotification: bridgeSendNotification,
+    // Enable a freebie button (induce/reflect/pattern) via DSL notification
+    enableFreebieButton: (name) => {
+      const map = { induce: 'freebieInduce', reflect: 'freebieReflect', pattern: 'freebiePattern' };
+      const key = map[name];
+      if (key) { ST[key] = true; updatePanel(); log('[ctl] freebie button enabled: ' + name); }
+    },
 
     // Main-agent compatible queue counters (AgentAPI.getXXXQueueCount).
     // Single-page modules scan and send immediately, so there is neither a

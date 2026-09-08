@@ -646,8 +646,20 @@
     row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
     const btnPrompt = mkBtn('prompt', () => sendPrompt());
     const btnTodo = mkBtn('plan', () => sendPlan());
+    const btnInduce = mkBtn('induce', () => sendInduce());
+    const btnReflect = mkBtn('reflect', () => sendReflect());
+    const btnPattern = mkBtn('pattern', () => sendPattern());
+    // disabled by default; enabled via DSL notification when conditions met
+    btnInduce.disabled = true;
+    btnReflect.disabled = true;
+    btnPattern.disabled = true;
+    // keep references so DSL notification can enable them later
+    ST.freebieButtons = { induce: btnInduce, reflect: btnReflect, pattern: btnPattern };
     row4.appendChild(btnPrompt);
     row4.appendChild(btnTodo);
+    row4.appendChild(btnInduce);
+    row4.appendChild(btnReflect);
+    row4.appendChild(btnPattern);
     body.appendChild(row4);
 
     // Button row 5: history collapse mode
@@ -703,6 +715,39 @@
     if (!txt || !String(txt).trim()) { log('[plan] empty, skip'); return; }
     chatSend(String(txt));
     log('[plan] sent (' + String(txt).length + ' chars)');
+  }
+
+  function sendInduce() {
+    let txt = '';
+    try { txt = callMetaDSL('freebie_get_induction_prompt', '') || ''; }
+    catch (e) { log('[induce] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[induce] empty, skip'); return; }
+    chatSend(String(txt));
+    log('[induce] sent (' + String(txt).length + ' chars)');
+    // re-disable after click until next DSL notification
+    if (ST.freebieButtons && ST.freebieButtons.induce) ST.freebieButtons.induce.disabled = true;
+  }
+
+  function sendReflect() {
+    let txt = '';
+    try { txt = callMetaDSL('freebie_get_reflection_prompt', '') || ''; }
+    catch (e) { log('[reflect] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[reflect] empty, skip'); return; }
+    chatSend(String(txt));
+    log('[reflect] sent (' + String(txt).length + ' chars)');
+    // re-disable after click until next DSL notification
+    if (ST.freebieButtons && ST.freebieButtons.reflect) ST.freebieButtons.reflect.disabled = true;
+  }
+
+  function sendPattern() {
+    let txt = '';
+    try { txt = callMetaDSL('freebie_get_pattern_prompt', '') || ''; }
+    catch (e) { log('[pattern] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[pattern] empty, skip'); return; }
+    chatSend(String(txt));
+    log('[pattern] sent (' + String(txt).length + ' chars)');
+    // re-disable after click until next DSL notification
+    if (ST.freebieButtons && ST.freebieButtons.pattern) ST.freebieButtons.pattern.disabled = true;
   }
 
   function updatePanel() {
@@ -1267,6 +1312,11 @@
     disarm: disarmNow,
     sendCommand: bridgeSendCommand,
     sendNotification: bridgeSendNotification,
+    // Enable a freebie button (induce/reflect/pattern) via DSL notification
+    enableFreebieButton: (name) => {
+      const btns = ST.freebieButtons || {};
+      if (btns[name]) { btns[name].disabled = false; log('[ctl] freebie button enabled: ' + name); }
+    },
     // Main-agent compatible queue counters (AgentAPI.getXXXQueueCount).
     // Single-page modules scan and send immediately, so there is neither a
     // pending-operation layer nor a to-send queue: both counters are always 0.

@@ -165,14 +165,6 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
         return((true, $code));
     };
-    if (string_contains_any($url, "gamexyz.net:8080") && ($isMainFrame == "False" || $isMainFrame == false)) {
-        $base = combine_path(basepath, "managed/inject_modules/");
-        $sb = new_string_builder();
-        append_line($sb, read_file(combine_path($base, "google_gemini.js")));
-        $code = string_builder_to_string($sb);
-        nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
-        return((true, $code));
-    };
     if (string_contains_any($url, "https://chatgpt.com", "https://chat.openai.com") && ($isMainFrame == "True" || $isMainFrame == true)) {
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
@@ -572,57 +564,6 @@ script(trigger_freebie_reflection)params($port)
     nativelog("[dsl] trigger_reflection: reflection request sent");
 };
 
-script(freebie_get_induction_prompt)params($port)
-{
-    if ($port == "") {
-        $port = 9527;
-    };
-    nativelog("[dsl] freebie_get_induction_prompt, port: {0}", $port);
-    $legionnaireHistory = agent_get_project_identity($port) + "_legionnaire_history";
-    $infos = semantic_get_recent_as_list($legionnaireHistory, 10);
-    $induction = new_string_builder();
-    looplist($infos) {
-        $rec = $$;
-        if ($rec.Content == ".") {
-            continue;
-        };
-        append_format_line($induction, "{0} {1}", $rec.Content, $rec.Metadata);
-    };
-    $histId = "_decurion_history";
-    $maxLen = 30 * 1024;
-    if ($port == 9535) {
-        $maxLen = 4 * 1024;
-    };
-    $prompt = format("{0}\n\n以上是最近工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", getstringinlength(to_pretty_string(string_builder_to_string($induction)), $maxLen, 1),
-        format("semantic_add(agent_get_project_identity({0})+'{1}', [[归纳内容]], to_json({{source: 'inject', date: date_time_str()}}));", $port, $histId)
-        );
-    return($prompt);
-};
-
-script(freebie_get_reflection_prompt)params($port)
-{
-    if ($port == "") {
-        $port = 9527;
-    };
-    nativelog("[dsl] freebie_get_reflection_prompt, port: {0}", $port);
-    $projectDirectory = agent_get_project_dir($port);
-    $contextHistory = read_file(combine_path($projectDirectory, "docs/context.txt"));
-    $prompt = format("{0}\n\n请结合你的上下文记忆，提取结构化的经验记录（300字以内），然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $contextHistory,
-        format("semantic_add(agent_get_project_identity({0})+'_episodic_memory', [[经验记录]], to_json({{source: 'reflection', date: date_time_str(), type: 'episodic'}}));", $port)
-        );
-    return($prompt);
-};
-
-script(freebie_get_pattern_prompt)params($port)
-{
-    if ($port == "") {
-        $port = 9527;
-    };
-    nativelog("[dsl] freebie_get_pattern_prompt, port: {0}", $port);
-    $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先读 read_file(\"{0}/docs/patterns.md\") 了解已有模式，再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳新增/修订模式后追加到 patterns.md（保持简洁，无空话套话）。", agent_get_project_dir($port), agent_get_project_identity($port));
-    return($prompt);
-};
-
 script(save_freebie_context)params($count,$port)
 {
     $projectDirectory = agent_get_project_dir($port);
@@ -704,6 +645,57 @@ script(save_freebie_history)params($port)
         write_file($historyFile, $historyStr);
         agent_set_history($port, $historyStr);
     };
+};
+
+script(freebie_get_induction_prompt)params($port)
+{
+    if ($port == "") {
+        $port = 9527;
+    };
+    nativelog("[dsl] freebie_get_induction_prompt, port: {0}", $port);
+    $legionnaireHistory = agent_get_project_identity($port) + "_legionnaire_history";
+    $infos = semantic_get_recent_as_list($legionnaireHistory, 10);
+    $induction = new_string_builder();
+    looplist($infos) {
+        $rec = $$;
+        if ($rec.Content == ".") {
+            continue;
+        };
+        append_format_line($induction, "{0} {1}", $rec.Content, $rec.Metadata);
+    };
+    $histId = "_decurion_history";
+    $maxLen = 30 * 1024;
+    if ($port == 9535) {
+        $maxLen = 4 * 1024;
+    };
+    $prompt = format("{0}\n\n以上是最近工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", getstringinlength(to_pretty_string(string_builder_to_string($induction)), $maxLen, 1),
+        format("semantic_add(agent_get_project_identity({0})+'{1}', [[归纳内容]], to_json({{source: 'inject', date: date_time_str()}}));", $port, $histId)
+        );
+    return($prompt);
+};
+
+script(freebie_get_reflection_prompt)params($port)
+{
+    if ($port == "") {
+        $port = 9527;
+    };
+    nativelog("[dsl] freebie_get_reflection_prompt, port: {0}", $port);
+    $projectDirectory = agent_get_project_dir($port);
+    $contextHistory = read_file(combine_path($projectDirectory, "docs/context.txt"));
+    $prompt = format("{0}\n\n请结合你的上下文记忆，提取结构化的经验记录（300字以内），然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $contextHistory,
+        format("semantic_add(agent_get_project_identity({0})+'_episodic_memory', [[经验记录]], to_json({{source: 'reflection', date: date_time_str(), type: 'episodic'}}));", $port)
+        );
+    return($prompt);
+};
+
+script(freebie_get_pattern_prompt)params($port)
+{
+    if ($port == "") {
+        $port = 9527;
+    };
+    nativelog("[dsl] freebie_get_pattern_prompt, port: {0}", $port);
+    $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先读 read_file(\"{0}/docs/patterns.md\") 了解已有模式，再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳新增/修订模式后追加到 patterns.md（保持简洁，无空话套话）。", agent_get_project_dir($port), agent_get_project_identity($port));
+    return($prompt);
 };
 
 // Body of the task queued by the freebie_save_conversation_history notification: the

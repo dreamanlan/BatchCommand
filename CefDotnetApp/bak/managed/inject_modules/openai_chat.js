@@ -47,9 +47,12 @@
 
     // Code text inside the block.
     codeText: 'pre code',
-    // Real textarea for chat input.
-    inputTA: '#prompt-textarea',
-    sendBtn: 'button[data-testid="send-button"]',
+    // Real textarea for chat input; #mobile-composer-prompt covers the
+    // logged-out /uc mobile page.
+    inputTA: '#prompt-textarea, #mobile-composer-prompt',
+    // Logged-out /uc pages have no data-testid send button, so also accept
+    // the plain form submit button.
+    sendBtn: 'button[data-testid="send-button"], form button[type=submit]',
   };
 
   /** Pick the first visible (rect non-zero) element matching selector. */
@@ -87,6 +90,18 @@
       if (!content) continue;
       const contentRect = content.getBoundingClientRect();
       if (contentRect.width > 0 && contentRect.height > 0) out.push(el);
+    }
+    if (out.length > 0) return out;
+    // Logged-out /uc pages lack data-message-author-role markers; anchor on
+    // the ChatGPT H4 label and climb to its li host instead.
+    const labels = (root || document).querySelectorAll('h4');
+    for (const h4 of labels) {
+      const label = (h4.innerText || '').trim();
+      if (!/^ChatGPT/.test(label)) continue;
+      const li = h4.closest('li');
+      if (!li) continue;
+      const r = li.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) out.push(li);
     }
     return out;
   }
@@ -787,7 +802,7 @@
     if (!root) { warn('[trim] no chat root'); return; }
     // Treat each AI message as one round; keep last N AI messages and their
     // preceding siblings up to the previous AI message.
-    const aiMsgs = pickAllVisible(SEL.aiMsg, root);
+    const aiMsgs = pickAllVisibleMessages(root);
     const total = aiMsgs.length;
     if (total <= keepRounds) {
       log(`[trim] nothing to do (${total} <= keep=${keepRounds})`);

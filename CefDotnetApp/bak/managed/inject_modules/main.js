@@ -180,8 +180,8 @@ window.AgentAPI = {
   togglePanel: () => panel && panel.toggle(),
   startMetaDSL: () => metadslMonitor && metadslMonitor.start(),
   stopMetaDSL: () => metadslMonitor && metadslMonitor.stop(),
-  startAgent: () => metadslMonitor && metadslMonitor.startAgent(),
-  stopAgent: () => metadslMonitor && metadslMonitor.stopAgent(),
+  startAutoPlan: () => metadslMonitor && metadslMonitor.startAutoPlan(),
+  stopAutoPlan: () => metadslMonitor && metadslMonitor.stopAutoPlan(),
 
   // Manual trigger for command detection (useful for testing)
   detectCommands: () => {
@@ -270,12 +270,12 @@ window.onAgentCommand = function (commandJson) {
     }
 
     if (cmd.command === 'start_auto_plan') {
-      this.AgentAPI.startAgent();
+      this.AgentAPI.startAutoPlan();
       return;
     }
 
     if (cmd.command === 'stop_auto_plan') {
-      this.AgentAPI.stopAgent();
+      this.AgentAPI.stopAutoPlan();
       return;
     }
 

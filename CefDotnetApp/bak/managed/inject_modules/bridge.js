@@ -174,11 +174,11 @@ class AgentBridge {
         return;
       case 'command':
         if (decision.command === 'start_auto_plan' && typeof window !== 'undefined'
-          && window.AgentAPI && typeof window.AgentAPI.startAgent === 'function') {
-          window.AgentAPI.startAgent();
+          && window.AgentAPI && typeof window.AgentAPI.startAutoPlan === 'function') {
+          window.AgentAPI.startAutoPlan();
         } else if (decision.command === 'stop_auto_plan' && typeof window !== 'undefined'
-          && window.AgentAPI && typeof window.AgentAPI.stopAgent === 'function') {
-          window.AgentAPI.stopAgent();
+          && window.AgentAPI && typeof window.AgentAPI.stopAutoPlan === 'function') {
+          window.AgentAPI.stopAutoPlan();
         }
         return;
       case 'trigger_decision':

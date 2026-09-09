@@ -506,6 +506,20 @@ class AgentPanel {
       `;
     chatRoomBtn.onclick = () => this.openChatRoom();
 
+    // Proxy button - open Online Proxy in new window
+    const proxyBtn = document.createElement('button');
+    proxyBtn.textContent = 'Proxy';
+    proxyBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00897b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    proxyBtn.onclick = () => window.open('https://www.gamexyz.net:8080');
+
     // Hyarena button - open Hyarena chat in new window
     const hyarenaBtn = document.createElement('button');
     hyarenaBtn.textContent = 'Hyarena';
@@ -560,7 +574,7 @@ class AgentPanel {
         cursor: pointer;
         font-size: 11px;
       `;
-    geminiProxyBtn.onclick = () => window.open('https://www.gamexyz.net:8080');
+    geminiProxyBtn.onclick = () => window.open('https://gemini.google.com/app');
 
     // OpenAi button - open OpenAi AI in new window
     const openAiBtn = document.createElement('button');
@@ -642,6 +656,7 @@ class AgentPanel {
     buttonBar.appendChild(testBtn);
     if (itsMe) {
       buttonBar.appendChild(chatRoomBtn);
+      buttonBar.appendChild(proxyBtn);
     }
     buttonBar.appendChild(this.metadslButton);
     buttonBar.appendChild(clearQueueBtn);

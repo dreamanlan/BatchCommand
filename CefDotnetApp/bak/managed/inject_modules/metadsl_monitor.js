@@ -245,11 +245,11 @@ class MetaDSLMonitor {
 
   startAutoPlan() {
     if (this.panel.bridge.autoPlanEnabled) {
-      this.sendResultToLLM('Agent already started');
+      this.sendResultToLLM('Auto Plan already started');
       return;
     }
     this.panel.toggleAutoPlan();
-    this.sendResultToLLM('Agent started');
+    this.sendResultToLLM('Auto Plan started');
   }
   stopAutoPlan() {
     if (this.panel.bridge.lockAgentEnabled) {
@@ -257,11 +257,11 @@ class MetaDSLMonitor {
       return;
     }
     if (!this.panel.bridge.autoPlanEnabled) {
-      this.sendResultToLLM('Agent already stopped');
+      this.sendResultToLLM('Auto Plan already stopped');
       return;
     }
     this.panel.toggleAutoPlan();
-    this.sendResultToLLM('Agent stopped');
+    this.sendResultToLLM('Auto Plan stopped');
   }
   keepContext(count) {
     const operation = {

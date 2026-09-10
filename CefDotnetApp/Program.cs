@@ -143,6 +143,9 @@ public struct HostApi
     public IntPtr SetHeartbeatInterval;
     // Generic async callback completion (see native_callbacks.h on native side)
     public IntPtr NativeCallbackComplete;
+    // Custom scheme handler factory (un)registration (browser process)
+    public IntPtr RegisterCustomScheme;
+    public IntPtr UnregisterCustomScheme;
 }
 
 // delegate for native api
@@ -378,6 +381,13 @@ public delegate void HostSetHeartbeatIntervalDelegation(int interval_ms);
 // Returns 1 when the handle was found (0 = already completed or unknown).
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int HostNativeCallbackCompleteDelegation(long handle, int ok, [MarshalAs(UnmanagedType.LPUTF8Str)] string? data, int code);
+// Register/unregister the generic custom scheme handler factory for a
+// scheme/domain at runtime. |domain| may be empty to match all hosts. Returns 1
+// on success, 0 on failure.
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostRegisterCustomSchemeDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string domain);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostUnregisterCustomSchemeDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string domain);
 
 namespace DotNetLib
 {
@@ -782,6 +792,39 @@ namespace DotNetLib
             return BoxedValue.FromBool(r);
         }
     }
+    // register_custom_scheme(scheme[, domain]) - route requests for the given
+    // scheme/domain through the script's on_custom_scheme handler (C++ fallback
+    // when the script does not take over). |domain| defaults to all hosts.
+    sealed class RegisterCustomSchemeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: register_custom_scheme(scheme[, domain])");
+                return BoxedValue.FromBool(false);
+            }
+            string scheme = operands[0].AsString ?? string.Empty;
+            string domain = operands.Count >= 2 ? (operands[1].AsString ?? string.Empty) : string.Empty;
+            bool r = Lib.RegisterCustomScheme(scheme, domain);
+            return BoxedValue.FromBool(r);
+        }
+    }
+    // unregister_custom_scheme(scheme[, domain]) - remove a previously
+    // registered custom scheme handler factory for the scheme/domain.
+    sealed class UnregisterCustomSchemeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: unregister_custom_scheme(scheme[, domain])");
+                return BoxedValue.FromBool(false);
+            }
+            string scheme = operands[0].AsString ?? string.Empty;
+            string domain = operands.Count >= 2 ? (operands[1].AsString ?? string.Empty) : string.Empty;
+            bool r = Lib.UnregisterCustomScheme(scheme, domain);
+            return BoxedValue.FromBool(r);
+        }
+    }
     sealed class GetBrowserIdsExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1120,6 +1163,9 @@ namespace DotNetLib
             m_SetHeartbeatIntervalApi = Marshal.GetDelegateForFunctionPointer<HostSetHeartbeatIntervalDelegation>(hostApi.SetHeartbeatInterval);
             // Generic async callback completion
             m_NativeCallbackCompleteApi = Marshal.GetDelegateForFunctionPointer<HostNativeCallbackCompleteDelegation>(hostApi.NativeCallbackComplete);
+            // Custom scheme handler factory (un)registration
+            m_RegisterCustomSchemeApi = Marshal.GetDelegateForFunctionPointer<HostRegisterCustomSchemeDelegation>(hostApi.RegisterCustomScheme);
+            m_UnregisterCustomSchemeApi = Marshal.GetDelegateForFunctionPointer<HostUnregisterCustomSchemeDelegation>(hostApi.UnregisterCustomScheme);
         }
 
         public void NativeLog(string msg)
@@ -1983,6 +2029,18 @@ namespace DotNetLib
             if (handle == 0 || m_NativeCallbackCompleteApi == null) return false;
             return m_NativeCallbackCompleteApi(handle, ok ? 1 : 0, data, code) != 0;
         }
+        // Register/unregister the generic custom scheme handler factory for a
+        // scheme/domain at runtime (browser process). |domain| may be empty.
+        public bool RegisterCustomScheme(string scheme, string domain)
+        {
+            if (string.IsNullOrEmpty(scheme) || m_RegisterCustomSchemeApi == null) return false;
+            return m_RegisterCustomSchemeApi(scheme, domain ?? string.Empty) != 0;
+        }
+        public bool UnregisterCustomScheme(string scheme, string domain)
+        {
+            if (string.IsNullOrEmpty(scheme) || m_UnregisterCustomSchemeApi == null) return false;
+            return m_UnregisterCustomSchemeApi(scheme, domain ?? string.Empty) != 0;
+        }
         public void EnqueueCefMessage(string msgName, IList<BoxedValue> args)
         {
             s_CefMessageQueue.Enqueue(new Tuple<string, IList<BoxedValue>>(msgName, args));
@@ -2188,6 +2246,8 @@ namespace DotNetLib
         private HostResponseSetUrlDelegation? m_ResponseSetUrlApi;
         private HostSetHeartbeatIntervalDelegation? m_SetHeartbeatIntervalApi;
         private HostNativeCallbackCompleteDelegation? m_NativeCallbackCompleteApi;
+        private HostRegisterCustomSchemeDelegation? m_RegisterCustomSchemeApi;
+        private HostUnregisterCustomSchemeDelegation? m_UnregisterCustomSchemeApi;
 
         [ThreadStatic]
         private static IntPtr s_Browser = IntPtr.Zero;
@@ -2541,6 +2601,9 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBrowserCefQueryDelegation(IntPtr browser, IntPtr frame, long query_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, [MarshalAs(UnmanagedType.U1)] bool persistent, long handle, ref int out_result);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnCustomSchemeDelegation(IntPtr browser, IntPtr frame, long handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, [MarshalAs(UnmanagedType.LPUTF8Str)] string method, [MarshalAs(UnmanagedType.LPUTF8Str)] string referrer, IntPtr html_code, ref int html_size);
         public delegate void OnRendererInitDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         public delegate void OnRendererFinalizeDelegation(IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -3050,6 +3113,70 @@ namespace DotNetLib
             // Nothing usable came back: answer synchronously with a failure so the
             // page's onFailure runs instead of hanging.
             out_result = -1;
+            return false;
+        }
+
+        // Custom scheme request routed from the browser process (UI thread). The
+        // script decides whether to serve the content. The DSL may return either
+        // a bare bool (handled) or a tuple (handled, html). Tri-state contract
+        // (mirrors the on_load_end buf/size pattern; mime is fixed to text/html):
+        //   handled == false -> C++ serves its built-in fallback (html_size = 0).
+        //   handled == true, html empty -> async takeover: html_size = 0, the
+        //     script must later call complete_native_callback($handle, true,
+        //     responseJson, 0), where responseJson is {"status":int,"mime":string,
+        //     "body":string,"base64":bool} (a bare string is treated as HTML).
+        //   handled == true, html non-empty and fits -> synchronous return: the
+        //     bytes are copied into html_code and html_size is set; C++ completes
+        //     the request itself as text/html (200), the script must NOT call
+        //     complete_native_callback for this handle.
+        internal static bool OnCustomScheme(IntPtr browser, IntPtr frame, long handle, string scheme, string url, string method, string referrer, IntPtr html_code, ref int html_size)
+        {
+            int capacity = html_size;
+            html_size = 0;
+            NativeApi.SetContext(browser, frame);
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.FromString(scheme));
+                    vargs.Add(BoxedValue.FromString(url));
+                    vargs.Add(BoxedValue.FromString(method));
+                    vargs.Add(BoxedValue.FromString(referrer));
+                    vargs.Add(BoxedValue.From(handle));
+                    BoxedValue r = BatchCommand.BatchScript.Call("on_custom_scheme", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple2 = r.GetTuple2();
+                        if (null != tuple2) {
+                            bool handled = tuple2.Item1.GetBool();
+                            if (handled) {
+                                string html = tuple2.Item2.GetString();
+                                if (!string.IsNullOrEmpty(html)) {
+                                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(html);
+                                    if (bytes.Length < capacity) {
+                                        Marshal.Copy(bytes, 0, html_code, bytes.Length);
+                                        html_size = bytes.Length;
+                                    }
+                                    else {
+                                        NativeLog($"[csharp] custom scheme html too large: {bytes.Length} >= {capacity}");
+                                        return false;
+                                    }
+                                }
+                            }
+                            return handled;
+                        }
+                    }
+                    return r.GetBool();
+                }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             return false;
         }
 
@@ -4736,6 +4863,21 @@ namespace DotNetLib
                 return false;
             return s_NativeApi.NativeCallbackComplete(handle, ok, data, code);
         }
+        // Register/unregister the generic custom scheme handler factory for a
+        // scheme/domain at runtime. Content is then produced by the script's
+        // on_custom_scheme handler, with a C++ built-in fallback.
+        internal static bool RegisterCustomScheme(string scheme, string domain)
+        {
+            if (null == s_NativeApi)
+                return false;
+            return s_NativeApi.RegisterCustomScheme(scheme, domain);
+        }
+        internal static bool UnregisterCustomScheme(string scheme, string domain)
+        {
+            if (null == s_NativeApi)
+                return false;
+            return s_NativeApi.UnregisterCustomScheme(scheme, domain);
+        }
         internal static IntPtr GetBrowsersFirstValid()
         {
             if (s_NativeApi == null)
@@ -5253,6 +5395,8 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("handle_thread_queue", "handle_thread_queue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
             BatchCommand.BatchScript.Register("set_heart_beat_interval", "set_heart_beat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartBeatIntervalExp>());
             BatchCommand.BatchScript.Register("complete_native_callback", "complete_native_callback(handle, ok[, data, code]) - complete a CEF async callback taken over by the script (JS dialog, deferred resource load, cefQuery)", false, new ExpressionFactoryHelper<CompleteNativeCallbackExp>());
+            BatchCommand.BatchScript.Register("register_custom_scheme", "register_custom_scheme(scheme[, domain]) - route custom scheme requests through the script's on_custom_scheme handler (C++ fallback when not taken over)", false, new ExpressionFactoryHelper<RegisterCustomSchemeExp>());
+            BatchCommand.BatchScript.Register("unregister_custom_scheme", "unregister_custom_scheme(scheme[, domain]) - remove a custom scheme handler factory registration", false, new ExpressionFactoryHelper<UnregisterCustomSchemeExp>());
             BatchCommand.BatchScript.Register("send_javascript_code", "send_javascript_code(code) - post JavaScript to the renderer of the current context browser", false, new ExpressionFactoryHelper<SendJavascriptCodeExp>());
             BatchCommand.BatchScript.Register("send_javascript_call", "send_javascript_call(func, arg1, arg2, ...) - call a JavaScript function in the renderer of the current context browser", false, new ExpressionFactoryHelper<SendJavascriptCallExp>());
             BatchCommand.BatchScript.Register("show_native_js_dialog", "show_native_js_dialog(handle, dialog_type, message[, default_text]) - show the in-page AgentDialog for a taken over JS dialog", false, new ExpressionFactoryHelper<ShowNativeJsDialogExp>());

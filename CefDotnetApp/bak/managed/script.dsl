@@ -247,6 +247,24 @@ script(on_load_end)params($url,$httpStatusCode,$injectAllFrame,$isMainFrame)
     nativelog("[dsl] on_load_end:{0} {1} {2} {3}", $url, $httpStatusCode, $injectAllFrame, $isMainFrame);
     return((true, ""));
 };
+// Note: this function will be called on the browser process UI thread.
+// A custom scheme request is offered to the script, which decides whether to
+// serve the content. $handle identifies the parked native callback. Mime is
+// fixed to text/html for the synchronous path. Return (handled, html):
+//   (false, "")      -> C++ serves its built-in fallback (tabbar page or 404).
+//   (true, "<html>") -> synchronous: the html is returned directly as
+//                       text/html (200); do NOT call complete_native_callback.
+//   (true, "")       -> async takeover: the script MUST later call
+//                       complete_native_callback($handle, true, responseJson, 0)
+//                       or the request hangs until it times out. responseJson is
+//                       {"status":int,"mime":string,"body":string,"base64":bool}
+//                       (a bare string is treated as an html body); ok=false
+//                       cancels the request with an error status.
+script(on_custom_scheme)params($scheme,$url,$method,$referrer,$handle)
+{
+    nativelog("[dsl] on_custom_scheme: scheme={0} url={1} method={2} referrer={3} handle={4}", $scheme, $url, $method, $referrer, $handle);
+    return((false, ""));
+};
 script(on_loading_state_change)params($url,$isLoading,$canGoBack,$canGoForward)
 {
     nativelog("[dsl] on_loading_state_change: url={0}, isLoading={1}, canGoBack={2}, canGoForward={3}", $url, $isLoading, $canGoBack, $canGoForward);

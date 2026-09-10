@@ -105,9 +105,9 @@
     };
   }
 
-  // Keyboard shortcut: Ctrl+Shift+A to toggle panel
+  // Keyboard shortcut: Ctrl+Shift+K to toggle panel
   document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
       if (panel) {
         panel.toggle();
       }
@@ -144,7 +144,7 @@
   }
 
   logger.info('Initialization complete', { pageType: pageAdapter.pageType });
-  logger.info('Use Ctrl+Shift+A to toggle control panel');
+  logger.info('Use Ctrl+Shift+K to toggle control panel');
   logger.info('Access API via window.AgentAPI');
 }
 

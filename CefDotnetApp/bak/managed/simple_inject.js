@@ -602,9 +602,9 @@
       log: (msg, level) => panel.logger.log(msg, level)
     };
 
-    // Keyboard shortcut: Ctrl+Shift+A to toggle panel (use capture phase to ensure it works)
+    // Keyboard shortcut: Ctrl+Shift+K to toggle panel (use capture phase to ensure it works)
     document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
         e.preventDefault();
         e.stopPropagation();
         panel.toggle();
@@ -612,7 +612,7 @@
     }, true);
 
     console.log('[SimplePanel] Initialization complete');
-    console.log('[SimplePanel] Press Ctrl+Shift+A to toggle control panel');
+    console.log('[SimplePanel] Press Ctrl+Shift+K to toggle control panel');
     console.log('[SimplePanel] Access API via window.SimplePanel');
   }
 

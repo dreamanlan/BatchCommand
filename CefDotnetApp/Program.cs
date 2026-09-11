@@ -2792,6 +2792,17 @@ namespace DotNetLib
                     if (!r.IsNullObject) {
                         NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                     }
+                    // Sandbox note: the return value (no_sandbox) only takes effect in the
+                    // browser process (CefInitialize -> browser's own cmdline gets
+                    // --no-sandbox -> broker launches ALL children unsandboxed). In
+                    // subprocesses it is a dead value (CefExecuteProcess consumes nothing).
+                    // Per-process-type disabling: NOT here and NOT via
+                    // on_before_command_line_processing -- that callback fires only at each
+                    // process's OWN startup (browser side sees process_type="" on its own
+                    // cmdline; child side is too late, the broker token is fixed at spawn).
+                    // The correct hook is OnBeforeChildProcessLaunch (browser process, per
+                    // child, before spawn): read --type from the passed command line and
+                    // AppendSwitch("no-sandbox") only for the target process type.
                     return r.GetBool();
                 }
             }
@@ -3201,6 +3212,39 @@ namespace DotNetLib
             }
 
             NativeLog($"[csharp] Renderer Init, url={url}");
+
+            // --- Renderer sandbox timeline (Windows, CEF/Chromium) -------------------
+            // The sandbox engages in TWO stages (two-token design, see
+            // sandbox/win/src/sandbox_policy.h):
+            //
+            //   [1] Birth (broker spawn): the process is created with the INITIAL
+            //       token + Job object + alternate desktop. The initial token is
+            //       restricted but still allows DLL loading and file reads -- a
+            //       designed bootstrap window ("do work that requires high privileges
+            //       here", sandbox/win/src/sandbox.h). Our .NET runtime load and the
+            //       first DSL read happen inside this window.
+            //
+            //   [2] renderer_main.cc EnableSandbox() -> TargetServices::LowerToken():
+            //       switches to the LOCKDOWN token (deny-only SIDs, LOW integrity,
+            //       delayed mitigations). One-way; the initial token is discarded.
+            //
+            // Callback order in this renderer process:
+            //   OnBeforeCommandLineProcessing          <- still initial token (earliest;
+            //                                            command line not yet consumed)
+            //   ... blink / RenderThreadImpl init ...  <- still initial token
+            //   LowerToken()                           <- FULL sandbox engages here
+            //   run loop starts
+            //   OnContextCreated -> on_renderer_init   <- FULL LOCKDOWN already active
+            //
+            // Consequences:
+            //  - From on_renderer_init onward (this callback included), direct file
+            //    access via System.IO is DENIED by design. The .NET runtime and the
+            //    DSL content loaded before LowerToken keep running fine.
+            //  - The bootstrap window is one-shot: re-reading files after LowerToken
+            //    fails ("Can't find dsl script" is really an access denial, not a
+            //    missing file).
+            //  - Anything that needs files at runtime must go through the broker:
+            //    cefQuery/JsBridge to the browser process.
 
             try {
                 NativeLog(string.Format("[csharp] Call dsl on_renderer_init"));
@@ -3840,6 +3884,7 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     var cmdLineProxy = new CommandLineProxy(command_line, s_NativeApi);
+                    s_NoSandbox = cmdLineProxy.HasSwitch("no-sandbox");
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.From(process_type));
                     vargs.Add(BoxedValue.From(cmdLineProxy));
@@ -5064,6 +5109,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
             BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
             BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
+            BatchCommand.BatchScript.SetGlobalVariable("nosandbox", BoxedValue.From(s_NoSandbox));
             BatchCommand.BatchScript.SetGlobalVariable("startupurl", BoxedValue.FromString(s_StartupUrl));
             BatchCommand.BatchScript.SetGlobalVariable("lastloadedmainurl", BoxedValue.FromString(s_LastLoadedMainUrl));
             BatchCommand.BatchScript.SetGlobalVariable("lastloadedurl", BoxedValue.FromString(s_LastLoadedUrl));
@@ -5295,7 +5341,7 @@ namespace DotNetLib
                     }
                 }
             }
-            else {
+            else if (s_NoSandbox) {
                 NativeLog("[csharp] Can't find dsl script: " + fi.FullName);
             }
             RefreshGlobalVars();
@@ -5434,6 +5480,7 @@ namespace DotNetLib
         private static string s_AppDir = string.Empty;
         private static bool s_IsMac = false;
         private static int s_ProcessType = -1;
+        private static bool s_NoSandbox = true;
         // Renderer process: tracked main-frame browser ids (native ref map owns the CefRefPtr)
         private static readonly HashSet<int> s_RendererBrowserIds = new();
         // Browser process: tracked browser IDs (maintained by OnBrowserInit/OnBrowserFinalize)

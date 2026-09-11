@@ -10,7 +10,10 @@ script(on_init)
 {
     nativelog("[dsl] on_init finish");
     fileecho(true);
-    //no-sandbox = false
+    // no_sandbox return: browser-process only, GLOBAL (all children).
+    // Per-type disabling: use OnBeforeChildProcessLaunch
+    // (NOT on_before_command_line_processing — that only fires at each process's own startup, too late on the child side).
+    // no-sandbox = false
     return(false);
 };
 script(on_finalize)
@@ -94,15 +97,6 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 
     // Override user-agent-product to look like standard Chrome
     $cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/150.0.7871.187");
-
-    $platform = osplatform();
-    nativelog("[dsl] on_before_command_line_processing platform:{0}", $platform);
-    if (stringcontains($platform,"Win32")) {
-        $cmdLine.AppendSwitch("hide-frame");
-        $cmdLine.AppendSwitch("hide-top-menu");
-
-        nativelog("[dsl] add hide-frame hide-top-menu");
-    };
 };
 
 script(on_before_child_process_launch)params($processType, $cmdLine)

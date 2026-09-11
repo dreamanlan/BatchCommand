@@ -18,7 +18,8 @@ script(on_init)
 {
     nativelog("[dsl] on_init finish");
     fileecho(true);
-    //no-sandbox = false
+    // no-sandbox = false
+    // Always return false in the renderer.
     return(false);
 };
 script(on_finalize)
@@ -28,6 +29,9 @@ script(on_finalize)
 
 script(on_renderer_init)params($url)
 {
+    // on_renderer_init runs AFTER LowerToken() (full sandbox lockdown: deny-only SIDs + LOW integrity).
+    // The earlier bootstrap window (initial token, where .NET + DSL were first loaded) is gone;
+    // use cefQuery/JsBridge for any file access now.
     nativelog("[dsl] on_renderer_init finish, url: {0}", $url);
 };
 script(on_renderer_finalize)
@@ -60,6 +64,7 @@ script(on_heart_beat)params($processType,$deltaTime)
 
 script(on_before_command_line_processing)params($processType, $cmdLine)
 {
+    // At this point, the sandbox has not yet fully taken effect, so files can still be accessed.
     if ($processType == 0) {
         //debuggerlaunch();
     };
@@ -102,15 +107,6 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 
     // Override user-agent-product to look like standard Chrome
     $cmdLine.AppendSwitchWithValue("user-agent-product", "Chromium/150.0.7871.187");
-
-    $platform = osplatform();
-    nativelog("[dsl] on_before_command_line_processing platform:{0}", $platform);
-    if (stringcontains($platform,"Win32")) {
-        $cmdLine.AppendSwitch("hide-frame");
-        $cmdLine.AppendSwitch("hide-top-menu");
-
-        nativelog("[dsl] add hide-frame hide-top-menu");
-    };
 };
 
 script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)

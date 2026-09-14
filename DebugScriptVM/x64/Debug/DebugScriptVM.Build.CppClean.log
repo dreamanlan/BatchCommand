@@ -1,5 +1,12 @@
 d:\github\batchcommand\debugscriptvm\x64\debug\vc143.pdb
 d:\github\batchcommand\debugscriptvm\x64\debug\vc143.idb
+d:\github\batchcommand\debugscriptvm\x64\debug\winstacktrace.obj
+d:\github\batchcommand\debugscriptvm\x64\debug\readablerangewin.obj
+d:\github\batchcommand\debugscriptvm\x64\debug\readablerangeios.obj
+d:\github\batchcommand\debugscriptvm\x64\debug\readablerangeandroid.obj
+d:\github\batchcommand\debugscriptvm\x64\debug\readablerange.obj
+d:\github\batchcommand\debugscriptvm\x64\debug\gpucapturemanager_renderdoc.obj
+d:\github\batchcommand\debugscriptvm\x64\debug\gpucapturemanager_huaweisquid.obj
 d:\github\batchcommand\debugscriptvm\x64\debug\dllmain.obj
 d:\github\batchcommand\debugscriptvm\x64\debug\debugscriptvm.obj
 d:\github\batchcommand\debugscriptvm\x64\debug\debugscriptexternapiandentry.obj

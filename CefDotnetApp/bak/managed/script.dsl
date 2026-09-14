@@ -5,11 +5,58 @@ script(init_global_consts)
 {
     // Initialize global constants for browser here
     setenv("PLAYWRIGHT_DRIVER_SEARCH_PATH", combinepath(basepath, "managed"));
+    // Standalone agent process (AgentCore host) config.
+    // 9540: new architecture port; 9527-9535 remain in use by the old
+    // in-process deployments running in parallel during the migration.
+    // Note: the launcher is the native host BatchCmdDslHost.exe at the
+    // webagent root (managed/BatchCmdDsl.exe is just an empty-main apphost).
+    @AgentPort = 9540;
+    @AgentExe = combinepath(basepath, "BatchCmdDslHost.exe");
+    @AgentArgs = format("--plugin=managed/AgentCore.dll --interval=50 --agentport={0}", @AgentPort);
+    // Relay segment: the browser process is the only websocket client of the
+    // standalone AgentCore (page js reaches it through cefQuery + this relay).
+    // NOTE: must be "localhost", not "127.0.0.1" - the AgentCore HttpListener
+    // prefix is http://localhost:{port}/ and it rejects mismatched Host headers.
+    @AgentWsUrl = format("ws://localhost:{0}", @AgentPort);
+    // WeChat bridge upstream for the relay_lite pages (option A: one
+    // browser-side connection per agent, "wxb_<agentId>"; the bridge keeps
+    // routing by registered connection name, zero bridge changes).
+    @LiteBridgeUrl = "ws://localhost:3000";
+};
+
+// Start the standalone agent host process when it is not running.
+// The agent service (AgentCore) lives in its own process so the renderer
+// processes can keep the sandbox enabled; communication with inject.js goes
+// over the websocket server started by script_agent.dsl on_init.
+script(start_agent_process)
+{
+    $ct = count_process("BatchCmdDslHost.exe");
+    if ($ct <= 0) {
+        // Pass the project identity through so the agent process knows the
+        // initial identity (initialprojectidentity global in script_agent.dsl).
+        $args = @AgentArgs;
+        if (!isnullorempty(initialprojectidentity)) {
+            $args = format("{0} --projectidentity={1}", $args, initialprojectidentity);
+        };
+        $pid = launch_process(@AgentExe, $args, basepath);
+        // Record the pid: on browser exit the agent host is stopped ONLY if
+        // this instance launched it (see on_browser_finalize).
+        set_context_var("agentSelfLaunchPid", $pid);
+        nativelog("[dsl] start_agent_process: launched pid={0} args={1}", $pid, $args);
+    };
 };
 script(on_init)
 {
-    nativelog("[dsl] on_init finish");
+    nativelog("[dsl] on_init finish, pid:{0}, type:{1}", pid(), processtype);
     fileecho(true);
+    start_agent_process();
+    // Relay: a fast heartbeat drives wsclient event dispatch on the main
+    // thread (~10-20ms relay latency); the heavy keep-alive work in
+    // on_heart_beat is throttled by a beat counter.
+    set_heartbeat_interval(10);
+    set_context_var("hbCount", 0);
+    set_context_var("agentRetryAt", 0);
+    wsclient_open(@AgentWsUrl, "agent");
     // no_sandbox return: browser-process only, GLOBAL (all children).
     // Per-type disabling: use OnBeforeChildProcessLaunch
     // (NOT on_before_command_line_processing — that only fires at each process's own startup, too late on the child side).
@@ -18,7 +65,102 @@ script(on_init)
 };
 script(on_finalize)
 {
-    nativelog("[dsl] on_finalize finish");
+    nativelog("[dsl] on_finalize finish, pid:{0}, type:{1}", pid(), processtype);
+};
+
+// Relay callbacks (drained on the browser main thread, see WsClientManager).
+script(on_wsclient_state)params($id, $state)
+{
+    nativelog("[relay] wsclient {0} state: {1}", $id, $state);
+    if ($state == "connected") {
+        // Pending agent_register answer: return the client id as the payload.
+        $pending = get_context_var("relayPending_" + $id);
+        if (!isnull($pending)) {
+            remove_context_var("relayPending_" + $id);
+            complete_native_callback($pending, true, $id);
+        };
+    };
+    if ($id == "agent" && $state == "connected") {
+        // Smoke test: full round trip through the standalone AgentCore
+        // (agent_call -> handle_agent_command -> ping ->
+        //  send_response_to_inject -> agent_result back to on_wsclient_message).
+        // Verdict is logged by on_wsclient_message (SMOKE PASS) or the
+        // heartbeat watchdog (SMOKE FAIL) - look for "[relay] SMOKE".
+        $cmd = to_json({"id": 1, "command": "ping", "params": {}});
+        $envelope = to_json({"type": "agent_call", "id": 1, "func": "handle_agent_command", "args": [$cmd]});
+        $ok = wsclient_send($id, $envelope);
+        set_context_var("smokeSentAt", now());
+        set_context_var("smokeResult", "");
+        nativelog("[relay] smoke ping sent: {0}", $ok);
+    };
+    // Registered relay clients: notify the page (relay_transport re-registers)
+    // and drop the url-key mapping (the wsclient id is dead after this).
+    if ($state == "disconnected" || $state == "failed") {
+        $pending = get_context_var("relayPending_" + $id);
+        if (!isnull($pending)) {
+            // The register never completed: fail the query instead of hanging it.
+            remove_context_var("relayPending_" + $id);
+            complete_native_callback($pending, false, "", -3);
+        };
+        $urlKey = get_context_var("relayUrl_" + $id);
+        if (!isnull($urlKey)) {
+            relay_push_to_page($id, to_json({"type": "relay_state", "state": $state}), $urlKey);
+            remove_context_var("relayUrl_" + $id);
+            remove_context_var("relayBrowser_" + $id);
+        };
+    };
+};
+
+script(on_wsclient_message)params($id, $msg)
+{
+    // The plain "agent" connection is the smoke link: judge the round trip.
+    $urlKey = get_context_var("relayUrl_" + $id);
+    if (isnull($urlKey)) {
+        if ($id == "agent") {
+            $env = dev_tools_parse_bytes($msg);
+            $type = "";
+            if ($env != null) {
+                $type = $env["type"];
+            };
+            if ($type == "agent_result") {
+                $prev = get_context_var("smokeResult");
+                if (isnull($prev) || $prev == "") {
+                    // Log once per ping cycle: the envelope machinery replies
+                    // to every command (branch response first, envelope reply
+                    // second), later results are just noise.
+                    $elapsed = get_diff_time_seconds(get_context_var("smokeSentAt"), now());
+                    set_context_var("smokeResult", "pass");
+                    nativelog("[relay] SMOKE PASS: browser->AgentCore->browser round trip OK in {0}s (success={1}, data={2}, error={3})", $elapsed, $env["success"], $env["data"], $env["error"]);
+                };
+            }
+            else {
+                nativelog("[relay] wsclient agent message (non-result, expecting agent_result): {0}", get_string_in_length($msg, 200));
+            };
+        }
+        else {
+            nativelog("[relay] wsclient {0} message: {1}", $id, get_string_in_length($msg, 200));
+        };
+        return;
+    };
+    // Registered relay clients: push the message through to the page
+    // (envelopes and raw MetaDSL texts alike; relay_transport.js classifies).
+    relay_push_to_page($id, $msg, $urlKey);
+};
+
+// Push a relay message to the page that registered $id: find its browser by
+// the url key recorded at registration and call window.onAgentEvent in it.
+// NOTE: to_json cannot serialize plain strings (LitJson limitation) - use
+// json_escape(s, true) to build the JSON string literals.
+script(relay_push_to_page)params($id, $msg, $urlKey)
+{
+    $bid = find_browser_id_by_url_key($urlKey);
+    if ($bid > 0 && set_context_by_id($bid)) {
+        $js = format("if (window.onAgentEvent) window.onAgentEvent({0}, {1});", json_escape($id, true), json_escape($msg, true));
+        send_javascript_code($js);
+    }
+    else {
+        nativelog("[relay] push failed: no browser for url key {0} (client {1}, bid={2})", $urlKey, $id, $bid);
+    };
 };
 
 script(on_browser_init)
@@ -36,8 +178,42 @@ script(on_browser_init)
         deletefile(combinepath(basepath, "cefclient_cache/chrome_debug.log"));
     };
 };
-script(on_browser_finalize)
+// Default handler for the C# hot reload watcher (watch_file / watch_dir /
+// HotReloadManager): invoked unconditionally on every watched file change.
+// THREAD CAVEAT: this may run on ANY .NET threadpool thread (the watcher
+// callback), where the interpreter is worker-style — init_global_consts
+// globals and host-level context vars are visible, but main-thread runtime
+// state is NOT. Keep handlers light, thread-safe and stateless; anything
+// heavier should enqueue to the main thread instead.
+script(on_file_changed)params($filePath, $fileType)
 {
+    nativelog("[dsl] on_file_changed: {0} ({1})", $filePath, $fileType);
+    return((true, ""));
+};
+script(on_browser_finalize)params($remainingBrowsers)
+{
+    // The global teardown (stop the self-launched agent host, close every
+    // relay connection) belongs to the LAST live browser only: popups/tabs
+    // close while other pages still need the agent. Per-page cleanup is
+    // handled by pagehide (js), on_render_process_terminated and the
+    // heartbeat reaper instead.
+    if ($remainingBrowsers > 0) {
+        nativelog("[dsl] on_browser_finalize: {0} browser(s) still open, skip the agent teardown", $remainingBrowsers);
+        return;
+    };
+    // Stop the standalone agent host IF this browser instance launched it
+    // (pid recorded in start_agent_process). When it was already running
+    // (owned by another webagent instance), leave it alone. If a sharing
+    // instance is still running, its heartbeat keep-alive relaunches the
+    // agent within ~2s, so the multi-instance case stays safe.
+    $agentPid = get_context_var("agentSelfLaunchPid");
+    if (!isnull($agentPid) && $agentPid > 0) {
+        $stopped = kill_process($agentPid);
+        remove_context_var("agentSelfLaunchPid");
+        nativelog("[dsl] on_browser_finalize: stopped self-launched agent host (pid={0}, stopped={1})", $agentPid, $stopped);
+    };
+    // The relay connections belong to this browser process.
+    wsclient_close_all();
     nativelog("[dsl] on_browser_finalize finish");
 };
 
@@ -46,6 +222,64 @@ script(on_heart_beat)params($processType,$deltaTime)
     // Do something every heart beat
     if ($processType == 0) {
         handle_thread_queue();
+        // Relay: drain wsclient events (also auto-drained by the host before
+        // this callback; explicit drain keeps the ordering obvious).
+        handle_wsclient_queue(100);
+        // Throttle the process keep-alive + relay reconnect to ~2s.
+        $hbCount = get_context_var("hbCount");
+        if (isnull($hbCount)) {
+            $hbCount = 0;
+        };
+        $hbCount = $hbCount + 1;
+        set_context_var("hbCount", $hbCount);
+        if (($hbCount % 200) == 0) {
+            // Keep the standalone agent host alive (restarts it if it died).
+            start_agent_process();
+            // Zombie relay reaper: close wsclient connections whose owning
+            // browser no longer exists (page closed / renderer died without
+            // unregistering; the graceful pagehide path is in relay_transport).
+            $wscList = wsclient_list();
+            looplist($wscList) {
+                $entry = $$;
+                $parts = split($entry, "|");
+                $cid = $parts[0];
+                $urlKey = get_context_var("relayUrl_" + $cid);
+                if (!isnull($urlKey)) {
+                    $bid = get_context_var("relayBrowser_" + $cid);
+                    if (!isnull($bid) && $bid > 0) {
+                        if (!set_context_by_id($bid)) {
+                            nativelog("[relay] reaper: browser {0} gone, closing zombie connection {1} (url key {2})", $bid, $cid, $urlKey);
+                            wsclient_close($cid);
+                            remove_context_var("relayUrl_" + $cid);
+                            remove_context_var("relayBrowser_" + $cid);
+                        };
+                    };
+                };
+            };
+            // Smoke watchdog: the ping was sent but no agent_result came back.
+            $smokeSentAt = get_context_var("smokeSentAt");
+            $smokeResult = get_context_var("smokeResult");
+            if (!isnull($smokeSentAt) && (isnull($smokeResult) || $smokeResult == "")) {
+                $elapsed = get_diff_time_seconds($smokeSentAt, now());
+                if ($elapsed > 10) {
+                    set_context_var("smokeResult", "fail");
+                    nativelog("[relay] SMOKE FAIL: no agent_result within {0}s. Check: 1) AgentCore console (script_agent.dsl on_init / ws server on port {1}) 2) wsclient state: {2} 3) ws clients: {3}", $elapsed, @AgentPort, wsclient_state("agent"), to_json(wsclient_list()));
+                };
+            };
+        };
+        // Reconnect the relay when it is down (the server may still be starting).
+        // Throttled by the beat counter (~1s at the 10ms heartbeat): time()
+        // in this engine is unix SECONDS, a time()+N gate would wait N*1000s.
+        if (($hbCount % 100) == 0) {
+            $state = wsclient_state("agent");
+            if ($state == "disconnected" || $state == "failed" || $state == "unknown") {
+                if ($state != "unknown") {
+                    wsclient_close("agent");
+                };
+                $id = wsclient_open(@AgentWsUrl, "agent");
+                nativelog("[relay] reconnect attempt from state {0}: {1}", $state, $id);
+            };
+        };
     };
 };
 script(on_console_log)params($level,$message,$source,$line,$maxLogSize)
@@ -70,18 +304,12 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 
     $url = $cmdLine.GetSwitchValue("url");
 
-    nativelog("[dsl] on_before_command_line_processing: process_type={0}, url={1}", $processType, $url);
+    nativelog("[dsl] on_before_command_line_processing: process_type={0}, url={1}, pid={2}", $processType, $url, pid());
 
     if (stringcontainsany($url, "file:///", "http://localhost") && stringcontainsany($url, "AgentCore/hotreload_test.html", "http://localhost:8080/agent.html", "http://localhost:8081", "http://localhost:8082")) {
-        $cmdLine.AppendSwitch("disable-web-security");
         $cmdLine.AppendSwitch("allow-file-access-from-files");
-    }
-    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://www.google.com/ai", "https://www.google.com/search", "https://gemini.google.com/app")) {
-        $cmdLine.AppendSwitch("disable-web-security");
-    }
-    elif (stringcontainsany($url, "gamexyz.net")) {
-        $cmdLine.AppendSwitch("disable-web-security");
     };
+
     //$cmdLine.AppendSwitch("disable-web-security");
     //$cmdLine.AppendSwitch("allow-file-access-from-files");
     //$cmdLine.AppendSwitch("disable-site-isolation-trials");
@@ -270,6 +498,24 @@ script(on_load_error)params($errorCode,$errorText,$failedUrl)
 script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$errorString)
 {
     nativelog("[dsl] on_render_process_terminated: startup_url={0}, url={1}, status={2}, error_code={3}, error_string={4}", $startupUrl, $url, $status, $errorCode, $errorString);
+    // The renderer serving $url is dead: its relay registrations are zombies
+    // now (the js could not unregister). Close every connection whose url key
+    // matches the dead renderer's url. A live same-site tab sharing this url
+    // key gets its connections closed too — its js auto re-registers via the
+    // relay_state push, so the worst case is a brief reconnect.
+    $wscList = wsclient_list();
+    looplist($wscList) {
+        $entry = $$;
+        $parts = split($entry, "|");
+        $cid = $parts[0];
+        $urlKey = get_context_var("relayUrl_" + $cid);
+        if (!isnull($urlKey) && string_contains($url, $urlKey)) {
+            wsclient_close($cid);
+            remove_context_var("relayUrl_" + $cid);
+            remove_context_var("relayBrowser_" + $cid);
+            nativelog("[relay] renderer terminated: closed connection {0} (url key {1})", $cid, $urlKey);
+        };
+    };
     return((true, ""));
 };
 
@@ -415,10 +661,14 @@ script(on_browser_hot_reload_completed)params($url)
 //                       until complete_native_callback($handle, ok, response
 //                       [, code]) is called. ok=true sends Success(response),
 //                       ok=false sends Failure(code, response).
+// Persistent queries ($persistent == true): $handle stays valid across ok=true
+//                       completions (each one pushes another onSuccess to the
+//                       page) and never times out; ok=false cancels the query.
 // Safety nets if a taken over query is never completed: CEF cancels it on
 // navigation / renderer termination / window.cefQueryCancel (the entry is then
-// discarded), the native registry expires it after 60s, and everything the
-// browser owns is released when it closes.
+// discarded and on_browser_cef_query_canceled is notified), a non-persistent
+// query expires in the native registry after 60s, and everything the browser
+// owns is released when it closes.
 script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
 {
     nativelog("[dsl] on_browser_cef_query called - query_id: {0}, request: {1}, persistent: {2}, handle: {3}", $query_id, $request, $persistent, $handle);
@@ -438,11 +688,96 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
             nativelog("[dsl] js dialog UI unavailable, canceling handle {0}", $msg["handle"]);
             complete_native_callback($msg["handle"], false, "");
             return((false, 0));
+        }
+        // ---- relay transport (relay_transport.js -> wsclient -> AgentCore) ----
+        elif ($action == "agent_register") {
+            // { action, urlKey } -> new wsclient connection to AgentCore,
+            // the wsclient id is the relay client id. The answer is deferred
+            // until on_wsclient_state reports connected (the connect itself
+            // is asynchronous), so the js side never races a send.
+            $urlKey = $msg["urlKey"];
+            $clientId = wsclient_open(@AgentWsUrl);
+            if ($clientId == "") {
+                return((false, -1));
+            };
+            set_context_var("relayUrl_" + $clientId, $urlKey);
+            set_context_var("relayPending_" + $clientId, $handle);
+            // Owner browser id for the zombie reaper (see on_heart_beat).
+            set_context_var("relayBrowser_" + $clientId, find_browser_id_by_url_key($urlKey));
+            return((true, 0));
+        }
+        elif ($action == "agent_send") {
+            // { action, clientId, message } -> forward over the wsclient.
+            // Fire-and-forget: responses and pushes come back through
+            // on_wsclient_message -> relay_push_to_page.
+            $ok = wsclient_send($msg["clientId"], $msg["message"]);
+            if ($ok) {
+                return((false, 0));
+            };
+            return((false, -2));
+        }
+        elif ($action == "agent_unregister") {
+            // { action, clientId } -> close the relay connection.
+            wsclient_close($msg["clientId"]);
+            remove_context_var("relayUrl_" + $msg["clientId"]);
+            remove_context_var("relayBrowser_" + $msg["clientId"]);
+            return((false, 0));
+        }
+        elif ($action == "lite_open") {
+            // { action, connId, url, urlKey } -> one browser-side upstream
+            // wsclient connection (relay_lite / relay_ws migration: no page js
+            // direct websockets anymore). Pure dumb pipe: the page module
+            // owns the wire protocol (auth/register etc. go through the
+            // existing agent_send action once the connection is up). The
+            // connection reuses the relay tables, so the zombie reaper,
+            // renderer-terminated cleanup and relay_push_to_page routing all
+            // work unchanged. Empty url falls back to the WeChat bridge
+            // default (@LiteBridgeUrl).
+            $cid = $msg["connId"];
+            $url = $msg["url"];
+            $urlKey = $msg["urlKey"];
+            if (isnullorempty($cid) || isnull($urlKey)) {
+                return((false, -1));
+            };
+            if (isnullorempty($url)) {
+                $url = @LiteBridgeUrl;
+            };
+            set_context_var("relayUrl_" + $cid, $urlKey);
+            set_context_var("relayBrowser_" + $cid, find_browser_id_by_url_key($urlKey));
+            $state = wsclient_state($cid);
+            if ($state == "connected" || $state == "connecting") {
+                // Already up (page refresh race): answer immediately.
+                complete_native_callback($handle, true, $cid);
+                return((false, 0));
+            };
+            if ($state == "disconnected" || $state == "failed") {
+                // Stale entry from a previous connection: release the id first.
+                wsclient_close($cid);
+            };
+            $newId = wsclient_open($url, $cid);
+            if ($newId == "") {
+                remove_context_var("relayUrl_" + $cid);
+                remove_context_var("relayBrowser_" + $cid);
+                return((false, -1));
+            };
+            set_context_var("relayPending_" + $cid, $handle);
+            return((true, 0));
         };
     };
 
     // Not handled here: answer synchronously with a failure.
     return((false, -1));
+};
+
+// Pure notification (browser process, UI thread): a query that
+// on_browser_cef_query took over ($handle) was canceled from elsewhere -
+// window.cefQueryCancel, navigation, renderer termination or browser close.
+// The native side has already discarded $handle; drop any state kept for it
+// (e.g. stop a subscription feed). Do NOT call complete_native_callback on it,
+// that would be a no-op. No return value.
+script(on_browser_cef_query_canceled)params($query_id, $handle)
+{
+    nativelog("[dsl] on_browser_cef_query_canceled - query_id: {0}, handle: {1}", $query_id, $handle);
 };
 
 // DevTools observer callbacks (browser process only, fired on UI thread).

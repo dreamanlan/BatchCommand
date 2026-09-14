@@ -1,9 +1,10 @@
 ﻿using System;
-using AbstractAgent;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Threading.Tasks;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
@@ -185,9 +186,9 @@ namespace AgentCore.Core
             if (!_providers.TryGetValue(providerId, out var provider))
                 return $"error: provider '{providerId}' not configured";
 
-            var nativeApi = AgentCore.Instance.GetNativeApi();
-            if (nativeApi == null)
-                return "error: nativeApi not available";
+            var ctx = MetaDslExecutor.CurrentContext;
+            if (ctx == null)
+                return "error: no request context";
 
             var session = GetSession(providerId, tag);
             var item = new WorkItem
@@ -196,7 +197,7 @@ namespace AgentCore.Core
                 Tag = tag,
                 Topic = topic,
                 Run = ct => provider.ChatAsync(tag, topic, message, ct),
-                Deliver = result => nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, result })
+                Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "llm_callback", new BoxedValue[] { providerId, tag, topic, result })
             };
             return Submit(session, item) ? "ok" : "busy";
         }
@@ -238,9 +239,9 @@ namespace AgentCore.Core
             if (!_providers.TryGetValue(providerId, out var provider))
                 return $"error: provider '{providerId}' not configured";
 
-            var nativeApi = AgentCore.Instance.GetNativeApi();
-            if (nativeApi == null)
-                return "error: nativeApi not available";
+            var ctx = MetaDslExecutor.CurrentContext;
+            if (ctx == null)
+                return "error: no request context";
 
             var session = GetSession(providerId, tag);
             var item = new WorkItem
@@ -249,7 +250,7 @@ namespace AgentCore.Core
                 Tag = tag,
                 Topic = topic,
                 Run = ct => provider.ChatWithImagesAsync(tag, topic, message, imageUrls, ct),
-                Deliver = result => nativeApi.EnqueueCefMessage("llm_callback", new BoxedValue[] { providerId, tag, topic, result })
+                Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "llm_callback", new BoxedValue[] { providerId, tag, topic, result })
             };
             return Submit(session, item) ? "ok" : "busy";
         }
@@ -334,7 +335,7 @@ namespace AgentCore.Core
                         string errMsg = (ex is OperationCanceledException)
                             ? $"LLM request cancelled (busy for {GetBusyDuration(item.ProviderId, item.Tag)}s)"
                             : ex.Message;
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] Chat error for '{item.ProviderId}/{item.Tag}': {errMsg}");
+                        MetaDslExecutor.AppendApiErrorInfoLine($"[LlmClientService] Chat error for '{item.ProviderId}/{item.Tag}': {errMsg}");
                         result = $"[error] {errMsg}";
                     }
                     finally
@@ -347,7 +348,7 @@ namespace AgentCore.Core
                     try { item.Deliver(result); }
                     catch (Exception ex)
                     {
-                        AgentFrameworkService.Instance.Log($"[LlmClientService] Deliver error for '{item.ProviderId}/{item.Tag}': {ex.Message}");
+                        AgentCore.Instance.Logger.Error($"[LlmClientService] Deliver error for '{item.ProviderId}/{item.Tag}': {ex.Message}");
                     }
                 }
             });
@@ -417,7 +418,7 @@ namespace AgentCore.Core
             {
                 try { cts.Cancel(); }
                 catch (ObjectDisposedException) { }
-                AgentFrameworkService.Instance.Log($"[LlmClientService] Cancel requested for session '{sessionKey}'");
+                AgentCore.Instance.Logger.Info($"[LlmClientService] Cancel requested for session '{sessionKey}'");
                 return "ok";
             }
             return "error: session not active";
@@ -449,7 +450,7 @@ namespace AgentCore.Core
                     int maxBusy = GetMaxBusySeconds(providerId);
                     if (duration > maxBusy)
                     {
-                        AgentFrameworkService.Instance.Log($"[LlmClientService] Watchdog: session '{sessionKey}' busy for {duration}s (limit {maxBusy}s), auto-cancelling");
+                        AgentCore.Instance.Logger.Info($"[LlmClientService] Watchdog: session '{sessionKey}' busy for {duration}s (limit {maxBusy}s), auto-cancelling");
                         if (_activeCts.TryGetValue(sessionKey, out var cts))
                         {
                             try { cts.Cancel(); }
@@ -460,7 +461,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex)
             {
-                AgentFrameworkService.Instance.Log($"[LlmClientService] Watchdog error: {ex.Message}");
+                AgentCore.Instance.Logger.Error($"[LlmClientService] Watchdog error: {ex.Message}");
             }
         }
 

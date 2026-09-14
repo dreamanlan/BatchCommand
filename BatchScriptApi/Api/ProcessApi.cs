@@ -1,0 +1,795 @@
+using System;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
+
+using System.Collections.Generic;
+using DotnetStoryScript;
+using DotnetStoryScript.DslExpression;
+using ScriptableFramework;
+using BatchCommand.Utils;
+using Dsl;
+
+namespace BatchCommand.Api
+{
+    // Base class for process/script command expressions that use params/delimiter/template
+    abstract class ProcessCommandExpBase : AbstractExpression
+    {
+        // Matches a closing double-quote not preceded by a backslash
+        private static readonly Regex s_unescapedQuoteRegex = new Regex(@"(?<!\\)""", RegexOptions.Compiled);
+        // Whether this expression needs extern script block {: ... :}
+        protected virtual bool NeedExternScript => false;
+        // Usage hint for error messages
+        protected abstract string UsageHint { get; }
+
+        protected override BoxedValue DoCalc()
+        {
+            var operands = new List<BoxedValue>();
+            for (int i = 0; i < m_Expressions.Count; i++) {
+                operands.Add(m_Expressions[i].Calc());
+            }
+            var bindingVals = new Dictionary<string, string>();
+            for (int i = 0; i < m_BindingNames.Count; i++) {
+                string bindingName = m_BindingNames[i];
+                if (Calculator.TryGetVariable(bindingName, out var value) && !value.IsNullObject) {
+                    bindingVals[bindingName] = value.ToString();
+                }
+                else {
+                    bindingVals[bindingName] = string.Empty;
+                }
+            }
+            return OnCalc(operands, bindingVals);
+        }
+        protected abstract BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals);
+
+        protected override bool Load(Dsl.FunctionData callData)
+        {
+            if (NeedExternScript) {
+                m_Script = callData.GetParamId(0);
+                callData = callData.ThisOrLowerOrderCall;
+            }
+            for (int i = 0; i < callData.GetParamNum(); ++i) {
+                Dsl.ISyntaxComponent param = callData.GetParam(i);
+                m_Expressions.Add(Calculator.Load(param));
+            }
+            return true;
+        }
+        protected override bool Load(StatementData statementData)
+        {
+            var first = statementData.First.AsFunction;
+            if (first != null) {
+                if (NeedExternScript)
+                    Load(first.ThisOrLowerOrderCall);
+                else
+                    Load(first);
+            }
+            for (int i = 1; i < statementData.GetFunctionNum(); ++i) {
+                var func = statementData.GetFunction(i).AsFunction;
+                if (null != func) {
+                    if (NeedExternScript)
+                        func = func.ThisOrLowerOrderCall;
+                    var id = func.GetId();
+                    if (id == "bindings") {
+                        LoadBindingNames(func);
+                    }
+                    else if (id == "delimiter" && func.GetParamNum() == 2) {
+                        m_BeginChars = func.GetParamId(0);
+                        m_EndChars = func.GetParamId(1);
+                    }
+                }
+            }
+            if (NeedExternScript) {
+                var last = statementData.Last.AsFunction;
+                if (last != null) {
+                    if (last.HaveExternScript()) {
+                        m_Script = last.GetParamId(0);
+                    }
+                    else {
+                        ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                    }
+                }
+            }
+            return true;
+        }
+        private void LoadBindingNames(Dsl.FunctionData callData)
+        {
+            for (int i = 0; i < callData.GetParamNum(); ++i) {
+                string name = callData.GetParamId(i);
+                m_BindingNames.Add(name);
+            }
+        }
+
+        // Apply template substitution with params and skill envs
+        protected string ApplyTemplate(string text, Dictionary<string, string> bindingVals)
+        {
+            var envs = HostBridge.GetTemplateEnvs?.Invoke() ?? new System.Collections.Generic.Dictionary<string, string>();
+            var sb1 = new StringBuilder();
+            var sb2 = new StringBuilder();
+            return TemplateCode.CalcBlockString(text, bindingVals, envs, sb1, sb2, m_BeginChars, m_EndChars);
+        }
+
+        // Build command and arguments for script execution based on file extension
+        protected static (string command, string arguments) BuildScriptCommand(string ext, string file, string? cmdAndArgs)
+        {
+            string cmd = string.Empty;
+            string args = string.Empty;
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            if (ext == ".py") {
+                cmd = isWindows ? "python" : "python3";
+                args = file;
+            }
+            else if (ext == ".sh") {
+                cmd = "bash";
+                args = file;
+            }
+            else if (ext == ".zsh") {
+                cmd = "zsh";
+                args = file;
+            }
+            else if (ext == ".js") {
+                cmd = "node";
+                args = file;
+            }
+            else if (ext == ".pl") {
+                cmd = "perl";
+                args = file;
+            }
+            else if (ext == ".rb") {
+                cmd = "ruby";
+                args = file;
+            }
+            else if (ext == ".ps1") {
+                cmd = isWindows ? "powershell" : "pwsh";
+                args = "-File " + file;
+            }
+            else if (ext == ".bat" || ext == ".cmd") {
+                if (!isWindows)
+                    throw new PlatformNotSupportedException("BAT and CMD scripts are only supported on Windows.");
+                cmd = "cmd";
+                args = "/c " + file;
+            }
+            else {
+                throw new NotSupportedException("Unsupported script extension: " + ext);
+            }
+            if (!string.IsNullOrEmpty(cmdAndArgs)) {
+                string trimmedCmdAndArgs = cmdAndArgs.Trim();
+                if (trimmedCmdAndArgs.Length > 0) {
+                    if (trimmedCmdAndArgs[0] == '-' || trimmedCmdAndArgs[0] == '/') {
+                        // Extra arguments only, prepend to existing args
+                        args = trimmedCmdAndArgs + " " + args;
+                    }
+                    else if (trimmedCmdAndArgs[0] == '"') {
+                        // Double-quoted command path, supports backslash-escaped quotes (\")
+                        var quoteMatch = s_unescapedQuoteRegex.Match(trimmedCmdAndArgs, 1);
+                        if (quoteMatch.Success) {
+                            int cmdEnd = quoteMatch.Index;
+                            cmd = trimmedCmdAndArgs.Substring(1, cmdEnd - 1).Replace("\\\"", "\"");
+                            string extraArgs = (cmdEnd + 1 < trimmedCmdAndArgs.Length)
+                                ? trimmedCmdAndArgs.Substring(cmdEnd + 1).TrimStart()
+                                : string.Empty;
+                            if (extraArgs.Length > 0)
+                                args = extraArgs + " " + args;
+                        }
+                    }
+                    else if (trimmedCmdAndArgs[0] == '\'') {
+                        // Single-quoted command path, no escape support
+                        int cmdEnd = trimmedCmdAndArgs.IndexOf('\'', 1);
+                        if (cmdEnd > 0) {
+                            cmd = trimmedCmdAndArgs.Substring(1, cmdEnd - 1);
+                            string extraArgs = (cmdEnd + 1 < trimmedCmdAndArgs.Length)
+                                ? trimmedCmdAndArgs.Substring(cmdEnd + 1).TrimStart()
+                                : string.Empty;
+                            if (extraArgs.Length > 0)
+                                args = extraArgs + " " + args;
+                        }
+                    }
+                    else {
+                        // Unquoted command, split by first space
+                        int cmdEnd = trimmedCmdAndArgs.IndexOf(' ');
+                        if (cmdEnd > 0) {
+                            cmd = trimmedCmdAndArgs.Substring(0, cmdEnd);
+                            string extraArgs = trimmedCmdAndArgs.Substring(cmdEnd + 1).TrimStart();
+                            if (extraArgs.Length > 0)
+                                args = extraArgs + " " + args;
+                        }
+                        else {
+                            cmd = trimmedCmdAndArgs;
+                        }
+                    }
+                }
+            }
+            return (cmd, args);
+        }
+
+        // Trim leading and trailing blank lines from script content
+        protected static string TrimScriptBlankLines(string script)
+        {
+            if (string.IsNullOrEmpty(script))
+                return script;
+            int start = 0;
+            int len = script.Length;
+            // Skip leading blank lines: scan forward line by line
+            while (start < len) {
+                int pos = start;
+                while (pos < len && script[pos] != '\n' && script[pos] != '\r')
+                    pos++;
+                // Check if the line [start..pos) is all whitespace
+                bool isBlank = true;
+                for (int i = start; i < pos; i++) {
+                    if (script[i] != ' ' && script[i] != '\t') {
+                        isBlank = false;
+                        break;
+                    }
+                }
+                if (!isBlank) break;
+                // Move past line ending (\r\n or \n or \r)
+                if (pos < len && script[pos] == '\r') pos++;
+                if (pos < len && script[pos] == '\n') pos++;
+                start = pos;
+            }
+            // Skip trailing blank lines: scan backward line by line
+            int end = len;
+            while (end > start) {
+                int pos = end;
+                // Move back past line ending
+                if (pos > start && script[pos - 1] == '\n') pos--;
+                if (pos > start && script[pos - 1] == '\r') pos--;
+                int lineEnd = pos;
+                // Find the start of this line
+                while (pos > start && script[pos - 1] != '\n')
+                    pos--;
+                // Check if the line [pos..lineEnd) is all whitespace
+                bool isBlank = true;
+                for (int i = pos; i < lineEnd; i++) {
+                    if (script[i] != ' ' && script[i] != '\t') {
+                        isBlank = false;
+                        break;
+                    }
+                }
+                if (!isBlank) break;
+                end = pos;
+            }
+            if (start >= end)
+                return string.Empty;
+            if (start == 0 && end == len)
+                return script;
+            return script.Substring(start, end - start);
+        }
+
+        protected List<IExpression> m_Expressions = new List<IExpression>();
+        protected List<string> m_BindingNames = new List<string>();
+        protected string m_BeginChars = string.Empty;
+        protected string m_EndChars = string.Empty;
+        protected string m_Script = string.Empty;
+
+        internal static Dictionary<string, string> s_Extensions = new Dictionary<string, string> {
+            { "python", ".py" },
+            { "bash", ".sh" },
+            { "zsh", ".zsh" },
+            { "nodejs", ".js" },
+            { "node", ".js" },
+            { "perl", ".pl" },
+            { "ruby", ".rb" },
+            { "powershell", ".ps1" },
+            { "bat", ".bat" },
+            { "cmd", ".cmd" }
+        };
+    }
+
+    // Execute script synchronously
+    sealed class ExecuteScriptExp : ProcessCommandExpBase
+    {
+        protected override bool NeedExternScript => true;
+        protected override string UsageHint => "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :};";
+
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
+        {
+            if (operands.Count > 4) {
+                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string language = operands.Count > 0 ? operands[0].ToString().Trim().ToLower() : "python";
+                string? workingDir = operands.Count > 1 ? operands[1].AsString : null;
+                int timeout = operands.Count > 2 ? operands[2].GetInt() : 30000;
+                string? cmdAndArgs = operands.Count > 3 ? operands[3].AsString : null;
+
+                if (!s_Extensions.TryGetValue(language, out var ext)) {
+                    ApiErrorInfo.AppendLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
+                    return BoxedValue.NullObject;
+                }
+
+                var rawScript = m_Script ?? string.Empty;
+                var templatedScript = ApplyTemplate(rawScript, bindingVals);
+                var script = TrimScriptBlankLines(templatedScript);
+                string file = ProcessOperations.GetUniqueRandomFilePath(ext);
+                try {
+                    var operandText = new StringBuilder();
+                    for (int i = 0; i < operands.Count; ++i) {
+                        if (i > 0)
+                            operandText.Append(" | ");
+                        operandText.Append(operands[i].ToString());
+                    }
+                    string preview = script.Replace("\r", "\\r").Replace("\n", "\\n");
+                    if (preview.Length > 500)
+                        preview = preview.Substring(0, 500);
+                    File.AppendAllText("E:/tmp/execute_script_diagnostic.log",
+                        $"before_write raw_length={rawScript.Length} template_length={templatedScript.Length} script_length={script.Length} operands_count={operands.Count} operands={operandText} file={file} preview={preview}{Environment.NewLine}");
+                }
+                catch {
+                }
+                File.WriteAllText(file, script);
+                try {
+                    File.AppendAllText("E:/tmp/execute_script_diagnostic.log",
+                        $"after_write file_length={new FileInfo(file).Length}{Environment.NewLine}");
+                }
+                catch {
+                }
+
+                var (command, arguments) = BuildScriptCommand(ext, file, cmdAndArgs);
+                ProcessResult result;
+                try {
+                    result = ProcessOperations.Shared.ExecuteCommand(command, arguments, workingDir, timeout);
+                }
+                finally {
+                    try { File.Delete(file); } catch { }
+                }
+
+                var dict = new Dictionary<string, object> {
+                    ["success"] = result.Success,
+                    ["exitCode"] = result.ExitCode,
+                    ["output"] = result.Output,
+                    ["error"] = result.Error,
+                    ["executionTime"] = result.ExecutionTime.TotalMilliseconds,
+                    ["diagnosticRawLength"] = rawScript.Length,
+                    ["diagnosticTemplateLength"] = templatedScript.Length,
+                    ["diagnosticScriptLength"] = script.Length,
+                    ["diagnosticScriptPreview"] = script.Length > 500 ? script.Substring(0, 500) : script,
+                    ["diagnosticTempFile"] = file,
+                    ["diagnosticBuildMarker"] = $"{typeof(ExecuteScriptExp).Assembly.FullName}|{typeof(ExecuteScriptExp).Assembly.Location}"
+                };
+
+                return BoxedValue.FromObject(dict);
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"ExecuteCommand error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Execute script asynchronously with callback via command_callback CEF message
+    sealed class ExecuteScriptCallbackExp : ProcessCommandExpBase
+    {
+        protected override bool NeedExternScript => true;
+        protected override string UsageHint => "execute_script_callback('command_callback'[, language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :};";
+
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
+        {
+            if (operands.Count < 1 || operands.Count > 5) {
+                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                return BoxedValue.FromString("error: invalid arguments");
+            }
+
+            try {
+                string callbackMsg = operands[0].AsString;
+                string language = operands.Count > 1 ? operands[1].ToString().Trim().ToLower() : "python";
+                string? workingDir = operands.Count > 2 ? operands[2].AsString : null;
+                int timeout = operands.Count > 3 ? operands[3].GetInt() : 30000;
+                string? cmdAndArgs = operands.Count > 4 ? operands[4].AsString : null;
+
+                if (!s_Extensions.TryGetValue(language, out var ext)) {
+                    ApiErrorInfo.AppendLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
+                    return BoxedValue.NullObject;
+                }
+
+                var script = TrimScriptBlankLines(ApplyTemplate(m_Script, bindingVals));
+                string file = ProcessOperations.GetUniqueRandomFilePath(ext);
+                File.WriteAllText(file, script);
+
+                var (command, arguments) = BuildScriptCommand(ext, file, cmdAndArgs);
+                ProcessOperations.Shared.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackMsg, file);
+                return BoxedValue.FromString($"ok, async exec '{file}', result via command_callback");
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"ExecuteCommandAsync error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    // Execute command synchronously
+    sealed class ExecuteCommandExp : ProcessCommandExpBase
+    {
+        protected override string UsageHint => "execute_command(command[, args_str, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
+
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
+        {
+            if (operands.Count < 1 || operands.Count > 4) {
+                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string command = operands[0].AsString;
+                string? arguments = operands.Count > 1 ? operands[1].AsString : null;
+                string? workingDir = operands.Count > 2 ? operands[2].AsString : null;
+                int timeout = operands.Count > 3 ? operands[3].GetInt() : 30000;
+
+                command = ApplyTemplate(command, bindingVals);
+                if (arguments != null)
+                    arguments = ApplyTemplate(arguments, bindingVals);
+
+                var result = ProcessOperations.Shared.ExecuteCommand(command, arguments, workingDir, timeout);
+
+                var dict = new Dictionary<string, object> {
+                    ["success"] = result.Success,
+                    ["exitCode"] = result.ExitCode,
+                    ["output"] = result.Output,
+                    ["error"] = result.Error,
+                    ["executionTime"] = result.ExecutionTime.TotalMilliseconds,
+                    ["diagnosticBuildMarker"] = $"{typeof(ExecuteScriptExp).Assembly.FullName}|{typeof(ExecuteScriptExp).Assembly.Location}"
+                };
+
+                return BoxedValue.FromObject(dict);
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"ExecuteCommand error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Execute command asynchronously with callback via command_callback CEF message
+    sealed class ExecuteCommandCallbackExp : ProcessCommandExpBase
+    {
+        protected override string UsageHint => "execute_command_callback('command_callback', command[, args_str, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
+
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
+        {
+            if (operands.Count < 2 || operands.Count > 5) {
+                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                return BoxedValue.FromString("error: invalid arguments");
+            }
+
+            try {
+                string callbackMsg = operands[0].AsString;
+                string command = operands[1].AsString;
+                string? arguments = operands.Count > 2 ? operands[2].AsString : null;
+                string? workingDir = operands.Count > 3 ? operands[3].AsString : null;
+                int timeout = operands.Count > 4 ? operands[4].GetInt() : 30000;
+
+                command = ApplyTemplate(command, bindingVals);
+                if (arguments != null)
+                    arguments = ApplyTemplate(arguments, bindingVals);
+
+                ProcessOperations.Shared.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackMsg);
+                return BoxedValue.FromString("ok, async exec, result via command_callback");
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"ExecuteCommandAsync error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+
+    // Start a background process
+    sealed class StartProcessExp : ProcessCommandExpBase
+    {
+        protected override string UsageHint => "start_process(processId, command[, args_str, workingDir])[params($a,$b,...)delimiter(begin_chars,end_chars)]";
+
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> argVals)
+        {
+            if (operands.Count < 2 || operands.Count > 4) {
+                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string processId = operands[0].AsString;
+                string command = operands[1].AsString;
+                string? arguments = operands.Count > 2 ? operands[2].AsString : null;
+                string? workingDir = operands.Count > 3 ? operands[3].AsString : null;
+
+                command = ApplyTemplate(command, argVals);
+                if (arguments != null)
+                    arguments = ApplyTemplate(arguments, argVals);
+
+                string id = ProcessOperations.Shared.StartProcess(processId, command, arguments, workingDir);
+                return BoxedValue.FromString(id);
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"StartProcess error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Stop a background process
+    sealed class StopProcessExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                ApiErrorInfo.AppendLine("Expected: stop_process(processId[, timeout_def_5000ms])");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string processId = operands[0].AsString;
+                int timeout = operands.Count > 1 ? operands[1].GetInt() : 5000;
+
+                bool result = ProcessOperations.Shared.StopProcess(processId, timeout);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"StopProcess error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // Check if process is running
+    sealed class IsProcessRunningExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                ApiErrorInfo.AppendLine("Expected: is_process_running(processId)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string processId = operands[0].AsString;
+                bool result = ProcessOperations.Shared.IsProcessRunning(processId);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"IsProcessRunning error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // Write to process input
+    sealed class WriteProcessInputExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                ApiErrorInfo.AppendLine("Expected: write_process_input(processId, input)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string processId = operands[0].AsString;
+                string input = operands[1].AsString;
+
+                bool result = ProcessOperations.Shared.WriteProcessInput(processId, input);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"WriteProcessInput error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // Read process output
+    sealed class ReadProcessOutputExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                ApiErrorInfo.AppendLine("Expected: read_process_output(processId)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string processId = operands[0].AsString;
+                string? output = ProcessOperations.Shared.ReadProcessOutput(processId);
+                return output != null ? BoxedValue.FromString(output) : BoxedValue.NullObject;
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"ReadProcessOutput error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Read process error
+    sealed class ReadProcessErrorExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                ApiErrorInfo.AppendLine("Expected: read_process_error(processId)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string processId = operands[0].AsString;
+                string? error = ProcessOperations.Shared.ReadProcessError(processId);
+                return error != null ? BoxedValue.FromString(error) : BoxedValue.NullObject;
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"ReadProcessError error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Get active callback command status
+    sealed class GetCommandStatusExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            try {
+                return BoxedValue.FromString(ProcessOperations.Shared.GetActiveCommandStatus());
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"GetCommandStatus error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
+    /// <summary>
+    /// Process / script execution api set (moved from AgentCore; service core
+    /// in BatchCommand.Utils.ProcessOperations). Async variants deliver via
+    /// HostBridge callbacks (command_callback / handle_command_callback).
+    /// </summary>
+    public static class ProcessApi
+    {
+        public static void RegisterApis()
+        {
+            BatchCommand.BatchScript.Register("execute_script", "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string. The default template code delimiters are \"{%\" and \"%}\"; specifically, {% %} serve as the template variable brackets.", new ExpressionFactoryHelper<ExecuteScriptExp>());
+            BatchCommand.BatchScript.Register("execute_script_callback", "execute_script_callback('command_callback'[, language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; - async exec, result via command_callback. The default template code delimiters are \"{%\" and \"%}\"; specifically, {% %} serve as the template variable brackets.", new ExpressionFactoryHelper<ExecuteScriptCallbackExp>());
+            BatchCommand.BatchScript.Register("execute_command", "execute_command(command[, args_str, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)] return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string", new ExpressionFactoryHelper<ExecuteCommandExp>());
+            BatchCommand.BatchScript.Register("execute_command_callback", "execute_command_callback('command_callback', command[, args_str, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)] - async exec, result via command_callback", new ExpressionFactoryHelper<ExecuteCommandCallbackExp>());
+            BatchCommand.BatchScript.Register("start_process", "start_process(processId, command[, args_str, workingDir])[params($a,$b,...)delimiter(begin_chars,end_chars)]", new ExpressionFactoryHelper<StartProcessExp>());
+            BatchCommand.BatchScript.Register("stop_process", "stop_process(processId[, timeout_def_5000ms]) - gracefully stop a child process started via start_process/execute_script", new ExpressionFactoryHelper<StopProcessExp>());
+            BatchCommand.BatchScript.Register("is_process_running", "is_process_running(processId)", new ExpressionFactoryHelper<IsProcessRunningExp>());
+            BatchCommand.BatchScript.Register("write_process_input", "write_process_input(processId, input)", new ExpressionFactoryHelper<WriteProcessInputExp>());
+            BatchCommand.BatchScript.Register("read_process_output", "read_process_output(processId)", new ExpressionFactoryHelper<ReadProcessOutputExp>());
+            BatchCommand.BatchScript.Register("read_process_error", "read_process_error(processId)", new ExpressionFactoryHelper<ReadProcessErrorExp>());
+            BatchCommand.BatchScript.Register("get_command_status", "get_command_status() - returns status of all active callback commands (id, duration, command)", new ExpressionFactoryHelper<GetCommandStatusExp>());
+            // OS-level process management (merged from CefDotnetApp; one set for
+            // every host). launch_process spawns and returns the OS pid;
+            // count_process counts by name; kill_process kills by name or pid
+            // (vs stop_process, which stops a spawned child gracefully).
+            BatchCommand.BatchScript.Register("launch_process", "launch_process(exe[, args, working_dir]) - start an OS process, returns its pid (0 on error)", new ExpressionFactoryHelper<LaunchProcessExp>());
+            BatchCommand.BatchScript.Register("count_process", "count_process(name) - number of running processes by name (with or without .exe suffix)", new ExpressionFactoryHelper<CountProcessExp>());
+            BatchCommand.BatchScript.Register("kill_process", "kill_process(name_or_pid) - kill OS processes by name (with or without .exe) or by pid, returns the killed count", new ExpressionFactoryHelper<KillProcessExp>());
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // OS-level process management (merged from CefDotnetApp: one api set for
+    // every host). Logging goes through HostBridge.Log.
+    // ------------------------------------------------------------------------
+
+    // Launch an OS process, returns its pid (0 on error).
+    sealed class LaunchProcessExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 3) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: launch_process(exe[, args, working_dir])");
+                return BoxedValue.From(0);
+            }
+            try {
+                string exe = operands[0].AsString;
+                string args = operands.Count > 1 ? operands[1].AsString : string.Empty;
+                string workingDir = operands.Count > 2 ? operands[2].AsString : string.Empty;
+                if (string.IsNullOrEmpty(exe)) {
+                    BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process: empty exe path");
+                    return BoxedValue.From(0);
+                }
+                var psi = new System.Diagnostics.ProcessStartInfo {
+                    FileName = exe,
+                    Arguments = args,
+                    UseShellExecute = false,
+                };
+                if (!string.IsNullOrEmpty(workingDir)) {
+                    psi.WorkingDirectory = workingDir;
+                }
+                using var proc = System.Diagnostics.Process.Start(psi);
+                if (null == proc) {
+                    BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process: Process.Start returned null: " + exe);
+                    return BoxedValue.From(0);
+                }
+                BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process: " + exe + " " + args + " -> pid " + proc.Id);
+                return BoxedValue.From(proc.Id);
+            }
+            catch (Exception ex) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process failed: " + ex.Message);
+                return BoxedValue.From(0);
+            }
+        }
+    }
+
+    // Count running processes by name (with or without the .exe suffix).
+    sealed class CountProcessExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: count_process(name)");
+                return BoxedValue.From(0);
+            }
+            try {
+                string name = operands[0].AsString ?? string.Empty;
+                if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) {
+                    name = name.Substring(0, name.Length - 4);
+                }
+                if (string.IsNullOrEmpty(name)) {
+                    return BoxedValue.From(0);
+                }
+                var procs = System.Diagnostics.Process.GetProcessesByName(name);
+                int count = procs.Length;
+                foreach (var p in procs) {
+                    p.Dispose();
+                }
+                return BoxedValue.From(count);
+            }
+            catch (Exception ex) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("count_process failed: " + ex.Message);
+                return BoxedValue.From(0);
+            }
+        }
+    }
+
+    // Kill OS processes by name (with or without the .exe suffix) or by pid.
+    // Returns the number of processes killed.
+    sealed class KillProcessExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: kill_process(name_or_pid)");
+                return BoxedValue.From(0);
+            }
+            try {
+                int stopped = 0;
+                if (operands[0].IsInteger) {
+                    int pid = operands[0].GetInt();
+                    try {
+                        using var proc = System.Diagnostics.Process.GetProcessById(pid);
+                        proc.Kill();
+                        stopped = 1;
+                    }
+                    catch (ArgumentException) {
+                        // process already gone
+                    }
+                }
+                else {
+                    string name = operands[0].AsString ?? string.Empty;
+                    if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) {
+                        name = name.Substring(0, name.Length - 4);
+                    }
+                    if (string.IsNullOrEmpty(name)) {
+                        return BoxedValue.From(0);
+                    }
+                    foreach (var proc in System.Diagnostics.Process.GetProcessesByName(name)) {
+                        try {
+                            proc.Kill();
+                            stopped++;
+                        }
+                        catch (Exception ex) {
+                            BatchCommand.Utils.HostBridge.Log?.Invoke("kill_process kill failed: " + ex.Message);
+                        }
+                        finally {
+                            proc.Dispose();
+                        }
+                    }
+                }
+                return BoxedValue.From(stopped);
+            }
+            catch (Exception ex) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("kill_process failed: " + ex.Message);
+                return BoxedValue.From(0);
+            }
+        }
+    }
+}

@@ -1,11 +1,25 @@
 ﻿// ============================================================================
-// Relay WebSocket - Real-time bidirectional communication
-// Used for chat / streaming
+// RelayWs - relay server client for the main agent page (chat / streaming).
+//
+// No page-side WebSocket anymore: the browser process owns the upstream
+// connection (wsclient id "wsp") opened via the cefQuery action "lite_open".
+// Which relay server the connection targets is decided by the URL configured
+// in the relay panel (CONFIG 'relay.wsUrl') - the local WeChat bridge and the
+// remote relay chain share the same wire protocol. All outbound messages go
+// through the existing agent_send action; inbound pushes arrive through the
+// generic onAgentEvent dispatcher by registering a pseudo-slot in
+// relaySlotRegistry (same table the execution slots use; pagehide closes us
+// for free via slot.close()).
+//
+// The public surface matches the old direct-WebSocket RelayWs exactly
+// (connect/disconnect/sendMessage/pushMessage/callTool/sendCommand/
+// onMessage/onStatus/connected/_lastChannelId) so relay_panel.js,
+// state_machine.js and main.js keep working unchanged.
 // ============================================================================
 class RelayWs {
   constructor() {
     this.logger = logger.createLogger('RelayWs');
-    this.ws = null;
+    this.clientId = null;        // the "wsp" wsclient id (browser side)
     this._lastChannelId = null;
     this.callbacks = {};
     this.reqId = 0;
@@ -15,7 +29,7 @@ class RelayWs {
     this._heartbeatTimer = null;
     this._onMessage = null;    // user callback: (data) => void
     this._onStatus = null;     // user callback: (status) => void  status: 'connected'|'disconnected'|'error'|'auth_ok'
-    this._clientId = null;     // stable per-page client identity (R3)
+    this._wsClientId = null;   // stable per-page client identity (R3)
   }
 
   _getUrl() {
@@ -32,66 +46,66 @@ class RelayWs {
 
   // Stable client identity for R3: prefer relay.session, else generate once and reuse.
   _getClientId() {
-    if (!this._clientId) {
+    if (!this._wsClientId) {
       const s = this._getSession();
-      this._clientId = s || ('agent_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10));
+      this._wsClientId = s || ('agent_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10));
     }
-    return this._clientId;
+    return this._wsClientId;
   }
 
   // ---- public API ----
 
-  // Connect to WebSocket server
+  // Connect to the relay server (the browser opens and owns the connection)
   connect(opts) {
     opts = opts || {};
-    if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
-      this.logger.warn('Already connected or connecting');
+    if (this.connected) {
+      this.logger.warn('Already connected');
       return;
     }
 
     this.autoReconnect = opts.autoReconnect !== undefined ? opts.autoReconnect : true;
     const url = opts.url || this._getUrl();
-    this.logger.info('Connecting to ' + url);
     this._emitStatus('connecting');
 
-    try {
-      this.ws = new WebSocket(url);
-    } catch (e) {
-      this.logger.error('Failed to create WebSocket: ' + e.message);
+    // A previous connection with this id may still be up (e.g. switching the
+    // panel URL): release it first so lite_open opens the NEW url.
+    this._release();
+
+    if (typeof relaySlotRegistry === 'undefined' || typeof window.cefQuery !== 'function') {
+      this.logger.error('relay transport unavailable (relay_transport.js / cefQuery)');
       this._emitStatus('error');
       return;
     }
 
-    this.ws.onopen = () => {
+    this.logger.info('Connecting to ' + url);
+    this._cefQuery({
+      action: 'lite_open',
+      connId: 'wsp',
+      url: url,
+      urlKey: (typeof relayTransport !== 'undefined' && relayTransport.urlKey) ? relayTransport.urlKey : 'unknown'
+    }, (cid) => {
+      this.clientId = cid;
       this.connected = true;
+      // Route our pushes through the generic dispatcher (pseudo-slot).
+      relaySlotRegistry.set(cid, {
+        _onPush: (message) => { this._handlePush(message); },
+        close: () => { this.disconnect(); }
+      });
       this.logger.info('Connected');
       this._emitStatus('connected');
-      // Auto-authenticate if apiKey is set
+      // Auto-authenticate if apiKey is set (same envelope as before)
       const key = this._getApiKey();
       if (key) {
         this._send({ type: 'auth', token: key, clientId: this._getClientId() });
       }
       this._startHeartbeat();
-    };
-
-    this.ws.onmessage = (event) => {
-      this._handleMessage(event);
-    };
-
-    this.ws.onerror = (err) => {
-      this.logger.error('WebSocket error');
+    }, (code, msgText) => {
+      this.logger.error('lite_open failed (' + code + '): ' + msgText);
       this._emitStatus('error');
-    };
-
-    this.ws.onclose = () => {
-      this.connected = false;
-      this._stopHeartbeat();
-      this.logger.info('Disconnected');
-      this._emitStatus('disconnected');
       if (this.autoReconnect) {
         this._scheduleReconnect();
       }
-    };
+    });
   }
 
   // Disconnect
@@ -102,10 +116,7 @@ class RelayWs {
       this._reconnectTimer = null;
     }
     this._stopHeartbeat();
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
+    this._release();
     this.connected = false;
   }
 
@@ -144,7 +155,7 @@ class RelayWs {
     });
   }
 
-  // Call a tool via WebSocket
+  // Call a tool via the relay
   callTool(tool, params, opts) {
     opts = opts || {};
     const id = this._nextId();
@@ -189,20 +200,49 @@ class RelayWs {
   }
 
   _send(obj) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+    if (!this.connected || !this.clientId) {
       this.logger.warn('Cannot send, not connected');
       return false;
     }
-    this.ws.send(JSON.stringify(obj));
+    this._cefQuery({
+      action: 'agent_send',
+      clientId: this.clientId,
+      message: JSON.stringify(obj)
+    });
     return true;
   }
 
-  _handleMessage(event) {
+  _release() {
+    if (this.clientId) {
+      if (typeof relaySlotRegistry !== 'undefined') {
+        relaySlotRegistry.delete(this.clientId);
+      }
+      this._cefQuery({ action: 'agent_unregister', clientId: this.clientId });
+      this.clientId = null;
+    }
+  }
+
+  // Inbound: pushes from the relay connection (pseudo-slot _onPush payload).
+  _handlePush(text) {
     let data;
     try {
-      data = JSON.parse(event.data);
+      data = JSON.parse(text);
     } catch (e) {
       this.logger.warn('Non-JSON message received');
+      return;
+    }
+    if (!data || !data.type) return;
+
+    // Browser-side connection state for our wsp connection.
+    if (data.type === 'relay_state') {
+      if (data.state === 'connected') return;  // already emitted at open
+      this.connected = false;
+      this._stopHeartbeat();
+      this.logger.info('Disconnected');
+      this._emitStatus('disconnected');
+      if (this.autoReconnect) {
+        this._scheduleReconnect();
+      }
       return;
     }
 
@@ -260,6 +300,20 @@ class RelayWs {
       clearInterval(this._heartbeatTimer);
       this._heartbeatTimer = null;
     }
+  }
+
+  _cefQuery(request, onSuccess, onFailure) {
+    if (typeof window.cefQuery !== 'function') {
+      this.logger.warn('cefQuery unavailable, request dropped: ' + request.action);
+      if (onFailure) onFailure(-1, 'cefQuery unavailable');
+      return false;
+    }
+    window.cefQuery({
+      request: JSON.stringify(request),
+      onSuccess: function (response) { if (onSuccess) onSuccess(response); },
+      onFailure: function (code, msgText) { if (onFailure) onFailure(code, msgText); }
+    });
+    return true;
   }
 }
 

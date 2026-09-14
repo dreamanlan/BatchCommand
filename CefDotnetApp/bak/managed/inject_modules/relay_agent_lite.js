@@ -1,70 +1,31 @@
-﻿// relay_agent_lite.js - lightweight relay client for single-page agent sites.
-// Standalone script: no global logger/CONFIG/secretStore/metadslWorker dependencies.
-// Config is persisted in localStorage as JSON under 'relay_lite_config'.
+﻿// relay_agent_lite.js - WeChat bridge relay for single-page agent sites.
+//
+// No page-side WebSocket anymore: the browser process owns the upstream
+// connection (wsclient id "wxb_<agentId>") to the WeChat bridge. This module
+// only:
+//   - asks the browser to open it (cefQuery action "lite_open"),
+//   - receives bridge pushes through the generic onAgentEvent dispatcher by
+//     registering a pseudo-slot in relaySlotRegistry (same table the
+//     execution slots use; pagehide closes us for free via slot.close()),
+//   - sends replies through the existing agent_send action, normalized to
+//     the bridge reply shape {type:'message', content, channelId}
+//     (the old wx_reply shape was never handled by the bridge).
+//
+// Requires relay_transport.js on the page (urlKey + relaySlotRegistry).
 (function () {
   'use strict';
 
-  var CONFIG_KEY = 'relay_lite_config';
-  var CLIENT_ID_KEY = 'relay_lite_client_id';
-  var DEFAULTS = {
-    wsUrl: 'ws://localhost:3000/ws',
-    token: 'lite-token',
-    name: 'webagent'
-  };
-
-  function loadConfig() {
-    try {
-      var raw = localStorage.getItem(CONFIG_KEY);
-      if (raw) {
-        var obj = JSON.parse(raw);
-        var cfg = {};
-        for (var k in DEFAULTS) {
-          cfg[k] = obj[k] || DEFAULTS[k];
-        }
-        return cfg;
-      }
-    } catch (e) { /* fall back to defaults */ }
-    return JSON.parse(JSON.stringify(DEFAULTS));
-  }
-
-  function saveConfig(cfg) {
-    try {
-      localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
-    } catch (e) { /* storage may be unavailable */ }
-  }
-
-  function getClientId() {
-    var id = null;
-    try {
-      id = localStorage.getItem(CLIENT_ID_KEY);
-      if (!id) {
-        id = 'lite-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
-        localStorage.setItem(CLIENT_ID_KEY, id);
-      }
-    } catch (e) {
-      id = 'lite-' + Date.now().toString(36);
-    }
-    return id;
-  }
-
-  var config = loadConfig();
-  var clientId = getClientId();
-  var ws = null;
-  var pingTimer = null;
-  var reconnectTimer = null;
-  var reconnectDelay = 3000;
-  var reqN = 0;
-  var manualClose = false;
-  var badgeEl = null;
-  var pendingReply = false;
-  var pendingChannelId = null;
+  var agentId = (typeof window.agentId === 'string' && window.agentId) ? window.agentId : 'webagent';
+  var clientId = null;          // the "wxb_<agentId>" wsclient id
+  var pendingChannelId = null;  // WeChat userId of the last inbound message
   var pendingContextToken = null;
-  var pendingReplyRounds = 0; // 10-round budget decremented per successful sendReply
+  var badgeEl = null;
+  var manualClose = false;
+  var reconnectTimer = null;
 
   function log() {
     try {
-      var args = ['[relay-lite]'].concat(Array.prototype.slice.call(arguments));
-      console.log.apply(console, args);
+      console.log.apply(console, ['[relay-lite]'].concat(Array.prototype.slice.call(arguments)));
     } catch (e) { /* ignore */ }
   }
 
@@ -92,8 +53,9 @@
     } catch (e) { /* badge is best-effort */ }
   }
 
-  // Phase 2 gate chain: bridge exists -> sendChat.
-  function handleAgentMessage(text) {
+  // ---- inbound: bridge pushes arrive as pseudo-slot _onPush payloads ----
+
+  function dispatchToPage(text) {
     if (!text) return;
     var bridge = window.MetaDSLBridge;
     if (!bridge || typeof bridge.sendChat !== 'function') {
@@ -102,172 +64,147 @@
     }
     try {
       bridge.sendChat(text, true);
-      pendingReply = true; // reply expected: adapters call sendReply after this
-      pendingReplyRounds = 10; // reset round budget on each incoming message
       log('message dispatched to page via sendChat');
     } catch (e) {
       log('sendChat failed:', e);
     }
   }
 
-  function nextId() {
-    reqN += 1;
-    return 'req' + reqN;
-  }
-
-  function send(obj) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(obj));
-      return true;
+  function handlePush(text) {
+    var msg = null;
+    try {
+      msg = JSON.parse(text);
+    } catch (e) {
+      return;
     }
-    return false;
-  }
-
-  // Reply pass-through: adapters call sendReply(assistantText) once an
-  // agent message was dispatched, so the answer flows back to the bridge.
-  function sendReply(text) {
-    if (!pendingReply) return false;
-    var ch = pendingChannelId;
-    var tok = pendingContextToken;
-    if (text === undefined || text === null) text = '';
-    var payload = { type: 'wx_reply', data: { to_user: ch, text: String(text), context_token: tok } };
-    var ok = send(payload);
-    if (ok) {
-      pendingReplyRounds = Math.max(0, pendingReplyRounds - 1);
-      if (pendingReplyRounds === 0) {
-        pendingReply = false;
-        pendingChannelId = null;
-        pendingContextToken = null;
-      }
-    }
-    log('sendReply', ok ? 'sent' : 'ws not open, reply kept pending');
-    return ok;
-  }
-
-  function startPing() {
-    stopPing();
-    pingTimer = setInterval(function () {
-      send({ type: 'ping' });
-    }, 25000);
-  }
-
-  function stopPing() {
-    if (pingTimer) {
-      clearInterval(pingTimer);
-      pingTimer = null;
+    if (!msg || !msg.type) return;
+    switch (msg.type) {
+      case 'relay_state':
+        // Browser-side connection state for our wxb_ connection.
+        setBadge(msg.state === 'connected' ? 'connected' : 'disconnected');
+        if ((msg.state === 'disconnected' || msg.state === 'failed') && !manualClose) {
+          scheduleReconnect();
+        }
+        break;
+      case 'message':
+        var ch = (msg.channelId !== undefined && msg.channelId !== null) ? msg.channelId : msg.from_user;
+        pendingChannelId = (ch !== undefined && ch !== null) ? ch : null;
+        if (msg.context_token !== undefined && msg.context_token !== null) {
+          pendingContextToken = msg.context_token;
+        }
+        dispatchToPage((msg.content !== undefined && msg.content !== null) ? msg.content : msg.text);
+        break;
+      case 'wx_qrcode':
+      case 'wx_status':
+        log(msg.type, msg.data);
+        break;
+      default:
+        log('unhandled:', msg.type);
     }
   }
+
+  // ---- cefQuery ----
+
+  function query(request, onSuccess, onFailure) {
+    if (typeof window !== 'undefined' && typeof window.cefQuery !== 'function') {
+      log('cefQuery unavailable, request dropped:', request.action);
+      if (onFailure) onFailure(-1, 'cefQuery unavailable');
+      return false;
+    }
+    window.cefQuery({
+      request: JSON.stringify(request),
+      onSuccess: function (response) { if (onSuccess) onSuccess(response); },
+      onFailure: function (code, msgText) { if (onFailure) onFailure(code, msgText); }
+    });
+    return true;
+  }
+
+  // ---- lifecycle ----
 
   function scheduleReconnect() {
-    if (reconnectTimer) return;
+    if (reconnectTimer || manualClose) return;
     reconnectTimer = setTimeout(function () {
       reconnectTimer = null;
       connect();
-    }, reconnectDelay);
+    }, 3000);
   }
 
   function connect() {
-    if (ws) {
-      var old = ws;
-      old.onclose = null; // avoid stale handler scheduling a duplicate reconnect
-      try { old.close(); } catch (e) { /* ignore */ }
-      ws = null;
+    // relay_transport.js must be loaded first (urlKey + slot registry).
+    if (typeof relayTransport === 'undefined' || !relayTransport.urlKey) {
+      setTimeout(connect, 500);
+      return;
+    }
+    if (typeof relaySlotRegistry === 'undefined') {
+      setTimeout(connect, 500);
+      return;
     }
     manualClose = false;
     setBadge('connecting');
-    log('connecting to', config.wsUrl);
-    ws = new WebSocket(config.wsUrl);
-
-    ws.onopen = function () {
-      log('connected');
+    log('opening bridge upstream for', agentId);
+    var cid = 'wxb_' + agentId;
+    query({ action: 'lite_open', connId: cid, urlKey: relayTransport.urlKey }, function (id) {
+      clientId = id;
+      // Register as a pseudo-slot: the generic onAgentEvent dispatcher routes
+      // our wxb_ pushes here, and the shared pagehide cleanup calls close().
+      relaySlotRegistry.set(id, {
+        _onPush: function (message) { handlePush(message); },
+        close: function () { disconnect(); }
+      });
+      // Bridge handshake (the wire protocol lives here, not in the dsl):
+      // lenient auth + name registration so the bridge routes by name
+      // (broadcast / /solo <name>).
+      query({ action: 'agent_send', clientId: id, message: JSON.stringify({ type: 'auth', token: 'relay-lite', clientId: id }) });
+      query({ action: 'agent_send', clientId: id, message: JSON.stringify({ type: 'register', name: agentId }) });
+      log('bridge upstream ready:', id);
       setBadge('connected');
-      send({ type: 'auth', token: config.token, clientId: clientId });
-      var regName = (typeof window.agentId === 'string' && window.agentId) ? window.agentId : config.name;
-      send({ type: 'register', name: regName, requestId: nextId() });
-      startPing();
-    };
-
-    ws.onmessage = function (event) {
-      var msg = null;
-      try {
-        msg = JSON.parse(event.data);
-      } catch (e) {
-        return;
-      }
-      if (!msg || !msg.type) return;
-      switch (msg.type) {
-        case 'auth_response':
-          log('auth ok, clientId =', (msg.data && msg.data.clientId) || clientId);
-          break;
-        case 'register_response':
-          log('register ok, name =', (msg.data && msg.data.name) || config.name);
-          break;
-        case 'pong':
-          break;
-        case 'message':
-          var mCh = (msg.channelId !== undefined && msg.channelId !== null) ? msg.channelId : msg.from_user;
-          pendingChannelId = (mCh !== undefined && mCh !== null) ? mCh : null;
-          var mText = (msg.content !== undefined && msg.content !== null) ? msg.content : msg.text;
-          if (msg.context_token !== undefined && msg.context_token !== null) pendingContextToken = msg.context_token;
-          handleAgentMessage(mText);
-          break;
-        case 'wx_qrcode':
-        case 'wx_status':
-          log(msg.type, msg.data);
-          break;
-        default:
-          log('unhandled:', msg.type);
-      }
-    };
-
-    ws.onclose = function () {
-      stopPing();
+    }, function (code, msgText) {
+      log('lite_open failed (' + code + '): ' + msgText);
       setBadge('disconnected');
-      if (manualClose) {
-        log('disconnected (manual), reconnect suppressed');
-        return;
-      }
-      log('disconnected, retry in', reconnectDelay, 'ms');
       scheduleReconnect();
-    };
-
-    ws.onerror = function () {
-      log('socket error');
-    };
+    });
   }
 
-  // Public helper for console debugging and phase 2 UI.
+  function disconnect() {
+    manualClose = true;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    if (clientId) {
+      if (typeof relaySlotRegistry !== 'undefined') {
+        relaySlotRegistry.delete(clientId);
+      }
+      // The generic agent_unregister action closes the wxb_ connection and
+      // the browser cleans its relay tables; the bridge drops the name
+      // registration when the connection closes.
+      query({ action: 'agent_unregister', clientId: clientId });
+      clientId = null;
+    }
+    setBadge('disconnected');
+  }
+
+  // ---- replies: normalized to the bridge's supported shape ----
+
+  function sendReply(text) {
+    if (text === undefined || text === null) text = '';
+    if (!clientId || pendingChannelId === null) return false;
+    var payload = {
+      type: 'message',
+      content: String(text),
+      channelId: pendingChannelId
+    };
+    return query({ action: 'agent_send', clientId: clientId, message: JSON.stringify(payload) });
+  }
+
+  // Public surface: the adapters only use sendReply; connect/disconnect
+  // drive the badge toggle and manual control.
   window.relayLite = {
     connect: connect,
-    disconnect: function () {
-      manualClose = true;
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
-      stopPing();
-      if (ws) {
-        var cur = ws;
-        cur.onclose = null;
-        try { cur.close(); } catch (e) { /* ignore */ }
-        ws = null;
-      }
-      setBadge('disconnected');
-    },
-    getConfig: function () {
-      return JSON.parse(JSON.stringify(config));
-    },
-    setConfig: function (patch) {
-      var p = patch || {};
-      for (var k in DEFAULTS) {
-        if (p[k] !== undefined) config[k] = p[k];
-      }
-      saveConfig(config);
-    },
-    send: send,
+    disconnect: disconnect,
     sendReply: sendReply
   };
 
-  // Auto-start on injection.
+  // Auto-start once relay_transport is on the page.
   connect();
 })();

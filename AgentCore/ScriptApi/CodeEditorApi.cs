@@ -1,11 +1,12 @@
 using System;
 using System.Text;
-using AbstractAgent;
+
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
 using AgentCore.Core;
+using BatchCommand.Utils;
 
 namespace AgentCore.ScriptApi
 {
@@ -15,28 +16,28 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]), aliased as string_replace_in_file");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]), aliased as string_replace_in_file");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string oldString = operands[1].AsString;
                 string newString = operands[2].AsString;
                 bool replaceAll = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
+                Encoding? encoding = operands.Count > 5 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(oldString)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_in_file: oldString cannot be empty");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("replace_in_file: oldString cannot be empty");
                     return BoxedValue.From(false);
                 }
                 bool result = Core.AgentCore.Instance.FileOps.ReplaceInFile(path, oldString, newString, replaceAll, exactMatch, encoding);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"replace_in_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -52,32 +53,32 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 7) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: replace_in_file_with_count(path, oldString, newString, count[, skipCount[, exactMatch[, encoding]]]), aliased as string_replace_in_file_with_count");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: replace_in_file_with_count(path, oldString, newString, count[, skipCount[, exactMatch[, encoding]]]), aliased as string_replace_in_file_with_count");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string oldString = operands[1].AsString;
                 string newString = operands[2].AsString;
                 int count = operands[3].GetInt();
                 int skipCount = operands.Count > 4 ? operands[4].GetInt() : 0;
                 if (skipCount < 0) skipCount = 0;
                 bool exactMatch = operands.Count > 5 ? operands[5].GetBool() : false;
-                Encoding? encoding = operands.Count > 6 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[6], fullPath) : null;
+                Encoding? encoding = operands.Count > 6 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[6], fullPath) : null;
 
                 if (string.IsNullOrEmpty(oldString)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_in_file_with_count: oldString cannot be empty");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("replace_in_file_with_count: oldString cannot be empty");
                     return BoxedValue.From(false);
                 }
                 if (count <= 0) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count: count must be > 0, got {count}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"replace_in_file_with_count: count must be > 0, got {count}");
                     return BoxedValue.From(false);
                 }
 
                 if (!System.IO.File.Exists(fullPath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count: file not found: {path}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"replace_in_file_with_count: file not found: {path}");
                     return BoxedValue.From(false);
                 }
 
@@ -95,7 +96,7 @@ namespace AgentCore.ScriptApi
                     }
                     if (replaced == 0) {
                         // Fallback level 3: normalized whitespace match via DiffOps.
-                        var normResult = AgentCore.Core.DiffOperations.ReplaceFullLinesText(content, oldString, newString, false);
+                        var normResult = BatchCommand.Utils.DiffOperations.ReplaceFullLinesText(content, oldString, newString, false);
                         if (normResult.Success) {
                             newContent = normResult.ResultContent;
                             replaced = 1;
@@ -104,18 +105,18 @@ namespace AgentCore.ScriptApi
                 }
 
                 if (replaced == 0) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count: oldString not found in {path}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"replace_in_file_with_count: oldString not found in {path}");
                     return BoxedValue.From(false);
                 }
 
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, newContent ?? content, writeEncoding);
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"replace_in_file_with_count error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -170,24 +171,24 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(
                     "Expected: multi_replace(path, editsJsonOrList[, encoding]) editsJson=[{\"old_string\":\"...\",\"new_string\":\"...\",\"replace_all\":false,\"exact_match\":false},...], string or list of hashtables");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
-                Encoding? encoding = operands.Count > 2 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                Encoding? encoding = operands.Count > 2 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
 
                 var edits = ParseEdits(operands[1]);
                 if (edits == null || edits.Count == 0) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("multi_replace: edits must be a non-empty JSON array or list of objects");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("multi_replace: edits must be a non-empty JSON array or list of objects");
                     return BoxedValue.From(false);
                 }
 
                 if (!System.IO.File.Exists(fullPath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: file not found: {path}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"multi_replace: file not found: {path}");
                     return BoxedValue.From(false);
                 }
 
@@ -201,7 +202,7 @@ namespace AgentCore.ScriptApi
                     bool exactMatch = edit.ExactMatch;
 
                     if (string.IsNullOrEmpty(oldString)) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] old_string cannot be empty");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"multi_replace: edit[{i}] old_string cannot be empty");
                         return BoxedValue.From(false);
                     }
 
@@ -220,7 +221,7 @@ namespace AgentCore.ScriptApi
                         }
                     }
                     if (exactMatch) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] old_string not found (exact match)");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"multi_replace: edit[{i}] old_string not found (exact match)");
                         return BoxedValue.From(false);
                     }
                     // Level 2: Trimmed match
@@ -240,20 +241,20 @@ namespace AgentCore.ScriptApi
                         }
                     }
                     // Level 3: Normalized whitespace matching (DiffOps fallback)
-                    var normResult = AgentCore.Core.DiffOperations.ReplaceFullLinesText(content, oldString, newString, replaceAll);
+                    var normResult = BatchCommand.Utils.DiffOperations.ReplaceFullLinesText(content, oldString, newString, replaceAll);
                     if (normResult.Success) {
                         content = normResult.ResultContent;
                         continue;
                     }
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] old_string not found");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"multi_replace: edit[{i}] old_string not found");
                     return BoxedValue.From(false);
                 }
 
-                System.IO.File.WriteAllText(fullPath, content, encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true));
+                System.IO.File.WriteAllText(fullPath, content, encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"multi_replace error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -283,7 +284,7 @@ namespace AgentCore.ScriptApi
             for (int i = 0; i < edits.Count; i++) {
                 var edit = edits[i];
                 if (!edit.Keys.Contains("old_string") || !edit.Keys.Contains("new_string")) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] missing old_string or new_string");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"multi_replace: edit[{i}] missing old_string or new_string");
                     return null;
                 }
                 var item = new EditItem {
@@ -307,13 +308,13 @@ namespace AgentCore.ScriptApi
                 object? elemObj = list[i];
                 var dict = AsIDictionaryHelper(elemObj);
                 if (dict == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] is not an object");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"multi_replace: edit[{i}] is not an object");
                     return null;
                 }
                 string? oldString = GetDictString(dict, "old_string");
                 string? newString = GetDictString(dict, "new_string");
                 if (oldString == null || newString == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] missing old_string or new_string");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"multi_replace: edit[{i}] missing old_string or new_string");
                     return null;
                 }
                 var item = new EditItem {
@@ -376,23 +377,23 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: replace_range(path, startLine, endLine, newContent[, encoding])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: replace_range(path, startLine, endLine, newContent[, encoding])");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 int startLine = operands[1].GetInt();
                 int endLine = operands[2].GetInt();
                 string newContent = operands[3].AsString;
-                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[4], fullPath) : null;
+                Encoding? encoding = operands.Count > 4 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[4], fullPath) : null;
 
                 bool result = Core.AgentCore.Instance.FileOps.ReplaceLines(path, startLine, endLine, newContent, encoding);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replacerange error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"replacerange error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -404,28 +405,28 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]])");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string searchLiteralText = operands[1].AsString;
                 string content = operands[2].AsString;
                 bool allOccurrences = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
+                Encoding? encoding = operands.Count > 5 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(searchLiteralText)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The search string cannot be empty !!!");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("The search string cannot be empty !!!");
                     return BoxedValue.From(false);
                 }
                 bool result = Core.AgentCore.Instance.FileOps.InsertAfterText(path, searchLiteralText, content, allOccurrences, exactMatch, encoding);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insertafter error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"insertafter error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -437,28 +438,28 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]])");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string searchLiteralText = operands[1].AsString;
                 string content = operands[2].AsString;
                 bool allOccurrences = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
+                Encoding? encoding = operands.Count > 5 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(searchLiteralText)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The search string cannot be empty !!!");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("The search string cannot be empty !!!");
                     return BoxedValue.From(false);
                 }
                 bool result = Core.AgentCore.Instance.FileOps.InsertBeforeText(path, searchLiteralText, content, allOccurrences, exactMatch, encoding);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insertbefore error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"insertbefore error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -470,22 +471,22 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: delete_lines(path, startLine, endLine[, encoding])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: delete_lines(path, startLine, endLine[, encoding])");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 int startLine = operands[1].GetInt();
                 int endLine = operands[2].GetInt();
-                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
+                Encoding? encoding = operands.Count > 3 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 bool result = Core.AgentCore.Instance.FileOps.DeleteLines(path, startLine, endLine, encoding);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"deletelines error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"deletelines error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -497,7 +498,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_lines(path, regex_pattern, [ignoreCase[, encoding]]), aliased as search_lines_in_file");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_lines(path, regex_pattern, [ignoreCase[, encoding]]), aliased as search_lines_in_file");
                 return BoxedValue.NullObject;
             }
 
@@ -505,7 +506,7 @@ namespace AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
                 bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() : true;
-                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[3], path) : null;
+                Encoding? encoding = operands.Count > 3 ? BatchCommand.Utils.BomHelper.GetEncoding(operands[3], path) : null;
 
                 var lines = Core.AgentCore.Instance.FileOps.SearchLinesInFile(path, pattern, ignoreCase, encoding);
                 var result = new List<object>();
@@ -517,7 +518,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_lines error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_lines error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -529,7 +530,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_lines(path, startLine, endLine[, encoding])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: read_lines(path, startLine, endLine[, encoding])");
                 return BoxedValue.NullObject;
             }
 
@@ -537,7 +538,7 @@ namespace AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 int startLine = operands.Count > 1 ? operands[1].GetInt() : 1;
                 int endLine = operands.Count > 2 ? operands[2].GetInt() : -1;
-                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[3], path) : null;
+                Encoding? encoding = operands.Count > 3 ? BatchCommand.Utils.BomHelper.GetEncoding(operands[3], path) : null;
 
                 if (endLine == -1) {
                     // Read all lines
@@ -558,7 +559,7 @@ namespace AgentCore.ScriptApi
                 }
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"readlines error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"readlines error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -570,18 +571,18 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_line_count(path[, encoding]), aliased as get_file_line_count|line_count|file_line_count|count_lines");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: get_line_count(path[, encoding]), aliased as get_file_line_count|line_count|file_line_count|count_lines");
                 return BoxedValue.From(0);
             }
 
             try {
                 string path = operands[0].AsString;
-                Encoding? encoding = operands.Count > 1 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[1], path) : null;
+                Encoding? encoding = operands.Count > 1 ? BatchCommand.Utils.BomHelper.GetEncoding(operands[1], path) : null;
                 int count = Core.AgentCore.Instance.FileOps.GetLineCount(path, encoding);
                 return BoxedValue.From(count);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"getlinecount error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"getlinecount error: {ex.Message}");
                 return BoxedValue.From(0);
             }
         }
@@ -593,7 +594,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_file(path, regex_pattern[, context_lines_after, context_lines_before, encoding]), aliased as grep_file|grepfile");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_file(path, regex_pattern[, context_lines_after, context_lines_before, encoding]), aliased as grep_file|grepfile");
                 return BoxedValue.FromString("Expected: search_in_file(path, regex_pattern[, context_lines_after, context_lines_before, encoding])");
             }
 
@@ -602,12 +603,12 @@ namespace AgentCore.ScriptApi
                 string pattern = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
-                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[4], path) : null;
+                Encoding? encoding = operands.Count > 4 ? BatchCommand.Utils.BomHelper.GetEncoding(operands[4], path) : null;
                 string result = Core.AgentCore.Instance.FileOps.SearchFile(path, pattern, contextLinesAfter, contextLinesBefore, encoding);
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_file error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_file error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
         }
@@ -619,7 +620,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files|grepfiles");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files|grepfiles");
                 return BoxedValue.FromString("Expected: search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
             }
 
@@ -652,7 +653,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_files error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_files error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
         }
@@ -664,14 +665,14 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_files_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
                 return BoxedValue.FromString("Expected: search_in_files_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
             }
 
             try {
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
-                Encoding encoding = AbstractAgent.Utils.BomHelper.GetEncoding(operands[2], path);
+                Encoding encoding = BatchCommand.Utils.BomHelper.GetEncoding(operands[2], path);
                 int contextLinesAfter = operands.Count > 3 ? operands[3].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 4 ? operands[4].GetInt() : 0;
                 List<string>? filterAndNewExts = null;
@@ -698,7 +699,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_files_with_encoding error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_files_with_encoding error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
         }
@@ -710,7 +711,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_file_as_list(path, regex_pattern[, context_lines_after, context_lines_before, encoding]), aliased as grep_file_as_list|grepfileaslist");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_file_as_list(path, regex_pattern[, context_lines_after, context_lines_before, encoding]), aliased as grep_file_as_list|grepfileaslist");
                 return BoxedValue.FromObject(new List<object>());
             }
 
@@ -719,7 +720,7 @@ namespace AgentCore.ScriptApi
                 string pattern = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
-                Encoding? encoding = operands.Count > 4 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[4], path) : null;
+                Encoding? encoding = operands.Count > 4 ? BatchCommand.Utils.BomHelper.GetEncoding(operands[4], path) : null;
                 var blocks = Core.AgentCore.Instance.FileOps.SearchFileAsList(path, pattern, contextLinesAfter, contextLinesBefore, encoding);
                 var result = new List<object>();
                 foreach (var b in blocks) {
@@ -728,7 +729,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_file_as_list error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_file_as_list error: {ex.Message}");
                 return BoxedValue.FromObject(new List<object>());
             }
         }
@@ -740,7 +741,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_files_as_list(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files_as_list|grepfilesaslist");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files_as_list(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files_as_list|grepfilesaslist");
                 return BoxedValue.FromObject(new List<object>());
             }
 
@@ -777,7 +778,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_files_as_list error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_files_as_list error: {ex.Message}");
                 return BoxedValue.FromObject(new List<object>());
             }
         }
@@ -789,14 +790,14 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_files_as_list_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files_as_list_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
                 return BoxedValue.FromObject(new List<object>());
             }
 
             try {
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
-                Encoding encoding = AbstractAgent.Utils.BomHelper.GetEncoding(operands[2], path);
+                Encoding encoding = BatchCommand.Utils.BomHelper.GetEncoding(operands[2], path);
                 int contextLinesAfter = operands.Count > 3 ? operands[3].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 4 ? operands[4].GetInt() : 0;
                 List<string>? filterAndNewExts = null;
@@ -827,7 +828,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_files_as_list_with_encoding error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_files_as_list_with_encoding error: {ex.Message}");
                 return BoxedValue.FromObject(new List<object>());
             }
         }
@@ -839,19 +840,19 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: count_file_indentations(path[, startLine, endLine, encoding])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: count_file_indentations(path[, startLine, endLine, encoding])");
                 return BoxedValue.FromString("Expected: count_file_indentations(path[, startLine, endLine, encoding])");
             }
 
             try {
                 string path = operands[0].AsString;
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 if (!System.IO.File.Exists(fullPath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_file_indentations: file not found: {path}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"count_file_indentations: file not found: {path}");
                     return BoxedValue.FromString($"Error: file not found: {path}");
                 }
 
-                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncoding(operands[3], fullPath) : null;
+                Encoding? encoding = operands.Count > 3 ? BatchCommand.Utils.BomHelper.GetEncoding(operands[3], fullPath) : null;
                 string[] allLines = SafeFileReader.ReadAllLines(fullPath, encoding ?? System.Text.Encoding.UTF8);
                 int totalLines = allLines.Length;
                 if (totalLines == 0) {
@@ -907,7 +908,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(sb.ToString());
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_file_indentations error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"count_file_indentations error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
         }
@@ -953,7 +954,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_after_line(path, line, insert_content[, encoding]), aliased as insert_after");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: insert_after_line(path, line, insert_content[, encoding]), aliased as insert_after");
                 return BoxedValue.From(false);
             }
 
@@ -962,18 +963,18 @@ namespace AgentCore.ScriptApi
                 int line = operands[1].GetInt();
                 string insertContent = operands[2].AsString;
 
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
-                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                Encoding? encoding = operands.Count > 3 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 if (!System.IO.File.Exists(fullPath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line: file not found: {path}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"insert_after_line: file not found: {path}");
                     return BoxedValue.From(false);
                 }
 
                 var readEncoding = encoding ?? System.Text.Encoding.UTF8;
                 var lines = new List<string>(SafeFileReader.ReadAllLines(fullPath, readEncoding));
                 if (line < 1 || line > lines.Count) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line: line {line} out of range (1-{lines.Count})");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"insert_after_line: line {line} out of range (1-{lines.Count})");
                     return BoxedValue.From(false);
                 }
 
@@ -986,12 +987,12 @@ namespace AgentCore.ScriptApi
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), writeEncoding);
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"insert_after_line error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -1003,7 +1004,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_before_line(path, line, insert_content[, encoding]), aliased as insert_before");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: insert_before_line(path, line, insert_content[, encoding]), aliased as insert_before");
                 return BoxedValue.From(false);
             }
 
@@ -1012,18 +1013,18 @@ namespace AgentCore.ScriptApi
                 int line = operands[1].GetInt();
                 string insertContent = operands[2].AsString;
 
-                string fullPath = AbstractAgent.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
-                Encoding? encoding = operands.Count > 3 ? AbstractAgent.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                Encoding? encoding = operands.Count > 3 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 if (!System.IO.File.Exists(fullPath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line: file not found: {path}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"insert_before_line: file not found: {path}");
                     return BoxedValue.From(false);
                 }
 
                 var readEncoding = encoding ?? System.Text.Encoding.UTF8;
                 var lines = new List<string>(SafeFileReader.ReadAllLines(fullPath, readEncoding));
                 if (line < 1 || line > lines.Count) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line: line {line} out of range (1-{lines.Count})");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"insert_before_line: line {line} out of range (1-{lines.Count})");
                     return BoxedValue.From(false);
                 }
 
@@ -1036,12 +1037,12 @@ namespace AgentCore.ScriptApi
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), writeEncoding);
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"insert_before_line error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }

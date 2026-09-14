@@ -899,6 +899,7 @@ class APIClient {
                 { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'gpt-6-astra', label: 'GPT-6-Astra', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
                 { value: 'gpt-5.6-sol', label: 'GPT-5.6-Sol', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
                 { value: 'gpt-5.6-terra', label: 'GPT-5.6-Terra', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
                 { value: 'gpt-5.6-luna', label: 'GPT-5.6-Luna', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
@@ -913,7 +914,6 @@ class APIClient {
                 { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'glm-5.3', label: 'GLM-5.3', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'glm-5.3-flash', label: 'GLM-5.3-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'glm-5.2', label: 'GLM-5.2', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'deepseek-v4-pro', label: 'DeepSeek-V4-Pro', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1', thinking: false, reasoningEfforts: [], contextWindows: [] }

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 
 using System.Collections.Generic;
-using AbstractAgent;
+
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
@@ -22,7 +22,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_set_provider requires (provider_id, type, url, api_key, model)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_provider requires (provider_id, type, url, api_key, model)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -47,7 +47,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_set_provider_option requires (provider_id, key, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_provider_option requires (provider_id, key, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -68,7 +68,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat_callback requires (provider_id, tag, topic, message)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_callback requires (provider_id, tag, topic, message)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -91,7 +91,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat_with_images_callback requires (provider_id, tag, topic, message [, image_url1, image_url2, ...])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_with_images_callback requires (provider_id, tag, topic, message [, image_url1, image_url2, ...])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -122,7 +122,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_clear_history requires (provider_id, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_clear_history requires (provider_id, tag)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -142,7 +142,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_add_chat_extra requires (provider_id, tag, key [, value1, value2, ...])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_add_chat_extra requires (provider_id, tag, key [, value1, value2, ...])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -167,7 +167,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_clear_chat_extras requires (provider_id, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_clear_chat_extras requires (provider_id, tag)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -185,7 +185,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_is_busy requires (provider_id, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_is_busy requires (provider_id, tag)");
                 return BoxedValue.FromBool(false);
             }
             string providerId = operands[0].AsString;
@@ -203,7 +203,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_get_busy_duration requires (provider_id, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_get_busy_duration requires (provider_id, tag)");
                 return BoxedValue.From(0);
             }
             string providerId = operands[0].AsString;
@@ -222,7 +222,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_cancel requires (provider_id, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_cancel requires (provider_id, tag)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -257,7 +257,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_set_system_prompt requires (provider_id, tag, prompt)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_system_prompt requires (provider_id, tag, prompt)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -347,7 +347,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat requires (provider_id, tag, topic, message)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat requires (provider_id, tag, topic, message)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -359,7 +359,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"llm_chat error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -375,7 +375,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat_with_images requires (provider_id, tag, topic, message [, image_url1, ...])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_with_images requires (provider_id, tag, topic, message [, image_url1, ...])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -396,7 +396,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"llm_chat_with_images error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat_with_images error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -410,52 +410,52 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_set_provider",
+            BatchCommand.BatchScript.Register("llm_set_provider",
                 "llm_set_provider(provider_id, type, url, api_key, model) - configure LLM provider (type: openai/claude/auto_metadsl)",
                 new ExpressionFactoryHelper<LlmSetProviderExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_set_provider_option",
+            BatchCommand.BatchScript.Register("llm_set_provider_option",
                 "llm_set_provider_option(provider_id, key, value) - set provider option (e.g. max_tokens for claude, max_queue_len for chat queue depth)",
                 new ExpressionFactoryHelper<LlmSetProviderOptionExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_callback",
+            BatchCommand.BatchScript.Register("llm_chat_callback",
                 "llm_chat_callback(provider_id, tag, topic, message) - send message to LLM, full reply via llm_callback CEF message",
                 new ExpressionFactoryHelper<LlmChatCallbackExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_with_images_callback",
+            BatchCommand.BatchScript.Register("llm_chat_with_images_callback",
                 "llm_chat_with_images_callback(provider_id, tag, topic, message [, image_url1, ...]) - send message with images (COS URLs) to LLM, full reply via llm_callback CEF message",
                 new ExpressionFactoryHelper<LlmChatWithImagesCallbackExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_clear_history",
+            BatchCommand.BatchScript.Register("llm_clear_history",
                 "llm_clear_history(provider_id, tag) - clear conversation history for session",
                 new ExpressionFactoryHelper<LlmClearHistoryExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_add_chat_extra",
+            BatchCommand.BatchScript.Register("llm_add_chat_extra",
                 "llm_add_chat_extra(provider_id, tag, key [, val1, val2, ...]) - add chat_extra entry (e.g. agent_client_uuid, extra_headers)",
                 new ExpressionFactoryHelper<LlmAddChatExtraExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_clear_chat_extras",
+            BatchCommand.BatchScript.Register("llm_clear_chat_extras",
                 "llm_clear_chat_extras(provider_id, tag) - clear all chat_extra entries for session",
                 new ExpressionFactoryHelper<LlmClearChatExtrasExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_is_busy",
+            BatchCommand.BatchScript.Register("llm_is_busy",
                 "llm_is_busy(provider_id, tag) - check if session is currently waiting for reply",
                 new ExpressionFactoryHelper<LlmIsBusyExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_get_busy_duration",
+            BatchCommand.BatchScript.Register("llm_get_busy_duration",
                 "llm_get_busy_duration(provider_id, tag) - returns seconds the session has been busy (0 if not busy)",
                 new ExpressionFactoryHelper<LlmGetBusyDurationExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_cancel",
+            BatchCommand.BatchScript.Register("llm_cancel",
                 "llm_cancel(provider_id, tag) - cancel an active LLM request for the session",
                 new ExpressionFactoryHelper<LlmCancelExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_get_providers_config",
+            BatchCommand.BatchScript.Register("llm_get_providers_config",
                 "llm_get_providers_config() - return all configured providers config (excludes sensitive fields)",
                 new ExpressionFactoryHelper<LlmGetProvidersConfigExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_set_system_prompt",
+            BatchCommand.BatchScript.Register("llm_set_system_prompt",
                 "llm_set_system_prompt(provider_id, tag, prompt) - set system prompt for session (auto_metadsl: injected every context_rounds sends)",
                 new ExpressionFactoryHelper<LlmSetSystemPromptExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_async",
+            BatchCommand.BatchScript.Register("llm_chat_async",
                 "llm_chat_async(provider_id, tag, topic, message) - async chat, returns LLM reply directly (use inside startasync/tickasync)",
                 new ExpressionFactoryHelper<LlmChatAsyncExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_with_images_async",
+            BatchCommand.BatchScript.Register("llm_chat_with_images_async",
                 "llm_chat_with_images_async(provider_id, tag, topic, message, img1, ...) - async chat with images, returns LLM reply directly (use inside startasync/tickasync)",
                 new ExpressionFactoryHelper<LlmChatWithImagesAsyncExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat",
+            BatchCommand.BatchScript.Register("llm_chat",
                 "llm_chat(provider_id, tag, topic, message) - synchronous chat, blocks until LLM reply is received and returns it directly",
                 new ExpressionFactoryHelper<LlmChatExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_with_images",
+            BatchCommand.BatchScript.Register("llm_chat_with_images",
                 "llm_chat_with_images(provider_id, tag, topic, message [, image_url1, ...]) - synchronous chat with images, blocks until LLM reply is received and returns it directly",
                 new ExpressionFactoryHelper<LlmChatWithImagesExp>());
 

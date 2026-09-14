@@ -1766,7 +1766,7 @@ namespace CppDebugScript
                                     }
                                 }
                                 else {
-                                    err.AppendFormat("Illegal if, expect if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
+                                    err.AppendFormat("Illegal if, expect if(exp){{...}}elif(exp){{...}}else{{...}}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                     err.AppendLine();
                                 }
                                 PopBlock();
@@ -1798,7 +1798,7 @@ namespace CppDebugScript
                                         }
                                     }
                                     else {
-                                        err.AppendFormat("Illegal if, expect if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
+                                        err.AppendFormat("Illegal if, expect if(exp){{...}}elif(exp){{...}}else{{...}}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                         err.AppendLine();
                                     }
                                     if (i < stmData.GetFunctionNum() - 1) {
@@ -1810,12 +1810,12 @@ namespace CppDebugScript
                                     PopBlock();
                                 }
                                 else {
-                                    err.AppendFormat("Illegal if, expect if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
+                                    err.AppendFormat("Illegal if, expect if(exp){{...}}elif(exp){{...}}else{{...}}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                     err.AppendLine();
                                 }
                             }
                             else {
-                                err.AppendFormat("Illegal if, expect if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
+                                err.AppendFormat("Illegal if, expect if(exp){{...}}elif(exp){{...}}else{{...}}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                 err.AppendLine();
                             }
                         }
@@ -1835,7 +1835,7 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
+                        err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){{...}}elif(exp){{...}}else{{...}}, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -2154,7 +2154,7 @@ namespace CppDebugScript
                                 }
                             }
                             else {
-                                err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]){...}, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
+                                err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]){{...}}, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                 err.AppendLine();
                             }
                         }
@@ -2315,7 +2315,7 @@ namespace CppDebugScript
                                         var sinfo = new SemanticInfo { TargetType = semanticInfo.TargetType };
                                         CompileExpression(p, codes, err, ref sinfo);
                                         if (null == sinfo.ResultValues) {
-                                            err.AppendFormat("Illegal global init syntax, [%d] must be const value, code:{0}, line:{1}", i, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
+                                            err.AppendFormat("Illegal global init syntax, [{0}] must be const value, code:{1}, line:{2}", i, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                             err.AppendLine();
                                         }
                                         else {
@@ -4035,7 +4035,7 @@ namespace CppDebugScript
         private void TryGenArrGet(string id, List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1) {
-                err.AppendFormat("arrget must has and only has one argument, code:{0}, line:{1}", id, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
+                err.AppendFormat("arrget '{0}' must has and only has one argument, code:{1}, line:{2}", id, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }

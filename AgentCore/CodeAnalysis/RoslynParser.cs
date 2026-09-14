@@ -7,6 +7,7 @@ using AgentCore.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using BatchCommand.Utils;
 
 namespace AgentCore.CodeAnalysis
 {

@@ -2,6 +2,8 @@
   "profiles": {
     "CefDotnetApp": {
       "commandName": "Project",
+      "commandLineArgs": "\"D:\\GitHub\\WebAgent\\webagentdbg\\webagent.exe\" --disable-hang-monitor --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --ignore-certificate-errors-spki-list=2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4= --video-capture-use-gpu-memory-buffer --user-data-dir=\"D:\\GitHub\\WebAgent\\webagentdbg\\webagent_cache\" --log-severity=info --user-agent-product=Chrome/150.0.7871.187 --projectidentity=aiclaw --metrics-shmem-handle=7600,i,3237163590376838087,13569065166487086865,524288 --field-trial-handle=2880,i,4956726267516618109,11623044387259338266,262144 --disable-features=AutofillActorMode,GlicActorUi,KillOnInvalidNavigationHeaders,LensOverlay,ServiceWorker --variations-seed-version --pseudonymization-salt-handle=2888,i,15025086640701716657,14864307147360852736,4 --trace-process-track-uuid=4191176256658384018 --enable-logging=handle --log-file=6340 --mojo-platform-channel-handle=6312 /prefetch:13",
+      "workingDirectory": "D:\\GitHub\\WebAgent\\webagentdbg",
       "nativeDebugging": true
     }
   }

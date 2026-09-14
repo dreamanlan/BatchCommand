@@ -1,5 +1,4 @@
 using System;
-using AbstractAgent;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +7,9 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
@@ -37,6 +39,8 @@ namespace AgentCore.Core
         private DateTime _lastWorkerCheckTime = DateTime.UtcNow;
         private int _workerTimeoutSeconds = 600;
         private const int c_workerCheckIntervalSeconds = 30;
+        private DateTime _lastWorkerStatusLogTime = DateTime.UtcNow;
+        private const int c_workerStatusLogIntervalSeconds = 2;
 
         /// <summary>
         /// Gets whether the server is currently running
@@ -63,6 +67,18 @@ namespace AgentCore.Core
         public int ActiveWorkers => _activeWorkers;
 
         /// <summary>
+        /// Agent id this server serves ("webagent", "hyarena", ...). Set by
+        /// ws_start_server(port, agentId); empty = legacy port-keyed server.
+        /// </summary>
+        public string AgentId { get; set; } = string.Empty;
+
+        // Per-connection agent id bindings (agent_bind envelope): raw MetaDSL
+        // code on these connections resolves its AgentInstance by the bound id
+        // instead of the server default. Used by the single-page adapters'
+        // execution slots once everything is multiplexed on the relay port.
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<WebSocket, string> _clientAgentIds = new();
+
+        /// <summary>
         /// Event fired when a client connects
         /// </summary>
         public event Action? OnClientConnected;
@@ -80,6 +96,11 @@ namespace AgentCore.Core
             _receiveQueue = new ConcurrentQueue<(string, WebSocket)>();
             _clients = new List<WebSocket>();
             _cancellationTokenSource = new CancellationTokenSource();
+            // Route connect/disconnect notifications to the agent main thread
+            // so script_agent.dsl can react via on_ws_client_connected(port) /
+            // on_ws_client_disconnected(port). _port is read at event time.
+            OnClientConnected += () => MetaDslExecutor.EnqueueAgentPortEvent("on_ws_client_connected", _port);
+            OnClientDisconnected += () => MetaDslExecutor.EnqueueAgentPortEvent("on_ws_client_disconnected", _port);
         }
 
         /// <summary>
@@ -98,6 +119,10 @@ namespace AgentCore.Core
                 _port = port;
                 _listener = new HttpListener();
                 _listener.Prefixes.Add($"http://localhost:{port}/");
+                // Also accept explicit loopback-IP clients (Host: 127.0.0.1:port)
+                // alongside the "localhost" name - the browser relay wsclient may
+                // use either form. The extra prefix needs no admin rights.
+                _listener.Prefixes.Add($"http://127.0.0.1:{port}/");
                 _listener.Start();
                 _isRunning = true;
                 _cancellationTokenSource = new CancellationTokenSource();
@@ -180,6 +205,20 @@ namespace AgentCore.Core
         }
 
         /// <summary>
+        /// Checks whether an Origin header value comes from a local/trusted source.
+        /// Only http://localhost, http://127.0.0.1, file:// and null (file:// sends Origin: null) are allowed.
+        /// </summary>
+        private static bool IsAllowedLocalOrigin(string? origin)
+        {
+            if (string.IsNullOrEmpty(origin))
+                origin = "null";
+            return string.Equals(origin, "null", StringComparison.OrdinalIgnoreCase)
+                || origin.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase)
+                || origin.StartsWith("http://127.0.0.1", StringComparison.OrdinalIgnoreCase)
+                || origin.StartsWith("file://", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// Accepts incoming WebSocket connections
         /// </summary>
         private async Task AcceptConnectionsAsync(CancellationToken cancellationToken)
@@ -200,14 +239,23 @@ namespace AgentCore.Core
                         context.Request.Headers["Access-Control-Request-Private-Network"] == "true")
                     {
                         string? origin = context.Request.Headers["Origin"];
-                        AgentCore.Instance.Logger.Info($"PNA preflight from origin: {origin}");
-                        context.Response.StatusCode = 204;
-                        context.Response.Headers.Add("Access-Control-Allow-Origin", origin ?? "*");
-                        context.Response.Headers.Add("Access-Control-Allow-Private-Network", "true");
-                        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-                        context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Upgrade, Connection, Sec-WebSocket-Key, Sec-WebSocket-Version");
+                        if (IsAllowedLocalOrigin(origin))
+                        {
+                            AgentCore.Instance.Logger.Info($"PNA preflight accepted from origin: {origin}");
+                            context.Response.StatusCode = 204;
+                            context.Response.Headers.Add("Access-Control-Allow-Origin", origin ?? "null");
+                            context.Response.Headers.Add("Access-Control-Allow-Private-Network", "true");
+                            context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                            context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Upgrade, Connection, Sec-WebSocket-Key, Sec-WebSocket-Version");
+                        }
+                        else
+                        {
+                            AgentCore.Instance.Logger.Warning($"PNA preflight rejected from origin: {origin}");
+                            context.Response.StatusCode = 403;
+                        }
                         context.Response.Close();
                     }
+
                     else if (context.Request.IsWebSocketRequest)
                     {
                         // Validate Origin header - only allow localhost/known connections
@@ -293,8 +341,30 @@ namespace AgentCore.Core
                             if (result.EndOfMessage)
                             {
                                 var message = Encoding.UTF8.GetString(messageBuilder.GetBuffer(), 0, (int)messageBuilder.Length);
-                                _receiveQueue.Enqueue((message, webSocket));
-                                AgentCore.Instance.Logger.Debug($"Message received from client, queued (length: {message.Length})");
+                                if (TryGetAgentEnvelope(message, out long envelopeId, out string? envelopeFunc, out List<BoxedValue>? envelopeArgs)) {
+                                    if (envelopeFunc == "@bind") {
+                                        // Bind this connection to an agent id for the raw
+                                        // MetaDSL path (per-connection instance resolution).
+                                        string bindAgentId = (envelopeArgs != null && envelopeArgs.Count > 0) ? (envelopeArgs[0].AsString ?? string.Empty) : string.Empty;
+                                        if (!string.IsNullOrEmpty(bindAgentId)) {
+                                            _clientAgentIds[webSocket] = bindAgentId;
+                                            AgentCore.Instance.Logger.Info($"Client bound to agent '{bindAgentId}'");
+                                        }
+                                    }
+                                    else {
+                                        // Structured agent_call/agent_notify envelope: execute the
+                                        // named dsl function on the agent main thread, replies go back
+                                        // through this connection.
+                                        var ctx = new DslContext(m => { _ = SendToClientAsync(webSocket, m); });
+                                        MetaDslExecutor.EnqueueAgentCall(envelopeId, envelopeFunc!, envelopeArgs ?? new List<BoxedValue>(), ctx);
+                                        AgentCore.Instance.Logger.Debug($"Agent envelope received from client, queued to main thread (func: {envelopeFunc}, id: {envelopeId})");
+                                    }
+                                }
+                                else {
+                                    // Raw MetaDSL code: existing worker pool path.
+                                    _receiveQueue.Enqueue((message, webSocket));
+                                    AgentCore.Instance.Logger.Debug($"Message received from client, queued (length: {message.Length})");
+                                }
                                 messageBuilder.SetLength(0);
                             }
                             else
@@ -322,6 +392,7 @@ namespace AgentCore.Core
                         _clients.Remove(webSocket);
                     }
                     _contextRounds.TryRemove(webSocket, out _);
+                    _clientAgentIds.TryRemove(webSocket, out _);
 
                     try
                     {
@@ -338,6 +409,114 @@ namespace AgentCore.Core
 
                 OnClientDisconnected?.Invoke();
                 AgentCore.Instance.Logger.Info("WebSocket client disconnected");
+            }
+        }
+
+        /// <summary>
+        /// Tries to parse an incoming message as a structured agent envelope.
+        /// Envelopes are JSON objects of the form
+        ///   {"type":"agent_call","id":123,"func":"name","args":[...]} (reply expected)
+        ///   {"type":"agent_notify","func":"name","args":[...]}          (no reply)
+        /// Anything else (including MetaDSL code) returns false and takes the
+        /// raw MetaDSL worker path. JSON objects inside args are passed to dsl
+        /// as raw JSON strings.
+        /// </summary>
+        private static bool TryGetAgentEnvelope(string message, out long id, out string? func, out List<BoxedValue>? args)
+        {
+            id = 0;
+            func = null;
+            args = null;
+            if (string.IsNullOrEmpty(message) || message[0] != '{') {
+                return false;
+            }
+            try {
+                using var doc = System.Text.Json.JsonDocument.Parse(message);
+                var root = doc.RootElement;
+                if (root.ValueKind != System.Text.Json.JsonValueKind.Object) {
+                    return false;
+                }
+                if (!root.TryGetProperty("type", out var typeEl) || typeEl.ValueKind != System.Text.Json.JsonValueKind.String) {
+                    return false;
+                }
+                string type = typeEl.GetString() ?? string.Empty;
+                if (type == "agent_bind") {
+                    // Connection-level instance binding for the raw MetaDSL
+                    // path: {"type":"agent_bind","agentId":"venus"}. After this,
+                    // raw code on this connection resolves its AgentInstance by
+                    // the bound agent id instead of the server's default.
+                    if (root.TryGetProperty("agentId", out var bindEl) && bindEl.ValueKind == System.Text.Json.JsonValueKind.String) {
+                        var bindId = bindEl.GetString();
+                        if (!string.IsNullOrEmpty(bindId)) {
+                            func = "@bind";
+                            args = new List<BoxedValue> { BoxedValue.FromString(bindId) };
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                if (type != "agent_call" && type != "agent_notify") {
+                    return false;
+                }
+                if (!root.TryGetProperty("func", out var funcEl) || funcEl.ValueKind != System.Text.Json.JsonValueKind.String) {
+                    return false;
+                }
+                func = funcEl.GetString();
+                if (string.IsNullOrEmpty(func)) {
+                    return false;
+                }
+                if (type == "agent_call" && root.TryGetProperty("id", out var idEl)) {
+                    if (idEl.ValueKind == System.Text.Json.JsonValueKind.Number && idEl.TryGetInt64(out long longId)) {
+                        id = longId;
+                    }
+                    else if (idEl.ValueKind == System.Text.Json.JsonValueKind.String && long.TryParse(idEl.GetString(), out long parsed)) {
+                        id = parsed;
+                    }
+                }
+                args = new List<BoxedValue>();
+                if (root.TryGetProperty("args", out var argsEl) && argsEl.ValueKind == System.Text.Json.JsonValueKind.Array) {
+                    foreach (var el in argsEl.EnumerateArray()) {
+                        args.Add(BoxedValueFromJson(el));
+                    }
+                }
+                return true;
+            }
+            catch (Exception) {
+                // Not JSON or malformed: treat as raw MetaDSL code.
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Converts a JSON element to a BoxedValue: strings/numbers/bools map
+        /// directly, arrays become List&lt;BoxedValue&gt;, and objects are passed
+        /// through as raw JSON text.
+        /// </summary>
+        private static BoxedValue BoxedValueFromJson(System.Text.Json.JsonElement el)
+        {
+            switch (el.ValueKind) {
+                case System.Text.Json.JsonValueKind.String:
+                    return BoxedValue.FromString(el.GetString());
+                case System.Text.Json.JsonValueKind.True:
+                    return BoxedValue.From(true);
+                case System.Text.Json.JsonValueKind.False:
+                    return BoxedValue.From(false);
+                case System.Text.Json.JsonValueKind.Null:
+                    return BoxedValue.NullObject;
+                case System.Text.Json.JsonValueKind.Number:
+                    if (el.TryGetInt64(out long longVal)) {
+                        return BoxedValue.From(longVal);
+                    }
+                    return BoxedValue.From(el.GetDouble());
+                case System.Text.Json.JsonValueKind.Array: {
+                        var list = new List<BoxedValue>();
+                        foreach (var item in el.EnumerateArray()) {
+                            list.Add(BoxedValueFromJson(item));
+                        }
+                        return BoxedValue.FromObject(list);
+                    }
+                default:
+                    // Object: hand the raw JSON text to dsl.
+                    return BoxedValue.FromString(el.GetRawText());
             }
         }
 
@@ -365,15 +544,28 @@ namespace AgentCore.Core
                             {
                                 AgentCore.Instance.Logger.Info($"Worker processing message (active: {_activeWorkers}/{_maxWorkerConcurrency}): {msg.message.Substring(0, Math.Min(100, msg.message.Length))}...");
 
-                                // Determine whether to append context for this round
-                                var inst = AgentCore.Instance.GetInstance(_port);
+                                // Determine whether to append context for this round.
+                                // Instance is keyed by agent id: per-connection agent_bind
+                                // first, then the server default, then the port number.
+                                string instKey = _clientAgentIds.TryGetValue(msg.client, out var boundAgentId)
+                                    ? boundAgentId
+                                    : (string.IsNullOrEmpty(AgentId) ? _port.ToString() : AgentId);
+                                var inst = AgentCore.Instance.GetInstance(instKey);
                                 int maxRounds = inst?.MaxContextRounds ?? 3;
                                 int rounds = _contextRounds.AddOrUpdate(msg.client, 0, (_, old) => old + 1);
                                 bool appendContext = (inst?.ContextInjectionEnabled ?? true) && ((maxRounds <= 1) || (rounds % maxRounds == 0));
                                 // Clearing the User Context Rounds when using MetaDSL code
                                 if (inst != null) inst.CurContextRounds = 0;
 
-                                string result = ExecuteMetaDSLInWorker(msg.message, appendContext, inst);
+                                // Bind async callback delivery to the originating connection
+                                MetaDslExecutor.PushContext(new DslContext(message => { _ = SendToClientAsync(msg.client, message); }));
+                                string result;
+                                try {
+                                    result = ExecuteMetaDSLInWorker(msg.message, appendContext, inst);
+                                }
+                                finally {
+                                    MetaDslExecutor.PopContext();
+                                }
                                 if (!string.IsNullOrEmpty(result))
                                 {
                                     AgentCore.Instance.Logger.Info($"Sending result (length: {result.Length}) to originator client, appendContext={appendContext}");
@@ -410,6 +602,16 @@ namespace AgentCore.Core
                         CheckStuckWorkers();
                     }
 
+                    // Periodic worker status log (every 2 seconds, only when workers are running)
+                    if ((int)(DateTime.UtcNow - _lastWorkerStatusLogTime).TotalSeconds >= c_workerStatusLogIntervalSeconds)
+                    {
+                        _lastWorkerStatusLogTime = DateTime.UtcNow;
+                        if (_workerStartTimes.Count > 0)
+                        {
+                            AgentCore.Instance.Logger.Info($"Worker status: {GetWorkerStatus()}");
+                        }
+                    }
+
                     // Small delay to prevent CPU spinning (100ms = 10 ticks per second)
                     Thread.Sleep(100);
                 }
@@ -432,7 +634,7 @@ namespace AgentCore.Core
         {
             try {
                 AgentCore.Instance.Logger.Debug($"Executing MetaDSL: {message}");
-                string result = AgentFrameworkService.Instance.DslEngine!.ExecuteMetaDslScript(message, (null != inst ? inst.MaxResultSize : 0), out var hasError);
+                string result = MetaDslExecutor.ExecuteMetaDslScript(message, (null != inst ? inst.MaxResultSize : 0), out var hasError);
                 AgentCore.Instance.Logger.Debug($"MetaDSL execution completed, result length: {(result?.Length ?? 0)}");
                 var sb = new StringBuilder();
                 if (appendContext) {
@@ -511,8 +713,10 @@ namespace AgentCore.Core
         /// <summary>
         /// Sends a message to a specific client (the originator of a request).
         /// Supports large messages by sending in chunks if needed.
+        /// internal: also used by the agent main thread to deliver
+        /// agent_result replies and broadcasts.
         /// </summary>
-        private async Task SendToClientAsync(WebSocket client, string message)
+        internal async Task SendToClientAsync(WebSocket client, string message)
         {
             if (client == null || string.IsNullOrEmpty(message))
                 return;
@@ -553,8 +757,10 @@ namespace AgentCore.Core
         /// <summary>
         /// Broadcasts a message to all connected clients
         /// Supports large messages by sending in chunks if needed
+        /// internal: wrapped by WebSocketServerManager.BroadcastAll for
+        /// server-initiated pushes without a request context
         /// </summary>
-        private async Task BroadcastMessageAsync(string message)
+        internal async Task BroadcastMessageAsync(string message)
         {
             if (string.IsNullOrEmpty(message))
                 return;

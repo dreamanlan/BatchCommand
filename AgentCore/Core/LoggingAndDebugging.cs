@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-
-using AbstractAgent;
+using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
@@ -18,15 +19,11 @@ namespace AgentCore.Core
     public class LoggingAndDebugging
     {
         private readonly LogLevel _minLogLevel;
-        private Action<string>? _nativeLogAction;
-        private Action<string>? _jsLogAction;
 
         public LoggingAndDebugging(LogLevel minLogLevel = LogLevel.Info,
             Action<string>? nativeLogAction = null, Action<string>? jsLogAction = null)
         {
             _minLogLevel = minLogLevel;
-            _nativeLogAction = nativeLogAction;
-            _jsLogAction = jsLogAction;
         }
 
         public void Log(LogLevel level, string message, params object[] args)
@@ -38,24 +35,12 @@ namespace AgentCore.Core
                 string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
                 string logEntry = FormatLogEntry(level, formattedMessage);
 
-                if (_nativeLogAction != null) {
-                    _nativeLogAction.Invoke(logEntry);
-                }
-                else {
-                    // Fallback to file logging when NativeApi is not yet set
-                    // This allows logging during early initialization (e.g., NativeLibraryLoader)
-                    WriteToFallbackLog(logEntry);
-                }
+                WriteToLog(logEntry);
             }
             catch (Exception ex) {
                 string errorMsg = $"[LogError] Failed to log message: {ex.Message}";
                 try {
-                    if (_nativeLogAction != null) {
-                        _nativeLogAction.Invoke(errorMsg);
-                    }
-                    else {
-                        WriteToFallbackLog(errorMsg);
-                    }
+                    WriteToLog(errorMsg);
                 }
                 catch {
                     // Silently fail - we're in early initialization
@@ -63,13 +48,14 @@ namespace AgentCore.Core
             }
         }
 
-        private static readonly object _fallbackLogLock = new object();
-        private void WriteToFallbackLog(string message)
+        private static readonly object _logLock = new object();
+        private void WriteToLog(string message)
         {
             try {
+                Console.WriteLine(message);
                 // Write to a fallback log file in the current directory
-                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agentcore_early.log");
-                lock (_fallbackLogLock) {
+                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agentcore.log");
+                lock (_logLock) {
                     System.IO.File.AppendAllText(logPath, message + Environment.NewLine);
                 }
             }
@@ -117,44 +103,9 @@ namespace AgentCore.Core
             Log(LogLevel.Error, exMessage);
         }
 
-        public void NativeLog(string message, params object[] args)
-        {
-            try {
-                string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
-                _nativeLogAction?.Invoke(formattedMessage);
-            }
-            catch (Exception ex) {
-                _nativeLogAction?.Invoke($"[NativeLogError] {ex.Message}");
-            }
-        }
-
-        public void JavascriptLog(string message, params object[] args)
-        {
-            try {
-                string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
-                _jsLogAction?.Invoke(formattedMessage);
-            }
-            catch (Exception ex) {
-                _nativeLogAction?.Invoke($"[JsLogError] {ex.Message}");
-            }
-        }
-
         private string FormatLogEntry(LogLevel level, string message)
         {
             return $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{level,-7}] {message}";
-        }
-
-        // Set or update the native log action
-        public void SetNativeLogAction(Action<string> nativeLogAction)
-        {
-            var currentNativeLog = _nativeLogAction;
-            _nativeLogAction = nativeLogAction;
-        }
-
-        // Set or update the JavaScript log action
-        public void SetJsLogAction(Action<string> jsLogAction)
-        {
-            _jsLogAction = jsLogAction;
         }
     }
 }

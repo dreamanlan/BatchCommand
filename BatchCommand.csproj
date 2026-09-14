@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <OutputType>Exe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -24,6 +24,8 @@
     <Compile Remove="AbstractAgent\**" />
     <Compile Remove="AgentCore\**" />
     <Compile Remove="BatchCmdDslHost\**" />
+    <Compile Remove="BatchCmdPlugin\**" />
+    <Compile Remove="BatchScriptApi\**" />
     <Compile Remove="BatchStudio\**" />
     <Compile Remove="CefDotnetApp\**" />
     <Compile Remove="CppLua2Dsl\**" />
@@ -32,12 +34,17 @@
     <Compile Remove="DotnetHost\**" />
     <Compile Remove="GlslRewriter\**" />
     <Compile Remove="HostCLR\**" />
+    <Compile Remove="packages\**" />
+    <Compile Remove="PythonScripts\**" />
     <Compile Remove="UnrealCodeTransform\**" />
     <Compile Remove="WebToolHost\**" />
-    <Compile Remove="Wox.Plugin.BatchCommand\**" />
+    <Compile Remove="Flow.Launcher.Plugin.BatchCommand\**" />
+    <Compile Remove="x64\**" />
     <EmbeddedResource Remove="AbstractAgent\**" />
     <EmbeddedResource Remove="AgentCore\**" />
     <EmbeddedResource Remove="BatchCmdDslHost\**" />
+    <EmbeddedResource Remove="BatchCmdPlugin\**" />
+    <EmbeddedResource Remove="BatchScriptApi\**" />
     <EmbeddedResource Remove="BatchStudio\**" />
     <EmbeddedResource Remove="CefDotnetApp\**" />
     <EmbeddedResource Remove="CppLua2Dsl\**" />
@@ -46,12 +53,17 @@
     <EmbeddedResource Remove="DotnetHost\**" />
     <EmbeddedResource Remove="GlslRewriter\**" />
     <EmbeddedResource Remove="HostCLR\**" />
+    <EmbeddedResource Remove="packages\**" />
+    <EmbeddedResource Remove="PythonScripts\**" />
     <EmbeddedResource Remove="UnrealCodeTransform\**" />
     <EmbeddedResource Remove="WebToolHost\**" />
-    <EmbeddedResource Remove="Wox.Plugin.BatchCommand\**" />
+    <EmbeddedResource Remove="Flow.Launcher.Plugin.BatchCommand\**" />
+    <EmbeddedResource Remove="x64\**" />
     <None Remove="AbstractAgent\**" />
     <None Remove="AgentCore\**" />
     <None Remove="BatchCmdDslHost\**" />
+    <None Remove="BatchCmdPlugin\**" />
+    <None Remove="BatchScriptApi\**" />
     <None Remove="BatchStudio\**" />
     <None Remove="CefDotnetApp\**" />
     <None Remove="CppLua2Dsl\**" />
@@ -60,15 +72,33 @@
     <None Remove="DotnetHost\**" />
     <None Remove="GlslRewriter\**" />
     <None Remove="HostCLR\**" />
+    <None Remove="packages\**" />
+    <None Remove="PythonScripts\**" />
     <None Remove="UnrealCodeTransform\**" />
     <None Remove="WebToolHost\**" />
-    <None Remove="Wox.Plugin.BatchCommand\**" />
+    <None Remove="Flow.Launcher.Plugin.BatchCommand\**" />
+    <None Remove="x64\**" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="DbgScpCmds.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove=".gitattributes" />
+    <None Remove=".gitignore" />
+    <None Remove="api1.png" />
+    <None Remove="api2.png" />
+    <None Remove="apiintf1.png" />
+    <None Remove="apiintf2.png" />
+    <None Remove="api_func_exam.png" />
+    <None Remove="api_other2_exam.png" />
+    <None Remove="api_other_exam.png" />
+    <None Remove="README.md" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="TextCopy" Version="6.2.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="BatchScriptApi\BatchScriptApi.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Common">

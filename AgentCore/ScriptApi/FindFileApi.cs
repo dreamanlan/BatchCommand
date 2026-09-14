@@ -5,7 +5,7 @@ using System.Text;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using AbstractAgent;
+
 using AgentCore.Utils;
 
 namespace AgentCore.ScriptApi
@@ -23,7 +23,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("find_file requires (query[, max_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("find_file requires (query[, max_count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string query = operands[0].AsString;
@@ -37,7 +37,7 @@ namespace AgentCore.ScriptApi
                 return SearchOther(query, maxCount);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"find_file error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"find_file error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -116,7 +116,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("find_file_raw requires (query[, max_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("find_file_raw requires (query[, max_count])");
                 return BoxedValue.FromObject(s_EmptyList);
             }
             string query = operands[0].AsString;
@@ -130,7 +130,7 @@ namespace AgentCore.ScriptApi
                 return SearchOtherRaw(query, maxCount);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"find_file_raw error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"find_file_raw error: {ex.Message}");
                 return BoxedValue.FromObject(s_EmptyList);
             }
         }
@@ -188,10 +188,10 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("find_file",
+            BatchCommand.BatchScript.Register("find_file",
                 "find_file(query[, max_count]) - cross-platform file search (Windows: Everything, macOS: Spotlight, Linux: locate/find). Returns formatted text",
                 new ExpressionFactoryHelper<FindFileExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_file_raw",
+            BatchCommand.BatchScript.Register("find_file_raw",
                 "find_file_raw(query[, max_count]) - cross-platform file search, returns List of [path, size, time]. Use 'to_string' to convert",
                 new ExpressionFactoryHelper<FindFileRawExp>());
         }

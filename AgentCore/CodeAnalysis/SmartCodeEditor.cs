@@ -1,5 +1,4 @@
 using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,8 +7,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
-using Microsoft.CodeAnalysis.Text;
 using AgentCore.Core;
+using BatchCommand.Utils;
 
 namespace AgentCore.CodeAnalysis
 {
@@ -30,7 +29,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -45,7 +44,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(c => c.Identifier.Text == className);
 
                 if (classDecl == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
                     return false;
                 }
 
@@ -67,12 +66,12 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error adding method: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Error adding method: {ex.Message}");
                 return false;
             }
         }
@@ -89,7 +88,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -104,7 +103,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(c => c.Identifier.Text == className);
 
                 if (classDecl == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
                     return false;
                 }
 
@@ -114,7 +113,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(m => m.Identifier.Text == methodName);
 
                 if (oldMethod == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{methodName}' not found in class '{className}'");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{methodName}' not found in class '{className}'");
                     return false;
                 }
 
@@ -125,7 +124,7 @@ namespace AgentCore.CodeAnalysis
                 var newMethod = tempClass.Members.First() as MethodDeclarationSyntax;
 
                 if (newMethod == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Failed to parse new method code");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Failed to parse new method code");
                     return false;
                 }
 
@@ -139,12 +138,12 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error replacing method: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Error replacing method: {ex.Message}");
                 return false;
             }
         }
@@ -161,7 +160,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -176,7 +175,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(c => c.Identifier.Text == className);
 
                 if (classDecl == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
                     return false;
                 }
 
@@ -186,7 +185,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(m => m.Identifier.Text == afterMethodName);
 
                 if (afterMethod == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{afterMethodName}' not found in class '{className}'");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{afterMethodName}' not found in class '{className}'");
                     return false;
                 }
 
@@ -213,12 +212,12 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error inserting method: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Error inserting method: {ex.Message}");
                 return false;
             }
         }
@@ -234,7 +233,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -249,7 +248,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(c => c.Identifier.Text == className);
 
                 if (classDecl == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
                     return false;
                 }
 
@@ -259,7 +258,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(m => m.Identifier.Text == methodName);
 
                 if (methodToDelete == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{methodName}' not found in class '{className}'");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{methodName}' not found in class '{className}'");
                     return false;
                 }
 
@@ -273,12 +272,12 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error deleting method: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Error deleting method: {ex.Message}");
                 return false;
             }
         }
@@ -293,7 +292,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -308,7 +307,7 @@ namespace AgentCore.CodeAnalysis
                 var newClass = classRoot.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault();
 
                 if (newClass == null) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Failed to parse class code");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Failed to parse class code");
                     return false;
                 }
 
@@ -322,7 +321,7 @@ namespace AgentCore.CodeAnalysis
                     var workspace = new AdhocWorkspace();
                     var formattedRoot = Formatter.Format(newRoot, workspace);
                     // Preserve original BOM state when overwriting existing file.
-                    File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                    File.WriteAllText(filePath, formattedRoot.ToFullString(), BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                 }
                 else {
                     // Check for file-scoped namespace
@@ -335,7 +334,7 @@ namespace AgentCore.CodeAnalysis
                         var workspace = new AdhocWorkspace();
                         var formattedRoot = Formatter.Format(newRoot, workspace);
                         // Preserve original BOM state when overwriting existing file.
-                        File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                        File.WriteAllText(filePath, formattedRoot.ToFullString(), BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                     }
                     else {
                         // No namespace, add to root
@@ -345,14 +344,14 @@ namespace AgentCore.CodeAnalysis
                         var workspace = new AdhocWorkspace();
                         var formattedRoot = Formatter.Format(newRoot, workspace);
                         // Preserve original BOM state when overwriting existing file.
-                        File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                        File.WriteAllText(filePath, formattedRoot.ToFullString(), BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                     }
                 }
 
                 return true;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error adding class: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Error adding class: {ex.Message}");
                 return false;
             }
         }
@@ -381,12 +380,12 @@ namespace AgentCore.CodeAnalysis
 
                 // Write to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error creating file: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Error creating file: {ex.Message}");
                 return false;
             }
         }
@@ -434,7 +433,7 @@ namespace AgentCore.CodeAnalysis
                 return true;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error verifying code: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[SmartCodeEditor] Error verifying code: {ex.Message}");
                 return false;
             }
         }

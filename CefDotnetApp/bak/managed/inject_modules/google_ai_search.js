@@ -229,11 +229,13 @@
     const id = ++BRIDGE.commandId;
     if (cb) BRIDGE.callbacks.set(id, cb);
     const msg = JSON.stringify({ id, command: cmd, params: params || {} });
-    if (BRIDGE.nativeMode) {
-      setTimeout(() => { callMetaDSL('handle_agent_command', msg); }, 0);
+    if (typeof relayTransport !== 'undefined' && relayTransport) {
+      // browser relay -> standalone AgentCore. Replies come back as
+      // agent_result envelopes routed to window.onAgentResponse.
+      relayTransport.sendAgentCommandJson(msg);
     } else {
-      warn('[bridge] callMetaDSL unavailable, command not sent:', cmd);
-      if (cb) setTimeout(() => cb(false, null, 'native API unavailable'), 0);
+      warn('[bridge] relay transport unavailable, command not sent:', cmd);
+      if (cb) setTimeout(() => cb(false, null, 'relay transport unavailable'), 0);
     }
     return id;
   }
@@ -296,11 +298,25 @@
    * Send a notification to DSL (fire-and-forget, no response expected).
    */
   function bridgeSendNotification(type, data) {
-    const msg = JSON.stringify({ type, data: data || {} });
-    if (BRIDGE.nativeMode) {
-      setTimeout(() => { callMetaDSL('handle_agent_notification', msg); }, 0);
+    data = data || {};
+    // P2: attach the js state block (queue counters) so the agent side
+    // (standalone AgentCore) can read them from the notification instead of
+    // the old CallJavascriptFuncInRenderer queries.
+    if (data.jsState === undefined && window.MetaDSLBridge) {
+      try {
+        data.jsState = {
+          operationQueueCount: window.MetaDSLBridge.getOperationQueueCount ? window.MetaDSLBridge.getOperationQueueCount() : 0,
+          sendQueueCount: window.MetaDSLBridge.getSendQueueCount ? window.MetaDSLBridge.getSendQueueCount() : 0,
+          receiveQueueCount: window.MetaDSLBridge.getReceiveQueueCount ? window.MetaDSLBridge.getReceiveQueueCount() : 0,
+          llmCategory: ''
+        };
+      } catch (e) { /* keep the payload as-is */ }
+    }
+    const msg = JSON.stringify({ type, data });
+    if (typeof relayTransport !== 'undefined' && relayTransport) {
+      relayTransport.sendAgentNotificationJson(msg);
     } else {
-      log('[bridge] mock notification:', type);
+      log('[bridge] relay transport unavailable, notification dropped:', type);
     }
   }
 
@@ -348,6 +364,14 @@
         scheduleFlush();
         return;
       }
+      if (cmd.command === 'enable_freebie_button' && cmd.params && cmd.params.name) {
+        // Agent-side freebie flows enable the page buttons via a targeted
+        // command push (used to be CallJavascriptFuncInRenderer).
+        if (window.MetaDSLBridge && window.MetaDSLBridge.enableFreebieButton) {
+          window.MetaDSLBridge.enableFreebieButton(cmd.params.name);
+        }
+        return;
+      }
       warn('[bridge] unknown command:', cmd.command);
     } catch (e) {
       err('[bridge] command parse error', e);
@@ -358,13 +382,13 @@
      Section 4  WebSocket Management
      =========================================== */
   function wsCreate() {
-    if (!CFG.WS_URL) {
-      warn('[ws] WS_URL not set, skipping connect');
+    if (typeof relayTransport === 'undefined' || !relayTransport) {
+      warn('[ws] relay transport unavailable, skipping connect');
       return null;
     }
-    log(`[ws] connecting -> ${CFG.WS_URL}`);
+    log(`[ws] relay slot -> AgentCore (agent ${AGENT_ID})`);
     let ws;
-    try { ws = new WebSocket(CFG.WS_URL); } catch (e) {
+    try { ws = relayTransport.createSlot(AGENT_ID); } catch (e) {
       err('[ws] create failed', e);
       wsReconnect(); return null;
     }
@@ -726,54 +750,79 @@
   }
 
   function sendPrompt(id) {
-    let txt = '';
-    try { txt = callMetaDSL('get_google_prompt_' + id, '') || ''; }
-    catch (e) { log('[prompt] callMetaDSL error: ' + (e && e.message)); return; }
-    if (!txt || !String(txt).trim()) { log('[prompt] empty, skip'); return; }
-    chatSend(String(txt));
-    log('[prompt] sent (' + String(txt).length + ' chars)');
+    if (typeof relayTransport === 'undefined' || !relayTransport) { log('[prompt] relay unavailable, skip'); return; }
+    relayTransport.callAgent('get_google_prompt_' + id, [], 8000).then(function (txt) {
+      txt = String(txt || '');
+      if (!txt.trim()) { log('[prompt] empty, skip'); return; }
+      chatSend(txt);
+      log('[prompt] sent (' + txt.length + ' chars)');
+    }).catch(function (e) { log('[prompt] callAgent error: ' + (e && e.message)); });
   }
 
   function sendPlan() {
-    let txt = '';
-    try { txt = callMetaDSL('get_plan', AGENT_ID) || ''; }
-    catch (e) { log('[plan] callMetaDSL error: ' + (e && e.message)); return; }
-    if (!txt || !String(txt).trim()) { log('[plan] empty, skip'); return; }
-    chatSend(String(txt));
-    log('[plan] sent (' + String(txt).length + ' chars)');
+    const doSend = (txt) => {
+      if (!txt || !String(txt).trim()) { log('[plan] empty, skip'); return; }
+      chatSend(String(txt));
+      log('[plan] sent (' + String(txt).length + ' chars)');
+    };
+    if (typeof relayTransport !== 'undefined' && relayTransport) {
+      relayTransport.callAgent('get_plan', [AGENT_ID], 8000)
+        .then(doSend)
+        .catch(e => log('[plan] relay error: ' + (e && e.message)));
+      return;
+    }
+    log('[plan] relay transport unavailable, skip');
   }
 
   function sendInduce() {
-    let txt = '';
-    try { txt = callMetaDSL('freebie_get_induction_prompt', '') || ''; }
-    catch (e) { log('[induce] callMetaDSL error: ' + (e && e.message)); return; }
-    if (!txt || !String(txt).trim()) { log('[induce] empty, skip'); return; }
-    chatSend(String(txt));
-    log('[induce] sent (' + String(txt).length + ' chars)');
-    // re-disable after click until next DSL notification
-    if (ST.freebieButtons && ST.freebieButtons.induce) ST.freebieButtons.induce.disabled = true;
+    const doSend = (txt) => {
+      if (!txt || !String(txt).trim()) { log('[induce] empty, skip'); return; }
+      chatSend(String(txt));
+      log('[induce] sent (' + String(txt).length + ' chars)');
+      // re-disable after click until next DSL notification
+      if (ST.freebieButtons && ST.freebieButtons.induce) ST.freebieButtons.induce.disabled = true;
+    };
+    if (typeof relayTransport !== 'undefined' && relayTransport) {
+      relayTransport.callAgent('freebie_get_induction_prompt', [AGENT_ID], 8000)
+        .then(doSend)
+        .catch(e => log('[induce] relay error: ' + (e && e.message)));
+      return;
+    }
+    log('[induce] relay transport unavailable, skip');
   }
 
   function sendReflect() {
-    let txt = '';
-    try { txt = callMetaDSL('freebie_get_reflection_prompt', '') || ''; }
-    catch (e) { log('[reflect] callMetaDSL error: ' + (e && e.message)); return; }
-    if (!txt || !String(txt).trim()) { log('[reflect] empty, skip'); return; }
-    chatSend(String(txt));
-    log('[reflect] sent (' + String(txt).length + ' chars)');
-    // re-disable after click until next DSL notification
-    if (ST.freebieButtons && ST.freebieButtons.reflect) ST.freebieButtons.reflect.disabled = true;
+    const doSend = (txt) => {
+      if (!txt || !String(txt).trim()) { log('[reflect] empty, skip'); return; }
+      chatSend(String(txt));
+      log('[reflect] sent (' + String(txt).length + ' chars)');
+      // re-disable after click until next DSL notification
+      if (ST.freebieButtons && ST.freebieButtons.reflect) ST.freebieButtons.reflect.disabled = true;
+    };
+    if (typeof relayTransport !== 'undefined' && relayTransport) {
+      relayTransport.callAgent('freebie_get_reflection_prompt', [AGENT_ID], 8000)
+        .then(doSend)
+        .catch(e => log('[reflect] relay error: ' + (e && e.message)));
+      return;
+    }
+    log('[reflect] relay transport unavailable, skip');
   }
 
   function sendPattern() {
-    let txt = '';
-    try { txt = callMetaDSL('freebie_get_pattern_prompt', '') || ''; }
-    catch (e) { log('[pattern] callMetaDSL error: ' + (e && e.message)); return; }
-    if (!txt || !String(txt).trim()) { log('[pattern] empty, skip'); return; }
-    chatSend(String(txt));
-    log('[pattern] sent (' + String(txt).length + ' chars)');
-    // re-disable after click until next DSL notification
-    if (ST.freebieButtons && ST.freebieButtons.pattern) ST.freebieButtons.pattern.disabled = true;
+    const doSend = (txt) => {
+      if (!txt || !String(txt).trim()) { log('[pattern] empty, skip'); return; }
+      chatSend(String(txt));
+      log('[pattern] sent (' + String(txt).length + ' chars)');
+      // re-disable after click until next DSL notification
+      if (ST.freebieButtons && ST.freebieButtons.pattern) ST.freebieButtons.pattern.disabled = true;
+    };
+    if (typeof relayTransport !== 'undefined' && relayTransport) {
+      relayTransport.callAgent('freebie_get_pattern_prompt', [AGENT_ID], 8000)
+        .then(doSend)
+        .catch(e => log('[pattern] relay error: ' + (e && e.message)));
+      return;
+    }
+    log('[pattern] relay transport unavailable, skip');
   }
 
   function updatePanel() {

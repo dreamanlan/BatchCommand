@@ -8,6 +8,7 @@ using AgentCore.CodeAnalysis.TreeSitter.Adapters;
 using AgentCore.CodeAnalysis.TreeSitter.Interfaces;
 using AgentCore.Models;
 using AgentCore.Core;
+using BatchCommand.Utils;
 
 namespace AgentCore.CodeAnalysis
 {

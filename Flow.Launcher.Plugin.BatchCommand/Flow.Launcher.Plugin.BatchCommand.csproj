@@ -1,0 +1,66 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
+    <AssemblyName>Flow.Launcher.Plugin.BatchCommand</AssemblyName>
+    <RootNamespace>Flow.Launcher.Plugin.BatchCommand</RootNamespace>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="ShellContextMenu_Reference.cs" />
+    <Compile Remove="ShellContextMenu_Reference2.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Flow.Launcher.Plugin" Version="4.4.0" />
+    <PackageReference Include="TextCopy" Version="6.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Common">
+      <HintPath>..\deps\Common.dll</HintPath>
+    </Reference>
+    <Reference Include="DotnetStoryScript">
+      <HintPath>..\deps\DotnetStoryScript.dll</HintPath>
+    </Reference>
+    <Reference Include="Dsl">
+      <HintPath>..\deps\Dsl.dll</HintPath>
+    </Reference>
+    <Reference Include="LitJson">
+      <HintPath>..\deps\LitJson.dll</HintPath>
+    </Reference>
+    <Reference Include="ScriptFrameworkLibrary">
+      <HintPath>..\deps\ScriptFrameworkLibrary.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="plugin.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="main.dsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\dsl.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Languages\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BatchScriptApi\BatchScriptApi.csproj" />
+  </ItemGroup>
+
+</Project>

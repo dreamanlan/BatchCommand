@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <BaseOutputPath></BaseOutputPath>
@@ -14,11 +14,11 @@
     </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(SolutionDir)bin\Debug\net6.0\BatchCommand.exe $(OutDir)copy.dsl bat" />
+    <Exec Command="$(ProjectDir)..\..\bin\Debug\net9.0\BatchCommand.exe $(ProjectDir)copy.dsl bat" />
   </Target>
 
   <ItemGroup>
-    <Compile Include="..\..\Script\BatchScript.cs" Link="BatchScript.cs" />
+    <ProjectReference Include="..\..\BatchScriptApi\BatchScriptApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>

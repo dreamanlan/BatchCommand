@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using AbstractAgent;
+
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
@@ -16,7 +16,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_connect requires (serverId, type, target)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_connect requires (serverId, type, target)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string serverId = operands[0].AsString;
@@ -35,7 +35,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_disconnect requires (serverId)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_disconnect requires (serverId)");
                 return BoxedValue.FromBool(false);
             }
             AgentCore.Core.McpClientService.Instance.Disconnect(operands[0].AsString);
@@ -52,7 +52,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_is_connected requires (serverId)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_is_connected requires (serverId)");
                 return BoxedValue.FromBool(false);
             }
             return BoxedValue.FromBool(AgentCore.Core.McpClientService.Instance.IsConnected(operands[0].AsString));
@@ -69,7 +69,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_list_tools requires (serverId)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_tools requires (serverId)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ListTools(operands[0].AsString));
@@ -88,7 +88,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_call_tool_callback requires (serverId, toolName, argsJson, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_call_tool_callback requires (serverId, toolName, argsJson, tag)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string serverId = operands[0].AsString;
@@ -112,7 +112,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_set_option requires (serverId, key, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_set_option requires (serverId, key, value)");
                 return BoxedValue.FromBool(false);
             }
             string serverId = operands[0].AsString;
@@ -133,7 +133,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_clear_options requires (serverId)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_clear_options requires (serverId)");
                 return BoxedValue.FromBool(false);
             }
             AgentCore.Core.McpClientService.Instance.ClearOptions(operands[0].AsString);
@@ -151,7 +151,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_call_tool requires (serverId, toolName, argsJson)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_call_tool requires (serverId, toolName, argsJson)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string serverId = operands[0].AsString;
@@ -162,7 +162,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"mcp_call_tool error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"mcp_call_tool error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -177,7 +177,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_get_busy_duration requires (serverId, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_get_busy_duration requires (serverId, tag)");
                 return BoxedValue.From(0);
             }
             string serverId = operands[0].AsString;
@@ -196,7 +196,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_cancel requires (serverId, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_cancel requires (serverId, tag)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string serverId = operands[0].AsString;
@@ -212,34 +212,34 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_connect",
+            BatchCommand.BatchScript.Register("mcp_connect",
                 "mcp_connect(serverId, type, target) - connect to MCP server, type='stdio'/'sse'/'streamable-http', target=command or URL",
                 new ExpressionFactoryHelper<McpConnectExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_disconnect",
+            BatchCommand.BatchScript.Register("mcp_disconnect",
                 "mcp_disconnect(serverId) - disconnect from MCP server",
                 new ExpressionFactoryHelper<McpDisconnectExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_is_connected",
+            BatchCommand.BatchScript.Register("mcp_is_connected",
                 "mcp_is_connected(serverId) - check if MCP server is connected",
                 new ExpressionFactoryHelper<McpIsConnectedExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_list_tools",
+            BatchCommand.BatchScript.Register("mcp_list_tools",
                 "mcp_list_tools(serverId) - list available tools on MCP server (LLM-friendly format)",
                 new ExpressionFactoryHelper<McpListToolsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_call_tool_callback",
+            BatchCommand.BatchScript.Register("mcp_call_tool_callback",
                 "mcp_call_tool_callback(serverId, toolName, argsJson, tag) - call MCP tool async, result via mcp_callback CEF message",
                 new ExpressionFactoryHelper<McpCallToolCallbackExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_set_option",
+            BatchCommand.BatchScript.Register("mcp_set_option",
                 "mcp_set_option(serverId, key, value) - set connection option, key='timeout'(ms)/'header'(Name:Value)/'max_busy_seconds'(watchdog threshold)/'max_queue_len'(async call queue depth)",
                 new ExpressionFactoryHelper<McpSetOptionExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_clear_options",
+            BatchCommand.BatchScript.Register("mcp_clear_options",
                 "mcp_clear_options(serverId) - clear all pending connection options for a server",
                 new ExpressionFactoryHelper<McpClearOptionsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_call_tool",
+            BatchCommand.BatchScript.Register("mcp_call_tool",
                 "mcp_call_tool(serverId, toolName, argsJson) - synchronous tool call, blocks until result is received and returns it directly",
                 new ExpressionFactoryHelper<McpCallToolExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_get_busy_duration",
+            BatchCommand.BatchScript.Register("mcp_get_busy_duration",
                 "mcp_get_busy_duration(serverId, tag) - returns seconds the call has been busy (0 if not busy)",
                 new ExpressionFactoryHelper<McpGetBusyDurationExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_cancel",
+            BatchCommand.BatchScript.Register("mcp_cancel",
                 "mcp_cancel(serverId, tag) - cancel an active MCP tool call for the session",
                 new ExpressionFactoryHelper<McpCancelExp>());
 

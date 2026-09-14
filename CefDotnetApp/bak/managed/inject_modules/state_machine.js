@@ -152,6 +152,12 @@ class LLMRespondingState extends State {
     // Counter for context countdown, persists across state transitions
     this.contextCounterForKeep = 0;
     this.contextCounterForAlign = 0;
+    // Timeout stop retry interval and grace deadline (ms). The grace deadline
+    // is the hard cap after a timeout stop: even if generation never stops
+    // (stuck loading indicator or stop button not found), the state machine
+    // is forced forward instead of deadlocking in LLM_RESPONDING forever.
+    this.stopRetryIntervalMs = 5000;
+    this.stopGraceMs = 30000;
   }
 
   enter() {
@@ -160,6 +166,12 @@ class LLMRespondingState extends State {
     this.responseStartTime = Date.now();
     // Flag: stop button clicked due to timeout, force transition once LLM stops
     this.timeoutStopTriggered = false;
+    // Timestamp when the timeout stop was first attempted; 0 = none
+    this.timeoutStopAt = 0;
+    // Flag: "stuck, please continue" nudge already sent after timeout stop
+    this.timeoutNudgeSent = false;
+    // Timestamp of the last stop click attempt (first try or retry)
+    this.stopRetryLastTs = 0;
     // User must have sent a message to trigger LLM response
     this.monitor.onUserSendMessage();
     // Record the last user message node after a short delay (wait for DOM render)
@@ -201,6 +213,21 @@ class LLMRespondingState extends State {
       else this.info('No pending agent message wrapper to collapse');
       this.monitor.pendingAgentMessageWrapper = null;
     }
+
+    // After a timeout stop, nudge the LLM to continue when LockAgent mode is
+    // active, so long-term agent planning resumes immediately. Only send once
+    // generation has actually stopped: sending while still generating would
+    // click the stop icon (the send button swaps to stop during generation)
+    // and leave the text stranded in the input.
+    if (this.timeoutStopTriggered && !this.timeoutNudgeSent) {
+      this.timeoutNudgeSent = true;
+      if (this.checkLLMResponding()) {
+        this.warn('[LLMRespondingState] Still generating at exit, skip continue nudge');
+      } else if (this.monitor.bridge && this.monitor.bridge.lockAgentEnabled) {
+        this.info('[LLMRespondingState] LockAgent on, sending continue nudge to LLM');
+        this.monitor.sendResultToLLM('卡了，请继续');
+      }
+    }
   }
 
   async run() {
@@ -235,21 +262,53 @@ class LLMRespondingState extends State {
         const timeoutMs = CONFIG.llmResponseTimeoutMin * 60000;
         if (elapsed >= timeoutMs) {
           this.warn(`[LLMRespondingState] LLM response timeout (${CONFIG.llmResponseTimeoutMin}min elapsed), stopping generation`);
-          this.stopLLMGeneration();
-          // Clear start time and set flag so next iteration force-transitions
-          // once checkLLMResponding() returns false (stop took effect).
-          this.responseStartTime = null;
-          this.timeoutStopTriggered = true;
+          this.triggerTimeoutStop();
         }
+      }
+
+      // Retry the stop click while the page still reports generating after a
+      // timeout stop (the first click may have missed the stop button, e.g.
+      // it appeared late or the selector needs the page in stoppable state).
+      if (this.timeoutStopTriggered && isResponding
+        && Date.now() - this.stopRetryLastTs >= this.stopRetryIntervalMs) {
+        this.warn('[LLMRespondingState] Still generating after timeout stop, retrying stop click');
+        this.stopLLMGeneration();
+        // Clear start time and set flag so next iteration force-transitions
+        // once checkLLMResponding() returns false (stop took effect).
+        this.responseStartTime = null;
+        this.timeoutStopTriggered = true;
+      }
+
+      // Hard grace deadline: a timeout stop was issued but generation never
+      // stopped (stuck loading indicator or stop button not found). Force the
+      // transition so the state machine cannot deadlock in LLM_RESPONDING.
+      if (this.timeoutStopTriggered
+        && Date.now() - this.timeoutStopAt >= this.stopGraceMs) {
+        this.warn('[LLMRespondingState] Timeout stop grace period exceeded, forcing transition to SCANNING_CODE_BLOCKS');
+        this.monitor.transitionTo('SCANNING_CODE_BLOCKS', 'LLM response timeout stop grace exceeded');
+        break;
       }
     }
 
     this.info('[LLMRespondingState] Run loop exited');
   }
 
+  // Handle response timeout: attempt to click the page stop button and arm
+  // the retry / grace deadline logic in the run loop. responseStartTime is
+  // cleared so the timeout branch does not re-fire every poll cycle; the
+  // retry throttle and grace deadline are driven by timeoutStopTriggered.
+  triggerTimeoutStop() {
+    this.stopLLMGeneration();
+    this.responseStartTime = null;
+    this.timeoutStopTriggered = true;
+    this.timeoutStopAt = Date.now();
+  }
+
   // Click the page stop button to abort LLM generation.
   // local-agent and custom-llm share the same DOM structure.
+  // Returns true when a stop button was found and clicked.
   stopLLMGeneration() {
+    this.stopRetryLastTs = Date.now();
     // local-agent: text button #stop-btn
     // custom-llm: SVG icon button, stop = red el-icon (power-off)
     const stopBtn = document.querySelector('#stop-btn:not(.stop-disabled)')
@@ -257,9 +316,10 @@ class LLMRespondingState extends State {
     if (stopBtn) {
       this.info('[LLMRespondingState] Clicking stop button to abort generation');
       stopBtn.click();
-      return;
+      return true;
     }
     this.warn('[LLMRespondingState] Stop button not found or disabled, cannot abort generation');
+    return false;
   }
 }
 

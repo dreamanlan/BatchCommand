@@ -6,7 +6,7 @@ namespace AgentCore.Utils
 {
     /// <summary>
     /// P/Invoke wrapper for Everything SDK.
-    /// Adapted from Wox.Plugin.BatchCommand for synchronous query mode.
+    /// Adapted from Flow.Launcher.Plugin.BatchCommand for synchronous query mode.
     /// Everything.dll must be in the application directory or PATH.
     /// </summary>
     public static class EverythingSDK

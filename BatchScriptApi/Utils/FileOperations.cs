@@ -1,0 +1,870 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
+using BatchCommand.Api;
+
+namespace BatchCommand.Utils
+{
+    public class FileOperations
+    {
+        private readonly string _basePath;
+        private readonly string _appDir;
+        private readonly bool _isMac;
+
+        public FileOperations(string basePath, string appDir, bool isMac)
+        {
+            _basePath = basePath;
+            _appDir = appDir;
+            _isMac = isMac;
+        }
+
+        public string ReadFile(string path, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                throw new IOException($"File not found: {path}");
+            }
+
+            return SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+        }
+
+        public byte[] ReadFileBytes(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                throw new IOException($"File not found: {path}");
+            }
+
+            return SafeFileReader.ReadAllBytes(fullPath);
+        }
+
+        public string[] ReadFileLines(string path, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                throw new IOException($"File not found: {path}");
+            }
+
+            return SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+        }
+
+        public bool WriteFile(string path, string content, bool createDirectory = true, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+
+            if (createDirectory) {
+                string? directory = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                    Directory.CreateDirectory(directory);
+            }
+
+            if (!string.IsNullOrEmpty(content)) {
+                // When encoding is specified, use it directly.
+                // Otherwise, preserve original BOM state when overwriting existing file
+                // (defaults to with-BOM for new files to keep legacy behavior).
+                var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+                File.WriteAllText(fullPath, content, writeEncoding);
+                return true;
+            }
+            return false;
+        }
+
+        public bool WriteFileNoBom(string path, string content, bool createDirectory = true)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+
+            if (createDirectory) {
+                string? directory = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                    Directory.CreateDirectory(directory);
+            }
+
+            if (!string.IsNullOrEmpty(content)) {
+                Encoding writeEncoding = BatchCommand.Utils.BomHelper.GetEncodingForWriteNoBom(fullPath);
+                File.WriteAllText(fullPath, content, writeEncoding);
+                return true;
+            }
+            return false;
+        }
+
+        public bool WriteFileBytes(string path, byte[] content, bool createDirectory = true)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+
+            if (createDirectory) {
+                string? directory = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                    Directory.CreateDirectory(directory);
+            }
+
+            if (null != content && content.Length > 0) {
+                File.WriteAllBytes(fullPath, content);
+                return true;
+            }
+            return false;
+        }
+
+        public bool AppendFile(string path, string content, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!string.IsNullOrEmpty(content)) {
+                // When encoding is specified, use it directly.
+                // Otherwise, preserve original BOM state when appending to existing file
+                // (defaults to with-BOM for new files to keep legacy behavior).
+                var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+                File.AppendAllText(fullPath, content, writeEncoding);
+                return true;
+            }
+            return false;
+        }
+
+        public bool DeleteFile(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (File.Exists(fullPath)) {
+                File.Delete(fullPath);
+                return true;
+            }
+            return false;
+        }
+
+        public bool CopyFile(string sourcePath, string destPath, bool overwrite = false)
+        {
+            string fullSourcePath = PathHelper.EnsureAbsolutePath(sourcePath, _basePath);
+            string fullDestPath = PathHelper.EnsureAbsolutePath(destPath, _basePath);
+
+            if (!File.Exists(fullSourcePath))
+                return false;
+
+            string? destDirectory = Path.GetDirectoryName(fullDestPath);
+            if (!string.IsNullOrEmpty(destDirectory) && !Directory.Exists(destDirectory))
+                Directory.CreateDirectory(destDirectory);
+
+            File.Copy(fullSourcePath, fullDestPath, overwrite);
+            return true;
+        }
+
+        public bool MoveFile(string sourcePath, string destPath, bool overwrite = false)
+        {
+            string fullSourcePath = PathHelper.EnsureAbsolutePath(sourcePath, _basePath);
+            string fullDestPath = PathHelper.EnsureAbsolutePath(destPath, _basePath);
+
+            if (!File.Exists(fullSourcePath))
+                return false;
+
+            string? destDirectory = Path.GetDirectoryName(fullDestPath);
+            if (!string.IsNullOrEmpty(destDirectory) && !Directory.Exists(destDirectory))
+                Directory.CreateDirectory(destDirectory);
+
+            if (overwrite && File.Exists(fullDestPath))
+                File.Delete(fullDestPath);
+
+            File.Move(fullSourcePath, fullDestPath);
+            return true;
+        }
+
+        public bool FileExists(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            return File.Exists(fullPath);
+        }
+
+        public bool DirectoryExists(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            return Directory.Exists(fullPath);
+        }
+
+        // BOM Operations
+
+        public bool FileHasBom(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath))
+                return false;
+            return BatchCommand.Utils.BomHelper.HasBom(fullPath);
+        }
+
+        public bool FileAddBom(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                ApiErrorInfo.AppendLine("file_add_bom: file not found");
+                return false;
+            }
+            if (BatchCommand.Utils.BomHelper.HasBom(fullPath)) {
+                // Already has BOM, no need to process.
+                return true;
+            }
+            byte[] bom = BatchCommand.Utils.BomHelper.GetBomToAdd(fullPath);
+            byte[] original = SafeFileReader.ReadAllBytes(fullPath);
+            byte[] result = new byte[original.Length + bom.Length];
+            Buffer.BlockCopy(bom, 0, result, 0, bom.Length);
+            Buffer.BlockCopy(original, 0, result, bom.Length, original.Length);
+            File.WriteAllBytes(fullPath, result);
+            return true;
+        }
+
+        public bool FileRemoveBom(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                ApiErrorInfo.AppendLine("file_remove_bom: file not found");
+                return false;
+            }
+            byte[]? bom = BatchCommand.Utils.BomHelper.GetBomBytes(fullPath);
+            if (bom == null) {
+                // No BOM, no need to process.
+                return true;
+            }
+            byte[] original = SafeFileReader.ReadAllBytes(fullPath);
+            byte[] result = new byte[original.Length - bom.Length];
+            Buffer.BlockCopy(original, bom.Length, result, 0, result.Length);
+            File.WriteAllBytes(fullPath, result);
+            return true;
+        }
+
+        public FileInfoModel GetFileInfo(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            return new FileInfoModel(fullPath);
+        }
+
+        public List<FileInfoModel> ListDirectory(string path, string searchPattern = "*", bool recursive = false)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!Directory.Exists(fullPath))
+                return new List<FileInfoModel>();
+
+            var result = new List<FileInfoModel>();
+            var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+
+            var files = Directory.GetFiles(fullPath, searchPattern, searchOption);
+            foreach (var file in files) {
+                result.Add(new FileInfoModel(file));
+            }
+
+            var directories = Directory.GetDirectories(fullPath, searchPattern, searchOption);
+            foreach (var dir in directories) {
+                result.Add(new FileInfoModel(dir));
+            }
+
+            return result;
+        }
+
+        public bool EnsureDirectory(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!Directory.Exists(fullPath)) {
+                Directory.CreateDirectory(fullPath);
+                return true;
+            }
+            return false;
+        }
+
+        public bool RemoveDirectory(string path, bool recursive = false)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (Directory.Exists(fullPath)) {
+                Directory.Delete(fullPath, recursive);
+                return true;
+            }
+            return false;
+        }
+
+        public List<string> FindFiles(string path, string pattern, bool recursive = true)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!Directory.Exists(fullPath))
+                return new List<string>();
+
+            var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            return Directory.GetFiles(fullPath, pattern, searchOption).ToList();
+        }
+
+        // Code editing methods
+
+        public bool ReplaceInFile(string path, string oldString, string newString, bool allOccurrences = false, bool exactMatch = false, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                ApiErrorInfo.AppendLine("replace_in_file: file not found");
+                return false;
+            }
+
+            string content = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+
+            // Level 1: Exact match (no modification to search string)
+            if (allOccurrences) {
+                if (content.Contains(oldString)) {
+                    content = content.Replace(oldString, newString);
+                    File.WriteAllText(fullPath, content, writeEncoding);
+                    return true;
+                }
+            }
+            else {
+                int index = content.IndexOf(oldString, StringComparison.Ordinal);
+                if (index >= 0) {
+                    content = content.Substring(0, index) + newString + content.Substring(index + oldString.Length);
+                    File.WriteAllText(fullPath, content, writeEncoding);
+                    return true;
+                }
+            }
+            if (exactMatch) {
+                ApiErrorInfo.AppendLine("replace_in_file: old string not found (exact match)");
+                return false;
+            }
+            // Level 2: Trimmed match
+            var trimedOldString = oldString.Trim();
+            var trimedNewString = newString.Trim();
+            if (allOccurrences) {
+                if (content.Contains(trimedOldString)) {
+                    content = content.Replace(trimedOldString, trimedNewString);
+                    File.WriteAllText(fullPath, content, writeEncoding);
+                    return true;
+                }
+            }
+            else {
+                int index = content.IndexOf(trimedOldString, StringComparison.Ordinal);
+                if (index >= 0) {
+                    content = content.Substring(0, index) + trimedNewString + content.Substring(index + trimedOldString.Length);
+                    File.WriteAllText(fullPath, content, writeEncoding);
+                    return true;
+                }
+            }
+            // Level 3: Normalized whitespace matching (DiffOps fallback)
+            var result = DiffOperations.ReplaceFullLinesText(content, oldString, newString, allOccurrences);
+            if (result.Success) {
+                File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
+                return true;
+            }
+            ApiErrorInfo.AppendLine("replace_in_file: old string not found");
+            return false;
+        }
+
+        public bool ReplaceLines(string path, int startLine, int endLine, string newContent, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                ApiErrorInfo.AppendLine("replace_lines: file not found");
+                return false;
+            }
+
+            string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+
+            if (startLine < 1 || endLine > lines.Length || startLine > endLine) {
+                ApiErrorInfo.AppendLine("replace_lines: out of range");
+                return false;
+            }
+
+            string[] newLines = newContent.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            string[] result = new string[lines.Length - (endLine - startLine + 1) + newLines.Length];
+
+            int index = 0;
+            for (int i = 0; i < startLine - 1; i++) {
+                result[index++] = lines[i];
+            }
+            for (int i = 0; i < newLines.Length; i++) {
+                result[index++] = newLines[i];
+            }
+            for (int i = endLine; i < lines.Length; i++) {
+                result[index++] = lines[i];
+            }
+
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+            File.WriteAllLines(fullPath, result, writeEncoding);
+            return true;
+        }
+
+        public bool InsertAfterText(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                ApiErrorInfo.AppendLine("insert_after: file not found");
+                return false;
+            }
+
+            string fileContent = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+
+            // Level 1: Exact match (no modification to search string)
+            if (allOccurrences) {
+                if (fileContent.Contains(searchLiteralText)) {
+                    fileContent = fileContent.Replace(searchLiteralText, searchLiteralText + content);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
+                    return true;
+                }
+            }
+            else {
+                int index = fileContent.IndexOf(searchLiteralText, StringComparison.Ordinal);
+                if (index >= 0) {
+                    fileContent = fileContent.Substring(0, index + searchLiteralText.Length) + content + fileContent.Substring(index + searchLiteralText.Length);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
+                    return true;
+                }
+            }
+            if (exactMatch) {
+                ApiErrorInfo.AppendLine("insert_after: search literal text not found (exact match)");
+                return false;
+            }
+            // Level 2: Trimmed match
+            var trimmedSearch = searchLiteralText.Trim();
+            if (allOccurrences) {
+                if (fileContent.Contains(trimmedSearch)) {
+                    fileContent = fileContent.Replace(trimmedSearch, trimmedSearch + content);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
+                    return true;
+                }
+            }
+            else {
+                int index = fileContent.IndexOf(trimmedSearch, StringComparison.Ordinal);
+                if (index >= 0) {
+                    fileContent = fileContent.Substring(0, index + trimmedSearch.Length) + content + fileContent.Substring(index + trimmedSearch.Length);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
+                    return true;
+                }
+            }
+            // Level 3: Normalized whitespace matching (DiffOps fallback)
+            var result = DiffOperations.InsertAfterFullLinesText(fileContent, searchLiteralText, content, allOccurrences);
+            if (result.Success) {
+                File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
+                return true;
+            }
+            ApiErrorInfo.AppendLine("insert_after: search literal text not found");
+            return false;
+        }
+
+        public bool InsertBeforeText(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                ApiErrorInfo.AppendLine("insert_before: file not found");
+                return false;
+            }
+
+            string fileContent = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+
+            // Level 1: Exact match (no modification to search string)
+            if (allOccurrences) {
+                if (fileContent.Contains(searchLiteralText)) {
+                    fileContent = fileContent.Replace(searchLiteralText, content + searchLiteralText);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
+                    return true;
+                }
+            }
+            else {
+                int index = fileContent.IndexOf(searchLiteralText, StringComparison.Ordinal);
+                if (index >= 0) {
+                    fileContent = fileContent.Substring(0, index) + content + fileContent.Substring(index);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
+                    return true;
+                }
+            }
+            if (exactMatch) {
+                ApiErrorInfo.AppendLine("insert_before: search literal text not found (exact match)");
+                return false;
+            }
+            // Level 2: Trimmed match
+            var trimmedSearch = searchLiteralText.Trim();
+            if (allOccurrences) {
+                if (fileContent.Contains(trimmedSearch)) {
+                    fileContent = fileContent.Replace(trimmedSearch, content + trimmedSearch);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
+                    return true;
+                }
+            }
+            else {
+                int index = fileContent.IndexOf(trimmedSearch, StringComparison.Ordinal);
+                if (index >= 0) {
+                    fileContent = fileContent.Substring(0, index) + content + fileContent.Substring(index);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
+                    return true;
+                }
+            }
+            // Level 3: Normalized whitespace matching (DiffOps fallback)
+            var result = DiffOperations.InsertBeforeFullLinesText(fileContent, searchLiteralText, content, allOccurrences);
+            if (result.Success) {
+                File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
+                return true;
+            }
+            ApiErrorInfo.AppendLine("insert_before: search literal text not found");
+            return false;
+        }
+
+        public bool DeleteLines(string path, int startLine, int endLine, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                ApiErrorInfo.AppendLine("delete_lines: file not found");
+                return false;
+            }
+
+            string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+
+            if (startLine < 1 || endLine > lines.Length || startLine > endLine) {
+                ApiErrorInfo.AppendLine("delete_lines: out of range");
+                return false;
+            }
+
+            string[] result = new string[lines.Length - (endLine - startLine + 1)];
+            int index = 0;
+            for (int i = 0; i < lines.Length; i++) {
+                if (i + 1 < startLine || i + 1 > endLine) {
+                    result[index++] = lines[i];
+                }
+            }
+
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
+            File.WriteAllLines(fullPath, result, writeEncoding);
+            return true;
+        }
+
+        public List<int> SearchLinesInFile(string path, string pattern, bool ignoreCase = true, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath))
+                return new List<int>();
+
+            var lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            var result = new List<int>();
+
+            for (int i = 0; i < lines.Length; i++) {
+                if (MatchesPattern(lines[i], pattern, ignoreCase)) {
+                    result.Add(i + 1);
+                }
+            }
+
+            return result;
+        }
+
+        private bool MatchesPattern(string text, string pattern, bool ignoreCase = true)
+        {
+            try {
+                var options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+                return Regex.IsMatch(text, pattern, options);
+            }
+            catch (ArgumentException) {
+                var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                return text.IndexOf(pattern, comparison) >= 0;
+            }
+        }
+
+        public string[] ReadLinesRange(string path, int startLine, int endLine, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                throw new IOException($"File not found: {path}");
+            }
+
+            string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+
+            if (startLine > endLine) {
+                throw new IOException($"startLine:{startLine} > endLine:{endLine}");
+            }
+            if (startLine < 1) {
+                startLine = 1;
+            }
+            if (endLine > lines.Length) {
+                endLine = lines.Length;
+            }
+
+            string[] result = new string[endLine - startLine + 1];
+            int index = 0;
+            for (int i = startLine - 1; i < endLine; i++) {
+                result[index++] = lines[i];
+            }
+
+            return result;
+        }
+
+        public int GetLineCount(string path, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath))
+                return 0;
+
+            string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            return lines.Length;
+        }
+
+        public string SearchFile(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath))
+                return $"File not found: {path}";
+            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
+        }
+
+        public string SearchFiles(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (File.Exists(fullPath)) {
+                return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
+            }
+            if (!Directory.Exists(fullPath)) {
+                return $"Directory not found: {path}";
+            }
+
+            if (null == filterAndNewExts) {
+                filterAndNewExts = new List<string> { "*.txt", "*.md", "*.jsonl", "*.json", "*.xml", "*.yaml", "*.csv", "*.htm", "*.html", "*.css",
+                    "*.js", "*.py", "*.java", "*.c", "*.cpp", "*.h", "*.hpp", "*.m", "*.mm", "*.cxx", "*.hxx", "*.cc", "*.hh", "*.swift", "*.kt",
+                    "*.cs", "*.vb", "*.php", "*.asp", "*.aspx", "*.jsp", "*.cgi", "*.pl", "*.rb", "*.lua", "*.go", "*.rs", "*.kts", "*.fs", "*.fsx",
+                    "*.ts", "*.tsx", "*.jsx", "*.dsl", "*.sh", "*.bat", "*.cmd", "*.toml", "*.tml", "*.log"};
+            }
+            if (filterAndNewExts.Count <= 0) {
+                filterAndNewExts.Add("*");
+            }
+            var sb = new StringBuilder();
+            for (int i = 0; i < filterAndNewExts.Count; ++i) {
+                string filter = filterAndNewExts[i];
+                string[] files = Directory.GetFiles(path, filter, SearchOption.AllDirectories);
+                foreach (string file in files) {
+                    var result = SearchFileInternal(file, searchRegex, contextLinesAfter, contextLinesBefore, out bool hasMatch, encoding);
+                    if (!hasMatch) {
+                        continue;
+                    }
+                    sb.AppendLine($"====== {file} ======");
+                    sb.AppendLine(result);
+                }
+            }
+            if (sb.Length == 0) {
+                return $"No matches found for pattern: {searchRegex}";
+            }
+            return sb.ToString();
+        }
+
+        public string SearchLogFile(string logFile, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
+            if (!File.Exists(fullPath))
+                return $"Log file not found: {logFile}";
+            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
+        }
+
+        public List<MatchBlock> SearchFileAsList(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath))
+                return new List<MatchBlock>();
+            return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
+        }
+
+        public List<MatchBlock> SearchLogFileAsList(string logFile, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
+            if (!File.Exists(fullPath))
+                return new List<MatchBlock>();
+            return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
+        }
+
+        public List<MatchBlock> SearchFilesAsList(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null, Encoding? encoding = null)
+        {
+            var results = new List<MatchBlock>();
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (File.Exists(fullPath)) {
+                return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
+            }
+            if (!Directory.Exists(fullPath)) {
+                return results;
+            }
+
+            if (null == filterAndNewExts) {
+                filterAndNewExts = new List<string> { "*.txt", "*.md", "*.jsonl", "*.json", "*.xml", "*.yaml", "*.csv", "*.htm", "*.html", "*.css",
+                    "*.js", "*.py", "*.java", "*.c", "*.cpp", "*.h", "*.hpp", "*.m", "*.mm", "*.cxx", "*.hxx", "*.cc", "*.hh", "*.swift", "*.kt",
+                    "*.cs", "*.vb", "*.php", "*.asp", "*.aspx", "*.jsp", "*.cgi", "*.pl", "*.rb", "*.lua", "*.go", "*.rs", "*.kts", "*.fs", "*.fsx",
+                    "*.ts", "*.tsx", "*.jsx", "*.dsl", "*.sh", "*.bat", "*.cmd", "*.toml", "*.tml", "*.log"};
+            }
+            if (filterAndNewExts.Count <= 0) {
+                filterAndNewExts.Add("*");
+            }
+            for (int i = 0; i < filterAndNewExts.Count; ++i) {
+                string filter = filterAndNewExts[i];
+                string[] files = Directory.GetFiles(path, filter, SearchOption.AllDirectories);
+                foreach (string file in files) {
+                    var blocks = SearchFileInternalAsBlocks(file, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
+                    if (blocks.Count == 0) {
+                        continue;
+                    }
+                    results.AddRange(blocks);
+                }
+            }
+            return results;
+        }
+
+
+        public string HeadFile(string file, int lines, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
+            if (!File.Exists(fullPath))
+                return $"File not found: {file}";
+            return HeadInternal(fullPath, lines, encoding);
+        }
+
+        public string TailFile(string file, int lines, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
+            if (!File.Exists(fullPath))
+                return $"File not found: {file}";
+            return TailInternal(fullPath, lines, encoding);
+        }
+
+        public string HeadLogFile(string file, int lines, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(file, _appDir);
+            if (!File.Exists(fullPath))
+                return $"File not found: {file}";
+            return HeadInternal(fullPath, lines, encoding);
+        }
+
+        public string TailLogFile(string file, int lines, Encoding? encoding = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(file, _appDir);
+            if (!File.Exists(fullPath))
+                return $"File not found: {file}";
+            return TailInternal(fullPath, lines, encoding);
+        }
+        // Private helpers
+
+        private List<MatchBlock> SearchFileInternalAsBlocks(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, Encoding? encoding = null)
+        {
+            var blocks = new List<MatchBlock>();
+            var lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            var matchedLineIndices = new HashSet<int>();
+
+            try {
+                var regex = new Regex(searchRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                for (int i = 0; i < lines.Length; i++) {
+                    if (regex.IsMatch(lines[i])) {
+                        matchedLineIndices.Add(i);
+                    }
+                }
+            }
+            catch (ArgumentException) {
+                // If regex is invalid, fall back to simple string search
+                for (int i = 0; i < lines.Length; i++) {
+                    if (lines[i].IndexOf(searchRegex, StringComparison.OrdinalIgnoreCase) >= 0) {
+                        matchedLineIndices.Add(i);
+                    }
+                }
+            }
+
+            if (matchedLineIndices.Count == 0) {
+                return blocks;
+            }
+
+            // Compute the union of context-expanded line ranges
+            var outputLines = new HashSet<int>();
+            foreach (var matchIndex in matchedLineIndices) {
+                int startLine = Math.Max(0, matchIndex - contextLinesBefore);
+                int endLine = Math.Min(lines.Length - 1, matchIndex + contextLinesAfter);
+                for (int i = startLine; i <= endLine; i++) {
+                    outputLines.Add(i);
+                }
+            }
+
+            var sortedLines = outputLines.OrderBy(x => x).ToList();
+            var currentText = new StringBuilder();
+            int blockStart = -1;
+            int blockEnd = -1;
+            int blockMatchCount = 0;
+            int lastLine = -2;
+
+            foreach (var lineIndex in sortedLines) {
+                if (lineIndex > lastLine + 1 && lastLine >= 0) {
+                    // Flush previous block
+                    blocks.Add(new MatchBlock {
+                        FilePath = fullPath,
+                        StartLine = blockStart + 1,
+                        EndLine = blockEnd + 1,
+                        MatchedCount = blockMatchCount,
+                        Text = currentText.ToString()
+                    });
+                    currentText.Clear();
+                    blockStart = -1;
+                    blockMatchCount = 0;
+                }
+                if (blockStart < 0) {
+                    blockStart = lineIndex;
+                }
+                bool isMatched = matchedLineIndices.Contains(lineIndex);
+                if (isMatched) {
+                    blockMatchCount++;
+                }
+                string prefix = isMatched ? "* " : "  ";
+                currentText.AppendLine($"{prefix}{lineIndex + 1}: {lines[lineIndex]}");
+                blockEnd = lineIndex;
+                lastLine = lineIndex;
+            }
+
+            if (currentText.Length > 0) {
+                blocks.Add(new MatchBlock {
+                    FilePath = fullPath,
+                    StartLine = blockStart + 1,
+                    EndLine = blockEnd + 1,
+                    MatchedCount = blockMatchCount,
+                    Text = currentText.ToString()
+                });
+            }
+
+            return blocks;
+        }
+
+        private string RenderBlocksAsString(List<MatchBlock> blocks)
+        {
+            var result = new StringBuilder();
+            for (int i = 0; i < blocks.Count; i++) {
+                if (i > 0) {
+                    result.AppendLine("--");
+                }
+                result.Append(blocks[i].Text);
+            }
+            return result.ToString();
+        }
+
+        private string SearchFileInternal(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, out bool hasMatch, Encoding? encoding = null)
+        {
+            var blocks = SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
+            if (blocks.Count == 0) {
+                hasMatch = false;
+                return $"No matches found for pattern: {searchRegex}";
+            }
+            hasMatch = true;
+            return RenderBlocksAsString(blocks);
+        }
+
+
+        private string HeadInternal(string fullPath, int lines, Encoding? encoding = null)
+        {
+            var allLines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            var lineCount = Math.Min(lines, allLines.Length);
+            var headLines = allLines.SkipLast(Math.Max(0, allLines.Length - lineCount)).ToArray();
+            return string.Join("\n", headLines);
+        }
+
+        private string TailInternal(string fullPath, int lines, Encoding? encoding = null)
+        {
+            var allLines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            var lineCount = Math.Min(lines, allLines.Length);
+            var tailLines = allLines.Skip(Math.Max(0, allLines.Length - lineCount)).ToArray();
+            return string.Join("\n", tailLines);
+        }
+    }
+}

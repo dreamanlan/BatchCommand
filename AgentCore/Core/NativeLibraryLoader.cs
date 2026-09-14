@@ -54,7 +54,7 @@ namespace AgentCore.Core
         {
             lock (_lock)
             {
-                if (_logsFlushed && Core.AgentCore.IsInitialized && null != Core.AgentCore.Instance.GetNativeApi())
+                if (_logsFlushed && Core.AgentCore.IsInitialized)
                 {
                     // AgentCore is ready, log directly
                     switch (level.ToLower())
@@ -89,7 +89,7 @@ namespace AgentCore.Core
         {
             lock (_lock)
             {
-                if (_logsFlushed || !Core.AgentCore.IsInitialized || null == Core.AgentCore.Instance.GetNativeApi())
+                if (_logsFlushed || !Core.AgentCore.IsInitialized)
                     return;
 
                 foreach (var (level, message) in _logCache)

@@ -3,7 +3,7 @@
     "GlslRewriter": {
       "commandName": "Project",
       "commandLineArgs": "-i -cs test.glsl",
-      "workingDirectory": "F:\\GitHub\\BatchCommand\\GlslRewriter\\bin\\Debug\\net6.0"
+      "workingDirectory": "F:\\GitHub\\BatchCommand\\GlslRewriter\\bin\\Debug\\net9.0"
     }
   }
 }

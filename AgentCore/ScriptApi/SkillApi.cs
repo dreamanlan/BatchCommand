@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
-using AbstractAgent;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.ScriptApi
 {
@@ -17,7 +18,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result ?? string.Empty);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"RefreshEmbedding error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"RefreshEmbedding error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -33,7 +34,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result ?? string.Empty);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"RefreshReranker error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"RefreshReranker error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -50,7 +51,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result ?? string.Empty);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"RefreshSkills error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"RefreshSkills error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -62,7 +63,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: call_skill(skill_name, arg1, arg2, ...), aliased as callskill");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: call_skill(skill_name, arg1, arg2, ...), aliased as callskill");
                 return BoxedValue.FromString("[error] call_skill requires at least skill name");
             }
 
@@ -76,7 +77,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result ?? string.Empty);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"CallSkill error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"CallSkill error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -88,7 +89,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_skill_env(key, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_skill_env(key, value)");
                 return BoxedValue.FromBool(false);
             }
             try {
@@ -97,7 +98,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromBool(Core.AgentCore.Instance.SkillMgr.SetEnv(key, value));
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"SetSkillEnv error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"SetSkillEnv error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }
@@ -109,7 +110,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_skill_env(key[, defval])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: get_skill_env(key[, defval])");
                 return BoxedValue.FromString(string.Empty);
             }
             try {
@@ -118,7 +119,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(Core.AgentCore.Instance.SkillMgr.GetEnv(key, defval));
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"GetSkillEnv error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"GetSkillEnv error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -130,7 +131,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: delete_skill_env(key)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: delete_skill_env(key)");
                 return BoxedValue.FromBool(false);
             }
             try {
@@ -138,7 +139,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromBool(Core.AgentCore.Instance.SkillMgr.DeleteEnv(key));
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"DeleteSkillEnv error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"DeleteSkillEnv error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }
@@ -150,7 +151,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: clear_skill_envs([regexPattern])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: clear_skill_envs([regexPattern])");
                 return BoxedValue.FromBool(false);
             }
             try {
@@ -159,7 +160,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromBool(removed >= 0);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ClearSkillEnvs error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"ClearSkillEnvs error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }

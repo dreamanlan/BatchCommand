@@ -5,6 +5,7 @@ using System.Linq;
 using TreeSitter;
 using AgentCore.Core;
 using AgentCore.Models;
+using BatchCommand.Utils;
 
 namespace AgentCore.CodeAnalysis
 {

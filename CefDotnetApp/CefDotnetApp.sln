@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.37131.7
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37516.0 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CefDotnetApp", "CefDotnetApp.csproj", "{F413F86D-9C18-7404-AB25-407A77A0910F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentCore", "..\AgentCore\AgentCore.csproj", "{93527BBF-E298-C5FA-810B-C0EB2C745FA8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AbstractAgent", "..\AbstractAgent\AbstractAgent.csproj", "{A8F45444-242D-9ADF-01CB-8D6780B8E110}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BatchCmdDsl", "..\BatchCmdDslHost\BatchCmdDsl\BatchCmdDsl.csproj", "{BE5EBF88-54F6-DAC4-8FB5-A551C649E18C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{93527BBF-E298-C5FA-810B-C0EB2C745FA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{93527BBF-E298-C5FA-810B-C0EB2C745FA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{93527BBF-E298-C5FA-810B-C0EB2C745FA8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A8F45444-242D-9ADF-01CB-8D6780B8E110}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A8F45444-242D-9ADF-01CB-8D6780B8E110}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A8F45444-242D-9ADF-01CB-8D6780B8E110}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A8F45444-242D-9ADF-01CB-8D6780B8E110}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE5EBF88-54F6-DAC4-8FB5-A551C649E18C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE5EBF88-54F6-DAC4-8FB5-A551C649E18C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE5EBF88-54F6-DAC4-8FB5-A551C649E18C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE5EBF88-54F6-DAC4-8FB5-A551C649E18C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

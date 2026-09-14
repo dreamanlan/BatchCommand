@@ -1,15 +1,20 @@
 using System;
 using System.Collections.Concurrent;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
     /// <summary>
-    /// Represents a single agent instance keyed by port number.
-    /// Each instance holds its own state properties and WebSocketServer reference.
+    /// Represents a single agent instance keyed by agent id (string, e.g.
+    /// "webagent" / "hyarena"). Port numbers are transport details of the
+    /// websocket servers and are no longer instance keys (C-b, 2026-09-15);
+    /// Port is kept only as an optional diagnostic association.
     /// </summary>
     public class AgentInstance
     {
-        public int Port { get; }
+        public string AgentId { get; }
+        /// <summary>Optional ws port association (diagnostics only, 0 = none).</summary>
+        public int Port { get; internal set; }
         public WebSocketServer? WsServer { get; set; }
 
         // Agent state properties - readable/writable by DSL scripts
@@ -59,9 +64,9 @@ namespace AgentCore.Core
             return newVal;
         }
 
-        public AgentInstance(int port)
+        public AgentInstance(string agentId)
         {
-            Port = port;
+            AgentId = agentId;
             DslContextManager = new DslContextManagement();
         }
     }

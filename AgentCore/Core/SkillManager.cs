@@ -5,10 +5,10 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using AbstractAgent;
-using AbstractAgent.Utils;
 using Dsl;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
@@ -407,9 +407,9 @@ namespace AgentCore.Core
                     argVals.Add(argValue);
                 }
 
-                string result = AgentFrameworkService.Instance.DslEngine!.LoadDslFunc(skill.FuncName, skill.CommandScript, skill.Params, !skill.LoadedOnThread.Contains(Thread.CurrentThread.ManagedThreadId));
+                string result = MetaDslExecutor.LoadDslFunc(skill.FuncName, skill.CommandScript, skill.Params, !skill.LoadedOnThread.Contains(Thread.CurrentThread.ManagedThreadId));
                 if (string.IsNullOrEmpty(result)) {
-                    return AgentFrameworkService.Instance.DslEngine!.CallDslFunc(skill.FuncName, argVals);
+                    return MetaDslExecutor.CallDslFunc(skill.FuncName, argVals);
                 }
                 else {
                     return result;

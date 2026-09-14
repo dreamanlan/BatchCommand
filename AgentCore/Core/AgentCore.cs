@@ -5,7 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ScriptableFramework;
-using AbstractAgent;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
@@ -29,16 +30,9 @@ namespace AgentCore.Core
         private static bool _isMac = false;
 
         // Operation instances
-        private FileOperations _fileOps = null!;
         private DiffOperations _diffOps = null!;
-        private ClipboardOperations _clipboardOps = null!;
         private LoggingAndDebugging _logger = null!;
-        private HttpClientOperations _httpClient = null!;
-        private ProcessOperations _processOps = null!;
-        private DslContextManagement _dslContextManager = null!;
         private BrowserInteraction _browserOps = null!;
-        private AgentBridge _agentBridge = null!;
-        private INativeApi _nativeApi = null!;
         private SkillManager _skillMgr = null!;
         private EmbeddingService _embeddingService = null!;
         private RerankService _rerankService = null!;
@@ -62,15 +56,18 @@ namespace AgentCore.Core
         private readonly object _envResolveLock = new object();
 
         // Public properties - return concrete types for full access
-        public FileOperations FileOps => _fileOps;
+        // FileOps now lives on the shared DslHost (single process wide instance)
+        public FileOperations FileOps => MetaDslExecutor.Host.FileOps;
         public DiffOperations DiffOps => _diffOps;
-        public ClipboardOperations ClipboardOps => _clipboardOps;
+        // ClipboardOps now lives on the shared DslHost (TextCopy based, stateless)
+        public ClipboardOperations ClipboardOps => MetaDslExecutor.Host.ClipboardOps;
         public LoggingAndDebugging Logger => _logger;
-        public HttpClientOperations HttpClient => _httpClient;
-        public ProcessOperations ProcessOps => _processOps;
-        public DslContextManagement DslContextManager => _dslContextManager;
+        public BatchCommand.Utils.HttpClientOperations HttpClient => BatchCommand.Utils.HttpClientOperations.Shared;
+        public BatchCommand.Utils.ProcessOperations ProcessOps => BatchCommand.Utils.ProcessOperations.Shared;
+        // The global context store now lives on the shared DslHost (used by the
+        // shared set/get_context_var apis); per-instance stores live on AgentInstance.
+        public DslContextManagement DslContextManager => MetaDslExecutor.Host.DslContextManager;
         public BrowserInteraction BrowserOps => _browserOps;
-        public AgentBridge AgentBridge => _agentBridge;
         public SkillManager SkillMgr => _skillMgr;
         public EmbeddingService EmbeddingService => _embeddingService;
         public RerankService RerankService => _rerankService;
@@ -103,27 +100,63 @@ namespace AgentCore.Core
         }
         public string BasePath => _basePath;
 
-        // Global settings (not per-instance)
-        public int MaxLinesDeletedByWriteFile { get; set; } = 20;
-
-        // Agent instances keyed by port number
-        private readonly ConcurrentDictionary<int, AgentInstance> _agentInstances = new();
+        // Agent instances keyed by agent id string (C-b: "webagent", "hyarena", ...)
+        private readonly ConcurrentDictionary<string, AgentInstance> _agentInstances = new();
+        // ws port -> agent id association (ports are transport details only;
+        // used to resolve legacy int arguments and for the raw MetaDSL path)
+        private readonly ConcurrentDictionary<int, string> _portAgentIds = new();
 
         /// <summary>
-        /// Gets or creates an AgentInstance for the specified port.
+        /// Gets or creates an AgentInstance for the specified agent id.
         /// </summary>
-        public AgentInstance GetOrCreateInstance(int port)
+        public AgentInstance GetOrCreateInstance(string agentId)
         {
-            return _agentInstances.GetOrAdd(port, p => new AgentInstance(p));
+            return _agentInstances.GetOrAdd(agentId, id => new AgentInstance(id));
         }
 
         /// <summary>
-        /// Gets an AgentInstance for the specified port, or null if not found.
+        /// Gets an AgentInstance for the specified agent id, or null if not found.
         /// </summary>
-        public AgentInstance? GetInstance(int port)
+        public AgentInstance? GetInstance(string agentId)
         {
-            _agentInstances.TryGetValue(port, out var inst);
+            _agentInstances.TryGetValue(agentId, out var inst);
             return inst;
+        }
+
+        /// <summary>
+        /// Associates a ws port with an agent id (called when a server is
+        /// started for that agent). Ports are routing details, not instance keys.
+        /// </summary>
+        public void RegisterPortAgentId(int port, string agentId)
+        {
+            _portAgentIds[port] = agentId;
+            var inst = GetOrCreateInstance(agentId);
+            inst.Port = port;
+        }
+
+        /// <summary>
+        /// Resolves a ws port to its agent id; false when no server was
+        /// registered for that port.
+        /// </summary>
+        public bool TryResolveAgentId(int port, out string agentId)
+        {
+            return _portAgentIds.TryGetValue(port, out agentId!);
+        }
+
+        /// <summary>
+        /// Reverse lookup: agent id -> ws port (the server started for that
+        /// agent); false when no server was registered for the agent.
+        /// </summary>
+        public bool TryResolvePort(string agentId, out int port)
+        {
+            foreach (var kv in _portAgentIds) {
+                if (kv.Value == agentId) {
+                    port = kv.Key;
+                    return true;
+                }
+            }
+            port = 0;
+            return false;
         }
 
         /// <summary>
@@ -266,15 +299,9 @@ namespace AgentCore.Core
 
             // Initialize all operation instances
             _logger = new LoggingAndDebugging();
-            _fileOps = new FileOperations(_basePath, _appDir, isMac);
             _diffOps = new DiffOperations(_basePath, _appDir, isMac);
-            _clipboardOps = new ClipboardOperations();
-            _httpClient = new HttpClientOperations();
-            _processOps = new ProcessOperations();
-            _dslContextManager = new DslContextManagement();
             _browserOps = new BrowserInteraction(null, null);
-            _agentBridge = new AgentBridge(null, msg => _logger.Info(msg));
-            _skillMgr = new SkillManager(_processOps, _basePath, _appDir, isMac);
+            _skillMgr = new SkillManager(BatchCommand.Utils.ProcessOperations.Shared, _basePath, _appDir, isMac);
             _embeddingService = new EmbeddingService();
             _rerankService = new RerankService();
             JiebaNet.Segmenter.ConfigManager.ConfigFileBaseDir = Path.Combine(_basePath, "managed", "Resources");
@@ -292,8 +319,8 @@ namespace AgentCore.Core
             string dbPath = System.IO.Path.Combine(_basePath, "onnx", "semantic.db");
             _semanticIndex = new SemanticIndex(dbPath);
             _semanticIndex.SetSegmenter(_semanticMixedSegmenter);
-            _braveSearch = new BraveSearchService(_httpClient);
-            _searxngSearch = new SearXNGSearchService(_httpClient);
+            _braveSearch = new BraveSearchService(HttpClient);
+            _searxngSearch = new SearXNGSearchService(HttpClient);
             _webSearchRouter = new WebSearchRouter(_braveSearch, _searxngSearch);
         }
 
@@ -500,73 +527,12 @@ namespace AgentCore.Core
             }
         }
 
-        public void SetNativeApi(INativeApi nativeApi)
-        {
-            if (nativeApi == null) {
-                _logger.Warning("nativeApi is null");
-                return;
-            }
-
-            // Save the nativeApi reference
-            _nativeApi = nativeApi;
-
-            // Set native log action in LoggingAndDebugging
-            Action<string> nativeLogAction = msg => {
-                try {
-                    nativeApi.NativeLog($"[Native] {msg}");
-                }
-                catch (Exception ex) {
-                    _logger.Error($"[NativeLogError] {ex.Message}");
-                }
-            };
-            _logger.SetNativeLogAction(nativeLogAction);
-
-            // Set JavaScript execution actions in BrowserInteraction
-            Action<string> executeJsAction = script => {
-                try {
-                    nativeApi.SendJavascriptCode(script);
-                }
-                catch (Exception ex) {
-                    _logger.Error($"Error executing JavaScript: {ex.Message}");
-                }
-            };
-
-            Action<string, IList<BoxedValue>> callJsAction = (funcName, args) => {
-                try {
-                    nativeApi.SendJavascriptCall(funcName, args);
-                }
-                catch (Exception ex) {
-                    _logger.Error($"Error calling JavaScript function: {ex.Message}");
-                }
-            };
-
-            _browserOps.SetSendJsCodeAction(executeJsAction);
-            _browserOps.SetSendJsCallAction(callJsAction);
-
-            // Set the SendJsCall callback in AgentBridge to send commands to inject.js
-            _agentBridge.SetSendJsCallAction(callJsAction);
-
-            // Flush cached logs from NativeLibraryLoader
-            try {
-                NativeLibraryLoader.FlushLogsToLogger();
-            }
-            catch (Exception ex) {
-                _logger.Warning($"[AgentCore] Warning: Failed to flush NativeLibraryLoader logs: {ex.Message}");
-            }
-            _logger.Info("NativeApi set successfully");
-        }
-
-        public INativeApi GetNativeApi()
-        {
-            return _nativeApi;
-        }
-
         public void TriggerHotReload()
         {
             _logger.Info("Triggering AgentCore.dll hot reload...");
 
             try {
-                _agentBridge.SendCommandToInject("hot_reload", new Dictionary<string, object>
+                AgentPush.SendCommandToInject("hot_reload", new Dictionary<string, object>
                 {
                     { "component", "agentcore" }
                 });

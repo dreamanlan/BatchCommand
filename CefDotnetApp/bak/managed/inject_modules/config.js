@@ -59,8 +59,11 @@ class ConfigManager {
       },
 
       // WebSocket settings
+      // 9540: standalone AgentCore process port (new architecture).
+      // 9527-9535 are still used by the old in-process architecture
+      // deployments running in parallel during the migration.
       websocket: {
-        port: 9527,
+        port: 9540,
         reconnectDelay: 3000
       },
 

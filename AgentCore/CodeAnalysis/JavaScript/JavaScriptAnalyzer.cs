@@ -5,6 +5,7 @@ using System.Linq;
 using Esprima;
 using Esprima.Ast;
 using AgentCore.Core;
+using BatchCommand.Utils;
 
 namespace AgentCore.CodeAnalysis.JavaScript
 {

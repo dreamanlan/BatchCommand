@@ -1,10 +1,12 @@
 ﻿using System;
-using AbstractAgent;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
@@ -72,7 +74,7 @@ namespace AgentCore.Core
             _process.ErrorDataReceived += (s, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[MCP:stderr] {e.Data}");
+                    MetaDslExecutor.AppendApiErrorInfoLine($"[MCP:stderr] {e.Data}");
             };
             _process.BeginErrorReadLine();
             try

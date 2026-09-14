@@ -1,11 +1,12 @@
 ﻿using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
-using AgentCore.Tools;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
+using AgentCore.Tools;
 
 namespace AgentCore.ScriptApi
 {
@@ -16,16 +17,16 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("inspect_c_language_dll", "inspect_c_language_dll() => string", new ExpressionFactoryHelper<InspectCLanguageDllExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("inspect_cpp_language_dll", "inspect_cpp_language_dll() => string", new ExpressionFactoryHelper<InspectCppLanguageDllExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("explore_treesitter_c_api", "explore_treesitter_c_api() => string", new ExpressionFactoryHelper<ExploreTreeSitterCApiExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("explore_treesitter_cpp_api", "explore_treesitter_cpp_api() => string", new ExpressionFactoryHelper<ExploreTreeSitterCppApiExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("test_create_c_parser", "test_create_c_parser() => string", new ExpressionFactoryHelper<TestCreateCParserExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("test_create_cpp_parser", "test_create_cpp_parser() => string", new ExpressionFactoryHelper<TestCreateCppParserExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("test_get_node_text", "test_get_node_text() => string", new ExpressionFactoryHelper<TestGetNodeTextExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("explore_all_treesitter_apis", "explore_all_treesitter_apis() => string", new ExpressionFactoryHelper<ExploreAllTreeSitterApisExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("save_treesitter_report", "save_treesitter_report(output_path) => bool", new ExpressionFactoryHelper<SaveTreeSitterReportExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("test_js_properties", "test_js_properties()", new ExpressionFactoryHelper<TestEsprimaPropertiesExp>());
+            BatchCommand.BatchScript.Register("inspect_c_language_dll", "inspect_c_language_dll() => string", new ExpressionFactoryHelper<InspectCLanguageDllExp>());
+            BatchCommand.BatchScript.Register("inspect_cpp_language_dll", "inspect_cpp_language_dll() => string", new ExpressionFactoryHelper<InspectCppLanguageDllExp>());
+            BatchCommand.BatchScript.Register("explore_treesitter_c_api", "explore_treesitter_c_api() => string", new ExpressionFactoryHelper<ExploreTreeSitterCApiExp>());
+            BatchCommand.BatchScript.Register("explore_treesitter_cpp_api", "explore_treesitter_cpp_api() => string", new ExpressionFactoryHelper<ExploreTreeSitterCppApiExp>());
+            BatchCommand.BatchScript.Register("test_create_c_parser", "test_create_c_parser() => string", new ExpressionFactoryHelper<TestCreateCParserExp>());
+            BatchCommand.BatchScript.Register("test_create_cpp_parser", "test_create_cpp_parser() => string", new ExpressionFactoryHelper<TestCreateCppParserExp>());
+            BatchCommand.BatchScript.Register("test_get_node_text", "test_get_node_text() => string", new ExpressionFactoryHelper<TestGetNodeTextExp>());
+            BatchCommand.BatchScript.Register("explore_all_treesitter_apis", "explore_all_treesitter_apis() => string", new ExpressionFactoryHelper<ExploreAllTreeSitterApisExp>());
+            BatchCommand.BatchScript.Register("save_treesitter_report", "save_treesitter_report(output_path) => bool", new ExpressionFactoryHelper<SaveTreeSitterReportExp>());
+            BatchCommand.BatchScript.Register("test_js_properties", "test_js_properties()", new ExpressionFactoryHelper<TestEsprimaPropertiesExp>());
 
         }
     }
@@ -35,7 +36,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: inspect_c_language_dll() => string");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: inspect_c_language_dll() => string");
                 return BoxedValue.NullObject;
             }
             try {
@@ -44,7 +45,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 var error = $"Error inspecting C language DLL: {ex.Message}\n{ex.StackTrace}";
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(error);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
                 return BoxedValue.FromString(error);
             }
         }
@@ -55,7 +56,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: inspect_cpp_language_dll() => string");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: inspect_cpp_language_dll() => string");
                 return BoxedValue.NullObject;
             }
             try {
@@ -64,7 +65,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 var error = $"Error inspecting C++ language DLL: {ex.Message}\n{ex.StackTrace}";
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(error);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
                 return BoxedValue.FromString(error);
             }
         }
@@ -75,7 +76,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: explore_treesitter_c_api() => string");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: explore_treesitter_c_api() => string");
                 return BoxedValue.NullObject;
             }
             try {
@@ -84,7 +85,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 var error = $"Error exploring TreeSitter.DotNet C API: {ex.Message}\n{ex.StackTrace}";
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(error);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
                 return BoxedValue.FromString(error);
             }
         }
@@ -95,7 +96,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: explore_treesitter_cpp_api() => string");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: explore_treesitter_cpp_api() => string");
                 return BoxedValue.NullObject;
             }
             try {
@@ -104,7 +105,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 var error = $"Error exploring TreeSitter.DotNet C++ API: {ex.Message}\n{ex.StackTrace}";
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(error);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
                 return BoxedValue.FromString(error);
             }
         }
@@ -115,7 +116,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: test_create_c_parser() => string");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: test_create_c_parser() => string");
                 return BoxedValue.NullObject;
             }
             try {
@@ -124,7 +125,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 var error = $"Error testing C parser creation: {ex.Message}\n{ex.StackTrace}";
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(error);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
                 return BoxedValue.FromString(error);
             }
         }
@@ -135,7 +136,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: test_create_cpp_parser() => string");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: test_create_cpp_parser() => string");
                 return BoxedValue.NullObject;
             }
             try {
@@ -144,7 +145,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 var error = $"Error testing C++ parser creation: {ex.Message}\n{ex.StackTrace}";
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(error);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
                 return BoxedValue.FromString(error);
             }
         }
@@ -155,7 +156,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: explore_all_treesitter_apis() => string");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: explore_all_treesitter_apis() => string");
                 return BoxedValue.NullObject;
             }
             try {
@@ -164,7 +165,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 var error = $"Error exploring all TreeSitter APIs: {ex.Message}\n{ex.StackTrace}";
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(error);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
                 return BoxedValue.FromString(error);
             }
         }
@@ -177,14 +178,14 @@ namespace AgentCore.ScriptApi
         {
             try {
                 if (operands.Count != 1) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: save_treesitter_report(output_path) => bool");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: save_treesitter_report(output_path) => bool");
 
                     return BoxedValue.From(false);
                 }
 
                 var outputPath = operands[0].AsString;
                 if (string.IsNullOrEmpty(outputPath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Error: output_path cannot be empty");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Error: output_path cannot be empty");
                     return BoxedValue.From(false);
                 }
 
@@ -196,11 +197,11 @@ namespace AgentCore.ScriptApi
                     Directory.CreateDirectory(directory);
                 }
 
-                File.WriteAllText(outputPath, report, AbstractAgent.Utils.BomHelper.GetEncodingPreservingBom(outputPath, defaultBom: false));
+                File.WriteAllText(outputPath, report, BatchCommand.Utils.BomHelper.GetEncodingPreservingBom(outputPath, defaultBom: false));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error saving TreeSitter report: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Error saving TreeSitter report: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -211,7 +212,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: test_get_node_text() => string");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: test_get_node_text() => string");
                 return BoxedValue.NullObject;
             }
             try {
@@ -220,7 +221,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 var error = $"Error testing GetNodeText: {ex.Message}\n{ex.StackTrace}";
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(error);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
                 return BoxedValue.FromString(error);
             }
         }
@@ -231,7 +232,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: test_js_properties()");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: test_js_properties()");
                 return BoxedValue.NullObject;
             }
             string result = TestEsprima.TestJavaScriptProperties();

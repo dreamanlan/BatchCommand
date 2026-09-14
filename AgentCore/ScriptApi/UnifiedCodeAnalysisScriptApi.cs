@@ -1,10 +1,11 @@
-﻿using AbstractAgent;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 using AgentCore.CodeAnalysis;
 using AgentCore.Models;
 
@@ -19,80 +20,80 @@ namespace AgentCore.ScriptApi
         {
             // ========== LLM-Friendly Code Analysis APIs ==========
             // Overview APIs
-            AgentFrameworkService.Instance.DslEngine!.Register("view_file_structure", "view_file_structure(filePath, language)", new ExpressionFactoryHelper<ViewFileStructureExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("view_code_structure", "view_code_structure(code, language, [fileName])", new ExpressionFactoryHelper<ViewCodeStructureExp>());
+            BatchCommand.BatchScript.Register("view_file_structure", "view_file_structure(filePath, language)", new ExpressionFactoryHelper<ViewFileStructureExp>());
+            BatchCommand.BatchScript.Register("view_code_structure", "view_code_structure(code, language, [fileName])", new ExpressionFactoryHelper<ViewCodeStructureExp>());
 
             // Function Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_functions", "find_functions(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindFunctionsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_functions_in_code", "find_functions_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindFunctionsInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_function", "find_function(filePath, language, functionNameRegexPattern)", new ExpressionFactoryHelper<FindFunctionExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_function_in_code", "find_function_in_code(code, language, functionNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindFunctionInCodeExp>());
+            BatchCommand.BatchScript.Register("find_functions", "find_functions(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindFunctionsExp>());
+            BatchCommand.BatchScript.Register("find_functions_in_code", "find_functions_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindFunctionsInCodeExp>());
+            BatchCommand.BatchScript.Register("find_function", "find_function(filePath, language, functionNameRegexPattern)", new ExpressionFactoryHelper<FindFunctionExp>());
+            BatchCommand.BatchScript.Register("find_function_in_code", "find_function_in_code(code, language, functionNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindFunctionInCodeExp>());
 
             // Type Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_types", "find_types(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindTypesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_types_in_code", "find_types_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindTypesInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_type", "find_type(filePath, language, typeNameRegexPattern)", new ExpressionFactoryHelper<FindTypeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_type_in_code", "find_type_in_code(code, language, typeNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindTypeInCodeExp>());
+            BatchCommand.BatchScript.Register("find_types", "find_types(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindTypesExp>());
+            BatchCommand.BatchScript.Register("find_types_in_code", "find_types_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindTypesInCodeExp>());
+            BatchCommand.BatchScript.Register("find_type", "find_type(filePath, language, typeNameRegexPattern)", new ExpressionFactoryHelper<FindTypeExp>());
+            BatchCommand.BatchScript.Register("find_type_in_code", "find_type_in_code(code, language, typeNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindTypeInCodeExp>());
 
             // Variable Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_variables", "find_variables(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindVariablesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_variables_in_code", "find_variables_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindVariablesInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_variable", "find_variable(filePath, language, variableNameRegexPattern)", new ExpressionFactoryHelper<FindVariableExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_variable_in_code", "find_variable_in_code(code, language, variableNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindVariableInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_global_variables", "find_global_variables(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindGlobalVariablesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_global_variables_in_code", "find_global_variables_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindGlobalVariablesInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_parameters", "find_parameters(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindParametersExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_parameters_in_code", "find_parameters_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindParametersInCodeExp>());
+            BatchCommand.BatchScript.Register("find_variables", "find_variables(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindVariablesExp>());
+            BatchCommand.BatchScript.Register("find_variables_in_code", "find_variables_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindVariablesInCodeExp>());
+            BatchCommand.BatchScript.Register("find_variable", "find_variable(filePath, language, variableNameRegexPattern)", new ExpressionFactoryHelper<FindVariableExp>());
+            BatchCommand.BatchScript.Register("find_variable_in_code", "find_variable_in_code(code, language, variableNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindVariableInCodeExp>());
+            BatchCommand.BatchScript.Register("find_global_variables", "find_global_variables(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindGlobalVariablesExp>());
+            BatchCommand.BatchScript.Register("find_global_variables_in_code", "find_global_variables_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindGlobalVariablesInCodeExp>());
+            BatchCommand.BatchScript.Register("find_parameters", "find_parameters(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindParametersExp>());
+            BatchCommand.BatchScript.Register("find_parameters_in_code", "find_parameters_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindParametersInCodeExp>());
 
             // Class Member Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_class_members", "find_class_members(filePath, language, classNameRegexPattern)", new ExpressionFactoryHelper<FindClassMembersExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_class_members_in_code", "find_class_members_in_code(code, language, classNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindClassMembersInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_fields", "find_fields(filePath, language, classNameRegexPattern, [fieldNameRegexPattern])", new ExpressionFactoryHelper<FindFieldsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_fields_in_code", "find_fields_in_code(code, language, classNameRegexPattern, [fieldNameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindFieldsInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_field", "find_field(filePath, language, classNameRegexPattern, fieldNameRegexPattern)", new ExpressionFactoryHelper<FindFieldExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_field_in_code", "find_field_in_code(code, language, classNameRegexPattern, fieldNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindFieldInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_properties", "find_properties(filePath, language, classNameRegexPattern, [propertyNameRegexPattern])", new ExpressionFactoryHelper<FindPropertiesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_properties_in_code", "find_properties_in_code(code, language, classNameRegexPattern, [propertyNameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindPropertiesInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_property", "find_property(filePath, language, classNameRegexPattern, propertyNameRegexPattern)", new ExpressionFactoryHelper<FindPropertyExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_property_in_code", "find_property_in_code(code, language, classNameRegexPattern, propertyNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindPropertyInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_methods", "find_methods(filePath, language, classNameRegexPattern, [methodNameRegexPattern])", new ExpressionFactoryHelper<FindMethodsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_methods_in_code", "find_methods_in_code(code, language, classNameRegexPattern, [methodNameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindMethodsInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_method", "find_method(filePath, language, classNameRegexPattern, methodNameRegexPattern)", new ExpressionFactoryHelper<FindMethodExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_method_in_code", "find_method_in_code(code, language, classNameRegexPattern, methodNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindMethodInCodeExp>());
+            BatchCommand.BatchScript.Register("find_class_members", "find_class_members(filePath, language, classNameRegexPattern)", new ExpressionFactoryHelper<FindClassMembersExp>());
+            BatchCommand.BatchScript.Register("find_class_members_in_code", "find_class_members_in_code(code, language, classNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindClassMembersInCodeExp>());
+            BatchCommand.BatchScript.Register("find_fields", "find_fields(filePath, language, classNameRegexPattern, [fieldNameRegexPattern])", new ExpressionFactoryHelper<FindFieldsExp>());
+            BatchCommand.BatchScript.Register("find_fields_in_code", "find_fields_in_code(code, language, classNameRegexPattern, [fieldNameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindFieldsInCodeExp>());
+            BatchCommand.BatchScript.Register("find_field", "find_field(filePath, language, classNameRegexPattern, fieldNameRegexPattern)", new ExpressionFactoryHelper<FindFieldExp>());
+            BatchCommand.BatchScript.Register("find_field_in_code", "find_field_in_code(code, language, classNameRegexPattern, fieldNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindFieldInCodeExp>());
+            BatchCommand.BatchScript.Register("find_properties", "find_properties(filePath, language, classNameRegexPattern, [propertyNameRegexPattern])", new ExpressionFactoryHelper<FindPropertiesExp>());
+            BatchCommand.BatchScript.Register("find_properties_in_code", "find_properties_in_code(code, language, classNameRegexPattern, [propertyNameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindPropertiesInCodeExp>());
+            BatchCommand.BatchScript.Register("find_property", "find_property(filePath, language, classNameRegexPattern, propertyNameRegexPattern)", new ExpressionFactoryHelper<FindPropertyExp>());
+            BatchCommand.BatchScript.Register("find_property_in_code", "find_property_in_code(code, language, classNameRegexPattern, propertyNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindPropertyInCodeExp>());
+            BatchCommand.BatchScript.Register("find_methods", "find_methods(filePath, language, classNameRegexPattern, [methodNameRegexPattern])", new ExpressionFactoryHelper<FindMethodsExp>());
+            BatchCommand.BatchScript.Register("find_methods_in_code", "find_methods_in_code(code, language, classNameRegexPattern, [methodNameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindMethodsInCodeExp>());
+            BatchCommand.BatchScript.Register("find_method", "find_method(filePath, language, classNameRegexPattern, methodNameRegexPattern)", new ExpressionFactoryHelper<FindMethodExp>());
+            BatchCommand.BatchScript.Register("find_method_in_code", "find_method_in_code(code, language, classNameRegexPattern, methodNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindMethodInCodeExp>());
 
             // Event Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_events", "find_events(filePath, language, classNameRegexPattern, [eventNameRegexPattern])", new ExpressionFactoryHelper<FindEventsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_events_in_code", "find_events_in_code(code, language, classNameRegexPattern, [eventNameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindEventsInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_event", "find_event(filePath, language, classNameRegexPattern, eventNameRegexPattern)", new ExpressionFactoryHelper<FindEventExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_event_in_code", "find_event_in_code(code, language, classNameRegexPattern, eventNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindEventInCodeExp>());
+            BatchCommand.BatchScript.Register("find_events", "find_events(filePath, language, classNameRegexPattern, [eventNameRegexPattern])", new ExpressionFactoryHelper<FindEventsExp>());
+            BatchCommand.BatchScript.Register("find_events_in_code", "find_events_in_code(code, language, classNameRegexPattern, [eventNameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindEventsInCodeExp>());
+            BatchCommand.BatchScript.Register("find_event", "find_event(filePath, language, classNameRegexPattern, eventNameRegexPattern)", new ExpressionFactoryHelper<FindEventExp>());
+            BatchCommand.BatchScript.Register("find_event_in_code", "find_event_in_code(code, language, classNameRegexPattern, eventNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindEventInCodeExp>());
 
             // Constructor Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_constructors", "find_constructors(filePath, language, classNameRegexPattern)", new ExpressionFactoryHelper<FindConstructorsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_constructors_in_code", "find_constructors_in_code(code, language, classNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindConstructorsInCodeExp>());
+            BatchCommand.BatchScript.Register("find_constructors", "find_constructors(filePath, language, classNameRegexPattern)", new ExpressionFactoryHelper<FindConstructorsExp>());
+            BatchCommand.BatchScript.Register("find_constructors_in_code", "find_constructors_in_code(code, language, classNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindConstructorsInCodeExp>());
 
             // Interface Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_interfaces", "find_interfaces(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindInterfacesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_interfaces_in_code", "find_interfaces_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindInterfacesInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_interface", "find_interface(filePath, language, interfaceNameRegexPattern)", new ExpressionFactoryHelper<FindInterfaceExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_interface_in_code", "find_interface_in_code(code, language, interfaceNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindInterfaceInCodeExp>());
+            BatchCommand.BatchScript.Register("find_interfaces", "find_interfaces(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindInterfacesExp>());
+            BatchCommand.BatchScript.Register("find_interfaces_in_code", "find_interfaces_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindInterfacesInCodeExp>());
+            BatchCommand.BatchScript.Register("find_interface", "find_interface(filePath, language, interfaceNameRegexPattern)", new ExpressionFactoryHelper<FindInterfaceExp>());
+            BatchCommand.BatchScript.Register("find_interface_in_code", "find_interface_in_code(code, language, interfaceNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindInterfaceInCodeExp>());
 
             // Struct Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_structs", "find_structs(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindStructsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_structs_in_code", "find_structs_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindStructsInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_struct", "find_struct(filePath, language, structNameRegexPattern)", new ExpressionFactoryHelper<FindStructExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_struct_in_code", "find_struct_in_code(code, language, structNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindStructInCodeExp>());
+            BatchCommand.BatchScript.Register("find_structs", "find_structs(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindStructsExp>());
+            BatchCommand.BatchScript.Register("find_structs_in_code", "find_structs_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindStructsInCodeExp>());
+            BatchCommand.BatchScript.Register("find_struct", "find_struct(filePath, language, structNameRegexPattern)", new ExpressionFactoryHelper<FindStructExp>());
+            BatchCommand.BatchScript.Register("find_struct_in_code", "find_struct_in_code(code, language, structNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindStructInCodeExp>());
 
             // Enum Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_enums", "find_enums(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindEnumsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_enums_in_code", "find_enums_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindEnumsInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_enum", "find_enum(filePath, language, enumNameRegexPattern)", new ExpressionFactoryHelper<FindEnumExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_enum_in_code", "find_enum_in_code(code, language, enumNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindEnumInCodeExp>());
+            BatchCommand.BatchScript.Register("find_enums", "find_enums(filePath, language, [nameRegexPattern])", new ExpressionFactoryHelper<FindEnumsExp>());
+            BatchCommand.BatchScript.Register("find_enums_in_code", "find_enums_in_code(code, language, [nameRegexPattern], [fileName])", new ExpressionFactoryHelper<FindEnumsInCodeExp>());
+            BatchCommand.BatchScript.Register("find_enum", "find_enum(filePath, language, enumNameRegexPattern)", new ExpressionFactoryHelper<FindEnumExp>());
+            BatchCommand.BatchScript.Register("find_enum_in_code", "find_enum_in_code(code, language, enumNameRegexPattern, [fileName])", new ExpressionFactoryHelper<FindEnumInCodeExp>());
 
             // AST Node Search APIs (formatted output)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_nodes", "find_nodes(filePath, language, nodeRegexPattern)", new ExpressionFactoryHelper<FindNodesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_nodes_in_code", "find_nodes_in_code(code, language, nodeRegexPattern, [fileName])", new ExpressionFactoryHelper<FindNodesInCodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_node", "find_node(filePath, language, nodeRegexPattern)", new ExpressionFactoryHelper<FindNodeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_node_in_code", "find_node_in_code(code, language, nodeRegexPattern, [fileName])", new ExpressionFactoryHelper<FindNodeInCodeExp>());
+            BatchCommand.BatchScript.Register("find_nodes", "find_nodes(filePath, language, nodeRegexPattern)", new ExpressionFactoryHelper<FindNodesExp>());
+            BatchCommand.BatchScript.Register("find_nodes_in_code", "find_nodes_in_code(code, language, nodeRegexPattern, [fileName])", new ExpressionFactoryHelper<FindNodesInCodeExp>());
+            BatchCommand.BatchScript.Register("find_node", "find_node(filePath, language, nodeRegexPattern)", new ExpressionFactoryHelper<FindNodeExp>());
+            BatchCommand.BatchScript.Register("find_node_in_code", "find_node_in_code(code, language, nodeRegexPattern, [fileName])", new ExpressionFactoryHelper<FindNodeInCodeExp>());
 
             // Register list-returning variants (each item corresponds to one matching target)
             RegisterAsListApis();
@@ -136,7 +137,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -160,7 +161,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -184,7 +185,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -209,7 +210,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -233,7 +234,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -258,7 +259,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -282,7 +283,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -307,7 +308,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -331,7 +332,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -356,7 +357,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -381,7 +382,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -406,7 +407,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -430,7 +431,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -455,7 +456,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -479,7 +480,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -504,7 +505,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -528,7 +529,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -553,7 +554,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -579,7 +580,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -604,7 +605,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -629,7 +630,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -655,7 +656,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -680,7 +681,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -706,7 +707,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -731,7 +732,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -757,7 +758,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -782,7 +783,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -808,7 +809,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -833,7 +834,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -859,7 +860,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -884,7 +885,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -910,7 +911,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -934,7 +935,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -959,7 +960,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -984,7 +985,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1010,7 +1011,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1035,7 +1036,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1061,7 +1062,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1085,7 +1086,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1110,7 +1111,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1134,7 +1135,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1159,7 +1160,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1183,7 +1184,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1208,7 +1209,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1232,7 +1233,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1257,7 +1258,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1281,7 +1282,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1306,7 +1307,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1330,7 +1331,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1355,7 +1356,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1381,7 +1382,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1406,7 +1407,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1430,7 +1431,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }
@@ -1455,7 +1456,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromString($"Error: {ex.Message}");
                 }
             }

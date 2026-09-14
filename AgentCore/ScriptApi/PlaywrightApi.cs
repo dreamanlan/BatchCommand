@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using AbstractAgent;
+
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
@@ -23,7 +23,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_install error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_install error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -45,7 +45,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_start error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_start error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -61,12 +61,12 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: playwright_cdp_start(cdp_endpoint)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: playwright_cdp_start(cdp_endpoint)");
                 return BoxedValue.FromString("Parameter mismatch");
             }
             string cdpEndpoint = operands[0].AsString;
             if (string.IsNullOrEmpty(cdpEndpoint)) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_cdp_start: cdp_endpoint is empty");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_start: cdp_endpoint is empty");
                 return BoxedValue.FromString("cdp_endpoint is empty");
             }
             try {
@@ -74,7 +74,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_start error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_start error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -92,7 +92,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_stop error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_stop error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -120,7 +120,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_new_page requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_new_page requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -129,7 +129,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_new_page error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_new_page error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -143,7 +143,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_close_page requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_close_page requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -152,7 +152,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_close_page error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_close_page error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -166,7 +166,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_goto requires (page_id, url)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_goto requires (page_id, url)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -176,7 +176,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_goto error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_goto error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -192,7 +192,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_url requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_url requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -201,7 +201,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_url error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_url error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -215,7 +215,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_title requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_title requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -224,7 +224,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_title error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_title error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -240,7 +240,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_html requires (page_id [, selector])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_html requires (page_id [, selector])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -250,7 +250,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_html error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_html error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -264,7 +264,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_text requires (page_id, selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_text requires (page_id, selector)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -274,7 +274,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_text error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_text error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -288,7 +288,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_screenshot requires (page_id, save_path)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_screenshot requires (page_id, save_path)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -298,7 +298,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_screenshot error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_screenshot error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -312,7 +312,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_evaluate requires (page_id, script)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_evaluate requires (page_id, script)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -322,7 +322,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_evaluate error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_evaluate error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -336,7 +336,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_click requires (page_id, selector [, button, click_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_click requires (page_id, selector [, button, click_count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -348,7 +348,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_click error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_click error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -362,7 +362,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_type requires (page_id, selector, text [, clear_first])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_type requires (page_id, selector, text [, clear_first])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -374,7 +374,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_type error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_type error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -388,7 +388,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_press_key requires (page_id, key [, selector])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_press_key requires (page_id, key [, selector])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -399,7 +399,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_press_key error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_press_key error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -413,7 +413,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_hover requires (page_id, selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_hover requires (page_id, selector)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -423,7 +423,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_hover error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_hover error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -437,7 +437,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_select_option requires (page_id, selector, value_or_json)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_select_option requires (page_id, selector, value_or_json)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -448,7 +448,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_select_option error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_select_option error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -462,7 +462,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_fill_form requires (page_id, form_json)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_fill_form requires (page_id, form_json)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -472,7 +472,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_fill_form error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_fill_form error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -486,7 +486,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_wait_for requires (page_id, selector [, state, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for requires (page_id, selector [, state, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -498,7 +498,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_wait_for error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_wait_for error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -512,7 +512,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_navigate_back requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_navigate_back requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -521,7 +521,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_navigate_back error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_navigate_back error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -535,7 +535,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_resize requires (page_id, width, height)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_resize requires (page_id, width, height)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -546,7 +546,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_resize error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_resize error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -560,7 +560,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_handle_dialog requires (page_id, action [, prompt_text])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_handle_dialog requires (page_id, action [, prompt_text])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -571,7 +571,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_handle_dialog error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_handle_dialog error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -590,7 +590,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_tabs error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_tabs error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -604,7 +604,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_console_messages requires (page_id [, max_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_console_messages requires (page_id [, max_count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -614,7 +614,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_console_messages error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_console_messages error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -629,7 +629,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_drag requires (page_id, from_selector, to_selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_drag requires (page_id, from_selector, to_selector)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -640,7 +640,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_drag error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_drag error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -654,7 +654,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_file_upload requires (page_id, selector, paths_json)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_file_upload requires (page_id, selector, paths_json)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -665,7 +665,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_file_upload error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_file_upload error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -679,7 +679,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_drop requires (page_id, selector, file_name, mime_type, content)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_drop requires (page_id, selector, file_name, mime_type, content)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -692,7 +692,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_drop error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_drop error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -706,7 +706,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_find requires (page_id, selector [, max_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_find requires (page_id, selector [, max_count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -717,7 +717,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_find error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_find error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -731,7 +731,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_network_requests requires (page_id [, max_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_network_requests requires (page_id [, max_count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -741,7 +741,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_network_requests error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_network_requests error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -755,7 +755,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_network_request requires (page_id, url_substring)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_network_request requires (page_id, url_substring)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -765,7 +765,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_network_request error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_network_request error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -780,7 +780,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_cdp_new_tab error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_cdp_new_tab error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -790,7 +790,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_cdp_close_tab requires (target_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_close_tab requires (target_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string targetId = operands[0].AsString;
@@ -799,7 +799,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_cdp_close_tab error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_cdp_close_tab error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -813,7 +813,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_cdp_list_targets error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_cdp_list_targets error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -823,7 +823,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_cdp_evaluate requires (target_id, script [, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_evaluate requires (target_id, script [, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string targetId = operands[0].AsString;
@@ -834,7 +834,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_cdp_evaluate error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_cdp_evaluate error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -844,7 +844,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_frames requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frames requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -853,7 +853,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_frames error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_frames error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -863,7 +863,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_frame_evaluate requires (page_id, frame_url_regex, script)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frame_evaluate requires (page_id, frame_url_regex, script)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -874,7 +874,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_frame_evaluate error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_frame_evaluate error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -884,7 +884,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_input_value requires (page_id, selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_input_value requires (page_id, selector)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -894,7 +894,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_input_value error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_input_value error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -904,7 +904,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_wait_for_load_state requires (page_id [, state, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for_load_state requires (page_id [, state, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -915,7 +915,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_wait_for_load_state error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_wait_for_load_state error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -925,7 +925,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_bring_to_front requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_bring_to_front requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -934,7 +934,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_bring_to_front error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_bring_to_front error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -949,7 +949,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_cookies error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_cookies error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -959,7 +959,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_set_cookies requires (cookies_json)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_set_cookies requires (cookies_json)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string cookiesJson = operands[0].AsString;
@@ -968,7 +968,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_set_cookies error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_set_cookies error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -978,7 +978,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_by_role requires (page_id, role [, name, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_role requires (page_id, role [, name, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -990,7 +990,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_by_role error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_by_role error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1000,7 +1000,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_mouse_wheel requires (page_id, dx, dy)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_wheel requires (page_id, dx, dy)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1011,7 +1011,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_mouse_wheel error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_mouse_wheel error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1021,7 +1021,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_add_init_script requires (page_id, script)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_add_init_script requires (page_id, script)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1031,7 +1031,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_add_init_script error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_add_init_script error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1041,7 +1041,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_by_text requires (page_id, text [, exact, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_text requires (page_id, text [, exact, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1053,7 +1053,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_by_text error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_by_text error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1063,7 +1063,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_by_label requires (page_id, label [, exact, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_label requires (page_id, label [, exact, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1075,7 +1075,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_by_label error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_by_label error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1085,7 +1085,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_by_placeholder requires (page_id, placeholder [, exact, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_placeholder requires (page_id, placeholder [, exact, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1097,7 +1097,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_by_placeholder error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_by_placeholder error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1107,7 +1107,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_by_testid requires (page_id, testid [, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_testid requires (page_id, testid [, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1118,7 +1118,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_by_testid error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_by_testid error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1128,7 +1128,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_frame_click requires (page_id, frame_url_regex, selector [, button, click_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frame_click requires (page_id, frame_url_regex, selector [, button, click_count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1141,7 +1141,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_frame_click error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_frame_click error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1151,7 +1151,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_frame_type requires (page_id, frame_url_regex, selector, text [, clear_first])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frame_type requires (page_id, frame_url_regex, selector, text [, clear_first])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1164,7 +1164,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_frame_type error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_frame_type error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1174,7 +1174,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_frame_fill requires (page_id, frame_url_regex, selector, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frame_fill requires (page_id, frame_url_regex, selector, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1186,7 +1186,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_frame_fill error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_frame_fill error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1196,7 +1196,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_route requires (page_id, url_pattern, action [, body])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_route requires (page_id, url_pattern, action [, body])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1208,7 +1208,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_route error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_route error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1218,7 +1218,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_unroute requires (page_id, url_pattern)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_unroute requires (page_id, url_pattern)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1228,7 +1228,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_unroute error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_unroute error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1242,7 +1242,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_clear_cookies error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_clear_cookies error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1252,7 +1252,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_keyboard_down requires (page_id, key)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_keyboard_down requires (page_id, key)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1262,7 +1262,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_keyboard_down error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_keyboard_down error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1272,7 +1272,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_keyboard_up requires (page_id, key)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_keyboard_up requires (page_id, key)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1282,7 +1282,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_keyboard_up error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_keyboard_up error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1292,7 +1292,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_keyboard_press requires (page_id, key[, delay_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_keyboard_press requires (page_id, key[, delay_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1303,7 +1303,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_keyboard_press error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_keyboard_press error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1313,7 +1313,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_keyboard_type requires (page_id, text[, delay_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_keyboard_type requires (page_id, text[, delay_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1324,7 +1324,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_keyboard_type error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_keyboard_type error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1334,7 +1334,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_local_storage requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_local_storage requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1343,7 +1343,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_local_storage error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_local_storage error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1353,7 +1353,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_set_local_storage requires (page_id, key, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_set_local_storage requires (page_id, key, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1364,7 +1364,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_set_local_storage error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_set_local_storage error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1374,7 +1374,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_clear_local_storage requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_clear_local_storage requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1383,7 +1383,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_clear_local_storage error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_clear_local_storage error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1393,7 +1393,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_session_storage requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_session_storage requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1402,7 +1402,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_session_storage error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_session_storage error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1412,7 +1412,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_clear_session_storage requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_clear_session_storage requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1421,7 +1421,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_clear_session_storage error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_clear_session_storage error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1431,7 +1431,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_mouse_move requires (page_id, x, y)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_move requires (page_id, x, y)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1442,7 +1442,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_mouse_move error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_mouse_move error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1452,7 +1452,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_mouse_down requires (page_id [, button])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_down requires (page_id [, button])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1462,7 +1462,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_mouse_down error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_mouse_down error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1472,7 +1472,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_mouse_up requires (page_id [, button])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_up requires (page_id [, button])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1482,7 +1482,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_mouse_up error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_mouse_up error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1492,7 +1492,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_mouse_click requires (page_id, x, y [, button, click_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_click requires (page_id, x, y [, button, click_count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1505,7 +1505,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_mouse_click error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_mouse_click error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1515,7 +1515,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_mouse_dblclick requires (page_id, x, y)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_dblclick requires (page_id, x, y)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1526,7 +1526,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_mouse_dblclick error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_mouse_dblclick error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1536,7 +1536,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_wait_for_url requires (page_id, url_regex [, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for_url requires (page_id, url_regex [, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1547,7 +1547,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_wait_for_url error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_wait_for_url error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1557,7 +1557,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_wait_for_timeout requires (page_id, timeout_ms)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for_timeout requires (page_id, timeout_ms)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1567,7 +1567,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_wait_for_timeout error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_wait_for_timeout error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1577,7 +1577,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_set_viewport_size requires (page_id, width, height)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_set_viewport_size requires (page_id, width, height)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1588,7 +1588,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_set_viewport_size error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_set_viewport_size error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1598,7 +1598,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_get_viewport_size requires (page_id)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_viewport_size requires (page_id)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1607,7 +1607,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_get_viewport_size error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_get_viewport_size error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1617,7 +1617,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_focus requires (page_id, selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_focus requires (page_id, selector)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1627,7 +1627,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_focus error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_focus error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1637,7 +1637,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_blur requires (page_id, selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_blur requires (page_id, selector)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1647,7 +1647,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_blur error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_blur error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1657,7 +1657,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_cdp_send requires (page_id, method [, params_json])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_send requires (page_id, method [, params_json])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1668,7 +1668,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_cdp_send error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_cdp_send error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1678,7 +1678,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_session_storage_set requires (page_id, key, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_session_storage_set requires (page_id, key, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1689,7 +1689,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_session_storage_set error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_session_storage_set error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1699,7 +1699,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_wait_for_response requires (page_id, url_regex [, timeout_ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for_response requires (page_id, url_regex [, timeout_ms])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1710,7 +1710,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_wait_for_response error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_wait_for_response error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1720,7 +1720,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_emulate_media requires (page_id [, media, color_scheme])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_emulate_media requires (page_id [, media, color_scheme])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1731,7 +1731,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_emulate_media error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_emulate_media error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1741,7 +1741,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_scroll_into_view requires (page_id, selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_scroll_into_view requires (page_id, selector)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string pageId = operands[0].AsString;
@@ -1751,7 +1751,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(res);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_scroll_into_view error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_scroll_into_view error: {ex.Message}");
                 return BoxedValue.FromString($"error: {ex.Message}");
             }
         }
@@ -1762,7 +1762,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_search_web error: need at least page_id and query");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_search_web error: need at least page_id and query");
                 return BoxedValue.FromObject(new List<BoxedValue>());
             }
             string pageId = operands[0].AsString;
@@ -1781,7 +1781,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromObject(list);
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_search_web error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_search_web error: {ex.Message}");
                 return BoxedValue.FromObject(new List<BoxedValue>());
             }
         }
@@ -1792,7 +1792,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_search_set_option error: need key and val");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_search_set_option error: need key and val");
                 return BoxedValue.FromString("error");
             }
             string key = operands[0].AsString;
@@ -1802,7 +1802,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString("ok");
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_search_set_option error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_search_set_option error: {ex.Message}");
                 return BoxedValue.FromString("error");
             }
         }
@@ -1813,7 +1813,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("playwright_search_get_option error: need key");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_search_get_option error: need key");
                 return BoxedValue.FromString(string.Empty);
             }
             string key = operands[0].AsString;
@@ -1821,7 +1821,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(Core.PlaywrightService.Instance.GetSearchOption(key));
             }
             catch (System.Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"playwright_search_get_option error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_search_get_option error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -1833,256 +1833,256 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_install",
+            BatchCommand.BatchScript.Register("playwright_install",
                 "playwright_install([browser]) - download Playwright browser binaries. browser: 'chromium' (default), 'firefox', 'webkit', or 'all'. First run ~1-3 min. Returns 'ok' or 'error: ...'.",
                 new ExpressionFactoryHelper<PlaywrightInstallExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_start",
+            BatchCommand.BatchScript.Register("playwright_start",
                 "playwright_start([headless, user_data_dir]) - Launch Chromium; if `headless` is `true`, headless mode is used (default is `false`). If `user_data_dir` is empty (default), create a fresh context, or if it is not empty, use a persistent context. Returns 'ok' or an error message.",
                 new ExpressionFactoryHelper<PlaywrightStartExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_cdp_start",
+            BatchCommand.BatchScript.Register("playwright_cdp_start",
                 "playwright_cdp_start(cdp_endpoint) - Launch Chromium; connect via CDP (reusing a remote instance). Returns 'ok' or an error message.",
                 new ExpressionFactoryHelper<PlaywrightCdpStartExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_stop",
+            BatchCommand.BatchScript.Register("playwright_stop",
                 "playwright_stop() - close all pages, context and browser. Returns 'ok'.",
                 new ExpressionFactoryHelper<PlaywrightStopExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_is_running",
+            BatchCommand.BatchScript.Register("playwright_is_running",
                 "playwright_is_running() - returns bool indicating whether playwright is started.",
                 new ExpressionFactoryHelper<PlaywrightIsRunningExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_new_page",
+            BatchCommand.BatchScript.Register("playwright_new_page",
                 "playwright_new_page(page_id) - create a new page with the given string handle. Returns 'ok' or 'error: ...'.",
                 new ExpressionFactoryHelper<PlaywrightNewPageExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_close_page",
+            BatchCommand.BatchScript.Register("playwright_close_page",
                 "playwright_close_page(page_id) - close a page. Returns 'ok' or error.",
                 new ExpressionFactoryHelper<PlaywrightClosePageExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_goto",
+            BatchCommand.BatchScript.Register("playwright_goto",
                 "playwright_goto(page_id, url) - navigate the page. Returns 'ok:{status}' or error.",
                 new ExpressionFactoryHelper<PlaywrightGotoExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_url",
+            BatchCommand.BatchScript.Register("playwright_get_url",
                 "playwright_get_url(page_id) - return current URL of the page.",
                 new ExpressionFactoryHelper<PlaywrightGetUrlExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_title",
+            BatchCommand.BatchScript.Register("playwright_get_title",
                 "playwright_get_title(page_id) - return document.title.",
                 new ExpressionFactoryHelper<PlaywrightGetTitleExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_html",
+            BatchCommand.BatchScript.Register("playwright_get_html",
                 "playwright_get_html(page_id [, selector]) - full HTML if selector empty; else InnerHTML of selector.",
                 new ExpressionFactoryHelper<PlaywrightGetHtmlExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_text",
+            BatchCommand.BatchScript.Register("playwright_get_text",
                 "playwright_get_text(page_id, selector) - InnerText of the located element.",
                 new ExpressionFactoryHelper<PlaywrightGetTextExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_screenshot",
+            BatchCommand.BatchScript.Register("playwright_screenshot",
                 "playwright_screenshot(page_id, save_path) - full-page PNG. save_path must be absolute.",
                 new ExpressionFactoryHelper<PlaywrightScreenshotExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_evaluate",
+            BatchCommand.BatchScript.Register("playwright_evaluate",
                 "playwright_evaluate(page_id, script) - [Advanced] run JS in page context. Prefer high-level APIs (playwright_click/type/fill/search_web/locator) first; use this only when high-level APIs cannot cover the case.",
                 new ExpressionFactoryHelper<PlaywrightEvaluateExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_click",
+            BatchCommand.BatchScript.Register("playwright_click",
                 "playwright_click(page_id, selector [, button, click_count]) - click element. button: 'left'|'right'|'middle'.",
                 new ExpressionFactoryHelper<PlaywrightClickExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_type",
+            BatchCommand.BatchScript.Register("playwright_type",
                 "playwright_type(page_id, selector, text [, clear_first]) - type text; clear_first default true.",
                 new ExpressionFactoryHelper<PlaywrightTypeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_press_key",
+            BatchCommand.BatchScript.Register("playwright_press_key",
                 "playwright_press_key(page_id, key [, selector]) - press keyboard key; selector empty=page-level.",
                 new ExpressionFactoryHelper<PlaywrightPressKeyExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_hover",
+            BatchCommand.BatchScript.Register("playwright_hover",
                 "playwright_hover(page_id, selector) - hover on element.",
                 new ExpressionFactoryHelper<PlaywrightHoverExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_select_option",
+            BatchCommand.BatchScript.Register("playwright_select_option",
                 "playwright_select_option(page_id, selector, value_or_json) - value single or JSON array of values.",
                 new ExpressionFactoryHelper<PlaywrightSelectOptionExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_fill_form",
+            BatchCommand.BatchScript.Register("playwright_fill_form",
                 "playwright_fill_form(page_id, form_json) - JSON dict {selector: value} to fill multiple fields.",
                 new ExpressionFactoryHelper<PlaywrightFillFormExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_wait_for",
+            BatchCommand.BatchScript.Register("playwright_wait_for",
                 "playwright_wait_for(page_id, selector [, state, timeout_ms]) - state: 'visible'|'hidden'|'attached'|'detached'.",
                 new ExpressionFactoryHelper<PlaywrightWaitForExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_navigate_back",
+            BatchCommand.BatchScript.Register("playwright_navigate_back",
                 "playwright_navigate_back(page_id) - navigate history back.",
                 new ExpressionFactoryHelper<PlaywrightNavigateBackExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_resize",
+            BatchCommand.BatchScript.Register("playwright_resize",
                 "playwright_resize(page_id, width, height) - resize viewport pixels.",
                 new ExpressionFactoryHelper<PlaywrightResizeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_handle_dialog",
+            BatchCommand.BatchScript.Register("playwright_handle_dialog",
                 "playwright_handle_dialog(page_id, action [, prompt_text]) - action: 'accept'|'dismiss'; prompt_text for accept-with-input.",
                 new ExpressionFactoryHelper<PlaywrightHandleDialogExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_tabs",
+            BatchCommand.BatchScript.Register("playwright_tabs",
                 "playwright_tabs([refresh]) - list all pages as 'id|url' semicolon separated; refresh=true syncs pages from context (CDP-attach case).",
                 new ExpressionFactoryHelper<PlaywrightTabsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_console_messages",
+            BatchCommand.BatchScript.Register("playwright_console_messages",
                 "playwright_console_messages(page_id [, max_count]) - recent console log entries; max_count default 100.",
                 new ExpressionFactoryHelper<PlaywrightConsoleMessagesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_drag",
+            BatchCommand.BatchScript.Register("playwright_drag",
                 "playwright_drag(page_id, from_selector, to_selector) - drag element from source to target selector.",
                 new ExpressionFactoryHelper<PlaywrightDragExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_file_upload",
+            BatchCommand.BatchScript.Register("playwright_file_upload",
                 "playwright_file_upload(page_id, selector, paths_json) - upload files; paths_json JSON array of absolute paths or single path string.",
                 new ExpressionFactoryHelper<PlaywrightFileUploadExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_drop",
+            BatchCommand.BatchScript.Register("playwright_drop",
                 "playwright_drop(page_id, selector, file_name, mime_type, content) - simulate file drop via DataTransfer + dispatchEvent.",
                 new ExpressionFactoryHelper<PlaywrightDropExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_find",
+            BatchCommand.BatchScript.Register("playwright_find",
                 "playwright_find(page_id, selector [, max_count]) - locate elements; returns count + first N inner_text lines (default 5, max 20).",
                 new ExpressionFactoryHelper<PlaywrightFindExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_network_requests",
+            BatchCommand.BatchScript.Register("playwright_network_requests",
                 "playwright_network_requests(page_id [, max_count]) - recent network activity (REQ/RES/ERR lines); max_count default 100.",
                 new ExpressionFactoryHelper<PlaywrightNetworkRequestsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_network_request",
+            BatchCommand.BatchScript.Register("playwright_network_request",
                 "playwright_network_request(page_id, url_substring) - latest network entry containing url_substring.",
                 new ExpressionFactoryHelper<PlaywrightNetworkRequestExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_cdp_new_tab",
+            BatchCommand.BatchScript.Register("playwright_cdp_new_tab",
                 "playwright_cdp_new_tab([url]) - open new tab via CDP Target.createTarget (attach mode); returns targetId or error.",
                 new ExpressionFactoryHelper<PlaywrightCdpNewTabExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_cdp_close_tab",
+            BatchCommand.BatchScript.Register("playwright_cdp_close_tab",
                 "playwright_cdp_close_tab(target_id) - close tab via CDP Target.closeTarget (attach mode).",
                 new ExpressionFactoryHelper<PlaywrightCdpCloseTabExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_cdp_list_targets",
+            BatchCommand.BatchScript.Register("playwright_cdp_list_targets",
                 "playwright_cdp_list_targets() - list CDP targets via HTTP /json (attach mode); returns raw JSON.",
                 new ExpressionFactoryHelper<PlaywrightCdpListTargetsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_cdp_evaluate",
+            BatchCommand.BatchScript.Register("playwright_cdp_evaluate",
                 "playwright_cdp_evaluate(target_id, script [, timeout_ms]) - evaluate JS in specific CDP target (attach mode, bypasses cross-origin isolation for iframes/webviews). timeout_ms default 30000. Returns JSON result string.",
                 new ExpressionFactoryHelper<PlaywrightCdpEvaluateExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_frames",
+            BatchCommand.BatchScript.Register("playwright_frames",
                 "playwright_frames(page_id) - list all frames of a page. Returns JSON array of {url, name, is_main}.",
                 new ExpressionFactoryHelper<PlaywrightFramesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_frame_evaluate",
+            BatchCommand.BatchScript.Register("playwright_frame_evaluate",
                 "playwright_frame_evaluate(page_id, frame_url_regex, script) - evaluate JS in first frame whose URL matches regex. Returns JSON result string.",
                 new ExpressionFactoryHelper<PlaywrightFrameEvaluateExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_input_value",
+            BatchCommand.BatchScript.Register("playwright_input_value",
                 "playwright_input_value(page_id, selector) - get current value of an input/select/textarea element. Returns the string value.",
                 new ExpressionFactoryHelper<PlaywrightInputValueExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_wait_for_load_state",
+            BatchCommand.BatchScript.Register("playwright_wait_for_load_state",
                 "playwright_wait_for_load_state(page_id [, state, timeout_ms]) - wait for page load state. state: 'load'|'domcontentloaded'|'networkidle' (default 'load'). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightWaitForLoadStateExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_bring_to_front",
+            BatchCommand.BatchScript.Register("playwright_bring_to_front",
                 "playwright_bring_to_front(page_id) - bring a tab/page to front (focus). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightBringToFrontExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_cookies",
+            BatchCommand.BatchScript.Register("playwright_get_cookies",
                 "playwright_get_cookies([url_filter]) - get cookies at context level. Optional url_filter narrows to matching URL. Returns JSON array.",
                 new ExpressionFactoryHelper<PlaywrightGetCookiesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_set_cookies",
+            BatchCommand.BatchScript.Register("playwright_set_cookies",
                 "playwright_set_cookies(cookies_json) - set cookies at context level. cookies_json: JSON array of cookie objects. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightSetCookiesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_by_role",
+            BatchCommand.BatchScript.Register("playwright_get_by_role",
                 "playwright_get_by_role(page_id, role [, name, timeout_ms]) - locate first element by ARIA role, optional accessible name. Returns 'ok' or 'error' plus text/count summary.",
                 new ExpressionFactoryHelper<PlaywrightGetByRoleExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_mouse_wheel",
+            BatchCommand.BatchScript.Register("playwright_mouse_wheel",
                 "playwright_mouse_wheel(page_id, dx, dy) - scroll by mouse wheel delta pixels. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightMouseWheelExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_add_init_script",
+            BatchCommand.BatchScript.Register("playwright_add_init_script",
                 "playwright_add_init_script(page_id, script) - inject an init script that runs on every navigation (only affects subsequent navigations). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightAddInitScriptExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_by_text",
+            BatchCommand.BatchScript.Register("playwright_get_by_text",
                 "playwright_get_by_text(page_id, text [, exact, timeout_ms]) - locate first element by visible text. exact default false. Returns 'ok:count|html' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightGetByTextExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_by_label",
+            BatchCommand.BatchScript.Register("playwright_get_by_label",
                 "playwright_get_by_label(page_id, label [, exact, timeout_ms]) - locate form field by associated label text. exact default false. Returns 'ok:count|html' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightGetByLabelExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_by_placeholder",
+            BatchCommand.BatchScript.Register("playwright_get_by_placeholder",
                 "playwright_get_by_placeholder(page_id, placeholder [, exact, timeout_ms]) - locate input by placeholder attribute. exact default false. Returns 'ok:count|html' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightGetByPlaceholderExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_by_testid",
+            BatchCommand.BatchScript.Register("playwright_get_by_testid",
                 "playwright_get_by_testid(page_id, testid [, timeout_ms]) - locate element by data-testid attribute (or configured test id). Returns 'ok:count|html' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightGetByTestIdExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_frame_click",
+            BatchCommand.BatchScript.Register("playwright_frame_click",
                 "playwright_frame_click(page_id, frame_url_regex, selector [, button, click_count]) - click element inside iframe matched by url regex. button: left|right|middle (default left). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightFrameClickExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_frame_type",
+            BatchCommand.BatchScript.Register("playwright_frame_type",
                 "playwright_frame_type(page_id, frame_url_regex, selector, text [, clear_first]) - type text into element inside iframe. clear_first=true uses fill, false uses press_sequentially. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightFrameTypeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_frame_fill",
+            BatchCommand.BatchScript.Register("playwright_frame_fill",
                 "playwright_frame_fill(page_id, frame_url_regex, selector, value) - fill form field inside iframe (replaces existing value). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightFrameFillExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_route",
+            BatchCommand.BatchScript.Register("playwright_route",
                 "playwright_route(page_id, url_pattern, action [, body]) - intercept network requests matching url_pattern (glob or regex). action: abort|fulfill|continue. body used with fulfill (status 200). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightRouteExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_unroute",
+            BatchCommand.BatchScript.Register("playwright_unroute",
                 "playwright_unroute(page_id, url_pattern) - remove previously registered route handler. Returns 'ok' or 'ok:no-tracked-handler' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightUnrouteExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_clear_cookies",
+            BatchCommand.BatchScript.Register("playwright_clear_cookies",
                 "playwright_clear_cookies() - clear all cookies of default browser context. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightClearCookiesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_keyboard_down",
+            BatchCommand.BatchScript.Register("playwright_keyboard_down",
                 "playwright_keyboard_down(page_id, key) - dispatch a keydown at page level (no selector, no focus change). key like 'Shift','Control','A'. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightKeyboardDownExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_keyboard_up",
+            BatchCommand.BatchScript.Register("playwright_keyboard_up",
                 "playwright_keyboard_up(page_id, key) - dispatch a keyup at page level. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightKeyboardUpExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_keyboard_press",
+            BatchCommand.BatchScript.Register("playwright_keyboard_press",
                 "playwright_keyboard_press(page_id, key [, delay_ms]) - press+release a key at page level (down+up). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightKeyboardPressExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_keyboard_type",
+            BatchCommand.BatchScript.Register("playwright_keyboard_type",
                 "playwright_keyboard_type(page_id, text [, delay_ms]) - type text at page level (no selector, uses current focus). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightKeyboardTypeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_local_storage",
+            BatchCommand.BatchScript.Register("playwright_get_local_storage",
                 "playwright_get_local_storage(page_id) - read all localStorage entries as JSON string {key:value,...}. Returns JSON or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightGetLocalStorageExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_set_local_storage",
+            BatchCommand.BatchScript.Register("playwright_set_local_storage",
                 "playwright_set_local_storage(page_id, key, value) - set a single localStorage entry. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightSetLocalStorageExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_clear_local_storage",
+            BatchCommand.BatchScript.Register("playwright_clear_local_storage",
                 "playwright_clear_local_storage(page_id) - clear all localStorage of current origin. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightClearLocalStorageExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_session_storage",
+            BatchCommand.BatchScript.Register("playwright_get_session_storage",
                 "playwright_get_session_storage(page_id) - read all sessionStorage entries as JSON string {key:value,...}. Returns JSON or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightGetSessionStorageExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_clear_session_storage",
+            BatchCommand.BatchScript.Register("playwright_clear_session_storage",
                 "playwright_clear_session_storage(page_id) - clear all sessionStorage of current origin. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightClearSessionStorageExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_mouse_move",
+            BatchCommand.BatchScript.Register("playwright_mouse_move",
                 "playwright_mouse_move(page_id, x, y) - move mouse to (x,y). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightMouseMoveExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_mouse_down",
+            BatchCommand.BatchScript.Register("playwright_mouse_down",
                 "playwright_mouse_down(page_id [, button]) - press mouse button (left/right/middle, default left) at current position. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightMouseDownExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_mouse_up",
+            BatchCommand.BatchScript.Register("playwright_mouse_up",
                 "playwright_mouse_up(page_id [, button]) - release mouse button (left/right/middle, default left) at current position. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightMouseUpExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_mouse_click",
+            BatchCommand.BatchScript.Register("playwright_mouse_click",
                 "playwright_mouse_click(page_id, x, y [, button, click_count]) - click at (x,y) with button (default left) and click_count (default 1). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightMouseClickExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_mouse_dblclick",
+            BatchCommand.BatchScript.Register("playwright_mouse_dblclick",
                 "playwright_mouse_dblclick(page_id, x, y) - double-click at (x,y). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightMouseDblclickExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_wait_for_url",
+            BatchCommand.BatchScript.Register("playwright_wait_for_url",
                 "playwright_wait_for_url(page_id, url_regex [, timeout_ms]) - wait until page URL matches regex (default timeout 30000). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightWaitForUrlExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_wait_for_timeout",
+            BatchCommand.BatchScript.Register("playwright_wait_for_timeout",
                 "playwright_wait_for_timeout(page_id, timeout_ms) - wait for specified milliseconds. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightWaitForTimeoutExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_set_viewport_size",
+            BatchCommand.BatchScript.Register("playwright_set_viewport_size",
                 "playwright_set_viewport_size(page_id, width, height) - set viewport size in pixels. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightSetViewportSizeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_get_viewport_size",
+            BatchCommand.BatchScript.Register("playwright_get_viewport_size",
                 "playwright_get_viewport_size(page_id) - get viewport size as JSON {width,height}. Returns JSON or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightGetViewportSizeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_focus",
+            BatchCommand.BatchScript.Register("playwright_focus",
                 "playwright_focus(page_id, selector) - focus the element matching selector. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightFocusExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_blur",
+            BatchCommand.BatchScript.Register("playwright_blur",
                 "playwright_blur(page_id, selector) - blur the element matching selector. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightBlurExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_cdp_send",
+            BatchCommand.BatchScript.Register("playwright_cdp_send",
                 "playwright_cdp_send(page_id, method [, params_json]) - send raw CDP command via new CDP session. Returns JSON result string or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightCdpSendExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_session_storage_set",
+            BatchCommand.BatchScript.Register("playwright_session_storage_set",
                 "playwright_session_storage_set(page_id, key, value) - set sessionStorage item. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightSessionStorageSetExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_wait_for_response",
+            BatchCommand.BatchScript.Register("playwright_wait_for_response",
                 "playwright_wait_for_response(page_id, url_regex [, timeout_ms]) - wait for a network response whose URL matches regex. Returns JSON {status,url} or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightWaitForResponseExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_emulate_media",
+            BatchCommand.BatchScript.Register("playwright_emulate_media",
                 "playwright_emulate_media(page_id [, media, color_scheme]) - emulate CSS media (screen/print) and color scheme (light/dark/no-preference). Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightEmulateMediaExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_scroll_into_view",
+            BatchCommand.BatchScript.Register("playwright_scroll_into_view",
                 "playwright_scroll_into_view(page_id, selector) - scroll the element matching selector into view if needed. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightScrollIntoViewExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_search_web",
+            BatchCommand.BatchScript.Register("playwright_search_web",
                 "playwright_search_web(page_id, query [, page_index, max_results, timeout_ms]) - search on current site of given tab (site auto-detected by host: google/bing/baidu). page_index 0-based (default 0 uses fill+Enter, >0 uses direct URL). max_results default 10, timeout_ms default 30000. Returns List of dict{title,url,snippet}; empty on error.",
                 new ExpressionFactoryHelper<PlaywrightSearchWebExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_search_set_option",
+            BatchCommand.BatchScript.Register("playwright_search_set_option",
                 "playwright_search_set_option(key, val) - set search option. key format: '{site}.{field}' (e.g. 'google.page_size', 'bing.item_selector'). fields: host_pattern, query_selector, submit_button_selector, page_url_template, results_wait_selector, item_selector, title_selector, url_selector, snippet_selector, page_size. Returns 'ok' or 'error'.",
                 new ExpressionFactoryHelper<PlaywrightSearchSetOptionExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("playwright_search_get_option",
+            BatchCommand.BatchScript.Register("playwright_search_get_option",
                 "playwright_search_get_option(key) - get search option value. key format: '{site}.{field}'. Returns option string or empty on missing/error.",
                 new ExpressionFactoryHelper<PlaywrightSearchGetOptionExp>());
         }

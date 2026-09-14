@@ -14,11 +14,11 @@ using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.Net;
-using AbstractAgent;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Linq;
 using BatchCommand;
+using BatchCommand.Api;
 
 internal static class Program
 {
@@ -407,157 +407,6 @@ namespace DotNetLib
             return BoxedValue.FromString(Lib.DslScriptFile);
         }
     }
-    sealed class ImportExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            var files = new List<string>();
-            for (int ix = 0; ix < operands.Count; ix++) {
-                var str = operands[ix].AsString;
-                if (!string.IsNullOrEmpty(str)) {
-                    string path;
-                    if (Path.IsPathRooted(str)) {
-                        path = str;
-                    }
-                    else {
-                        path = Path.Combine(Lib.BasePath, "managed", str);
-                    }
-                    files.Add(path);
-                }
-            }
-            BatchScript.LoadImportFiles(files);
-            if (BatchScript.HasDslErrors)
-                return BoxedValue.FromBool(false);
-            foreach (var file in files) {
-                Lib.NativeLog($"Import: {file}");
-            }
-            return BoxedValue.FromBool(true);
-        }
-    }
-    sealed class RedirectCallExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            int num = operands.Count;
-            if (num < 1) {
-                NativeApi.AppendApiErrorInfoLine("Expected: redirectcall(func_name) or redirectcall(func_name, args) or redirectcall(func_name, args, ...)");
-                return BoxedValue.EmptyString;
-            }
-            else {
-                string func_name = operands[0].AsString;
-                if (num == 1) {
-                    return BatchScript.Call(func_name);
-                }
-                else if (num == 2) {
-                    // expand original args
-                    var args = operands[1].As<IList<BoxedValue>>();
-                    return BatchScript.Call(func_name, args);
-                }
-                else {
-                    // expand original args
-                    var args = operands[1].As<IList<BoxedValue>>();
-                    // add other args
-                    var newArgs = BatchScript.NewCalculatorValueList();
-                    newArgs.AddRange(args);
-                    for (int ix = 2; ix < num; ix++) {
-                        newArgs.Add(operands[ix]);
-                    }
-                    BoxedValue r = BatchScript.Call(func_name, newArgs);
-                    BatchScript.RecycleCalculatorValueList(newArgs);
-                    return r;
-                }
-            }
-        }
-    }
-    sealed class ExecuteMetaDslExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                NativeApi.AppendApiErrorInfoLine("Expected: execute_metadsl(dsl_code), aliased as executemetadsl");
-                return BoxedValue.From(-1);
-            }
-            string dslCode = operands[0].AsString;
-            bool hasError;
-            string res;
-            if (Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId) {
-                res = Lib.ExecuteMetaDslScript(dslCode, 0, out hasError);
-            }
-            else {
-                res = CefDotnetAppApi.ExecuteMetaDslScript(dslCode, 0, out hasError);
-            }
-            return BoxedValue.From(Tuple.Create(BoxedValue.FromBool(hasError), BoxedValue.FromString(res)));
-        }
-    }
-    sealed class CallMetaDslTaskExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 2) {
-                NativeApi.AppendApiErrorInfoLine("Expected: call_metadsl_task(task_index, func_name, arg1, arg2, ...)");
-                return BoxedValue.From(false);
-            }
-            int taskIndex = operands[0].GetInt();
-            string funcName = operands[1].AsString;
-            if (string.IsNullOrEmpty(funcName)) {
-                NativeApi.AppendApiErrorInfoLine("Expected: call_metadsl_task(task_index, func_name, arg1, arg2, ...), func_name is empty");
-                return BoxedValue.From(false);
-            }
-            // Build the args on the calling thread; the list is handed to the worker and
-            // never touched again here, so no synchronization is needed on it.
-            // The values keep their BoxedValue type: unlike the C++ entry points, nothing
-            // here forces a string round trip, so numbers stay numbers and lists stay lists.
-            // Strings and numbers are immutable, so they are safe to share; a mutable
-            // collection must not be modified by the caller after this point.
-            var args = new List<BoxedValue>();
-            for (int ix = 2; ix < operands.Count; ix++) {
-                args.Add(operands[ix]);
-            }
-            // Fire-and-forget: queue to a worker thread so slow work such as sqlite
-            // writes cannot block the caller (the UI thread or an IO callback thread).
-            return BoxedValue.From(Lib.EnqueueMetaDslTask(taskIndex, funcName, args));
-        }
-    }
-    sealed class SetMetaDslTaskNumExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 1) {
-                NativeApi.AppendApiErrorInfoLine("Expected: set_metadsl_task_num(num)");
-                return BoxedValue.From(0);
-            }
-            return BoxedValue.From(Lib.SetMetaDslTaskNum(operands[0].GetInt()));
-        }
-    }
-    sealed class GetMetaDslTaskNumExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            return BoxedValue.From(Lib.GetMetaDslTaskNum());
-        }
-    }
-    sealed class NativeLogExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            string str;
-            if (operands.Count == 1) {
-                // Single parameter: output directly without string.Format
-                str = operands[0].AsString;
-            }
-            else {
-                // Multiple parameters: use string.Format
-                string fmt = operands[0].AsString;
-                var al = new System.Collections.ArrayList();
-                for (int ix = 1; ix < operands.Count; ix++) {
-                    al.Add(operands[ix].GetObject());
-                }
-                str = string.Format(fmt, al.ToArray());
-            }
-            Lib.NativeLog(str);
-            return str;
-        }
-    }
     sealed class JavascriptLogExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -578,71 +427,6 @@ namespace DotNetLib
             }
             Lib.JsLog(str);
             return str;
-        }
-    }
-    sealed class QuoteStringExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                NativeApi.AppendApiErrorInfoLine("Expected: quotestring(str)");
-                return BoxedValue.EmptyString;
-            }
-            string str = operands[0].AsString;
-            if (!string.IsNullOrEmpty(str)) {
-                NativeApi.QuoteString(str);
-            }
-            return BoxedValue.EmptyString;
-        }
-    }
-    sealed class StripQuotesExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                NativeApi.AppendApiErrorInfoLine("Expected: stripquotes(str)");
-                return BoxedValue.EmptyString;
-            }
-            string str = operands[0].AsString;
-            if (!string.IsNullOrEmpty(str)) {
-                NativeApi.QuoteString(str);
-            }
-            return BoxedValue.EmptyString;
-        }
-    }
-    sealed class TryGetRawCommandLineSwitchExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                NativeApi.AppendApiErrorInfoLine("Expected: try_get_raw_command_line_switch(str), return (bool, str)");
-                return BoxedValue.EmptyString;
-            }
-            string str = operands[0].AsString;
-            if (!string.IsNullOrEmpty(str)) {
-                if (Lib.TryGetSwitchValueFromRawCommandLine(Lib.CmdLine, str, out var val)) {
-                    return Tuple.Create(BoxedValue.FromBool(true), BoxedValue.FromString(val));
-                }
-            }
-            return Tuple.Create(BoxedValue.FromBool(true), BoxedValue.EmptyString);
-        }
-    }
-    sealed class GetDotnetInfoExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("AppContext.BaseDirectory: " + AppContext.BaseDirectory);
-            sb.AppendLine("AppDomain.BaseDirectory: " + AppDomain.CurrentDomain.BaseDirectory);
-            var entry = Assembly.GetEntryAssembly()?.Location ?? "<null>";
-            sb.AppendLine("EntryAssembly.Location: " + entry);
-            sb.AppendLine("ExecutingAssembly.Location: " + Assembly.GetExecutingAssembly().Location);
-            sb.AppendLine("Process.MainModule: " + Process.GetCurrentProcess().MainModule?.FileName);
-            sb.AppendLine("Environment.CurrentDirectory: " + Environment.CurrentDirectory);
-            sb.AppendLine("BasePath: " + Lib.BasePath);
-            sb.AppendLine("AppDir: " + Lib.AppDir);
-            sb.AppendLine("IsMac: " + Lib.IsMac);
-            return sb.ToString();
         }
     }
     sealed class EnqueueCefMessageExp : SimpleExpressionBase
@@ -825,6 +609,43 @@ namespace DotNetLib
             return BoxedValue.FromBool(r);
         }
     }
+    // watch_file(file_name[, relative_path, file_type]) - watch a file under the
+    // app base path (or relative_path) for changes, on change the DSL callback
+    // on_file_changed(file_path, file_type) is invoked. |file_type| defaults to "File".
+    sealed class WatchFileExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: watch_file(file_name[, relative_path, file_type])");
+                return BoxedValue.FromBool(false);
+            }
+            string fileName = operands[0].AsString ?? string.Empty;
+            string relativePath = operands.Count >= 2 ? (operands[1].AsString ?? string.Empty) : string.Empty;
+            string fileType = operands.Count >= 3 ? (operands[2].AsString ?? string.Empty) : "File";
+            bool r = Lib.WatchFile(fileName, relativePath, fileType);
+            return BoxedValue.FromBool(r);
+        }
+    }
+    // watch_dir(dir_name[, relative_path, file_type]) - watch *.js files in a
+    // directory under the app base path (or relative_path) for changes, on
+    // change the DSL callback on_file_changed(file_path, file_type) is invoked.
+    // |file_type| defaults to "File".
+    sealed class WatchDirectoryExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: watch_dir(dir_name[, relative_path, file_type])");
+                return BoxedValue.FromBool(false);
+            }
+            string dirName = operands[0].AsString ?? string.Empty;
+            string relativePath = operands.Count >= 2 ? (operands[1].AsString ?? string.Empty) : string.Empty;
+            string fileType = operands.Count >= 3 ? (operands[2].AsString ?? string.Empty) : "File";
+            bool r = Lib.WatchDirectory(dirName, relativePath, fileType);
+            return BoxedValue.FromBool(r);
+        }
+    }
     sealed class GetBrowserIdsExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -935,113 +756,6 @@ namespace DotNetLib
             }
         }
     }
-    sealed class HelpExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            var sb = new StringBuilder();
-            var regexes = new List<Regex>();
-            foreach (var op in operands) {
-                string pattern = op.ToString();
-                regexes.Add(new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled));
-            }
-            // regex match over UserApiDocs
-            var matchedApiKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var pair in BatchCommand.BatchScript.UserApiDocs) {
-                bool match = regexes.Count == 0;
-                string info = string.Format("{0}: {1}", pair.Key, pair.Value);
-                foreach (var regex in regexes) {
-                    if (regex.IsMatch(info)) {
-                        match = true;
-                        break;
-                    }
-                }
-                if (match) {
-                    matchedApiKeys.Add(pair.Key);
-                    sb.AppendLine(info);
-                }
-            }
-            // semantic search over UserApiDocs
-            if (regexes.Count > 0 && Lib.AgentPlugin != null) {
-                var queries = new List<string>(regexes.Count);
-                foreach (var regex in regexes) {
-                    string q = NativeApi.CleanStringData(regex.ToString());
-                    if (!string.IsNullOrWhiteSpace(q))
-                        queries.Add(q);
-                }
-                var semanticResults = Lib.AgentPlugin.SemanticSearch(
-                    queries,
-                    BatchCommand.BatchScript.UserApiDocs.Select(p => (p.Key, p.Key + ": " + p.Value)),
-                    5);
-                if (semanticResults != null) {
-                    foreach (var (key, text, score) in semanticResults) {
-                        if (!matchedApiKeys.Contains(key)) {
-                            sb.AppendLine(string.Format("{0} ({1})", text, score));
-                        }
-                    }
-                }
-                sb.Append(Lib.AgentPlugin.TakeHelpSearchDebugInfo());
-            }
-            if (null != Lib.AgentPlugin) {
-                string infos = Lib.AgentPlugin.SkillHelp(regexes);
-                sb.Append(infos);
-            }
-            return sb.ToString();
-        }
-    }
-    sealed class HelpAllExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            var sb = new StringBuilder();
-            var regexes = new List<Regex>();
-            foreach (var op in operands) {
-                string pattern = op.ToString();
-                regexes.Add(new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled));
-            }
-            var matchedApiKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var pair in Calculator.ApiDocs) {
-                bool match = regexes.Count == 0;
-                string info = string.Format("{0}: {1}", pair.Key, pair.Value);
-                foreach (var regex in regexes) {
-                    if (regex.IsMatch(info)) {
-                        match = true;
-                        break;
-                    }
-                }
-                if (match) {
-                    matchedApiKeys.Add(pair.Key);
-                    sb.AppendLine(info);
-                }
-            }
-            // semantic search over apiDocs
-            if (regexes.Count > 0 && Lib.AgentPlugin != null) {
-                var queries = new List<string>(regexes.Count);
-                foreach (var regex in regexes) {
-                    string q = NativeApi.CleanStringData(regex.ToString());
-                    if (!string.IsNullOrWhiteSpace(q))
-                        queries.Add(q);
-                }
-                var semanticResults = Lib.AgentPlugin.SemanticSearch(
-                    queries,
-                    BatchCommand.BatchScript.ApiDocs.Select(p => (p.Key, p.Key + ": " + p.Value)),
-                    5);
-                if (semanticResults != null) {
-                    foreach (var (key, text, score) in semanticResults) {
-                        if (!matchedApiKeys.Contains(key)) {
-                            sb.AppendLine(string.Format("{0} ({1})", text, score));
-                        }
-                    }
-                }
-                sb.Append(Lib.AgentPlugin.TakeHelpSearchDebugInfo());
-            }
-            if (null != Lib.AgentPlugin) {
-                string infos = Lib.AgentPlugin.SkillHelp(regexes);
-                sb.Append(infos);
-            }
-            return sb.ToString();
-        }
-    }
     public enum CefProcessType
     {
         BrowserProcess,
@@ -1054,7 +768,7 @@ namespace DotNetLib
         PID_BROWSER,
         PID_RENDERER,
     }
-    public class NativeApi : INativeApi, IErrorReporter, IDslEngine
+    public class NativeApi
     {
         public NativeApi(IntPtr apis)
         {
@@ -1324,12 +1038,7 @@ namespace DotNetLib
 
         internal static string LoadDslFunc(string func, string code, IList<string> paramNames, bool update)
         {
-            if (Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId) {
-                return Lib.LoadFunc(func, code, paramNames, update);
-            }
-            else {
-                return CefDotnetAppApi.LoadFunc(func, code, paramNames, update);
-            }
+            return Lib.LoadFunc(func, code, paramNames, update);
         }
         internal static string CallDslFunc(string func, IList<BoxedValue> args)
         {
@@ -1342,77 +1051,47 @@ namespace DotNetLib
             if (result.IsNullObject) {
                 return "null";
             }
-            else if (null != Lib.AgentPlugin) {
-                return Lib.AgentPlugin.ResultToString(result);
-            }
             else {
-                return result.ToString();
+                return ResultToString(result);
             }
+        }
+        internal static string ResultToString(BoxedValue result)
+        {
+            var sb = new StringBuilder();
+            BatchCommand.Utils.DslHelper.ConvertToString(result, sb, 0, true);
+            return sb.ToString();
         }
         internal static void ClearApiErrorInfo()
         {
-            ApiErrorInfo.Clear();
+            BatchCommand.Api.ApiErrorInfo.Clear();
         }
         internal static void AppendApiErrorInfo(string msg)
         {
-            ApiErrorInfo.Append(msg);
+            BatchCommand.Api.ApiErrorInfo.Append(msg);
         }
         internal static void AppendApiErrorInfoLine(string msg)
         {
-            ApiErrorInfo.AppendLine(msg);
+            BatchCommand.Api.ApiErrorInfo.AppendLine(msg);
         }
         internal static void AppendApiErrorInfoFormat(string fmt, params object[] args)
         {
-            if (args.Length == 0)
-                ApiErrorInfo.Append(fmt);
-            else
-                ApiErrorInfo.AppendFormat(fmt, args);
+            BatchCommand.Api.ApiErrorInfo.AppendFormat(fmt, args);
         }
         internal static void AppendApiErrorInfoFormatLine(string fmt, params object[] args)
         {
-            if (args.Length == 0)
-                ApiErrorInfo.AppendLine(fmt);
-            else {
-                ApiErrorInfo.AppendFormat(fmt, args);
-                ApiErrorInfo.AppendLine();
-            }
+            BatchCommand.Api.ApiErrorInfo.AppendFormatLine(fmt, args);
         }
         internal static string GetStringInLength(string str, int len, int beginOrEndOrBeginEnd)
         {
-            if (!string.IsNullOrEmpty(str)) {
-                if (str.Length <= len) {
-                    return str;
-                }
-                switch (beginOrEndOrBeginEnd) {
-                    case 1:
-                        return "..." + str.Substring(str.Length - len, len);
-                    case 2:
-                        return str.Substring(0, len / 2) + "..." + str.Substring(str.Length - len / 2, len / 2);
-                    case 0:
-                    default:
-                        return str.Substring(0, len) + "...";
-                }
-            }
-            return string.Empty;
+            return DslHost.GetStringInLength(str, len, beginOrEndOrBeginEnd);
         }
         internal static string QuoteString(string? value)
         {
-            if (value == null) value = string.Empty;
-            // if numeric, no quotes needed
-            if (double.TryParse(value, System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out _))
-                return value;
-            // wrap in double quotes, escape internal double quotes and backslashes
-            return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+            return DslHost.QuoteString(value);
         }
         internal static string StripQuotes(string? s)
         {
-            if (s == null) return string.Empty;
-            if (s.Length >= 2 && s[0] == '"' && s[s.Length - 1] == '"')
-                return s.Substring(1, s.Length - 2);
-            if (s.Length >= 2 && s[0] == '\'' && s[s.Length - 1] == '\'')
-                return s.Substring(1, s.Length - 2);
-            return s;
+            return DslHost.StripQuotes(s);
         }
         /// <summary>
         /// Strip all non-alphanumeric characters from a string to produce clean tokens for semantic search.
@@ -1427,50 +1106,14 @@ namespace DotNetLib
             string s = Regex.Replace(pattern, @"[^\p{L}\p{N}]", " ");
             return Regex.Replace(s, @" {2,}", " ").Trim();
         }
-        internal static bool HasApiErrorInfo => ApiErrorInfo.Length > 0;
-        internal static string GetApiErrorInfo() => ApiErrorInfo.ToString();
+        internal static bool HasApiErrorInfo => BatchCommand.Api.ApiErrorInfo.HasInfo;
+        internal static string GetApiErrorInfo() => BatchCommand.Api.ApiErrorInfo.GetInfo();
 
-        internal static StringBuilder ApiErrorInfo {
-            get {
-                if (s_ApiErrorInfo == null) {
-                    s_ApiErrorInfo = new StringBuilder();
-                }
-                return s_ApiErrorInfo!;
-            }
-        }
         internal static void SetContext(IntPtr browser, IntPtr frame)
         {
             s_Browser = browser;
             s_Frame = frame;
         }
-
-        //INativeApi explicit interface implementation(delegates to static methods)
-        string INativeApi.GetStringInLength(string str, int len, int beginOrEndOrBeginEnd) => GetStringInLength(str, len, beginOrEndOrBeginEnd);
-        string INativeApi.QuoteString(string? value) => QuoteString(value);
-        string INativeApi.StripQuotes(string? s) => StripQuotes(s);
-        IEnumerable<string> INativeApi.GetHelpDocs()
-        {
-            return BatchCommand.BatchScript.ApiDocs
-                .Concat(BatchCommand.BatchScript.UserApiDocs)
-                .Select(pair => string.Format("{0}: {1}", pair.Key, pair.Value))
-                .ToArray();
-        }
-
-        // IErrorReporter explicit interface implementation (delegates to static methods)
-        void IErrorReporter.ClearApiErrorInfo() => ClearApiErrorInfo();
-        void IErrorReporter.AppendApiErrorInfo(string msg) => AppendApiErrorInfo(msg);
-        void IErrorReporter.AppendApiErrorInfoLine(string msg) => AppendApiErrorInfoLine(msg);
-        void IErrorReporter.AppendApiErrorInfoFormat(string fmt, params object[] args) => AppendApiErrorInfoFormat(fmt, args);
-        void IErrorReporter.AppendApiErrorInfoFormatLine(string fmt, params object[] args) => AppendApiErrorInfoFormatLine(fmt, args);
-        bool IErrorReporter.HasApiErrorInfo => HasApiErrorInfo;
-        string IErrorReporter.GetApiErrorInfo() => GetApiErrorInfo();
-
-        // IDslEngine explicit interface implementation (delegates to static methods)
-        string IDslEngine.LoadDslFunc(string func, string code, IList<string> paramNames, bool update) => LoadDslFunc(func, code, paramNames, update);
-        string IDslEngine.CallDslFunc(string func, IList<BoxedValue> args) => CallDslFunc(func, args);
-        string IDslEngine.ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError) => CefDotnetAppApi.ExecuteMetaDslScript(script, maxResultSize, out hasError);
-        void IDslEngine.Register(string name, string doc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, factory);
-        void IDslEngine.Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, addToUserApiDoc, factory);
 
         internal static nint Browser {
             get => s_Browser;
@@ -2255,8 +1898,6 @@ namespace DotNetLib
         private static IntPtr s_Frame = IntPtr.Zero;
         [ThreadStatic]
         private static int s_LastSourceProcessId = -1;
-        [ThreadStatic]
-        private static StringBuilder? s_ApiErrorInfo = null;
 
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_NativeLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_JsLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
@@ -2580,11 +2221,6 @@ namespace DotNetLib
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
             s_NativeApi = new NativeApi(apis);
-            // Initialize the AgentFrameworkService singleton with concrete implementations
-            AgentFrameworkService.Instance.SetNativeApi(s_NativeApi);
-            AgentFrameworkService.Instance.SetErrorReporter(s_NativeApi);
-            AgentFrameworkService.Instance.SetDslEngine(s_NativeApi);
-            AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             //We must load AgentCore's dependencies before loading AgentCore itself.
             PrepareBatchScript();
             return 0;
@@ -2598,75 +2234,50 @@ namespace DotNetLib
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBrowserHotReloadCopyFilesDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         public delegate void OnBrowserHotReloadCompletedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBrowserCefQueryDelegation(IntPtr browser, IntPtr frame, long query_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, [MarshalAs(UnmanagedType.U1)] bool persistent, long handle, ref int out_result);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnBrowserCefQueryCanceledDelegation(IntPtr browser, IntPtr frame, long query_id, long handle);
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnCustomSchemeDelegation(IntPtr browser, IntPtr frame, long handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, [MarshalAs(UnmanagedType.LPUTF8Str)] string method, [MarshalAs(UnmanagedType.LPUTF8Str)] string referrer, IntPtr html_code, ref int html_size);
         public delegate void OnRendererInitDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         public delegate void OnRendererFinalizeDelegation(IntPtr browser, IntPtr frame);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnLoadingStateChangeDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, [MarshalAs(UnmanagedType.U1)] bool is_loading, [MarshalAs(UnmanagedType.U1)] bool can_go_back, [MarshalAs(UnmanagedType.U1)] bool can_go_forward);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnBeforeCommandLineProcessingDelegation(int process_type, IntPtr command_line);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnBeforeChildProcessLaunchDelegation(int process_type, IntPtr command_line);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnAlreadyRunningAppRelaunchDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string current_directory);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnLoadErrorDelegation(IntPtr browser, IntPtr frame, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string failed_url);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnRenderProcessTerminatedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string startup_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int status, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_string, IntPtr reload_url, ref int reload_url_size);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, [MarshalAs(UnmanagedType.U1)] bool is_main);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, [MarshalAs(UnmanagedType.U1)] bool inject_all_frame, [MarshalAs(UnmanagedType.U1)] bool is_main, IntPtr js_code, ref int code_size);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnGetAuthCredentialsDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.U1)] bool is_proxy, [MarshalAs(UnmanagedType.LPUTF8Str)] string host, int port, [MarshalAs(UnmanagedType.LPUTF8Str)] string realm, [MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string origin_url, IntPtr username, ref int username_size, IntPtr password, ref int password_size, long handle, int attempt);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnRequestMediaAccessPermissionDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string requesting_origin, uint requested_permissions, [MarshalAs(UnmanagedType.U1)] bool menu_disabled, ref uint allowed_permissions);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnShowPermissionPromptDelegation(IntPtr browser, IntPtr frame, ulong prompt_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string requesting_origin, uint requested_permissions, ref int action);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnCertificateErrorDelegation(IntPtr browser, IntPtr frame, int cert_error, [MarshalAs(UnmanagedType.LPUTF8Str)] string request_url, ref int out_action);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnRendererLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, [MarshalAs(UnmanagedType.U1)] bool is_main);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnRendererLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, [MarshalAs(UnmanagedType.U1)] bool is_main, IntPtr js_code, ref int code_size);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnRendererLoadingStateChangeDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, [MarshalAs(UnmanagedType.U1)] bool is_loading, [MarshalAs(UnmanagedType.U1)] bool can_go_back, [MarshalAs(UnmanagedType.U1)] bool can_go_forward);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnRendererLoadErrorDelegation(IntPtr browser, IntPtr frame, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string failed_url);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnReceiveCefMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnExecuteMetaDSLDelegation(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, [MarshalAs(UnmanagedType.U1)] bool user_gesture, [MarshalAs(UnmanagedType.U1)] bool is_redirect, IntPtr out_return_value);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, long handle, ref int out_return_value);
         // JS dialog hook (browser process UI thread). Returns the decision:
         // 0=CEF default dialog, 1=custom dialog, 2=suppress, 3=script owned.
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate int OnJsDialogDelegation(IntPtr browser, IntPtr frame, int dialog_type, [MarshalAs(UnmanagedType.LPUTF8Str)] string origin_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string message_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string default_prompt_text, long handle);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnHeartBeatDelegation(int process_type, float delta_time);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnCallMetaDSLDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func_name, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnConsoleLogDelegation(IntPtr browser, IntPtr frame, int level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message, [MarshalAs(UnmanagedType.LPUTF8Str)] string source, int line, ref int maxLogSize);
 
@@ -2710,15 +2321,10 @@ namespace DotNetLib
         public delegate bool OnProtocolExecutionDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr out_allow_os_execution);
 
         // DevTools observer callbacks (invoked on browser process UI thread).
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate int OnDevToolsMessageDelegation(IntPtr browser, IntPtr frame, IntPtr msg, int size);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnDevToolsMethodResultDelegation(IntPtr browser, IntPtr frame, int message_id, int success, IntPtr result, int size);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnDevToolsEventDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string method, IntPtr @params, int size);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnDevToolsAgentAttachedDelegation(IntPtr browser, IntPtr frame);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnDevToolsAgentDetachedDelegation(IntPtr browser, IntPtr frame);
 
         internal static bool OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
@@ -2739,26 +2345,19 @@ namespace DotNetLib
             try {
                 NativeLog(string.Format("[csharp] Call dsl on_init"));
 
+                if ((int)CefProcessType.BrowserProcess == process_type) {
+                    StartHotReload(path);
+                }
+
                 if (null != s_NativeApi) {
-                    if ((int)CefProcessType.RendererProcess == process_type) {
-                        // Before loading the DSL script, we must register all APIs.
-
-                        var framework = AgentFrameworkService.Instance;
-                        // Load AgentCore and hot reload manager in renderer process
-                        bool loadSuccess = framework.LoadAgentPlugin(s_BasePath, s_AppDir, s_IsMac);
-                        if (loadSuccess) {
-                            NativeLog("[csharp] AgentPlugin loaded successfully");
-                        }
-                        else {
-                            NativeLog("[csharp] Warning: AgentPlugin loading failed, agent features will not be available");
-                        }
-                    }
-
                     if ((int)CefProcessType.RendererProcess == process_type) {
                         s_InitialDslScriptFile = "script_renderer.dsl";
                     }
-                    else {
+                    else if ((int)CefProcessType.BrowserProcess == process_type) {
                         s_InitialDslScriptFile = "script.dsl";
+                    }
+                    else {
+                        s_InitialDslScriptFile = "script_other.dsl";
                     }
                     s_InitialProjectIdentity = string.Empty;
 
@@ -2771,8 +2370,11 @@ namespace DotNetLib
                             if ((int)CefProcessType.RendererProcess == process_type) {
                                 s_InitialDslScriptFile = vals[1];
                             }
-                            else {
+                            else if ((int)CefProcessType.BrowserProcess == process_type) {
                                 s_InitialDslScriptFile = vals[0];
+                            }
+                            else {
+                                // There are no custom scripts for other processes.
                             }
                         }
                         else {
@@ -2833,17 +2435,18 @@ namespace DotNetLib
                 NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
-                AgentFrameworkService.Instance.ShutdownPlugin();
-
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
                 NativeApi.LastSourceProcessId = -1;
+
+                if ((int)CefProcessType.BrowserProcess == s_ProcessType) {
+                    StopHotReload();
+                }
             }
         }
 
         internal static void OnBrowserInit(IntPtr browser)
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
-            AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             NativeApi.SetContext(browser, IntPtr.Zero);
             NativeLog("[csharp] Browser Init");
 
@@ -2855,6 +2458,12 @@ namespace DotNetLib
                     NativeLog($"[csharp] Browser tracked: id={browserId}");
                 }
             }
+            // Init/finalize are balanced per browser: the counter (not the id
+            // set) is the source of truth for "how many browsers remain",
+            // because the finalize callback can neither dereference the dying
+            // browser (BrowserGetId returns 0) nor match its pointer (each
+            // callback gets a fresh ctocpp wrapper).
+            s_BrowserLiveCount++;
 
             try {
                 NativeLog(string.Format("[csharp] Call dsl on_browser_init"));
@@ -2882,16 +2491,69 @@ namespace DotNetLib
             NativeApi.SetContext(browser, IntPtr.Zero);
             NativeLog("[csharp] Browser Finalize");
 
+            int remainingBrowsers = 0;
             try {
+                // Untrack this browser BEFORE the dsl call so the dsl sees the
+                // real number of still-live browsers: the global teardown
+                // (stop the self-launched agent host, close all wsclients)
+                // must only run when the LAST browser is gone, not on every
+                // popup/tab close while other pages still need the agent.
+                // The dying browser can be identified neither by id
+                // (BrowserGetId returns 0, native browser destroyed) nor by
+                // pointer (each callback gets a fresh ctocpp wrapper), so the
+                // balanced init/finalize counter (mirroring the native
+                // RootWindowManager count) is the source of truth here.
+                if (s_BrowserLiveCount > 0) {
+                    s_BrowserLiveCount--;
+                }
+                // Best-effort hygiene for the id set (it feeds GetBrowserIds
+                // / browser lookups): drop ids whose native browser is
+                // already gone. GetBrowserById validates against the live
+                // native registry, independent of the wrapper pointers.
+                if (s_NativeApi != null) {
+                    try {
+                        var deadIds = new List<int>();
+                        foreach (int id in s_BrowserBrowserIds) {
+                            IntPtr resolved = s_NativeApi.GetBrowserById(id);
+                            if (resolved == IntPtr.Zero) {
+                                deadIds.Add(id);
+                                continue;
+                            }
+                            // Round-trip check (same as the renderer side): a
+                            // dead id can resolve non-zero via a recycled
+                            // wrapper - the resolved browser must report the
+                            // queried id back, otherwise the entry is stale.
+                            int roundTripId = s_NativeApi.BrowserGetId(resolved);
+                            if (roundTripId != id) {
+                                deadIds.Add(id);
+                            }
+                        }
+                        foreach (int id in deadIds) {
+                            s_BrowserBrowserIds.Remove(id);
+                            NativeLog($"[csharp] Browser untracked (pruned): id={id}");
+                        }
+                    }
+                    catch { /* pruning is best-effort */ }
+                }
+                remainingBrowsers = s_BrowserLiveCount;
+                NativeLog($"[csharp] Browser Finalize: {remainingBrowsers} browser(s) remaining");
+
                 NativeLog(string.Format("[csharp] Call dsl on_browser_finalize"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BoxedValue r = BatchCommand.BatchScript.Call("on_browser_finalize");
-                    CheckDslError();
-                    if (!r.IsNullObject) {
-                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    try {
+                        vargs.Add(BoxedValue.From(remainingBrowsers));
+                        BoxedValue r = BatchCommand.BatchScript.Call("on_browser_finalize", vargs);
+                        CheckDslError();
+                        if (!r.IsNullObject) {
+                            NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
+                        }
+                    }
+                    finally {
+                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     }
                 }
             }
@@ -2899,14 +2561,6 @@ namespace DotNetLib
                 NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
-                // Untrack browser id in C# side
-                if (s_NativeApi != null) {
-                    int browserId = s_NativeApi.BrowserGetId(browser);
-                    if (browserId > 0) {
-                        s_BrowserBrowserIds.Remove(browserId);
-                        NativeLog($"[csharp] Browser untracked: id={browserId}");
-                    }
-                }
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
                 NativeApi.LastSourceProcessId = -1;
             }
@@ -3079,7 +2733,7 @@ namespace DotNetLib
         internal static bool OnBrowserCefQuery(IntPtr browser, IntPtr frame, long query_id, string request, bool persistent, long handle, ref int out_result)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLog(string.Format("[csharp] Browser Cef Query: query_id={0}, request={1}, persistent={2}, handle={3}", query_id, GetStringInLength(request), persistent, handle));
+            NativeLog(string.Format("[csharp] Browser Cef Query: query_id={0}, request={1}, persistent={2}, handle={3}", query_id, NativeApi.GetStringInLength(request, 100, 0), persistent, handle));
 
             try {
                 NativeLog(string.Format("[csharp] Call dsl on_browser_cef_query"));
@@ -3125,6 +2779,40 @@ namespace DotNetLib
             // page's onFailure runs instead of hanging.
             out_result = -1;
             return false;
+        }
+
+        // Pure notification from OnQueryCanceled (browser process, UI thread):
+        // a query taken over by managed code was canceled from elsewhere -
+        // window.cefQueryCancel, navigation, renderer termination or browser
+        // close. |handle| has already been discarded natively; drop any state
+        // kept for it (a later complete_native_callback is a no-op). No return
+        // value.
+        internal static void OnBrowserCefQueryCanceled(IntPtr browser, IntPtr frame, long query_id, long handle)
+        {
+            NativeApi.SetContext(browser, frame);
+            try {
+                NativeLog(string.Format("[csharp] Browser Cef Query canceled: query_id={0}, handle={1}", query_id, handle));
+
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(query_id));
+                    vargs.Add(BoxedValue.From(handle));
+                    BoxedValue r = BatchCommand.BatchScript.Call("on_browser_cef_query_canceled", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    if (!r.IsNullObject) {
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
         // Custom scheme request routed from the browser process (UI thread). The
@@ -3194,7 +2882,6 @@ namespace DotNetLib
         internal static void OnRendererInit(IntPtr browser, IntPtr frame, string url)
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
-            AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             NativeApi.SetContext(browser, frame);
             if (string.IsNullOrEmpty(s_StartupUrl)) {
                 s_StartupUrl = url;
@@ -3209,6 +2896,33 @@ namespace DotNetLib
                     s_RendererBrowserIds.Add(browserId);
                     NativeLog($"[csharp] Renderer browser tracked: id={browserId}");
                 }
+            }
+            // Backstop prune for the "finalize never ran" case: OnRendererFinalize
+            // is not guaranteed (renderer crash kills the whole process - which
+            // also kills this set, harmless; but a skipped callback in a REUSED
+            // renderer leaks the old id). At init of the next page the previous
+            // browser is fully destroyed, so the round-trip check (same as the
+            // finalize prune) reliably catches its stale entry.
+            if (s_NativeApi != null) {
+                try {
+                    var deadIds = new List<int>();
+                    foreach (int id in s_RendererBrowserIds) {
+                        var pair = s_NativeApi.GetRendererBrowserFrameById(id);
+                        if (pair.browser == IntPtr.Zero) {
+                            deadIds.Add(id);
+                            continue;
+                        }
+                        int roundTripId = s_NativeApi.BrowserGetId(pair.browser);
+                        if (roundTripId != id) {
+                            deadIds.Add(id);
+                        }
+                    }
+                    foreach (int id in deadIds) {
+                        s_RendererBrowserIds.Remove(id);
+                        NativeLog($"[csharp] Renderer browser untracked (pruned at init): id={id}");
+                    }
+                }
+                catch { /* pruning is best-effort */ }
             }
 
             NativeLog($"[csharp] Renderer Init, url={url}");
@@ -3272,14 +2986,51 @@ namespace DotNetLib
             NativeApi.SetContext(browser, frame);
             NativeLog("[csharp] Renderer Finalize");
 
-            // Untrack main-frame browser id for renderer process. Only untrack when
-            // the finalized frame is the main frame; navigation-driven sub frame
-            // finalize should not remove the browser id.
+            // Precise untrack: BrowserGetId on the finalize-passed browser
+            // wrapper may return 0 even though the objects are still alive;
+            // fall back to resolving the browser through the (valid) frame.
+            // Only when the finalized frame is the main frame; navigation-
+            // driven sub frame finalize should not remove the browser id.
             if (s_NativeApi != null && s_NativeApi.FrameIsMain(frame)) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
+                if (browserId <= 0) {
+                    IntPtr frameBrowser = s_NativeApi.FrameGetBrowser(frame);
+                    if (frameBrowser != IntPtr.Zero) {
+                        browserId = s_NativeApi.BrowserGetId(frameBrowser);
+                    }
+                }
                 if (browserId > 0 && s_RendererBrowserIds.Remove(browserId)) {
                     NativeLog($"[csharp] Renderer browser untracked: id={browserId}");
                 }
+            }
+            // Best-effort hygiene for the renderer id set: a dead id can
+            // still resolve non-zero (the native registry entry is removed
+            // after the finalize callback, and wrappers may be recycled), so
+            // a plain null check is not enough - verify the ROUND TRIP:
+            // the browser resolved by the id must report that same id back.
+            // A dying browser fails BrowserGetId (returns 0) and a recycled
+            // wrapper reports a different id: both fail the round trip and
+            // are removed.
+            if (s_NativeApi != null) {
+                try {
+                    var deadIds = new List<int>();
+                    foreach (int id in s_RendererBrowserIds) {
+                        var pair = s_NativeApi.GetRendererBrowserFrameById(id);
+                        if (pair.browser == IntPtr.Zero) {
+                            deadIds.Add(id);
+                            continue;
+                        }
+                        int roundTripId = s_NativeApi.BrowserGetId(pair.browser);
+                        if (roundTripId != id) {
+                            deadIds.Add(id);
+                        }
+                    }
+                    foreach (int id in deadIds) {
+                        s_RendererBrowserIds.Remove(id);
+                        NativeLog($"[csharp] Renderer browser untracked (pruned): id={id}");
+                    }
+                }
+                catch { /* pruning is best-effort */ }
             }
 
             try {
@@ -3879,6 +3630,10 @@ namespace DotNetLib
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeLog($"[csharp] OnBeforeCommandLineProcessing: process_type={process_type}");
 
+            if ((int)CefProcessType.RendererProcess == process_type) {
+                WarmupBeforeSandbox();
+            }
+
             try {
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -4397,11 +4152,50 @@ namespace DotNetLib
             return false;
         }
 
+        // Dispatch one queued wsclient event to the dsl callbacks on the
+        // calling (main) thread. The callbacks are optional: a missing
+        // on_wsclient_message/on_wsclient_state is silently skipped.
+        internal static void DispatchWsClientEvent(string id, string kind, string payload)
+        {
+            if (null == s_NativeApi) {
+                return;
+            }
+            try {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+                TryLoadDSL();
+                string func = kind == "message" ? "on_wsclient_message" : "on_wsclient_state";
+                if (BatchCommand.BatchScript.Calculator.TryGetFuncInfo(func, out _)) {
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    try {
+                        vargs.Add(BoxedValue.FromString(id));
+                        vargs.Add(BoxedValue.FromString(payload));
+                        BatchCommand.BatchScript.Call(func, vargs);
+                    }
+                    finally {
+                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    }
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception in wsclient dispatch (" + kind + "): " + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+        }
+
         internal static void OnHeartBeat(int process_type, float delta_time)
         {
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             try {
                 if (null != s_NativeApi) {
+                    // Relay segment: drain wsclient events on the browser main
+                    // thread before the heartbeat script runs (handle_wsclient_queue
+                    // can drain manually too).
+                    if (process_type == 0) {
+                        BatchCommand.Utils.WebSocketClientManager.DrainQueue(256);
+                    }
                     TryLoadDSL();
 
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
@@ -4497,192 +4291,6 @@ namespace DotNetLib
             return BoxedValue.NullObject;
         }
 
-        // A worker thread of the call_metadsl_task pool. Long lived on purpose: BatchScript
-        // state is [ThreadStatic], so TryLoadDSL builds a full interpreter (Init + Load +
-        // init_global_consts) the first time any thread runs a task. Reusing a fixed set of
-        // threads pays that cost once per worker instead of once per task, and serializing
-        // the work queued to a worker keeps several tasks from fighting over sqlite's
-        // single writer lock.
-        private sealed class MetaDslTaskWorker
-        {
-            public readonly System.Collections.Concurrent.BlockingCollection<Tuple<string, List<BoxedValue>>> Queue
-                = new System.Collections.Concurrent.BlockingCollection<Tuple<string, List<BoxedValue>>>();
-        }
-        // Guards s_MetaDslTaskWorkers and s_MetaDslTaskNum only. This is deliberately NOT a
-        // general purpose lock like the removed s_Lock: it is never held while running dsl.
-        private static readonly object s_MetaDslTaskLock = new object();
-        private static readonly List<MetaDslTaskWorker> s_MetaDslTaskWorkers = new List<MetaDslTaskWorker>();
-        private static int s_MetaDslTaskNum = 2;
-        // How long a worker waits for work before checking whether it should retire.
-        private const int c_MetaDslTaskIdleMs = 30000;
-        // How far past the default num an index may reach in one call. Growing is meant for
-        // giving one slow job its own thread, so a jump larger than this is almost always a
-        // typo, and acting on it would spawn that many permanent threads.
-        private const int c_MetaDslTaskIndexSlack = 10;
-
-        // Caller must hold s_MetaDslTaskLock. Grows the pool to at least num workers.
-        private static int EnsureMetaDslTaskWorkers(int num)
-        {
-            while (s_MetaDslTaskWorkers.Count < num) {
-                int index = s_MetaDslTaskWorkers.Count;
-                var worker = new MetaDslTaskWorker();
-                var thread = new Thread(() => MetaDslTaskLoop(worker));
-                // Background so a worker waiting on its queue cannot keep the process alive.
-                thread.IsBackground = true;
-                thread.Name = "metadsl_task_" + index;
-                s_MetaDslTaskWorkers.Add(worker);
-                thread.Start();
-            }
-            return s_MetaDslTaskWorkers.Count;
-        }
-        // Worker loop. Waits for work, and once it has been idle for a while it retires
-        // itself if set_metadsl_task_num has since lowered the default below the live count.
-        //
-        // Only the LAST worker may retire, which is what keeps task_index meaningful: an
-        // index IS a position in s_MetaDslTaskWorkers, so removing from the middle would
-        // silently renumber every worker above it. Shrinking therefore peels off the tail,
-        // and an idle worker in the middle retires once the ones after it are gone.
-        private static void MetaDslTaskLoop(MetaDslTaskWorker worker)
-        {
-            while (true) {
-                if (worker.Queue.TryTake(out var item, c_MetaDslTaskIdleMs)) {
-                    OnCallMetaDslTask(item.Item1, item.Item2);
-                    continue;
-                }
-                // Idle. Decide under the lock so this cannot interleave with a producer
-                // picking this worker and queueing to it (see EnqueueMetaDslTask). The queue
-                // is re-checked here because work may have arrived since TryTake gave up.
-                lock (s_MetaDslTaskLock) {
-                    int last = s_MetaDslTaskWorkers.Count - 1;
-                    if (s_MetaDslTaskWorkers.Count > s_MetaDslTaskNum
-                        && last >= 0
-                        && s_MetaDslTaskWorkers[last] == worker
-                        && worker.Queue.Count == 0) {
-                        s_MetaDslTaskWorkers.RemoveAt(last);
-                        // Nothing can reach this worker any more: producers only read the
-                        // list while holding the lock this thread is holding right now.
-                        worker.Queue.Dispose();
-                        return;
-                    }
-                }
-            }
-        }
-        // Queues func_name to worker task_index. An index at or past the default count
-        // raises the default to task_index + 1, so a script can give a slow job its own
-        // thread just by picking a fresh index. Raising the default (rather than only
-        // growing the list) is what makes that thread stick around: a worker above the
-        // default retires when it goes idle, which would otherwise throw away the
-        // interpreter this index just paid to build. An index more than
-        // c_MetaDslTaskIndexSlack past the default is rejected as a typo.
-        internal static bool EnqueueMetaDslTask(int task_index, string func_name, List<BoxedValue> args)
-        {
-            if (task_index < 0) {
-                task_index = 0;
-            }
-            try {
-                // Add INSIDE the lock: a retiring worker checks its queue under this same
-                // lock, so adding outside it would let an item land in the queue of a worker
-                // that just exited, where it would never run. This is cheap - the collection
-                // is unbounded so Add never blocks, and no dsl code runs here.
-                lock (s_MetaDslTaskLock) {
-                    if (task_index >= s_MetaDslTaskNum + c_MetaDslTaskIndexSlack) {
-                        string err = string.Format("call_metadsl_task: task_index {0} is more than {1} past the current task num {2}, looks like a typo, func:{3}", task_index, c_MetaDslTaskIndexSlack, s_MetaDslTaskNum, func_name);
-                        NativeApi.AppendApiErrorInfoLine(err);
-                        NativeLog("[csharp] " + err);
-                        return false;
-                    }
-                    if (task_index + 1 > s_MetaDslTaskNum) {
-                        s_MetaDslTaskNum = task_index + 1;
-                    }
-                    EnsureMetaDslTaskWorkers(s_MetaDslTaskNum);
-                    s_MetaDslTaskWorkers[task_index].Queue.Add(Tuple.Create(func_name, args));
-                }
-                return true;
-            }
-            catch (Exception e) {
-                NativeLog("[csharp] Exception in EnqueueMetaDslTask:" + e.Message);
-                return false;
-            }
-        }
-        // Sets the default worker count and returns the live count afterwards. Raising it
-        // creates the missing workers at once. Lowering it kills nothing immediately: each
-        // worker above the new default retires on its own once it has been idle for
-        // c_MetaDslTaskIdleMs, tail first, so queued work always still runs. That means the
-        // returned count can be larger than num until the extra workers go idle.
-        internal static int SetMetaDslTaskNum(int num)
-        {
-            if (num < 1) {
-                num = 1;
-            }
-            lock (s_MetaDslTaskLock) {
-                s_MetaDslTaskNum = num;
-                return EnsureMetaDslTaskWorkers(num);
-            }
-        }
-        internal static int GetMetaDslTaskNum()
-        {
-            lock (s_MetaDslTaskLock) {
-                return s_MetaDslTaskWorkers.Count;
-            }
-        }
-
-        // Body of a call_metadsl_task job. Runs on a pool worker thread, so slow work here
-        // (sqlite writes and the like) cannot block the UI thread or an IO callback thread.
-        //
-        // There is no browser/frame in a task, so the dsl code running here must not use
-        // browser functionality. Queued side effects still work (nativelog, javascriptlog,
-        // send_javascript_code/call all fall back to their queues off the main thread, and
-        // HandleAllQueues falls back to a valid browser), but directed sends have no target.
-        //
-        // Note the interpreter is per thread, so a task only sees globals set up by
-        // init_global_consts, NOT variables assigned at runtime on the main thread.
-        // Shared C# state (AgentCore statics) is of course still shared.
-        // The args are passed as BoxedValue, not string. OnCallMetaDSL takes strings only
-        // because C++ marshalling cannot carry anything else; this api is called from dsl
-        // directly, so flattening to string here would silently turn a number into "123",
-        // a list into its text form, and so on.
-        //
-        // Caveat that follows from that: the values are handed to the worker by reference.
-        // Strings and numbers are immutable so they are safe, but if a caller passes a
-        // collection it must not mutate it after queueing, because the task may be reading
-        // it on another thread. Pass a copy in that case.
-        internal static void OnCallMetaDslTask(string func_name, List<BoxedValue> args)
-        {
-            // NativeApi's context is [ThreadStatic] and a worker runs many jobs, so a
-            // context left by an earlier job on this thread would otherwise still be
-            // visible here. Reset it the same way the native callbacks do when they finish.
-            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            NativeApi.LastSourceProcessId = -1;
-
-            try {
-                if (null != s_NativeApi) {
-                    TryLoadDSL();
-
-                    bool funcExists = BatchScript.Calculator.TryGetFuncInfo(func_name, out var finfo);
-                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                    try {
-                        foreach (var arg in args) {
-                            vargs.Add(arg);
-                        }
-                        if (funcExists) {
-                            BatchCommand.BatchScript.Call(func_name, vargs);
-                        }
-                        else {
-                            BatchCommand.BatchScript.Call("on_call_metadsl_task", BoxedValue.FromString(func_name), BoxedValue.FromObject(vargs));
-                        }
-                        CheckDslError();
-                    }
-                    finally {
-                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
-                    }
-                }
-            }
-            catch (Exception e) {
-                // Nothing above us can observe this failure, so never swallow it.
-                NativeLog("[csharp] Exception in OnCallMetaDslTask:" + e.Message + "\n" + e.StackTrace);
-            }
-        }
-
         internal static void OnReceiveCefMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id)
         {
             var vargs = JsArgCodec.DeserializeToBoxedList(ReadNativeBlob(args, argCount));
@@ -4735,7 +4343,7 @@ namespace DotNetLib
             NativeApi.LastSourceProcessId = source_process_id;
 
             try {
-                NativeLog(string.Format("[csharp] Call csharp OnReceiveCefMessage, msg:{0} arg:{1} from process:{2} process type:{3}", msg, GetStringInLength(args), source_process_id, s_ProcessType));
+                NativeLog(string.Format("[csharp] Call csharp OnReceiveCefMessage, msg:{0} arg:{1} from process:{2} process type:{3}", msg, DslHost.GetStringInLength(args), source_process_id, s_ProcessType));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -4800,12 +4408,6 @@ namespace DotNetLib
             }
         }
 
-        internal static IAgentPlugin? AgentPlugin {
-            get {
-                return AgentFrameworkService.Instance.AgentPlugin;
-            }
-        }
-
         internal static string DslScriptFile {
             get {
                 return s_DslScriptFile;
@@ -4818,22 +4420,7 @@ namespace DotNetLib
         // Parse --metadsl=value from raw command line string
         internal static bool TryGetSwitchValueFromRawCommandLine(string cmdLine, string switchName, out string switchValue)
         {
-            switchValue = string.Empty;
-            string prefix = "--" + switchName + "=";
-            int idx = cmdLine.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
-                return false;
-            int start = idx + prefix.Length;
-            // Handle quoted value
-            if (start < cmdLine.Length && cmdLine[start] == '"') {
-                int end = cmdLine.IndexOf('"', start + 1);
-                switchValue = end > start ? cmdLine.Substring(start + 1, end - start - 1) : string.Empty;
-                return true;
-            }
-            // Unquoted: take until next space
-            int spaceIdx = cmdLine.IndexOf(' ', start);
-            switchValue = spaceIdx > start ? cmdLine.Substring(start, spaceIdx - start) : cmdLine.Substring(start);
-            return true;
+            return DslHost.TryGetSwitchValueFromRawCommandLine(cmdLine, switchName, out switchValue);
         }
         internal static bool EnqueueCefMessage(string msg, params BoxedValue[] args)
         {
@@ -4847,7 +4434,16 @@ namespace DotNetLib
         {
             bool isMainThread = Thread.CurrentThread.ManagedThreadId == s_MainThreadId;
             if (isMainThread && null != s_NativeApi) {
-                s_NativeApi.HandleAllQueues(maxNativeCount, maxJsCount, maxCodeCount, maxFuncCount);
+                int ct = 0;
+                if ((int)CefProcessType.RendererProcess == s_ProcessType) {
+                    ct = s_BrowserBrowserIds.Count;
+                }
+                else if ((int)CefProcessType.BrowserProcess == s_ProcessType) {
+                    ct = s_RendererBrowserIds.Count;
+                }
+                if (ct > 0) {
+                    s_NativeApi.HandleAllQueues(maxNativeCount, maxJsCount, maxCodeCount, maxFuncCount);
+                }
                 return true;
             }
             return false;
@@ -4952,11 +4548,24 @@ namespace DotNetLib
         /// </summary>
         internal static int[]? GetAllContextBrowserIds()
         {
-            if (s_ProcessType == (int)CefProcessType.RendererProcess) {
-                return s_RendererBrowserIds.ToArray();
+            try {
+                // CopyTo instead of LINQ ToArray: in the sandboxed renderer a
+                // first-touch System.Linq assembly load after LowerToken is
+                // denied, and any lazy-load failure here breaks every
+                // find_browser_id_by_url_key heartbeat call.
+                if (s_ProcessType == (int)CefProcessType.RendererProcess) {
+                    var ids = new int[s_RendererBrowserIds.Count];
+                    s_RendererBrowserIds.CopyTo(ids, 0);
+                    return ids;
+                }
+                else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
+                    var ids = new int[s_BrowserBrowserIds.Count];
+                    s_BrowserBrowserIds.CopyTo(ids, 0);
+                    return ids;
+                }
             }
-            else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
-                return s_BrowserBrowserIds.ToArray();
+            catch (Exception ex) {
+                NativeLog($"[csharp] GetAllContextBrowserIds failed: {ex.GetType().FullName}: {ex.Message}");
             }
             return null;
         }
@@ -5008,6 +4617,15 @@ namespace DotNetLib
                 if (pair.browser == IntPtr.Zero) {
                     // Sync: remove stale entry from C# id set
                     s_RendererBrowserIds.Remove(browserId);
+                    return pair.browser;
+                }
+                // Round-trip check: a recycled wrapper can resolve non-zero
+                // while belonging to a different browser - only trust the
+                // pointer when it reports the queried id back.
+                int roundTripId = s_NativeApi.BrowserGetId(pair.browser);
+                if (roundTripId != browserId) {
+                    s_RendererBrowserIds.Remove(browserId);
+                    return IntPtr.Zero;
                 }
                 return pair.browser;
             }
@@ -5031,6 +4649,20 @@ namespace DotNetLib
         {
             if (s_NativeApi == null || string.IsNullOrEmpty(urlKey))
                 return -1;
+            try {
+                return FindBrowserIdByUrlKeyInner(urlKey);
+            }
+            catch (Exception ex) {
+                // Never break the caller flow (renderer heartbeats drive panel
+                // routing through this): degrade to "not found, retry next
+                // heartbeat" and log the exact failure for diagnosis.
+                try { NativeLog($"[csharp] FindBrowserIdByUrlKey('{urlKey}') failed: {ex.GetType().FullName}: {ex.Message}"); }
+                catch { /* logging is best-effort */ }
+                return -1;
+            }
+        }
+        private static int FindBrowserIdByUrlKeyInner(string urlKey)
+        {
             var ids = GetAllContextBrowserIds();
             if (null == ids)
                 return -1;
@@ -5043,16 +4675,25 @@ namespace DotNetLib
                     // ref beyond the call, so the frame ptr can point to an already-released
                     // CefFrame object; CToCpp GetWrapperStruct will hit NOTREACHED and abort.
                     // The browser ptr is safer because native ref map holds a strong ref.
-                    var pair = s_NativeApi.GetRendererBrowserFrameById(id);
+                    var pair = s_NativeApi!.GetRendererBrowserFrameById(id);
                     if (pair.browser == IntPtr.Zero || !s_NativeApi.BrowserIsValid(pair.browser)) {
                         // Sync: remove stale entry from C# id set
+                        s_RendererBrowserIds.Remove(id);
+                        continue;
+                    }
+                    // Round-trip check: BrowserIsValid passes for a recycled
+                    // wrapper that now belongs to another live browser - with
+                    // same-site tabs sharing a url key that would route to the
+                    // wrong tab. Only trust entries whose id round-trips.
+                    int roundTripId = s_NativeApi.BrowserGetId(pair.browser);
+                    if (roundTripId != id) {
                         s_RendererBrowserIds.Remove(id);
                         continue;
                     }
                     url = s_NativeApi.BrowserGetUrl(pair.browser);
                 }
                 else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
-                    IntPtr browser = s_NativeApi.GetBrowserById(id);
+                    IntPtr browser = s_NativeApi!.GetBrowserById(id);
                     if (browser != IntPtr.Zero) {
                         url = s_NativeApi.BrowserGetUrl(browser);
                     }
@@ -5086,270 +4727,111 @@ namespace DotNetLib
         }
         internal static string LoadFunc(string func, string code, IList<string> paramNames, bool update)
         {
-            try {
-                PrepareBatchScript();
-                // Execute the script directly using the DSL interpreter
-                BatchCommand.BatchScript.ClearDslErrors();
-                BatchScript.LoadFunc(func, code, paramNames, update);
-                if (BatchCommand.BatchScript.HasDslErrors) {
-                    return BatchCommand.BatchScript.GetDslErrors();
-                }
-                return string.Empty;
-            }
-            catch (Exception ex) {
-                return $"Error: {ex.Message}";
-            }
+            return Host.LoadFunc(func, code, paramNames, update);
         }
         internal static void RefreshGlobalVars()
         {
-            //reset global vars
-            BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-            BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-            BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-            BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-            BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-            BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
-            BatchCommand.BatchScript.SetGlobalVariable("nosandbox", BoxedValue.From(s_NoSandbox));
-            BatchCommand.BatchScript.SetGlobalVariable("startupurl", BoxedValue.FromString(s_StartupUrl));
-            BatchCommand.BatchScript.SetGlobalVariable("lastloadedmainurl", BoxedValue.FromString(s_LastLoadedMainUrl));
-            BatchCommand.BatchScript.SetGlobalVariable("lastloadedurl", BoxedValue.FromString(s_LastLoadedUrl));
-            BatchCommand.BatchScript.SetGlobalVariable("dslpath", BoxedValue.FromString(s_DslScriptPath));
-            BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(s_DslScriptFile));
-            BatchCommand.BatchScript.SetGlobalVariable("initialdslfile", BoxedValue.FromString(s_InitialDslScriptFile));
-            BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
-            BatchCommand.BatchScript.ClearDslErrors();
+            SyncHostInfo();
+            Host.RefreshGlobalVars();
         }
-        internal static void AddCommonApiDocs()
+        internal static bool WatchFile(string fileName, string relativePath, string fileType)
         {
-            BatchCommand.BatchScript.AddUserApiDoc("clone", "clone(list_or_hashtable) api");
-            BatchCommand.BatchScript.AddUserApiDoc("args", "args() api");
-            BatchCommand.BatchScript.AddUserApiDoc("arg", "arg(ix) api");
-            BatchCommand.BatchScript.AddUserApiDoc("argnum", "argnum() api");
-            BatchCommand.BatchScript.AddUserApiDoc("inc", "inc(var) or inc(var,val) api");
-            BatchCommand.BatchScript.AddUserApiDoc("dec", "dec(var) or dec(var,val) api");
-            BatchCommand.BatchScript.AddUserApiDoc("+", "add operator");
-            BatchCommand.BatchScript.AddUserApiDoc("-", "sub operator");
-            BatchCommand.BatchScript.AddUserApiDoc("*", "mul operator");
-            BatchCommand.BatchScript.AddUserApiDoc("/", "div operator");
-            BatchCommand.BatchScript.AddUserApiDoc("%", "mod operator");
-            BatchCommand.BatchScript.AddUserApiDoc("&", "bitand operator");
-            BatchCommand.BatchScript.AddUserApiDoc("|", "bitor operator");
-            BatchCommand.BatchScript.AddUserApiDoc("^", "bitxor operator");
-            BatchCommand.BatchScript.AddUserApiDoc("~", "bitnot operator");
-            BatchCommand.BatchScript.AddUserApiDoc("<<", "left shift operator");
-            BatchCommand.BatchScript.AddUserApiDoc(">>", "right shift operator");
-            BatchCommand.BatchScript.AddUserApiDoc(">", "great operator");
-            BatchCommand.BatchScript.AddUserApiDoc(">=", "great equal operator");
-            BatchCommand.BatchScript.AddUserApiDoc("<", "less operator");
-            BatchCommand.BatchScript.AddUserApiDoc("<=", "less equal operator");
-            BatchCommand.BatchScript.AddUserApiDoc("==", "equal operator");
-            BatchCommand.BatchScript.AddUserApiDoc("!=", "not equal operator");
-            BatchCommand.BatchScript.AddUserApiDoc("&&", "logical and operator");
-            BatchCommand.BatchScript.AddUserApiDoc("||", "logical or operator");
-            BatchCommand.BatchScript.AddUserApiDoc("!", "logical not operator");
-            BatchCommand.BatchScript.AddUserApiDoc("?", "conditional expression");
-            BatchCommand.BatchScript.AddUserApiDoc("if", "if(cond)func(args); or if(cond){...}[elseif/elif(cond){...}else{...}]; statement");
-            BatchCommand.BatchScript.AddUserApiDoc("while", "while(cond)func(args); or while(cond){...}; statement, iterator is $$");
-            BatchCommand.BatchScript.AddUserApiDoc("loop", "loop(ct)func(args); or loop(ct){...}; statement, iterator is $$");
-            BatchCommand.BatchScript.AddUserApiDoc("looplist", "looplist(list)func(args); or looplist(list){...}; statement, iterator is $$");
-            BatchCommand.BatchScript.AddUserApiDoc("foreachvalue", "foreachvalue(arg1,arg2,...)func(args); or foreachvalue(arg1,arg2,...){...}; statement, iterator is $$");
-            BatchCommand.BatchScript.AddUserApiDoc("return", "return([val]) api");
-            BatchCommand.BatchScript.AddUserApiDoc("dotnetcall", "dotnetcall api, internal implementation, using csharp object syntax");
-            BatchCommand.BatchScript.AddUserApiDoc("dotnetset", "dotnetset api, internal implementation, using csharp object syntax");
-            BatchCommand.BatchScript.AddUserApiDoc("dotnetget", "dotnetget api, internal implementation, using csharp object syntax");
-            BatchCommand.BatchScript.AddUserApiDoc("collectioncall", "collectioncall api, internal implementation, using csharp object syntax");
-            BatchCommand.BatchScript.AddUserApiDoc("collectionset", "collectionset api, internal implementation, using csharp object syntax");
-            BatchCommand.BatchScript.AddUserApiDoc("collectionget", "collectionget api, internal implementation, using csharp object syntax");
-            BatchCommand.BatchScript.AddUserApiDoc("linq", "linq(list,method,arg1,arg2,...) statement, internal implementation, using obj.method(arg1,arg2,...) syntax, method can be where/filter/select/map/top/take/skip/distinct/concat/groupby/orderby/orderbydesc/aggregate/reduce/any/all/count/first/last/tolist/sum/min/max/average, iterator is $$ (An additional iterator $$acc for aggregate/reduce operators)");
-            BatchCommand.BatchScript.AddUserApiDoc("null", "null() api");
-            BatchCommand.BatchScript.AddUserApiDoc("propset", "propset(varname,val) - set variable");
-            BatchCommand.BatchScript.AddUserApiDoc("propget", "propget(varname[,defval]) - get variable");
-            BatchCommand.BatchScript.AddUserApiDoc("propexists", "propexists(varname) - check variable");
-            BatchCommand.BatchScript.AddUserApiDoc("max", "max(v1,v2)");
-            BatchCommand.BatchScript.AddUserApiDoc("min", "min(v1,v2)");
-            BatchCommand.BatchScript.AddUserApiDoc("abs", "abs(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("sin", "sin(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("cos", "cos(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("tan", "tan(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("asin", "asin(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("acos", "acos(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("atan", "atan(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("atan2", "atan2(v1,v2)");
-            BatchCommand.BatchScript.AddUserApiDoc("sinh", "sinh(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("cosh", "cosh(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("tanh", "tanh(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("pow", "pow(v1,v2)");
-            BatchCommand.BatchScript.AddUserApiDoc("sqrt", "sqrt(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("exp", "exp(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("exp2", "exp2(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("log", "log(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("log2", "log2(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("log10", "log10(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("floor", "floor(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("ceiling", "ceiling(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("round", "round(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("bool", "bool(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("sbyte", "sbyte(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("byte", "byte(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("char", "char(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("short", "short(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("ushort", "ushort(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("int", "int(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("uint", "uint(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("long", "long(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("ulong", "ulong(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("float", "float(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("double", "double(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("decimal", "decimal(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("datetime", "datetime(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("isobject", "isobject(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("isstring", "isstring(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("isboolean", "isboolean(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("ischar", "ischar(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("isinteger", "isinteger(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("issignedinteger", "issignedinteger(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("isunsignedinteger", "isunsignedinteger(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("isnumber", "isnumber(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("isdatetime", "isdatetime(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("istuple", "istuple(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("boxedvaluetype", "boxedvaluetype(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("boxedvaluetypename", "boxedvaluetypename(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("ftoi", "ftoi(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("itof", "itof(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("ftou", "ftou(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("utof", "utof(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("dtol", "dtol(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("ltod", "ltod(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("dtou", "dtou(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("utod", "utod(v) api");
-            BatchCommand.BatchScript.AddUserApiDoc("lerp", "lerp(a,b,t)");
-            BatchCommand.BatchScript.AddUserApiDoc("clamp01", "clamp01(v)");
-            BatchCommand.BatchScript.AddUserApiDoc("clamp", "clamp(v,v1,v2)");
-            BatchCommand.BatchScript.AddUserApiDoc("approximately", "approximately(v1,v2)");
-            BatchCommand.BatchScript.AddUserApiDoc("format", "format(fmt,arg1,arg2,...)");
-            BatchCommand.BatchScript.AddUserApiDoc("tuple", "(v1,v2,...) or tuple(v1,v2,...) object");
-            BatchCommand.BatchScript.AddUserApiDoc("array", "[v1,v2,...] or array(v1,v2,...) object");
-            BatchCommand.BatchScript.AddUserApiDoc("list", "list(v1,v2,...) object");
-            BatchCommand.BatchScript.AddUserApiDoc("hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or hashtable(k1=>v1,k2=>v2,...) or hashtable(k1:v1,k2:v2,...) object");
-            BatchCommand.BatchScript.AddUserApiDoc("peek", "peek(queue_or_stack)");
-            BatchCommand.BatchScript.AddUserApiDoc("stack", "stack(v1,v2,...) object");
-            BatchCommand.BatchScript.AddUserApiDoc("push", "push(stack,v)");
-            BatchCommand.BatchScript.AddUserApiDoc("pop", "pop(stack)");
-            BatchCommand.BatchScript.AddUserApiDoc("queue", "queue(v1,v2,...) object");
-            BatchCommand.BatchScript.AddUserApiDoc("enqueue", "enqueue(queue,v)");
-            BatchCommand.BatchScript.AddUserApiDoc("dequeue", "dequeue(queue)");
-            BatchCommand.BatchScript.AddUserApiDoc("expand", "expand(str)");
-            BatchCommand.BatchScript.AddUserApiDoc("envs", "envs()");
-            BatchCommand.BatchScript.AddUserApiDoc("cd", "cd(path)");
-            BatchCommand.BatchScript.AddUserApiDoc("pwd", "pwd()");
-            BatchCommand.BatchScript.AddUserApiDoc("os", "os()");
-            BatchCommand.BatchScript.AddUserApiDoc("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine");
-            BatchCommand.BatchScript.AddUserApiDoc("calcmd5", "calcmd5(file) api");
-            BatchCommand.BatchScript.AddUserApiDoc("pid", "pid() api");
-            BatchCommand.BatchScript.AddUserApiDoc("sleep", "sleep(milliseconds) api");
-            BatchCommand.BatchScript.AddUserApiDoc("now", "now() api");
-            BatchCommand.BatchScript.AddUserApiDoc("isnullorempty", "isnullorempty(str) api");
+            if (null == s_HotReloadManager)
+                return false;
+            s_HotReloadManager.WatchFile(fileName, relativePath, fileType);
+            return true;
+        }
+        internal static bool WatchDirectory(string dirName, string relativePath, string fileType)
+        {
+            if (null == s_HotReloadManager)
+                return false;
+            s_HotReloadManager.WatchDirectory(dirName, relativePath, fileType);
+            return true;
+        }
+        // Invoked by the HotReloadManager on an arbitrary .NET threadpool
+        // thread (NOT the dsl main thread). The dsl callback below therefore
+        // runs on a worker-style interpreter: init_global_consts globals and
+        // host-level context vars are visible, but main-thread runtime state
+        // is NOT, and there is no synchronization with it. The dsl side must
+        // keep on_file_changed light and stateless (the default handlers only
+        // nativelog); anything heavier should be enqueued to the main thread
+        // (same pattern as EnqueueCallback in AgentCore).
+        private static void OnFileChanged(string filePath, string fileType)
+        {
+            NativeLog($"[csharp] File changed detected: {fileType} - {filePath}");
 
-            BatchCommand.BatchScript.AddUserApiDoc("time", "time() or timestamp() api, return milliseconds since startup");
-            BatchCommand.BatchScript.AddUserApiDoc("timestamp", "time() or timestamp() api, return milliseconds since startup");
-            BatchCommand.BatchScript.AddUserApiDoc("getelapsedms", "getelapsedms() api, return elapsed milliseconds (time)");
-            BatchCommand.BatchScript.AddUserApiDoc("getelapsedus", "getelapsedus() api, return elapsed microseconds (time)");
-        }
-        internal static string GetMetaDslResult(int maxResultSize, StringBuilder resSb, StringBuilder errSb)
-        {
-            var sb = new StringBuilder();
-            if (maxResultSize > 0) {
-                if (resSb.Length > maxResultSize) {
-                    if (errSb.Length > maxResultSize * 1 / 3) {
-                        sb.Append(resSb.ToString(0, maxResultSize * 2 / 3));
-                        sb.AppendLine("...");
-                        sb.Append(errSb.ToString(0, maxResultSize * 1 / 3));
-                        sb.Append("... [truncated, exceeded max result size ");
-                        sb.Append(maxResultSize);
-                        sb.AppendLine("]");
-                    }
-                    else {
-                        sb.Append(resSb.ToString(0, maxResultSize - errSb.Length));
-                        sb.AppendLine("...");
-                        sb.Append(errSb.ToString());
-                        sb.Append("... [truncated, exceeded max result size ");
-                        sb.Append(maxResultSize);
-                        sb.AppendLine("]");
-                    }
-                }
-                else {
-                    sb.Append(resSb.ToString());
-                    if (errSb.Length > maxResultSize - resSb.Length) {
-                        sb.AppendLine(errSb.ToString(0, maxResultSize - resSb.Length));
-                        sb.Append("... [truncated, exceeded max result size ");
-                        sb.Append(maxResultSize);
-                        sb.AppendLine("]");
-                    }
-                    else {
-                        sb.Append(errSb.ToString());
-                    }
-                }
-            }
-            else {
-                sb.Append(resSb.ToString());
-                sb.Append(errSb.ToString());
-            }
-            return sb.ToString();
-        }
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
 
-        private static string GetStringInLength(IList<BoxedValue> args)
-        {
-            var sb = new StringBuilder();
-            bool first = true;
-            foreach (var arg in args) {
-                if (first) {
-                    first = false;
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(filePath));
+                    vargs.Add(BoxedValue.From(fileType));
+                    BatchCommand.BatchScript.Call("on_file_changed", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
-                else {
-                    sb.Append('|');
-                }
-                sb.Append(GetStringInLength(arg.IsString ? arg.AsString : arg.ToString()));
             }
-            return sb.ToString();
+            catch (Exception e) {
+                NativeLog("[csharp] Exception in OnFileChanged:" + e.Message + "\n" + e.StackTrace);
+            }
         }
-        private static string GetStringInLength(string str)
+        private static void StartHotReload(string basePath)
         {
-            return NativeApi.GetStringInLength(str, 100, 0);
+            if (s_HotReloadManager == null) {
+                s_HotReloadManager = new HotReloadManager(basePath);
+                s_HotReloadManager.SetCallback(OnFileChanged);
+                s_HotReloadManager.StartWatching();
+                NativeLog("[csharp] Hot reload manager started in the browser process");
+            }
+        }
+        private static void StopHotReload()
+        {
+            if (s_HotReloadManager != null) {
+                s_HotReloadManager.StopWatching();
+                s_HotReloadManager = null;
+                NativeLog("[csharp] Hot reload manager stopped in the browser process");
+            }
+        }
+        private static void WarmupBeforeSandbox()
+        {
+            // Sandbox warmup (renderer): after LowerToken the renderer's file
+            // access is denied, so any assembly lazily loaded on FIRST USE
+            // later fails with an empty-message exception. Warm the proven
+            // cases NOW, in the bootstrap window where file access is still
+            // allowed: System.Linq (id-set snapshot) and the dsl value
+            // formatting path (DslHelper.ConvertToString references LitJson
+            // types - its JIT lazily loads LitJson.dll).
+            var sb = new StringBuilder();
+            try {
+                _ = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Empty<int>());
+                var warmupSb = new System.Text.StringBuilder();
+                BatchCommand.Utils.DslHelper.ConvertToString(BoxedValue.FromString("warmup"), warmupSb, 0, true);
+                _ = warmupSb.ToString();
+                sb.Append("ok (System.Linq + DslHelper/LitJson)");
+            }
+            catch (Exception ex) {
+                sb.Append($"failed: {ex.GetType().FullName}: {ex.Message}");
+            }
+            // TextCopy is a standalone lazily-loaded dependency (clipboard
+            // apis): force its load - and the DI abstraction it references -
+            // before lockdown. A clipboard READ failure is tolerated: the
+            // assembly load + JIT has happened either way.
+            try {
+                _ = TextCopy.ClipboardService.GetText();
+                sb.Append(" + TextCopy");
+            }
+            catch (Exception ex) {
+                sb.Append($" + TextCopy(warmup call failed: {ex.GetType().Name})");
+            }
+            NativeLog(sb.ToString());
         }
 
         private static void TryLoadDSL()
         {
-            PrepareBatchScript();
-            bool loaded = false;
-            string path = Path.Combine(s_BasePath, "managed", s_DslScriptFile);
-            var fi = new FileInfo(path);
-            if (fi.Exists) {
-                if (fi.LastWriteTime != s_DslScriptTime || s_DslScriptPath != path) {
-                    s_DslScriptTime = fi.LastWriteTime;
-                    s_DslScriptPath = path;
-
-                    string errorMsg = string.Empty;
-                    if (File.Exists(fi.FullName)) {
-                        loaded = true;
-                        BatchCommand.BatchScript.Load(fi.FullName);
-                        CheckDslError();
-                        NativeLog("[csharp] Load dsl script: " + fi.FullName);
-                    }
-                    else {
-                        errorMsg = "DSL script file does not exist";
-                        NativeLog("[csharp] " + errorMsg + ": " + fi.FullName);
-                    }
-                }
-            }
-            else if (s_NoSandbox) {
-                NativeLog("[csharp] Can't find dsl script: " + fi.FullName);
-            }
-            RefreshGlobalVars();
-            NativeApi.ClearApiErrorInfo();
-            if (loaded) {
-                BatchCommand.BatchScript.Call("init_global_consts");
-                CheckDslError();
-            }
+            SyncHostInfo();
+            Host.TryLoadDSL();
         }
         // Execute MetaDSL script
         private static string ExecuteMetaDslScript(string script)
@@ -5358,88 +4840,86 @@ namespace DotNetLib
         }
         internal static string ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError)
         {
-            try {
-                hasError = false;
-                PrepareBatchScript();
-                // Execute the script directly using the DSL interpreter
-                RefreshGlobalVars();
-                NativeApi.ClearApiErrorInfo();
-                var id = BatchCommand.BatchScript.EvalAsFunc(script, s_EmptyArgs);
-                var resSb = new StringBuilder();
-                if (!BatchCommand.BatchScript.HasDslErrors) {
-                    var result = BatchCommand.BatchScript.Call(id);
-                    string resultStr;
-                    if (result.IsNullObject) {
-                        resultStr = "null";
-                    }
-                    else if (null != Lib.AgentPlugin) {
-                        resultStr = Lib.AgentPlugin.ResultToString(result);
-                    }
-                    else {
-                        resultStr = result.ToString();
-                    }
-                    resSb.AppendLine(resultStr);
+            SyncHostInfo();
+            return Host.ExecuteScript(script, maxResultSize, out hasError);
+        }
+
+        // ---- shared dsl host (BatchCommand.Api.DslHost) ----------------------
+        // All script execution machinery (interpreter init, hot reload, script/
+        // func execution, unified error collection, call_metadsl_task pool and
+        // the common framework apis) lives in the shared DslHost; this wires it
+        // up to the CEF process (NativeLog, nativeapi global, native context
+        // reset in tasks) and syncs the Lib process info into it.
+
+        private static DslHost? s_DslHost;
+        internal static DslHost Host {
+            get {
+                if (null == s_DslHost) {
+                    s_DslHost = new DslHost {
+                        Name = "cef",
+                        Log = NativeLog,
+                        RegisterHostApis = RegisterCefApis,
+                        SetHostGlobalVars = () => BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi)),
+                        OnTaskBegin = state => {
+                            // NativeApi's context is [ThreadStatic] and a worker runs many
+                            // jobs, so a context left by an earlier job on this thread would
+                            // otherwise still be visible here. Reset it the same way the
+                            // native callbacks do when they finish.
+                            if (null == s_NativeApi) {
+                                return false;
+                            }
+                            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+                            NativeApi.LastSourceProcessId = -1;
+                            return true;
+                        },
+                        OnTaskEnd = state => NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero),
+                    };
                 }
-                var errSb = new StringBuilder();
-                if (NativeApi.HasApiErrorInfo) {
-                    hasError = true;
-                    errSb.AppendLine();
-                    errSb.AppendLine(NativeApi.GetApiErrorInfo());
-                }
-                if (BatchCommand.BatchScript.HasDslErrors) {
-                    hasError = true;
-                    errSb.AppendLine();
-                    errSb.AppendLine(BatchCommand.BatchScript.GetDslErrors());
-                }
-                return GetMetaDslResult(maxResultSize, resSb, errSb);
-            }
-            catch (Exception ex) {
-                hasError = true;
-                NativeLog($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
-                return $"Error: {ex.Message}";
+                return s_DslHost;
             }
         }
 
-        private static void RegisterBatchScriptApi()
+        // Copies the Lib process info (owned by the CEF lifecycle callbacks)
+        // into the shared host before the host uses it.
+        private static void SyncHostInfo()
         {
-            AddCommonApiDocs();
-            // Basic framework APIs (defined in Program.cs)
-            BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
-            BatchCommand.BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name,args,...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
-            BatchCommand.BatchScript.Register("executemetadsl", "executemetadsl(dsl_code), return (bool, result)", false, new ExpressionFactoryHelper<ExecuteMetaDslExp>());
-            BatchCommand.BatchScript.Register("execute_metadsl", "execute_metadsl(dsl_code), return (bool, result)", new ExpressionFactoryHelper<ExecuteMetaDslExp>());
-            BatchCommand.BatchScript.Register("call_metadsl_task", "call_metadsl_task(task_index,func_name,arg1,arg2,...) - queue a dsl func to worker thread task_index, an index at or past the default num raises the default to task_index+1 (an index more than 10 past it is rejected as a typo), for slow non-ui work such as sqlite writes, fire-and-forget, returns bool", new ExpressionFactoryHelper<CallMetaDslTaskExp>());
-            BatchCommand.BatchScript.Register("set_metadsl_task_num", "set_metadsl_task_num(num) - set the default worker thread num of call_metadsl_task, extra workers retire after being idle, returns the live num", new ExpressionFactoryHelper<SetMetaDslTaskNumExp>());
-            BatchCommand.BatchScript.Register("get_metadsl_task_num", "get_metadsl_task_num() - returns the live worker thread num of call_metadsl_task", new ExpressionFactoryHelper<GetMetaDslTaskNumExp>());
-            BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
-            BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
-            BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
-            BatchCommand.BatchScript.Register("quote_string", "quote_string(str)", new ExpressionFactoryHelper<QuoteStringExp>());
-            BatchCommand.BatchScript.Register("stripquotes", "stripquotes(str)", false, new ExpressionFactoryHelper<StripQuotesExp>());
-            BatchCommand.BatchScript.Register("strip_quotes", "strip_quotes(str)", new ExpressionFactoryHelper<StripQuotesExp>());
-            BatchCommand.BatchScript.Register("trygetrawswitch", "trygetrawswitch(str)", false, new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
-            BatchCommand.BatchScript.Register("try_get_raw_switch", "try_get_raw_switch(str)", new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
-            BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
-            BatchCommand.BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
-            BatchCommand.BatchScript.Register("enqueue_cef_message", "enqueue_cef_message(msg,arg1,arg2,...), enqueue message to browser", false, new ExpressionFactoryHelper<EnqueueCefMessageExp>());
-            BatchCommand.BatchScript.Register("get_string_in_length", "get_string_in_length(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
-            BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
-            BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
+            var host = Host;
+            host.CmdLine = s_CmdLine;
+            host.BasePath = s_BasePath;
+            host.AppDir = s_AppDir;
+            host.IsMac = s_IsMac;
+            host.ProcessType = s_ProcessType;
+            host.NoSandbox = s_NoSandbox;
+            host.DslScriptFile = s_DslScriptFile;
+            host.StartupUrl = s_StartupUrl;
+            host.LastLoadedMainUrl = s_LastLoadedMainUrl;
+            host.LastLoadedUrl = s_LastLoadedUrl;
+            host.InitialDslScriptFile = s_InitialDslScriptFile;
+            host.InitialProjectIdentity = s_InitialProjectIdentity;
+        }
 
-            if (MainThreadId == Thread.CurrentThread.ManagedThreadId) {
-                // The MainThread API calls LoadAgentPlugin in the OnInit function to register.
-            }
-            else {
-                // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
-                if (null != AgentPlugin) {
-                    AgentPlugin.RegisterScriptApis();
-                }
-            }
+        // CEF specific apis; the common framework/utility apis are registered
+        // by DslHost.RegisterCommonApis before this runs.
+        private static void RegisterCefApis()
+        {
+            BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
+            BatchCommand.BatchScript.Register("enqueue_cef_message", "enqueue_cef_message(msg,arg1,arg2,...), enqueue message to browser", false, new ExpressionFactoryHelper<EnqueueCefMessageExp>());
+
+            // Relay segment: the wsclient_* api set and the WebSocketClientManager
+            // core live in BatchScriptApi (shared with the AgentCore process);
+            // the dsl callbacks on_wsclient_message / on_wsclient_state are
+            // dispatched on the main thread (every heartbeat + handle_wsclient_queue).
+            // Wire the host hooks here: logging through Lib.NativeLog and event
+            // dispatch through Lib.DispatchWsClientEvent.
+            BatchCommand.Utils.WebSocketClientManager.Log = s => NativeLog(s);
+            // HostBridge: shared http/process services route their diagnostics here.
+            BatchCommand.Utils.HostBridge.Log = s => NativeLog(s);
+            BatchCommand.Utils.WebSocketClientManager.Dispatch = Lib.DispatchWsClientEvent;
 
             // Only valid in MainThread
             BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("handle_thread_queue", "handle_thread_queue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
-            BatchCommand.BatchScript.Register("set_heart_beat_interval", "set_heart_beat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartBeatIntervalExp>());
+            BatchCommand.BatchScript.Register("set_heartbeat_interval", "set_heartbeat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartBeatIntervalExp>());
             BatchCommand.BatchScript.Register("complete_native_callback", "complete_native_callback(handle, ok[, data, code]) - complete a CEF async callback taken over by the script (JS dialog, deferred resource load, cefQuery)", false, new ExpressionFactoryHelper<CompleteNativeCallbackExp>());
             BatchCommand.BatchScript.Register("register_custom_scheme", "register_custom_scheme(scheme[, domain]) - route custom scheme requests through the script's on_custom_scheme handler (C++ fallback when not taken over)", false, new ExpressionFactoryHelper<RegisterCustomSchemeExp>());
             BatchCommand.BatchScript.Register("unregister_custom_scheme", "unregister_custom_scheme(scheme[, domain]) - remove a custom scheme handler factory registration", false, new ExpressionFactoryHelper<UnregisterCustomSchemeExp>());
@@ -5450,28 +4930,17 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("set_context_by_id", "set_context_by_id(browser_id) - set current context by browser ID, returns bool", false, new ExpressionFactoryHelper<SetContextByIdExp>());
             BatchCommand.BatchScript.Register("find_browser_id_by_url_key", "find_browser_id_by_url_key(url_key) - find browser ID by URL substring, returns -1 if not found", false, new ExpressionFactoryHelper<FindBrowserIdByUrlKeyExp>());
             BatchCommand.BatchScript.Register("dev_tools_parse_bytes", "dev_tools_parse_bytes(bytes_or_string) - parse UTF-8 JSON to DSL value tree (dict/list/primitives)", new ExpressionFactoryHelper<DevToolsParseBytesExp>());
+            BatchCommand.BatchScript.Register("watch_file", "watch_file(file_name[, relative_path, file_type]) - watch a file for changes, on change the DSL callback on_file_changed(file_path, file_type) is invoked, returns bool", false, new ExpressionFactoryHelper<WatchFileExp>());
+            BatchCommand.BatchScript.Register("watch_dir", "watch_dir(dir_name[, relative_path, file_type]) - watch *.js files in a directory for changes, on change the DSL callback on_file_changed(file_path, file_type) is invoked, returns bool", false, new ExpressionFactoryHelper<WatchDirectoryExp>());
         }
         private static void PrepareBatchScript()
         {
-            if (!s_BatchScriptInited) {
-                BatchCommand.BatchScript.Init();
-                RegisterBatchScriptApi();
-                s_BatchScriptInited = true;
-            }
+            Host.Prepare();
         }
         private static void CheckDslError()
         {
-            if (BatchCommand.BatchScript.HasDslErrors) {
-                NativeLog("[csharp] Dsl error: " + BatchCommand.BatchScript.GetDslErrors());
-            }
+            Host.CheckDslError();
         }
-
-        [ThreadStatic]
-        private static bool s_BatchScriptInited = false;
-        [ThreadStatic]
-        private static DateTime s_DslScriptTime;
-        [ThreadStatic]
-        private static string? s_DslScriptPath;
 
         private static string s_DslScriptFile = string.Empty;
 
@@ -5485,6 +4954,12 @@ namespace DotNetLib
         private static readonly HashSet<int> s_RendererBrowserIds = new();
         // Browser process: tracked browser IDs (maintained by OnBrowserInit/OnBrowserFinalize)
         private static readonly HashSet<int> s_BrowserBrowserIds = new();
+        // Browser process: live browser count (balanced init/finalize). The
+        // dying browser can be identified by neither id nor pointer during
+        // OnBrowserFinalize, so this counter - mirroring the native
+        // RootWindowManager count - is the source of truth for teardown
+        // decisions ("is this the last browser?").
+        private static int s_BrowserLiveCount = 0;
         private static string s_StartupUrl = string.Empty;
         private static string s_LastLoadedMainUrl = string.Empty;
         private static string s_LastLoadedUrl = string.Empty;
@@ -5494,116 +4969,9 @@ namespace DotNetLib
 
         private static string s_MetaDslSwitch = string.Empty;
         private static string s_ProjectSwitch = string.Empty;
-        private static List<string> s_EmptyArgs = new List<string>();
         private static StringBuilder s_StringBuilder = new StringBuilder();
         private static TextWriter s_StringWriter = StreamWriter.Synchronized(new StringWriter(s_StringBuilder));
         private static NativeApi? s_NativeApi;
-    }
-    internal static class CefDotnetAppApi
-    {
-        // Execute MetaDSL script
-        internal static string ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError)
-        {
-            try {
-                hasError = false;
-                PrepareBatchScript();
-                // Execute the script directly using the DSL interpreter
-                Lib.RefreshGlobalVars();
-                NativeApi.ClearApiErrorInfo();
-                var id = BatchCommand.BatchScript.EvalAsFunc(script, s_EmptyArgs);
-                var resSb = new StringBuilder();
-                if (!BatchCommand.BatchScript.HasDslErrors) {
-                    var result = BatchCommand.BatchScript.Call(id);
-                    string resultStr;
-                    if (result.IsNullObject) {
-                        resultStr = "null";
-                    }
-                    else if (null != Lib.AgentPlugin) {
-                        resultStr = Lib.AgentPlugin.ResultToString(result);
-                    }
-                    else {
-                        resultStr = result.ToString();
-                    }
-                    resSb.AppendLine(resultStr);
-                }
-                var errSb = new StringBuilder();
-                if (NativeApi.HasApiErrorInfo) {
-                    hasError = true;
-                    errSb.AppendLine();
-                    errSb.AppendLine(NativeApi.GetApiErrorInfo());
-                }
-                if (BatchCommand.BatchScript.HasDslErrors) {
-                    hasError = true;
-                    errSb.AppendLine();
-                    errSb.AppendLine(BatchCommand.BatchScript.GetDslErrors());
-                }
-                return Lib.GetMetaDslResult(maxResultSize, resSb, errSb);
-            }
-            catch (Exception ex) {
-                hasError = true;
-                Lib.NativeLog($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
-                return $"Error: {ex.Message}";
-            }
-        }
-        internal static string LoadFunc(string func, string code, IList<string> paramNames, bool update)
-        {
-            try {
-                PrepareBatchScript();
-                // Execute the script directly using the DSL interpreter
-                BatchCommand.BatchScript.ClearDslErrors();
-                BatchScript.LoadFunc(func, code, paramNames, update);
-                if (BatchCommand.BatchScript.HasDslErrors) {
-                    return BatchCommand.BatchScript.GetDslErrors();
-                }
-                return string.Empty;
-            }
-            catch (Exception ex) {
-                return $"Error: {ex.Message}";
-            }
-        }
-        private static void RegisterBatchScriptApi()
-        {
-            Lib.AddCommonApiDocs();
-
-            // Basic framework APIs (defined in Program.cs)
-            BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
-            BatchCommand.BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name, args, ...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
-            BatchCommand.BatchScript.Register("executemetadsl", "executemetadsl(dsl_code), return (bool, result)", false, new ExpressionFactoryHelper<ExecuteMetaDslExp>());
-            BatchCommand.BatchScript.Register("execute_metadsl", "execute_metadsl(dsl_code), return (bool, result)", new ExpressionFactoryHelper<ExecuteMetaDslExp>());
-            BatchCommand.BatchScript.Register("call_metadsl_task", "call_metadsl_task(task_index,func_name,arg1,arg2,...) - queue a dsl func to worker thread task_index, an index at or past the default num raises the default to task_index+1 (an index more than 10 past it is rejected as a typo), for slow non-ui work such as sqlite writes, fire-and-forget, returns bool", new ExpressionFactoryHelper<CallMetaDslTaskExp>());
-            BatchCommand.BatchScript.Register("set_metadsl_task_num", "set_metadsl_task_num(num) - set the default worker thread num of call_metadsl_task, extra workers retire after being idle, returns the live num", new ExpressionFactoryHelper<SetMetaDslTaskNumExp>());
-            BatchCommand.BatchScript.Register("get_metadsl_task_num", "get_metadsl_task_num() - returns the live worker thread num of call_metadsl_task", new ExpressionFactoryHelper<GetMetaDslTaskNumExp>());
-            BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
-            BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
-            BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
-            BatchCommand.BatchScript.Register("quote_string", "quote_string(str)", new ExpressionFactoryHelper<QuoteStringExp>());
-            BatchCommand.BatchScript.Register("stripquotes", "stripquotes(str)", false, new ExpressionFactoryHelper<StripQuotesExp>());
-            BatchCommand.BatchScript.Register("strip_quotes", "strip_quotes(str)", new ExpressionFactoryHelper<StripQuotesExp>());
-            BatchCommand.BatchScript.Register("trygetrawswitch", "trygetrawswitch(str)", false, new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
-            BatchCommand.BatchScript.Register("try_get_raw_switch", "try_get_raw_switch(str)", new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
-            BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
-            BatchCommand.BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
-            BatchCommand.BatchScript.Register("enqueue_cef_message", "enqueue_cef_message(msg,arg1,arg2,...), enqueue message to browser", false, new ExpressionFactoryHelper<EnqueueCefMessageExp>());
-            BatchCommand.BatchScript.Register("get_string_in_length", "get_string_in_length(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
-            BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
-            BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
-
-            // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
-            if (null != Lib.AgentPlugin) {
-                Lib.AgentPlugin.RegisterScriptApis();
-            }
-        }
-        private static void PrepareBatchScript()
-        {
-            if (!s_BatchScriptInited) {
-                BatchCommand.BatchScript.Init();
-                RegisterBatchScriptApi();
-                s_BatchScriptInited = true;
-            }
-        }
-
-        [ThreadStatic]
-        private static bool s_BatchScriptInited = false;
-        private static List<string> s_EmptyArgs = new List<string>();
+        private static HotReloadManager? s_HotReloadManager;
     }
 }

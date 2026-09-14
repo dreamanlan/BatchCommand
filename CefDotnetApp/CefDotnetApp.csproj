@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <BaseOutputPath></BaseOutputPath>
@@ -19,15 +19,14 @@
     <RuntimeHostConfigurationOption Include="System.Diagnostics.Debugger.IsSupported" Value="true" />
   </ItemGroup>
 
-  <!-- PostBuild event commented out - BatchCommand.exe path needs to be fixed -->
-  <!--
+  <!-- PostBuild event commented out - enable if needed
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(SolutionDir)bin\Debug\net6.0\BatchCommand.exe $(OutDir)copy.dsl bat" />
+    <Exec Command="$(SolutionDir)bin\Debug\net9.0\BatchCommand.exe $(SolutionDir)bin\Debug\net9.0\copy.dsl bat" />
   </Target>
   -->
 
   <ItemGroup>
-    <Compile Include="..\Script\BatchScript.cs" Link="BatchScript.cs" />
+    <ProjectReference Include="..\BatchScriptApi\BatchScriptApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,12 +49,5 @@
     <Reference Include="ScriptFrameworkLibrary">
       <HintPath>..\deps\ScriptFrameworkLibrary.dll</HintPath>
     </Reference>
-    <Reference Include="TextCopy">
-      <HintPath>..\deps\TextCopy.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\AbstractAgent\AbstractAgent.csproj" />
   </ItemGroup>
 </Project>

@@ -1,9 +1,10 @@
 ﻿using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.ScriptApi
 {
@@ -17,7 +18,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("brave_set_api_key requires (api_key)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("brave_set_api_key requires (api_key)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string apiKey = operands[0].AsString;
@@ -41,7 +42,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("searxng_set_url requires (url)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("searxng_set_url requires (url)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string url = operands[0].AsString;
@@ -76,7 +77,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("searxng_set_engines requires (engines_csv)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("searxng_set_engines requires (engines_csv)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string engines = operands[0].AsString;
@@ -107,7 +108,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("web_search requires (query[, count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("web_search requires (query[, count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             try {
@@ -116,7 +117,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(Core.AgentCore.Instance.WebSearchRouter.Search(query, count));
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"web_search error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"web_search error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -132,7 +133,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("web_search_raw requires (query[, count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("web_search_raw requires (query[, count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             try {
@@ -141,7 +142,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(Core.AgentCore.Instance.WebSearchRouter.SearchRaw(query, count));
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"web_search_raw error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"web_search_raw error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -154,25 +155,25 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("brave_set_api_key",
+            BatchCommand.BatchScript.Register("brave_set_api_key",
                 "brave_set_api_key(api_key) - set Brave Search API key and activate Brave engine",
                 new ExpressionFactoryHelper<BraveSetApiKeyExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("searxng_set_url",
+            BatchCommand.BatchScript.Register("searxng_set_url",
                 "searxng_set_url(url) - set SearXNG instance URL and activate SearXNG engine",
                 new ExpressionFactoryHelper<SearXNGSetUrlExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("searxng_get_url",
+            BatchCommand.BatchScript.Register("searxng_get_url",
                 "searxng_get_url() - get current SearXNG instance URL, returns empty string if not set",
                 new ExpressionFactoryHelper<SearXNGGetUrlExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("searxng_set_engines",
+            BatchCommand.BatchScript.Register("searxng_set_engines",
                 "searxng_set_engines(engines_csv) - set SearXNG engines whitelist (comma-separated, e.g. \"google,bing,yahoo_news\"). Empty string disables the filter.",
                 new ExpressionFactoryHelper<SearXNGSetEnginesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("searxng_get_engines",
+            BatchCommand.BatchScript.Register("searxng_get_engines",
                 "searxng_get_engines() - get current SearXNG engines whitelist, empty string means disabled",
                 new ExpressionFactoryHelper<SearXNGGetEnginesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("web_search",
+            BatchCommand.BatchScript.Register("web_search",
                 "web_search(query[, count]) - search the web via active engine (Brave/SearXNG), returns formatted text (default 5 results, max 20)",
                 new ExpressionFactoryHelper<WebSearchExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("web_search_raw",
+            BatchCommand.BatchScript.Register("web_search_raw",
                 "web_search_raw(query[, count]) - search the web via active engine (Brave/SearXNG), returns raw JSON",
                 new ExpressionFactoryHelper<WebSearchRawExp>());
         }

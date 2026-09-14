@@ -23,9 +23,9 @@ RunAnalyzers=
 RunAnalyzersDuringLiveAnalysis=
 SolutionPath=<PATH>CefDotnetApp.sln
 TargetFrameworkIdentifier=.NETCoreApp
-TargetPath=<PATH>bin/Debug/net8.0/CefDotnetApp.dll
-TargetRefPath=<PATH>obj/Debug/net8.0/ref/CefDotnetApp.dll
-TemporaryDependencyNodeTargetIdentifier=net8.0
+TargetPath=<PATH>bin/Debug/net9.0/CefDotnetApp.dll
+TargetRefPath=<PATH>obj/Debug/net9.0/ref/CefDotnetApp.dll
+TemporaryDependencyNodeTargetIdentifier=net9.0
 
 [commandLineArguments]
 /noconfig
@@ -43,8 +43,8 @@ TemporaryDependencyNodeTargetIdentifier=net8.0
 /debug:portable
 /filealign:512
 /optimize-
-/out:obj\Debug\net8.0\CefDotnetApp.dll
-/refout:obj\Debug\net8.0\refint\CefDotnetApp.dll
+/out:obj\Debug\net9.0\CefDotnetApp.dll
+/refout:obj\Debug\net9.0\refint\CefDotnetApp.dll
 /target:exe
 /warnaserror-
 /utf8output
@@ -54,7 +54,7 @@ TemporaryDependencyNodeTargetIdentifier=net8.0
 
 [sourceFiles]
 ../Script/BatchScript.cs
-obj/Debug/net8.0/
+obj/Debug/net9.0/
  .NETCoreApp,Version=v8.0.AssemblyAttributes.cs
  CefDotnetApp.AssemblyInfo.cs
  CefDotnetApp.GlobalUsings.g.cs
@@ -62,14 +62,14 @@ Program.cs
 
 [metadataReferences]
 ../
- AbstractAgent/obj/Debug/net8.0/ref/AbstractAgent.dll
+ AbstractAgent/obj/Debug/net9.0/ref/AbstractAgent.dll
  deps/
   Common.dll
   DotnetStoryScript.dll
   Dsl.dll
   LitJson.dll
   ScriptFrameworkLibrary.dll
-<DOTNET>/packs/Microsoft.NETCore.App.Ref/8.0.24/ref/net8.0/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/8.0.24/ref/net9.0/
  Microsoft.CSharp.dll
  Microsoft.VisualBasic.Core.dll
  Microsoft.VisualBasic.dll
@@ -235,7 +235,7 @@ Program.cs
  WindowsBase.dll
 <NUGET>/
  microsoft.extensions.dependencyinjection.abstractions/7.0.0/lib/net7.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
- textcopy/6.2.1/lib/net6.0/TextCopy.dll
+ textcopy/6.2.1/lib/net9.0/TextCopy.dll
 
 [analyzerReferences]
 <DOTNET>/packs/Microsoft.NETCore.App.Ref/8.0.24/analyzers/dotnet/cs/
@@ -251,4 +251,4 @@ Program.cs
 
 [analyzerConfigFiles]
 <DOTNET>/sdk/9.0.311/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_8_default.globalconfig
-obj/Debug/net8.0/CefDotnetApp.GeneratedMSBuildEditorConfig.editorconfig
+obj/Debug/net9.0/CefDotnetApp.GeneratedMSBuildEditorConfig.editorconfig

@@ -1,5 +1,5 @@
 ﻿using System;
-using AbstractAgent;
+
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -10,7 +10,7 @@ using Microsoft.Win32;
 using ScriptableFramework;
 using System.Diagnostics;
 using System.Threading;
-using AbstractAgent.Utils;
+using BatchCommand.Utils;
 using AgentCore.Utils;
 
 #pragma warning disable CA1416
@@ -247,7 +247,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: everything_search(query[, max_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: everything_search(query[, max_count])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string query = operands[0].AsString;
@@ -287,7 +287,7 @@ namespace AgentCore.ScriptApi
                 }
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"everything_search error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"everything_search error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -315,7 +315,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: everything_search_raw(query[, max_count])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: everything_search_raw(query[, max_count])");
                 return BoxedValue.FromObject(s_EmptyList);
             }
             string query = operands[0].AsString;
@@ -349,7 +349,7 @@ namespace AgentCore.ScriptApi
                 }
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"everything_search_raw error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"everything_search_raw error: {ex.Message}");
                 return BoxedValue.FromObject(s_EmptyList);
             }
         }
@@ -402,7 +402,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(s_EverythingFullPath);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"everything_ensure error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"everything_ensure error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -479,37 +479,37 @@ namespace AgentCore.ScriptApi
                     System.Runtime.InteropServices.OSPlatform.Windows))
                 return;
 
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_exists",
+            BatchCommand.BatchScript.Register("everything_exists",
                 "everything_exists() - check if Everything service is running",
                 new ExpressionFactoryHelper<EverythingExistsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_ensure",
+            BatchCommand.BatchScript.Register("everything_ensure",
                 "everything_ensure() - ensure Everything is running (find path, start if needed), returns path",
                 new ExpressionFactoryHelper<EverythingEnsureExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_reset",
+            BatchCommand.BatchScript.Register("everything_reset",
                 "everything_reset() - reset Everything search state",
                 new ExpressionFactoryHelper<EverythingResetExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_set_default",
+            BatchCommand.BatchScript.Register("everything_set_default",
                 "everything_set_default() - set default search parameters",
                 new ExpressionFactoryHelper<EverythingSetDefaultExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_match_path",
+            BatchCommand.BatchScript.Register("everything_match_path",
                 "everything_match_path([bool]) - get/set path matching",
                 new ExpressionFactoryHelper<EverythingMatchPathExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_match_case",
+            BatchCommand.BatchScript.Register("everything_match_case",
                 "everything_match_case([bool]) - get/set case sensitive matching",
                 new ExpressionFactoryHelper<EverythingMatchCaseExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_match_whole_word",
+            BatchCommand.BatchScript.Register("everything_match_whole_word",
                 "everything_match_whole_word([bool]) - get/set whole word matching",
                 new ExpressionFactoryHelper<EverythingMatchWholeWordExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_regex",
+            BatchCommand.BatchScript.Register("everything_regex",
                 "everything_regex([bool]) - get/set regex mode",
                 new ExpressionFactoryHelper<EverythingRegexExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_sort",
+            BatchCommand.BatchScript.Register("everything_sort",
                 "everything_sort([type, asc]) - get/set sort mode. type: name/path/size/time or numeric constant",
                 new ExpressionFactoryHelper<EverythingSortExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_search",
+            BatchCommand.BatchScript.Register("everything_search",
                 "everything_search(query[, max_count]) - search files, returns formatted text (default 100 results, max 1000)",
                 new ExpressionFactoryHelper<EverythingSearchExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("everything_search_raw",
+            BatchCommand.BatchScript.Register("everything_search_raw",
                 "everything_search_raw(query[, max_count]) - search files, returns List of [path, size, time]. use 'to_string' to convert",
                 new ExpressionFactoryHelper<EverythingSearchRawExp>());
         }

@@ -6,6 +6,7 @@ using System.Threading;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {

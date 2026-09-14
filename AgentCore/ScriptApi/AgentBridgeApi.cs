@@ -1,10 +1,9 @@
 using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using AbstractAgent.Utils;
+using BatchCommand.Utils;
 
 namespace AgentCore.ScriptApi
 {
@@ -19,7 +18,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: parse_agent_command(jsonData)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: parse_agent_command(jsonData)");
                 return BoxedValue.NullObject;
             }
 
@@ -46,7 +45,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error parsing agent command: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Error parsing agent command: {ex.Message}");
                 }
                 return BoxedValue.NullObject;
             }
@@ -59,7 +58,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: parse_agent_notification(jsonData)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: parse_agent_notification(jsonData)");
                 return BoxedValue.NullObject;
             }
 
@@ -84,7 +83,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error parsing agent notification: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Error parsing agent notification: {ex.Message}");
                 }
                 return BoxedValue.NullObject;
             }
@@ -97,7 +96,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_message_param(paramsObj, key)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: get_message_param(paramsObj, key)");
                 return BoxedValue.NullObject;
             }
 
@@ -124,7 +123,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error getting command param: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Error getting command param: {ex.Message}");
                 }
                 return BoxedValue.NullObject;
             }
@@ -137,7 +136,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: send_command_to_inject(command, paramsJson)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_command_to_inject(command, paramsJson)");
                 return BoxedValue.FromString("Error: Missing command or params parameter");
             }
 
@@ -149,21 +148,18 @@ namespace AgentCore.ScriptApi
                 string command = operands[0].AsString;
                 string paramsJson = operands[1].AsString;
 
-                // Parse params JSON to dictionary
-                var options = new System.Text.Json.JsonSerializerOptions {
-                    PropertyNameCaseInsensitive = true
-                };
-                var parameters = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(paramsJson, options);
-
-
-                var core = Core.AgentCore.Instance;
-                core.AgentBridge.SendCommandToInject(command, parameters ?? new Dictionary<string, object>());
+                // Push over websocket: through the current request context when
+                // available, broadcast otherwise. paramsJson is passed through
+                // verbatim (deserializing it first would box values as
+                // JsonElement and the LitJson re-serialization emits
+                // {"ValueKind": 3} instead of the actual strings).
+                Core.AgentPush.SendCommandToInject(command, paramsJson ?? "{}");
 
                 return BoxedValue.FromString("Command sent");
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"send_command_to_inject error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"send_command_to_inject error: {ex.Message}");
                 }
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
@@ -176,7 +172,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_agent_response(messageId, success, data, error)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_agent_response(messageId, success, data, error)");
                 return BoxedValue.FromString("{}");
             }
 
@@ -218,7 +214,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"build_agent_response error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"build_agent_response error: {ex.Message}");
                 }
                 return BoxedValue.FromString($"{{\"error\":\"{ex.Message}\"}}");
             }
@@ -231,7 +227,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: send_response_to_inject(responseJson)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_response_to_inject(responseJson)");
                 return BoxedValue.FromString("Error: Missing response JSON parameter");
             }
 
@@ -241,16 +237,16 @@ namespace AgentCore.ScriptApi
                 }
 
                 string responseJson = operands[0].AsString;
-                var core = Core.AgentCore.Instance;
 
-                // Use AgentBridge to send response for consistency
-                core.AgentBridge.SendResponseToInject(responseJson);
+                // Push over websocket: through the current request context when
+                // available, broadcast otherwise.
+                Core.AgentPush.SendResponseToInject(responseJson);
 
                 return BoxedValue.FromString("Response sent");
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error sending response to inject: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Error sending response to inject: {ex.Message}");
                 }
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>AgentCore</RootNamespace>
@@ -58,6 +58,7 @@
     <!-- Lucene.Net for BM25 bag-of-words search -->
     <PackageReference Include="Lucene.Net" Version="4.8.0-beta00016" />
     <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00016" />
+    <PackageReference Include="Lucene.Net.Codecs" Version="4.8.0-beta00016" />
     <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00016" />
 
     <!-- ML.NET for TF-IDF search -->
@@ -65,10 +66,6 @@
 
     <!-- jieba.NET for Chinese word segmentation -->
     <PackageReference Include="jieba.NET" Version="0.42.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\AbstractAgent\AbstractAgent.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -96,8 +93,15 @@
     <Reference Include="ScriptFrameworkLibrary">
       <HintPath>..\deps\ScriptFrameworkLibrary.dll</HintPath>
     </Reference>
-    <Reference Include="TextCopy">
-      <HintPath>..\deps\TextCopy.dll</HintPath>
+    <!-- WinRT projections (deps, from the Microsoft.Windows.SDK.NET.Ref
+         10.0.26100.87 nupkg): not referenced by our code, but TextCopy's
+         clipboard implementation probes for these at runtime. Referenced so
+         CopyLocal brings them into the bin output; copy.dsl deploys them. -->
+    <Reference Include="Microsoft.Windows.SDK.NET">
+      <HintPath>..\deps\Microsoft.Windows.SDK.NET.dll</HintPath>
+    </Reference>
+    <Reference Include="WinRT.Runtime">
+      <HintPath>..\deps\WinRT.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -110,5 +114,19 @@
       <Pack>false</Pack>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BatchScriptApi\BatchScriptApi.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BatchCmdDslHost\BatchCmdDsl\BatchCmdDsl.csproj" />
+  </ItemGroup>
+
+  <!-- Deploy AgentCore.* to the WebAgent managed dir after build, mirroring
+       the BatchCmdDsl csproj pattern (copy.dsl does the actual copying). -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="$(ProjectDir)..\bin\Debug\net9.0\BatchCommand.exe $(ProjectDir)copy.dsl bat" />
+  </Target>
 
 </Project>

@@ -142,7 +142,7 @@ __string_end__
 bindings与delimiter部分可省略，用法与脚本执行api相同。
 
 <metadsl>
-set_env("ProjectDirectory", agent_get_project_dir(9530));
+set_env("ProjectDirectory", agent_get_project_dir("aichat"));
 execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py", "%ProjectDirectory%", 120000);
 </metadsl>
 如果是多行命令可以考虑用[[与]]来包裹命令字符串，这样不用写转义符【更复杂命令可用`@@delimiter(string, "begin", "end")`自定义】
@@ -194,8 +194,8 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 
 **其它工具**
 
-- `agent_get_project_identity(9530)` — 项目标识
-- `agent_get_project_dir(9530)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`plan.txt`/`backlog.txt`/`xxx_prompt.txt`等状态文件
+- `agent_get_project_identity("aichat")` — 项目标识
+- `agent_get_project_dir("aichat")` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`plan.txt`/`backlog.txt`/`xxx_prompt.txt`等状态文件
 - `count_lines(path[, encoding])` — 查看文件行数
 - `count_indentations(path[, startLine, endLine, encoding])` - 查看带行号与缩进信息的文件内容
 - `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容

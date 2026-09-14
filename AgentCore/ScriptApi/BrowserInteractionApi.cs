@@ -1,5 +1,4 @@
 using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -23,7 +22,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_query_selector(selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_query_selector(selector)");
                 return BoxedValue.NullObject;
             }
 
@@ -36,7 +35,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildQuerySelector error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildQuerySelector error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -48,7 +47,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_click_element(selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_click_element(selector)");
                 return BoxedValue.NullObject;
             }
 
@@ -61,7 +60,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildClickElement error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildClickElement error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -73,7 +72,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_set_value(selector, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_set_value(selector, value)");
                 return BoxedValue.NullObject;
             }
 
@@ -87,7 +86,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildSetValue error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildSetValue error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -99,7 +98,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_get_value(selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_get_value(selector)");
                 return BoxedValue.NullObject;
             }
 
@@ -112,7 +111,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildGetValue error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildGetValue error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -124,7 +123,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_get_text(selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_get_text(selector)");
                 return BoxedValue.NullObject;
             }
 
@@ -137,7 +136,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildGetText error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildGetText error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -149,7 +148,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_set_innerhtml(selector, html)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_set_innerhtml(selector, html)");
                 return BoxedValue.NullObject;
             }
 
@@ -163,7 +162,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildSetInnerHTML error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildSetInnerHTML error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -175,7 +174,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_wait_for_element(selector[, timeout_def_5000ms])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_wait_for_element(selector[, timeout_def_5000ms])");
                 return BoxedValue.NullObject;
             }
 
@@ -189,7 +188,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildWaitForElement error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildWaitForElement error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -201,7 +200,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_scroll_to_element(selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_scroll_to_element(selector)");
                 return BoxedValue.NullObject;
             }
 
@@ -214,7 +213,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildScrollToElement error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildScrollToElement error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -226,7 +225,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_is_visible(selector)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_is_visible(selector)");
                 return BoxedValue.NullObject;
             }
 
@@ -239,7 +238,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildIsVisible error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildIsVisible error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -251,7 +250,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_add_class(selector, className)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_add_class(selector, className)");
                 return BoxedValue.NullObject;
             }
 
@@ -265,7 +264,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildAddClass error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildAddClass error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -277,7 +276,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_remove_class(selector, className)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_remove_class(selector, className)");
                 return BoxedValue.NullObject;
             }
 
@@ -291,7 +290,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildRemoveClass error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildRemoveClass error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -303,7 +302,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_set_style(selector, property, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_set_style(selector, property, value)");
                 return BoxedValue.NullObject;
             }
 
@@ -318,7 +317,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildSetStyle error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildSetStyle error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -330,7 +329,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_inject_css(css)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_inject_css(css)");
                 return BoxedValue.NullObject;
             }
 
@@ -343,7 +342,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildInjectCSS error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildInjectCSS error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -355,7 +354,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_navigate_to(url)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_navigate_to(url)");
                 return BoxedValue.NullObject;
             }
 
@@ -368,7 +367,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildNavigateTo error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"BuildNavigateTo error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -380,7 +379,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: send_js_code(jscode)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_js_code(jscode)");
                 return BoxedValue.FromBool(false);
             }
 
@@ -393,7 +392,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromBool(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"SendJsCode error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"SendJsCode error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }
@@ -405,7 +404,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: send_js_call(jsfunc, arg1, arg2, ...)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_js_call(jsfunc, arg1, arg2, ...)");
                 return BoxedValue.FromBool(false);
             }
 
@@ -422,7 +421,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromBool(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"SendJsCall error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"SendJsCall error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }

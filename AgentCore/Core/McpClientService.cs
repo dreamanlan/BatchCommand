@@ -6,7 +6,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ScriptableFramework;
-using AbstractAgent;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
@@ -284,7 +285,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex)
             {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] Warning: failed to list tools for '{serverId}': {ex.Message}");
+                MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] Warning: failed to list tools for '{serverId}': {ex.Message}");
             }
 
             _servers[serverId] = conn;
@@ -382,9 +383,9 @@ namespace AgentCore.Core
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"error: server '{serverId}' not connected";
 
-            var nativeApi = AgentCore.Instance.GetNativeApi();
-            if (nativeApi == null)
-                return "error: nativeApi not available";
+            var ctx = MetaDslExecutor.CurrentContext;
+            if (ctx == null)
+                return "error: no request context";
 
             var session = GetSession(serverId, tag);
             var item = new WorkItem
@@ -392,7 +393,7 @@ namespace AgentCore.Core
                 ServerId = serverId,
                 Tag = tag,
                 Run = ct => ExecuteToolCall(serverId, toolName, argsJson, tag, ct),
-                Deliver = result => nativeApi.EnqueueCefMessage("mcp_callback", new BoxedValue[] { serverId, tag, result })
+                Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "mcp_callback", new BoxedValue[] { serverId, tag, result })
             };
             return Submit(session, item) ? "ok" : "busy";
         }
@@ -431,7 +432,7 @@ namespace AgentCore.Core
                             conn = latest;
                         if (!conn.Transport.IsConnected) // double-check inside lock
                         {
-                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
+                            MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
                             string reconnResult = Connect(serverId, conn.Type, conn.Target);
                             if (!reconnResult.StartsWith("ok"))
                                 return $"[error] reconnect failed: {reconnResult}";
@@ -461,7 +462,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex)
             {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
+                MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
                 return $"[error] {ex.Message}";
             }
         }
@@ -509,7 +510,7 @@ namespace AgentCore.Core
                                 conn = latest;
                             if (!conn.Transport.IsConnected)
                             {
-                                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
+                                MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
                                 string reconnResult = Connect(serverId, conn.Type, conn.Target);
                                 if (!reconnResult.StartsWith("ok"))
                                     return $"[error] reconnect failed: {reconnResult}";
@@ -540,7 +541,7 @@ namespace AgentCore.Core
                 }
                 catch (Exception ex)
                 {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallToolForScript error for '{serverId}/{toolName}': {ex.Message}");
+                    MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] CallToolForScript error for '{serverId}/{toolName}': {ex.Message}");
                     return $"[error] {ex.Message}";
                 }
                 finally
@@ -570,7 +571,7 @@ namespace AgentCore.Core
             {
                 try { cts.Cancel(); }
                 catch (ObjectDisposedException) { }
-                AgentFrameworkService.Instance.Log($"[McpClientService] Cancel requested for call '{callKey}'");
+                AgentCore.Instance.Logger.Info($"[McpClientService] Cancel requested for call '{callKey}'");
                 return "ok";
             }
             return "error: call not active";
@@ -643,7 +644,7 @@ namespace AgentCore.Core
                     try { item.Deliver(result); }
                     catch (Exception ex)
                     {
-                        AgentFrameworkService.Instance.Log($"[McpClientService] Deliver error for '{item.ServerId}/{item.Tag}': {ex.Message}");
+                        AgentCore.Instance.Logger.Error($"[McpClientService] Deliver error for '{item.ServerId}/{item.Tag}': {ex.Message}");
                     }
                 }
             });
@@ -695,7 +696,7 @@ namespace AgentCore.Core
                     int maxBusy = GetMaxBusySeconds(serverId);
                     if (duration > maxBusy)
                     {
-                        AgentFrameworkService.Instance.Log($"[McpClientService] Watchdog: call '{callKey}' busy for {duration}s (limit {maxBusy}s), auto-cancelling");
+                        AgentCore.Instance.Logger.Info($"[McpClientService] Watchdog: call '{callKey}' busy for {duration}s (limit {maxBusy}s), auto-cancelling");
                         if (_activeCts.TryGetValue(callKey, out var cts))
                         {
                             try { cts.Cancel(); }
@@ -706,7 +707,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex)
             {
-                AgentFrameworkService.Instance.Log($"[McpClientService] Watchdog error: {ex.Message}");
+                AgentCore.Instance.Logger.Error($"[McpClientService] Watchdog error: {ex.Message}");
             }
         }
 

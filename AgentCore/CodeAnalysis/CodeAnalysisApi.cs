@@ -1,7 +1,9 @@
 using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using System.Linq;
+using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 using AgentCore.CodeAnalysis;
 using AgentCore.Models;
 
@@ -18,7 +20,7 @@ namespace AgentCore.CodeAnalysis
                 return parsedFile;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error parsing file {filePath}: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error parsing file {filePath}: {ex.Message}");
                 return null;
             }
         }
@@ -36,14 +38,14 @@ namespace AgentCore.CodeAnalysis
                     parsedFile = pf;
                 }
                 else {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for FindClass");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for FindClass");
                     return null;
                 }
 
                 return parsedFile?.Classes.FirstOrDefault(c => c.Name == className);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding class {className}: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding class {className}: {ex.Message}");
                 return null;
             }
         }
@@ -56,11 +58,11 @@ namespace AgentCore.CodeAnalysis
                     return ci.Methods.FirstOrDefault(m => m.Name == methodName);
                 }
 
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for FindMethod");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for FindMethod");
                 return null;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding method {methodName}: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding method {methodName}: {ex.Message}");
                 return null;
             }
         }
@@ -76,11 +78,11 @@ namespace AgentCore.CodeAnalysis
                     return mi.Location;
                 }
 
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for GetLocation");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for GetLocation");
                 return null;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error getting location: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error getting location: {ex.Message}");
                 return null;
             }
         }
@@ -93,7 +95,7 @@ namespace AgentCore.CodeAnalysis
                 return files;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error getting C# files from {directory}: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error getting C# files from {directory}: {ex.Message}");
                 return new List<string>();
             }
         }
@@ -105,7 +107,7 @@ namespace AgentCore.CodeAnalysis
                 return RoslynParser.FindFileContainingClass(directory, className);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding file with class {className}: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding file with class {className}: {ex.Message}");
                 return null;
             }
         }
@@ -188,7 +190,7 @@ namespace AgentCore.CodeAnalysis
                 return SmartCodeEditor.AddMethodToClass(filePath, className, methodCode);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error adding method: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error adding method: {ex.Message}");
                 return false;
             }
         }
@@ -202,7 +204,7 @@ namespace AgentCore.CodeAnalysis
                 return SmartCodeEditor.ReplaceMethod(filePath, className, methodName, newMethodCode);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error replacing method: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error replacing method: {ex.Message}");
                 return false;
             }
         }
@@ -216,7 +218,7 @@ namespace AgentCore.CodeAnalysis
                 return SmartCodeEditor.InsertMethodAfter(filePath, className, afterMethodName, newMethodCode);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error inserting method: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error inserting method: {ex.Message}");
                 return false;
             }
         }
@@ -230,7 +232,7 @@ namespace AgentCore.CodeAnalysis
                 return SmartCodeEditor.DeleteMethod(filePath, className, methodName);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error deleting method: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error deleting method: {ex.Message}");
                 return false;
             }
         }
@@ -244,7 +246,7 @@ namespace AgentCore.CodeAnalysis
                 return SmartCodeEditor.AddClassToFile(filePath, classCode);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error adding class: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error adding class: {ex.Message}");
                 return false;
             }
         }
@@ -258,7 +260,7 @@ namespace AgentCore.CodeAnalysis
                 return SmartCodeEditor.CreateNewFile(filePath, code);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error creating file: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error creating file: {ex.Message}");
                 return false;
             }
         }
@@ -272,7 +274,7 @@ namespace AgentCore.CodeAnalysis
                 return SmartCodeEditor.VerifyCodeCompiles(code);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error verifying code: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error verifying code: {ex.Message}");
                 return false;
             }
         }

@@ -457,7 +457,7 @@ class RelayPanel {
       this._chatLog('[error] WebSocket not connected');
     }
   }
-    
+
   async _testStatus() {
     const ws = window.Relay && window.Relay.ws;
     const connected = !!(ws && ws.connected);
@@ -494,7 +494,7 @@ class RelayPanel {
       // Suppress confirm() dialog during click (local-agent handleClearHistory
       // calls confirm() synchronously in the click handler).
       const origConfirm = window.confirm;
-      window.confirm = function() { return true; };
+      window.confirm = function () { return true; };
       try {
         clearBtn.click();
       } finally {

@@ -1,9 +1,10 @@
-﻿using AbstractAgent;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 using AgentCore.CodeAnalysis;
 using AgentCore.Models;
 
@@ -18,46 +19,46 @@ namespace AgentCore.ScriptApi
         public static void RegisterAsListApis()
         {
             // Function search
-            AgentFrameworkService.Instance.DslEngine!.Register("find_functions_as_list", "find_functions_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Function, Name/FilePath/Location/Signature/Type/Modifiers/ParentClass fields, supports LINQ such as .where($$.Name.StartsWith(\"On\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFunctionsAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_functions_in_code_as_list", "find_functions_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Function, Name/FilePath/Location/Signature/Type/Modifiers/ParentClass fields, supports LINQ such as .where($$.Name.StartsWith(\"On\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFunctionsInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_functions_as_list", "find_functions_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Function, Name/FilePath/Location/Signature/Type/Modifiers/ParentClass fields, supports LINQ such as .where($$.Name.StartsWith(\"On\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFunctionsAsListExp>());
+            BatchCommand.BatchScript.Register("find_functions_in_code_as_list", "find_functions_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Function, Name/FilePath/Location/Signature/Type/Modifiers/ParentClass fields, supports LINQ such as .where($$.Name.StartsWith(\"On\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFunctionsInCodeAsListExp>());
 
             // Type search
-            AgentFrameworkService.Instance.DslEngine!.Register("find_types_as_list", "find_types_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Type, Name/FilePath/Location/Modifiers/Extra(base type info) fields, supports LINQ such as .where($$.Name.EndsWith(\"Manager\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindTypesAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_types_in_code_as_list", "find_types_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Type, Name/FilePath/Location/Modifiers/Extra(base type info) fields, supports LINQ such as .where($$.Name.EndsWith(\"Manager\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindTypesInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_types_as_list", "find_types_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Type, Name/FilePath/Location/Modifiers/Extra(base type info) fields, supports LINQ such as .where($$.Name.EndsWith(\"Manager\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindTypesAsListExp>());
+            BatchCommand.BatchScript.Register("find_types_in_code_as_list", "find_types_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Type, Name/FilePath/Location/Modifiers/Extra(base type info) fields, supports LINQ such as .where($$.Name.EndsWith(\"Manager\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindTypesInCodeAsListExp>());
 
             // Variable search
-            AgentFrameworkService.Instance.DslEngine!.Register("find_variables_as_list", "find_variables_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Variable, Name/FilePath/Location/Type/Modifiers/ParentClass/Scope fields, flattened across all type declarations, supports LINQ such as .where($$.ParentClass == \"Foo\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindVariablesAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_variables_in_code_as_list", "find_variables_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Variable, Name/FilePath/Location/Type/Modifiers/ParentClass/Scope fields, flattened across all type declarations, supports LINQ such as .where($$.ParentClass == \"Foo\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindVariablesInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_global_variables_as_list", "find_global_variables_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=GlobalVariable, Name/FilePath/Location/Type/Modifiers/Scope=Global fields, static fields only, supports LINQ such as .where($$.Modifiers.Contains(\"const\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindGlobalVariablesAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_global_variables_in_code_as_list", "find_global_variables_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=GlobalVariable, Name/FilePath/Location/Type/Modifiers/Scope=Global fields, static fields only, supports LINQ such as .where($$.Modifiers.Contains(\"const\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindGlobalVariablesInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_parameters_as_list", "find_parameters_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Parameter, Name/FilePath/Location/Type/Scope(Function/Method)/ParentClass/Extra(owner function or Type.Method) fields, supports LINQ such as .where($$.Type == \"int\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindParametersAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_parameters_in_code_as_list", "find_parameters_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Parameter, Name/FilePath/Location/Type/Scope(Function/Method)/ParentClass/Extra(owner function or Type.Method) fields, supports LINQ such as .where($$.Type == \"int\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindParametersInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_variables_as_list", "find_variables_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Variable, Name/FilePath/Location/Type/Modifiers/ParentClass/Scope fields, flattened across all type declarations, supports LINQ such as .where($$.ParentClass == \"Foo\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindVariablesAsListExp>());
+            BatchCommand.BatchScript.Register("find_variables_in_code_as_list", "find_variables_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Variable, Name/FilePath/Location/Type/Modifiers/ParentClass/Scope fields, flattened across all type declarations, supports LINQ such as .where($$.ParentClass == \"Foo\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindVariablesInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_global_variables_as_list", "find_global_variables_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=GlobalVariable, Name/FilePath/Location/Type/Modifiers/Scope=Global fields, static fields only, supports LINQ such as .where($$.Modifiers.Contains(\"const\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindGlobalVariablesAsListExp>());
+            BatchCommand.BatchScript.Register("find_global_variables_in_code_as_list", "find_global_variables_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=GlobalVariable, Name/FilePath/Location/Type/Modifiers/Scope=Global fields, static fields only, supports LINQ such as .where($$.Modifiers.Contains(\"const\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindGlobalVariablesInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_parameters_as_list", "find_parameters_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Parameter, Name/FilePath/Location/Type/Scope(Function/Method)/ParentClass/Extra(owner function or Type.Method) fields, supports LINQ such as .where($$.Type == \"int\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindParametersAsListExp>());
+            BatchCommand.BatchScript.Register("find_parameters_in_code_as_list", "find_parameters_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Parameter, Name/FilePath/Location/Type/Scope(Function/Method)/ParentClass/Extra(owner function or Type.Method) fields, supports LINQ such as .where($$.Type == \"int\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindParametersInCodeAsListExp>());
 
             // Class member search (each item corresponds to one matching class)
-            AgentFrameworkService.Instance.DslEngine!.Register("find_class_members_as_list", "find_class_members_as_list(filePath, language, classNameRegexPattern) return List of CodeItem (mixed Kind: Field/Property/Method/Event/Constructor, all with ParentClass set; flattened across matching classes, supports LINQ such as .where($$.Kind == \"Method\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindClassMembersAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_class_members_in_code_as_list", "find_class_members_in_code_as_list(code, language, classNameRegexPattern, [fileName]) return List of CodeItem (mixed Kind: Field/Property/Method/Event/Constructor, all with ParentClass set; flattened across matching classes, supports LINQ such as .where($$.Kind == \"Method\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindClassMembersInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_fields_as_list", "find_fields_as_list(filePath, language, classNameRegexPattern, [fieldNameRegexPattern]) return List of CodeItem(Kind=Field, Name/FilePath/Location/Type/Modifiers/ParentClass fields, flattened across matching classes, supports LINQ such as .where($$.Type == \"int\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFieldsAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_fields_in_code_as_list", "find_fields_in_code_as_list(code, language, classNameRegexPattern, [fieldNameRegexPattern], [fileName]) return List of CodeItem(Kind=Field, Name/FilePath/Location/Type/Modifiers/ParentClass fields, flattened across matching classes, supports LINQ such as .where($$.Type == \"int\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFieldsInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_properties_as_list", "find_properties_as_list(filePath, language, classNameRegexPattern, [propertyNameRegexPattern]) return List of CodeItem(Kind=Property, Name/FilePath/Location/Type/Modifiers/ParentClass/Scope(getter/setter info) fields, supports LINQ such as .where($$.Scope.Contains(\"set\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindPropertiesAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_properties_in_code_as_list", "find_properties_in_code_as_list(code, language, classNameRegexPattern, [propertyNameRegexPattern], [fileName]) return List of CodeItem(Kind=Property, Name/FilePath/Location/Type/Modifiers/ParentClass/Scope(getter/setter info) fields, supports LINQ such as .where($$.Scope.Contains(\"set\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindPropertiesInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_methods_as_list", "find_methods_as_list(filePath, language, classNameRegexPattern, [methodNameRegexPattern]) return List of CodeItem(Kind=Method, Name/FilePath/Location/Signature/Type(return)/Modifiers/ParentClass fields, supports LINQ such as .where($$.Modifiers.Contains(\"static\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindMethodsAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_methods_in_code_as_list", "find_methods_in_code_as_list(code, language, classNameRegexPattern, [methodNameRegexPattern], [fileName]) return List of CodeItem(Kind=Method, Name/FilePath/Location/Signature/Type(return)/Modifiers/ParentClass fields, supports LINQ such as .where($$.Modifiers.Contains(\"static\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindMethodsInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_events_as_list", "find_events_as_list(filePath, language, classNameRegexPattern, [eventNameRegexPattern]) return List of CodeItem(Kind=Event, Name/FilePath/Location/Type(handler)/Modifiers/ParentClass fields, C# only, supports LINQ such as .where($$.Name.StartsWith(\"On\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindEventsAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_events_in_code_as_list", "find_events_in_code_as_list(code, language, classNameRegexPattern, [eventNameRegexPattern], [fileName]) return List of CodeItem(Kind=Event, Name/FilePath/Location/Type(handler)/Modifiers/ParentClass fields, C# only, supports LINQ such as .where($$.Name.StartsWith(\"On\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindEventsInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_constructors_as_list", "find_constructors_as_list(filePath, language, classNameRegexPattern) return List of CodeItem(Kind=Constructor, Name/FilePath/Location/Signature/Modifiers/ParentClass fields, supports LINQ such as .where($$.Signature.Contains(\"()\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindConstructorsAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_constructors_in_code_as_list", "find_constructors_in_code_as_list(code, language, classNameRegexPattern, [fileName]) return List of CodeItem(Kind=Constructor, Name/FilePath/Location/Signature/Modifiers/ParentClass fields, supports LINQ such as .where($$.Signature.Contains(\"()\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindConstructorsInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_class_members_as_list", "find_class_members_as_list(filePath, language, classNameRegexPattern) return List of CodeItem (mixed Kind: Field/Property/Method/Event/Constructor, all with ParentClass set; flattened across matching classes, supports LINQ such as .where($$.Kind == \"Method\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindClassMembersAsListExp>());
+            BatchCommand.BatchScript.Register("find_class_members_in_code_as_list", "find_class_members_in_code_as_list(code, language, classNameRegexPattern, [fileName]) return List of CodeItem (mixed Kind: Field/Property/Method/Event/Constructor, all with ParentClass set; flattened across matching classes, supports LINQ such as .where($$.Kind == \"Method\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindClassMembersInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_fields_as_list", "find_fields_as_list(filePath, language, classNameRegexPattern, [fieldNameRegexPattern]) return List of CodeItem(Kind=Field, Name/FilePath/Location/Type/Modifiers/ParentClass fields, flattened across matching classes, supports LINQ such as .where($$.Type == \"int\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFieldsAsListExp>());
+            BatchCommand.BatchScript.Register("find_fields_in_code_as_list", "find_fields_in_code_as_list(code, language, classNameRegexPattern, [fieldNameRegexPattern], [fileName]) return List of CodeItem(Kind=Field, Name/FilePath/Location/Type/Modifiers/ParentClass fields, flattened across matching classes, supports LINQ such as .where($$.Type == \"int\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFieldsInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_properties_as_list", "find_properties_as_list(filePath, language, classNameRegexPattern, [propertyNameRegexPattern]) return List of CodeItem(Kind=Property, Name/FilePath/Location/Type/Modifiers/ParentClass/Scope(getter/setter info) fields, supports LINQ such as .where($$.Scope.Contains(\"set\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindPropertiesAsListExp>());
+            BatchCommand.BatchScript.Register("find_properties_in_code_as_list", "find_properties_in_code_as_list(code, language, classNameRegexPattern, [propertyNameRegexPattern], [fileName]) return List of CodeItem(Kind=Property, Name/FilePath/Location/Type/Modifiers/ParentClass/Scope(getter/setter info) fields, supports LINQ such as .where($$.Scope.Contains(\"set\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindPropertiesInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_methods_as_list", "find_methods_as_list(filePath, language, classNameRegexPattern, [methodNameRegexPattern]) return List of CodeItem(Kind=Method, Name/FilePath/Location/Signature/Type(return)/Modifiers/ParentClass fields, supports LINQ such as .where($$.Modifiers.Contains(\"static\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindMethodsAsListExp>());
+            BatchCommand.BatchScript.Register("find_methods_in_code_as_list", "find_methods_in_code_as_list(code, language, classNameRegexPattern, [methodNameRegexPattern], [fileName]) return List of CodeItem(Kind=Method, Name/FilePath/Location/Signature/Type(return)/Modifiers/ParentClass fields, supports LINQ such as .where($$.Modifiers.Contains(\"static\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindMethodsInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_events_as_list", "find_events_as_list(filePath, language, classNameRegexPattern, [eventNameRegexPattern]) return List of CodeItem(Kind=Event, Name/FilePath/Location/Type(handler)/Modifiers/ParentClass fields, C# only, supports LINQ such as .where($$.Name.StartsWith(\"On\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindEventsAsListExp>());
+            BatchCommand.BatchScript.Register("find_events_in_code_as_list", "find_events_in_code_as_list(code, language, classNameRegexPattern, [eventNameRegexPattern], [fileName]) return List of CodeItem(Kind=Event, Name/FilePath/Location/Type(handler)/Modifiers/ParentClass fields, C# only, supports LINQ such as .where($$.Name.StartsWith(\"On\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindEventsInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_constructors_as_list", "find_constructors_as_list(filePath, language, classNameRegexPattern) return List of CodeItem(Kind=Constructor, Name/FilePath/Location/Signature/Modifiers/ParentClass fields, supports LINQ such as .where($$.Signature.Contains(\"()\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindConstructorsAsListExp>());
+            BatchCommand.BatchScript.Register("find_constructors_in_code_as_list", "find_constructors_in_code_as_list(code, language, classNameRegexPattern, [fileName]) return List of CodeItem(Kind=Constructor, Name/FilePath/Location/Signature/Modifiers/ParentClass fields, supports LINQ such as .where($$.Signature.Contains(\"()\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindConstructorsInCodeAsListExp>());
 
             // Interface / Struct / Enum search
-            AgentFrameworkService.Instance.DslEngine!.Register("find_interfaces_as_list", "find_interfaces_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Interface, Name/FilePath/Location/Modifiers/Extra(base list) fields, supports LINQ such as .where($$.Name.StartsWith(\"I\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindInterfacesAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_interfaces_in_code_as_list", "find_interfaces_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Interface, Name/FilePath/Location/Modifiers/Extra(base list) fields, supports LINQ such as .where($$.Name.StartsWith(\"I\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindInterfacesInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_structs_as_list", "find_structs_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Struct, Name/FilePath/Location/Modifiers/Extra(base list) fields, supports LINQ such as .where($$.Modifiers.Contains(\"readonly\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindStructsAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_structs_in_code_as_list", "find_structs_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Struct, Name/FilePath/Location/Modifiers/Extra(base list) fields, supports LINQ such as .where($$.Modifiers.Contains(\"readonly\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindStructsInCodeAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_enums_as_list", "find_enums_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Enum, Name/FilePath/Location/Modifiers fields, supports LINQ such as .where($$.Modifiers.Contains(\"public\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindEnumsAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_enums_in_code_as_list", "find_enums_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Enum, Name/FilePath/Location/Modifiers fields, supports LINQ such as .where($$.Modifiers.Contains(\"public\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindEnumsInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_interfaces_as_list", "find_interfaces_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Interface, Name/FilePath/Location/Modifiers/Extra(base list) fields, supports LINQ such as .where($$.Name.StartsWith(\"I\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindInterfacesAsListExp>());
+            BatchCommand.BatchScript.Register("find_interfaces_in_code_as_list", "find_interfaces_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Interface, Name/FilePath/Location/Modifiers/Extra(base list) fields, supports LINQ such as .where($$.Name.StartsWith(\"I\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindInterfacesInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_structs_as_list", "find_structs_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Struct, Name/FilePath/Location/Modifiers/Extra(base list) fields, supports LINQ such as .where($$.Modifiers.Contains(\"readonly\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindStructsAsListExp>());
+            BatchCommand.BatchScript.Register("find_structs_in_code_as_list", "find_structs_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Struct, Name/FilePath/Location/Modifiers/Extra(base list) fields, supports LINQ such as .where($$.Modifiers.Contains(\"readonly\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindStructsInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_enums_as_list", "find_enums_as_list(filePath, language, [nameRegexPattern]) return List of CodeItem(Kind=Enum, Name/FilePath/Location/Modifiers fields, supports LINQ such as .where($$.Modifiers.Contains(\"public\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindEnumsAsListExp>());
+            BatchCommand.BatchScript.Register("find_enums_in_code_as_list", "find_enums_in_code_as_list(code, language, [nameRegexPattern], [fileName]) return List of CodeItem(Kind=Enum, Name/FilePath/Location/Modifiers fields, supports LINQ such as .where($$.Modifiers.Contains(\"public\"))), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindEnumsInCodeAsListExp>());
 
             // AST node search
-            AgentFrameworkService.Instance.DslEngine!.Register("find_nodes_as_list", "find_nodes_as_list(filePath, language, nodeRegexPattern) return List of CodeItem(Kind=ast node type, Name/FilePath/Location(line/column range)/Extra(parent and child count)/Text(preview) fields, supports LINQ such as .where($$.Kind == \"identifier\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindNodesAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("find_nodes_in_code_as_list", "find_nodes_in_code_as_list(code, language, nodeRegexPattern, [fileName]) return List of CodeItem(Kind=ast node type, Name/FilePath/Location(line/column range)/Extra(parent and child count)/Text(preview) fields, supports LINQ such as .where($$.Kind == \"identifier\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindNodesInCodeAsListExp>());
+            BatchCommand.BatchScript.Register("find_nodes_as_list", "find_nodes_as_list(filePath, language, nodeRegexPattern) return List of CodeItem(Kind=ast node type, Name/FilePath/Location(line/column range)/Extra(parent and child count)/Text(preview) fields, supports LINQ such as .where($$.Kind == \"identifier\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindNodesAsListExp>());
+            BatchCommand.BatchScript.Register("find_nodes_in_code_as_list", "find_nodes_in_code_as_list(code, language, nodeRegexPattern, [fileName]) return List of CodeItem(Kind=ast node type, Name/FilePath/Location(line/column range)/Extra(parent and child count)/Text(preview) fields, supports LINQ such as .where($$.Kind == \"identifier\")), use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindNodesInCodeAsListExp>());
         }
 
         // ========== Function Search (List) ==========
@@ -78,7 +79,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -102,7 +103,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -126,7 +127,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -150,7 +151,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -174,7 +175,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -198,7 +199,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -221,7 +222,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -245,7 +246,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -268,7 +269,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -292,7 +293,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -316,7 +317,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -340,7 +341,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -364,7 +365,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -389,7 +390,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -413,7 +414,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -438,7 +439,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -462,7 +463,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -487,7 +488,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -511,7 +512,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -536,7 +537,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -559,7 +560,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -583,7 +584,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -607,7 +608,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -631,7 +632,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -654,7 +655,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -678,7 +679,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -701,7 +702,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -725,7 +726,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -749,7 +750,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }
@@ -773,7 +774,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
                     return BoxedValue.FromObject(s_EmptyStringList);
                 }
             }

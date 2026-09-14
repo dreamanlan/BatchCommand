@@ -450,6 +450,20 @@ class AgentPanel {
       `;
     execMetaDslBtn.onclick = () => this.runMetaDSL();
 
+    // Execute Agent MetaDSL button (standalone AgentCore via the relay)
+    const execAgentMetaDslBtn = document.createElement('button');
+    execAgentMetaDslBtn.textContent = 'Exec AgentDSL';
+    execAgentMetaDslBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #009688;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    execAgentMetaDslBtn.onclick = () => this.runAgentMetaDSL();
+
     // Execute JavaScript button
     const execJsBtn = document.createElement('button');
     execJsBtn.textContent = 'Exec JS';
@@ -663,6 +677,7 @@ class AgentPanel {
     buttonBar.appendChild(clearBtn);
     buttonBar.appendChild(copyHtmlBtn);
     buttonBar.appendChild(execMetaDslBtn);
+    buttonBar.appendChild(execAgentMetaDslBtn);
     buttonBar.appendChild(execJsBtn);
 
     // Option bar: Auto Plan + toggle options
@@ -925,7 +940,7 @@ class AgentPanel {
     // Create MetaDSL input area
     this.scriptInput = document.createElement('textarea');
     this.scriptInput.placeholder = 'Enter MetaDSL/Javascript here to execute...';
-    this.scriptInput.value = 'format("id:{0}\\ncfgs:\\n{1}\\nworkers:{2}",@LlmProviderId,llm_get_providers_config(),agent_get_active_workers(9527));';
+    this.scriptInput.value = 'format("base_path:{0}\\napp_dir:\\n{1}\\nis_mac:{2}\\nuser:{3}",basepath,appdir,ismac,@UserName);';
     this.scriptInput.style.cssText = `
         height: 100px;
         background: #2d2d2d;
@@ -1597,6 +1612,29 @@ class AgentPanel {
     } catch (e) {
       this.log('✗ MetaDSL execution error: ' + e.message);
       this.log('  Stack: ' + e.stack);
+    }
+  }
+
+  // Execute MetaDSL on the standalone AgentCore (via the relay). The result
+  // comes back through the reply queue and surfaces in the page chat.
+  runAgentMetaDSL() {
+    try {
+      const script = this.scriptInput.value.trim();
+      if (!script) {
+        this.log('✗ MetaDSL input is empty. Please enter MetaDSL script first.');
+        return;
+      }
+      if (typeof relayTransport === 'undefined' || !relayTransport) {
+        this.log('✗ relay transport unavailable');
+        return;
+      }
+      if (!relayTransport.queueMessage(script)) {
+        this.log('✗ relay not connected, execution request dropped');
+        return;
+      }
+      this.log('✓ MetaDSL sent to AgentCore (agent apis available there), result will arrive in the chat');
+    } catch (e) {
+      this.log('✗ Agent MetaDSL error: ' + e.message);
     }
   }
 

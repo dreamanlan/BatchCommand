@@ -17,11 +17,17 @@
   // Create instances (assign to shared variables for window API access)
   bridge = new AgentBridge();
   pageAdapter = new LLMPageAdapter(bridge);
-  metadslMonitor = new MetaDSLMonitor(bridge, pageAdapter, metadslWorker);
+  // MetaDSL code execution goes through the relay transport (cefQuery ->
+  // browser process -> standalone AgentCore worker pool). relayTransport has
+  // the same queue interface as the old metadslWorker (queueMessage /
+  // dequeueMessage / queue counts), so the monitor and the state machine work
+  // unchanged - and the path no longer depends on the page being allowed to
+  // open websockets to localhost (https pages on external sites cannot).
+  metadslMonitor = new MetaDSLMonitor(bridge, pageAdapter, relayTransport);
 
   panel = null;
   if (CONFIG.agentPanelEnabled) {
-    panel = new AgentPanel(bridge, metadslMonitor, pageAdapter, metadslWorker);
+    panel = new AgentPanel(bridge, metadslMonitor, pageAdapter, relayTransport);
     // Create and link chat input panel
     const chatInputPanel = new ChatInputPanel(bridge);
     // Async restore config (secrets loaded from SecretStore)
@@ -39,8 +45,8 @@
     const relayPanel = new RelayPanel();
     // Async restore config (secrets loaded from SecretStore)
     await relayPanel._restoreConfig();
-    // Set metadslWorker reference for remote mode
-    relayPanel.metadslWorker = metadslWorker;
+    // Set the transport reference for remote mode (queueReply surface)
+    relayPanel.metadslWorker = relayTransport;
     panel.relayPanel = relayPanel;
     // Register LLM response callback for remote forwarding
     metadslMonitor.onLLMResponse = (resp) => {
@@ -173,8 +179,8 @@ window.AgentAPI = {
   needToPlan: () => bridge && pageAdapter && metadslMonitor && bridge.dispatchAgentDecision('AGENT_EXECUTING', panel, true),
   triggerReflection: () => metadslMonitor && metadslMonitor.triggerReflection(),
   getOperationQueueCount: () => metadslMonitor ? metadslMonitor.operationQueue.length : 0,
-  getSendQueueCount: () => metadslWorker ? metadslWorker.getSendQueueCount() : 0,
-  getReceiveQueueCount: () => metadslWorker ? metadslWorker.getReceiveQueueCount() : 0,
+  getSendQueueCount: () => relayTransport ? relayTransport.getSendQueueCount() : 0,
+  getReceiveQueueCount: () => relayTransport ? relayTransport.getReceiveQueueCount() : 0,
   showPanel: () => panel && panel.show(),
   hidePanel: () => panel && panel.hide(),
   togglePanel: () => panel && panel.toggle(),
@@ -234,6 +240,23 @@ window.onAgentResponse = function (responseJson) {
   }
 };
 
+// Server-pushed async callbacks (e.g. llm_callback) that were not handled by
+// a dsl hook in script_agent.dsl. Called from ws_manager envelope dispatch.
+window.onAgentCallback = function (msg, args) {
+  try {
+    if (msg === 'llm_callback' && args && args.length >= 4) {
+      const reply = args[3];
+      if (panel && panel.chatInputPanel && typeof reply === 'string') {
+        panel.chatInputPanel.addMessage('llm', reply);
+      }
+    } else {
+      logger.debug('Unhandled agent callback', { msg: msg, argCount: args ? args.length : 0 });
+    }
+  } catch (e) {
+    logger.error('Error processing agent callback', { error: e.toString() });
+  }
+};
+
 // Receive commands from C# (called by C#)
 window.onAgentCommand = function (commandJson) {
   try {
@@ -243,24 +266,6 @@ window.onAgentCommand = function (commandJson) {
 
     // Extract component from params or directly from cmd
     const component = cmd.component || (cmd.params && cmd.params.component);
-
-    // Handle WebSocket commands
-    if (cmd.command === 'ws_start' && cmd.params && cmd.params.port) {
-      const port = parseInt(cmd.params.port);
-      const success = metadslWorker.start(port);
-      if (panel) {
-        panel.log(success ? 'MetaDSL Worker started on port ' + port : 'Failed to start MetaDSL Worker');
-      }
-      return;
-    }
-
-    if (cmd.command === 'ws_stop') {
-      metadslWorker.stop();
-      if (panel) {
-        panel.log('MetaDSL Worker stopped');
-      }
-      return;
-    }
 
     if (cmd.command === 'update_system_prompt') {
       if (cmd.params && cmd.params.prompt) {
@@ -281,7 +286,9 @@ window.onAgentCommand = function (commandJson) {
 
     if (cmd.command === 'send_message') {
       if (cmd.params && cmd.params.text) {
-        metadslWorker.queueReply(cmd.params.text);
+        // DSL pushes land in the relay reply queue (the state machine drains
+        // the relay transport now, not the old worker).
+        relayTransport.queueReply(cmd.params.text);
       }
       return;
     }

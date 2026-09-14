@@ -84,7 +84,7 @@ bindings与delimiter部分可省略，用法与脚本执行api相同。
 
 ```
 // @execute
-set_env("ProjectDirectory", agent_get_project_dir(9527));
+set_env("ProjectDirectory", agent_get_project_dir("webagent"));
 execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py", "%ProjectDirectory%", 120000);
 ```
 如果是多行命令可以考虑用[[与]]来包裹命令字符串，这样不用写转义符【更复杂命令可用`@@delimiter(string, "begin", "end")`自定义】

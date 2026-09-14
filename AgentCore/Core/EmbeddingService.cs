@@ -1,5 +1,4 @@
 using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,6 +7,9 @@ using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
 using HFTokenizer = Tokenizers.DotNet.Tokenizer;
+using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.Core
 {
@@ -79,8 +81,8 @@ namespace AgentCore.Core
                     return;
                 _index.Clear();
                 foreach (var (key, text) in items) {
-                    var keyVec = EncodeInternal(AgentFrameworkService.CleanStringData(key));
-                    var docVec = EncodeInternal(AgentFrameworkService.CleanStringData(text));
+                    var keyVec = EncodeInternal(MetaDslExecutor.CleanStringData(key));
+                    var docVec = EncodeInternal(MetaDslExecutor.CleanStringData(text));
                     if (keyVec != null && docVec != null)
                         _index[key] = (keyVec, docVec, text);
                 }
@@ -174,8 +176,8 @@ namespace AgentCore.Core
                 } else {
                     encoded = new List<(string key, float[] keyVec, float[] docVec)>(candidateList.Count);
                     foreach (var (key, text) in candidateList) {
-                        var keyVec = EncodeInternal(AgentFrameworkService.CleanStringData(key));
-                        var docVec = EncodeInternal(AgentFrameworkService.CleanStringData(text));
+                        var keyVec = EncodeInternal(MetaDslExecutor.CleanStringData(key));
+                        var docVec = EncodeInternal(MetaDslExecutor.CleanStringData(text));
                         if (keyVec != null && docVec != null)
                             encoded.Add((key, keyVec, docVec));
                     }
@@ -371,7 +373,7 @@ namespace AgentCore.Core
         /// </summary>
         public static string CleanStringData(string text)
         {
-            return AgentFrameworkService.CleanStringData(text);
+            return MetaDslExecutor.CleanStringData(text);
         }
     }
 }

@@ -1,10 +1,12 @@
 using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TreeSitter;
+using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 using AgentCore.Models;
 using AgentCore.Core;
 
@@ -87,7 +89,7 @@ namespace AgentCore.CodeAnalysis
             catch (Exception ex)
             {
                 // Log but don't fail - we can still return partial results
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Warning: Failed to extract symbols: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Warning: Failed to extract symbols: {ex.Message}");
             }
         }
 

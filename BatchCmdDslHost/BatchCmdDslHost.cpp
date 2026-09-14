@@ -1,7 +1,18 @@
-﻿#include <iostream>
+﻿#include <chrono>
+#include <iostream>
+#include <map>
+#include <mutex>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include "path_utils.h"
+
+// Cross-platform string literal macro for char_t
+#if defined(_MSC_VER)
+    #define CHAR_T_LITERAL(str) L##str
+#else
+    #define CHAR_T_LITERAL(str) str
+#endif
 
 #if defined(_MSC_VER)
 #include "windows.h"
@@ -45,10 +56,15 @@ bool IsMemoryReadable(HANDLE process, LPCVOID address) {
 #if TARGET_OS_OSX
 #include <iostream>
 #include <dlfcn.h>
+#include <signal.h>
+#include <sys/sysctl.h>
+#include <mach-o/dyld.h>
 #include "coreclr/nethost.h"
 #include "coreclr/coreclr_delegates.h"
 #include "coreclr/hostfxr.h"
 #endif
+#elif defined(__linux__)
+#include <syslog.h>
 #endif
 
 // Cross-platform character set conversion functions
@@ -203,6 +219,7 @@ void printf_log(LogSeverity severity, const char* fmt, ...)
     va_start(vl, fmt);
     char buffer[4097];
     int len = vsnprintf(buffer, sizeof(buffer) - 1, fmt, vl);
+    va_end(vl);
     // Guard against vsnprintf returning negative (error) or exceeding buffer size
     if (len < 0) {
         len = 0;
@@ -210,7 +227,6 @@ void printf_log(LogSeverity severity, const char* fmt, ...)
         len = static_cast<int>(sizeof(buffer) - 1);
     }
     buffer[len] = '\0';
-    va_end(vl);
 
     if (severity == LOG_SEVERITY_ERROR) {
         printf("%s\n", buffer);
@@ -223,6 +239,13 @@ void printf_log(LogSeverity severity, const char* fmt, ...)
     // Convert UTF-8 to wide char for OutputDebugString
     std::wstring wbuffer = Utf8ToWstring(buffer);
     ::OutputDebugStringW(wbuffer.c_str());
+#elif defined(__APPLE__)
+    // Avoid os_log_with_type which can conflict with .NET CLR signal handlers,
+    // causing the main thread to hang during PAL_DispatchException.
+    fprintf(stderr, "%s\n", buffer);
+#elif defined(__linux__)
+    syslog(severity == LOG_SEVERITY_ERROR ? LOG_ERR : LOG_WARNING,
+        "%s", buffer);
 #endif
 }
 
@@ -892,15 +915,119 @@ int CountMonitoredProcess(const char* cmd_line_key) {
     return monitor_count;
 }
 
-static const char_t* local_managed_dll_dir = L"./";
-static const char_t* local_dotnet_runtime_dir = L"./dotnet/Microsoft.NETCore.App/9.0.2";
-static const char_t* dotnet_runtime_config = L"./managed/BatchCmdDsl.runtimeconfig.json";
-static const char_t* dotnet_assembly_path = L"./managed/BatchCmdDsl.dll";
-static const char_t* dotnet_class_name = L"Program, BatchCmdDsl";
+// Initialize absolute paths based on executable location
+// Use GetExeDir() from path_utils.h, which returns directory with trailing separator
+static std::string GetExeDirWithSeparator() {
+    std::string dir = GetExeDir();
+    if (dir.empty()) {
+        return "./";
+    }
+    // Ensure trailing separator
+    if (dir.back() != '/' && dir.back() != '\\') {
+#if defined(_MSC_VER)
+        dir += '\\';
+#else
+        dir += '/';
+#endif
+    }
+    return dir;
+}
+
+// Helper functions to build paths dynamically (no static storage, no memory leak)
+#if defined(_MSC_VER)
+// Windows: use wide strings
+typedef std::wstring string_t;
+#define STR_LITERAL(s) L##s
+
+static string_t GetAppBaseDirString() {
+    return Utf8ToWstring(GetExeDirWithSeparator().c_str());
+}
+#else
+// Unix: use narrow strings
+typedef std::string string_t;
+#define STR_LITERAL(s) s
+
+static string_t GetAppBaseDirString() {
+#if defined(__APPLE__)
+    // On macOS, return the outermost (main) .app directory path with trailing separator.
+    // This ensures Helper processes (inside Frameworks/) also find the main app's path.
+    std::string appPath = GetMacMainAppDirPath();
+    if (appPath.empty()) {
+        return GetExeDirWithSeparator();
+    }
+    // Ensure trailing separator
+    if (appPath.back() != '/') {
+        appPath += '/';
+    }
+    return appPath;
+#else
+    return GetExeDirWithSeparator();
+#endif
+}
+#endif
+
+// Build paths dynamically based on debug/release mode
+static string_t BuildManagedDllDir(bool is_debug) {
+    string_t base = GetAppBaseDirString();
+#if defined(__APPLE__)
+    return is_debug ? (base + STR_LITERAL("../webagent.app/Contents/managed/")) : base + STR_LITERAL("Contents/managed/");
+#else
+    return is_debug ? (base + STR_LITERAL("../webagent/managed/")) : base + STR_LITERAL("managed/");
+#endif
+}
+
+static string_t BuildDotnetRuntimeDir(bool is_debug) {
+    string_t base = GetAppBaseDirString();
+#if defined(__APPLE__)
+    return is_debug ? (base + STR_LITERAL("../webagent.app/Contents/dotnet/Microsoft.NETCore.App/9.0.2")) : base + STR_LITERAL("Contents/dotnet/Microsoft.NETCore.App/9.0.2");
+#else
+    if (is_debug) {
+        return base + STR_LITERAL("../webagent/dotnet/Microsoft.NETCore.App/9.0.2");
+    }
+    return base + STR_LITERAL("dotnet/Microsoft.NETCore.App/9.0.2");
+#endif
+}
+
+static string_t BuildRuntimeConfigPath(bool is_debug) {
+    string_t base = GetAppBaseDirString();
+#if defined(__APPLE__)
+    return is_debug ? (base + STR_LITERAL("../webagent.app/Contents/managed/BatchCmdDsl.runtimeconfig.json")) : base + STR_LITERAL("Contents/managed/BatchCmdDsl.runtimeconfig.json");
+#else
+    if (is_debug) {
+        return base + STR_LITERAL("../webagent/managed/BatchCmdDsl.runtimeconfig.json");
+    }
+    return base + STR_LITERAL("managed/BatchCmdDsl.runtimeconfig.json");
+#endif
+}
+
+static string_t BuildAssemblyPath(bool is_debug) {
+    string_t base = GetAppBaseDirString();
+#if defined(__APPLE__)
+    return is_debug ? (base + STR_LITERAL("../webagent.app/Contents/managed/BatchCmdDsl.dll")) : base + STR_LITERAL("Contents/managed/BatchCmdDsl.dll");
+#else
+    if (is_debug) {
+        return base + STR_LITERAL("../webagent/managed/BatchCmdDsl.dll");
+    }
+    return base + STR_LITERAL("managed/BatchCmdDsl.dll");
+#endif
+}
+
+#if defined(_MSC_VER)
+static const wchar_t* c_dotnet_class_name = L"Program, BatchCmdDsl";
+#else
+static const char* c_dotnet_class_name = "Program, BatchCmdDsl";
+#endif
+
 static load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
 // Function to initialize .NET Core runtime
-int load_hostfxr(int& out_rc)
+int load_hostfxr(bool is_debug, int& out_rc)
 {
+    // Build paths dynamically based on debug mode
+    string_t dotnet_runtime_config_path = BuildRuntimeConfigPath(is_debug);
+    string_t local_managed_dll_dir = BuildManagedDllDir(is_debug);
+    string_t local_dotnet_runtime_dir = BuildDotnetRuntimeDir(is_debug);
+    string_t dotnet_assembly_path = BuildAssemblyPath(is_debug);
+
     out_rc = 0;
 #ifdef USE_SPEC_DOTNET
     // Load hostfxr.dll and use dotnet framework in specific directory
@@ -933,7 +1060,7 @@ int load_hostfxr(int& out_rc)
         out_rc = rc0;
         return -1;
     }
-    printf("[native] hostfxr path: %s\n", hostfxr_path);
+    printf_log(LOG_SEVERITY_INFO, "[native] hostfxr path: %s\n", hostfxr_path);
 #endif
 
 #ifdef _WIN32
@@ -946,6 +1073,8 @@ int load_hostfxr(int& out_rc)
 #else
     void* hostfxr_lib = load_library(hostfxr_path);
     if (!hostfxr_lib) {
+        const char* dl_err = dlerror();
+        printf_log(LOG_SEVERITY_ERROR, "dlopen failed: %s\n", dl_err ? dl_err : "unknown error");
         return -2;
     }
 #endif
@@ -964,25 +1093,23 @@ int load_hostfxr(int& out_rc)
         return -3;
     }
 
-    int argc = 1;
-    const char_t* argv[] = { dotnet_assembly_path };
 #ifdef USE_SPEC_DOTNET
     // Initialize the .NET Core runtime
     hostfxr_initialize_parameters parameters{
         sizeof(hostfxr_initialize_parameters),
-        local_managed_dll_dir,
-        local_dotnet_runtime_dir
+        local_managed_dll_dir.c_str(),
+        local_dotnet_runtime_dir.c_str()
     };
 
     hostfxr_handle cxt = nullptr;
-    int rc = init_config_fptr(dotnet_runtime_config, &parameters, &cxt);
-    //int rc = init_cmdline_fptr(argc, argv, &parameters, &cxt);
+    int rc = init_config_fptr(dotnet_runtime_config_path.c_str(), &parameters, &cxt);
 #else
     hostfxr_handle cxt = nullptr;
-    int rc = init_config_fptr(dotnet_runtime_config, nullptr, &cxt);
-    //int rc = init_cmdline_fptr(argc, argv, nullptr, &cxt);
+    int rc = init_config_fptr(dotnet_runtime_config_path.c_str(), nullptr, &cxt);
 #endif
-
+    //int argc = 1;
+    //const char_t* argv[] = { dotnet_assembly_path };
+    //int rc = init_cmdline_fptr(argc, argv, &parameters, &cxt);
     if (rc != 0 || cxt == nullptr)
     {
         printf_log(LOG_SEVERITY_ERROR, "Failed to initialize .NET Core runtime: %d (0x%x)", rc, rc);
@@ -1051,8 +1178,10 @@ int host_count_process(const char* key)
 }
 
 // Function to call .NET Core method
-int call_dotnet_method(int& rc)
+int call_dotnet_method(bool is_debug, int& rc)
 {
+    string_t dotnet_assembly_path = BuildAssemblyPath(is_debug);
+    const char_t* dotnet_class_name = c_dotnet_class_name;
     // native api
     HostApi api;
     api.NativeLog = &host_native_log;
@@ -1062,7 +1191,7 @@ int call_dotnet_method(int& rc)
     typedef int (CORECLR_DELEGATE_CALLTYPE* register_api_fn)(void* arg);
     register_api_fn register_entry = nullptr;
     rc = load_assembly_and_get_function_pointer(
-        dotnet_assembly_path,
+        dotnet_assembly_path.c_str(),
         dotnet_class_name,
         L"RegisterApi",
         UNMANAGEDCALLERSONLY_METHOD,
@@ -1081,7 +1210,7 @@ int call_dotnet_method(int& rc)
     typedef int (CORECLR_DELEGATE_CALLTYPE* init_fn)(const char* cmd_line, const char* path);
     init_fn init_entry = nullptr;
     rc = load_assembly_and_get_function_pointer(
-        dotnet_assembly_path,
+        dotnet_assembly_path.c_str(),
         dotnet_class_name,
         L"Init",
         L"Program+InitDelegation, BatchCmdDsl",
@@ -1104,7 +1233,7 @@ int call_dotnet_method(int& rc)
     typedef int (CORECLR_DELEGATE_CALLTYPE* loop_fn)();
     loop_fn loop_entry = nullptr;
     rc = load_assembly_and_get_function_pointer(
-        dotnet_assembly_path,
+        dotnet_assembly_path.c_str(),
         dotnet_class_name,
         L"Loop",
         L"Program+LoopDelegation, BatchCmdDsl",
@@ -1128,14 +1257,15 @@ int main(int argc, const char* argv[])
 {
     std::cout << "DonetHost started.\n";
 
+    bool is_debug = false;
     int rc = 0;
-    int r = load_hostfxr(rc);
+    int r = load_hostfxr(is_debug, rc);
     if (r != 0)
     {
         printf("load_hostfxr failed: %d (%d [0x%x])\n", r, rc, rc);
         return -1;
     }
-    r = call_dotnet_method(rc);
+    r = call_dotnet_method(is_debug, rc);
     if (r != 0)
     {
         printf("call_dotnet_method failed: %d (%d [0x%x])\n", r, rc, rc);

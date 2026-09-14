@@ -123,7 +123,7 @@ bindings与delimiter部分可省略，用法与脚本执行api相同。
 
 ```
 // @execute
-set_env("ProjectDirectory", agent_get_project_dir(9527));
+set_env("ProjectDirectory", agent_get_project_dir("webagent"));
 execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py", "%ProjectDirectory%", 120000);
 ```
 如果是多行命令可以考虑用[[与]]来包裹命令字符串，这样不用写转义符【更复杂命令可用`@@delimiter(string, "begin", "end")`自定义】
@@ -177,8 +177,8 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 
 **其它工具**
 
-- `agent_get_project_identity(9527)` — 项目标识
-- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`plan.txt`/`backlog.txt`/`project_prompt.txt`等状态文件
+- `agent_get_project_identity("webagent")` — 项目标识
+- `agent_get_project_dir("webagent")` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`plan.txt`/`backlog.txt`/`project_prompt.txt`等状态文件
 - `count_lines(path[, encoding])` — 查看文件行数
 - `count_indentations(path[, startLine, endLine, encoding])` - 查看带行号与缩进信息的文件内容
 - `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容
@@ -196,7 +196,7 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 
 ```
 // @execute
-semantic_search(agent_get_project_identity(9527)+"_legionnaire_history", "问题描述", "空格分隔的关键字", 50);
+semantic_search(agent_get_project_identity("webagent")+"_legionnaire_history", "问题描述", "空格分隔的关键字", 50);
 ```
 
 将`semantic_search`换为`keyword_search`可进行BM25关键词搜索。级别替换`legionnaire`为对应级别名即可。
@@ -204,7 +204,7 @@ semantic_search(agent_get_project_identity(9527)+"_legionnaire_history", "问题
 认知记忆分3层：情景（具体事件，sqlite 表 `{project_identity}_episodic_memory`，按需 semantic_get_recent(collection[, topN]) 分析提炼）→ 模式（重复问题及解法，见项目 docs/patterns.md）→ 元认知（决策原则，随项目人格文档 soul.md 拼接进 prompt）。
 ```
 // @execute
-semantic_get_recent(agent_get_project_identity(9527)+"_episodic_memory", 30);
+semantic_get_recent(agent_get_project_identity("webagent")+"_episodic_memory", 30);
 ```
 
 sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pretty_string来把它们转换成实际的字符，更便于阅读
@@ -215,15 +215,15 @@ to_pretty_string($query_result);
 ```
 
 **需要知道的目录或值**
-- 项目目录: agent_get_project_dir(9527)
-- 项目标识: agent_get_project_identity(9527)
+- 项目目录: agent_get_project_dir("webagent")
+- 项目标识: agent_get_project_identity("webagent")
 - cefclient: basepath
 - 当前应用目录: appdir
 - 是否Mac: ismac
 
 ```
 // @execute
-format("{0} {1} {2} {3} {4}",agent_get_project_dir(9527),agent_get_project_identity(9527),appdir,basepath,ismac);
+format("{0} {1} {2} {3} {4}",agent_get_project_dir("webagent"),agent_get_project_identity("webagent"),appdir,basepath,ismac);
 ```
 
 ##特别关注
@@ -244,4 +244,4 @@ js_request:start_auto_plan
 
 ****强调****
 本智能体通过metadsl代码块执行文件读写、命令执行等操作，不要使用tool协议来完成这些功能。
-agent_xxx类api需要一个端口号作为参数时，请使用9527，这是主agent的websocket端口号。
+agent_xxx类api需要agentId作为参数，本页面为"webagent"

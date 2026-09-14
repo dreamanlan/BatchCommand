@@ -1,9 +1,10 @@
 ﻿using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.ScriptApi
 {
@@ -66,40 +67,66 @@ namespace AgentCore.ScriptApi
                 _servers.Clear();
             }
         }
+
+        /// <summary>
+        /// Broadcasts a message to all clients of all running servers.
+        /// Used for server-initiated pushes without a request context.
+        /// </summary>
+        public static void BroadcastAll(string message)
+        {
+            lock (_lockObj) {
+                foreach (var server in _servers.Values) {
+                    if (server.IsRunning) {
+                        _ = server.BroadcastMessageAsync(message);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
     /// Starts WebSocket server on specified port
-    /// Usage: ws_start_server(port)
-    /// Returns: true if successful, false otherwise
+    /// Usage: ws_start_server(port, [agentId])
+    /// agentId associates the server with an AgentInstance ("webagent",
+    /// "hyarena", ...); when omitted the port number itself is used as the
+    /// instance key (legacy behavior). Returns: true if successful, false otherwise
     /// </summary>
     sealed class WsStartServerExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_start_server(port)");
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ws_start_server(port, [agentId])");
                 return BoxedValue.FromBool(false);
             }
 
             try {
                 int port = operands[0].GetInt();
                 if (port <= 0 || port > 65535) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Invalid port number: {port}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Invalid port number: {port}");
                     return BoxedValue.FromBool(false);
+                }
+
+                string agentId = port.ToString();
+                if (operands.Count >= 2) {
+                    agentId = operands[1].IsString ? (operands[1].AsString ?? port.ToString()) : operands[1].GetInt().ToString();
                 }
 
                 var server = WebSocketServerManager.GetServer(port);
                 bool result = server.Start(port);
                 if (result) {
-                    // Bind the WS server to the AgentInstance for this port
-                    var instance = Core.AgentCore.Instance.GetOrCreateInstance(port);
+                    // Associate the port with the agent id and bind the WS
+                    // server to that AgentInstance (ports are routing details,
+                    // not instance keys).
+                    Core.AgentCore.Instance.RegisterPortAgentId(port, agentId);
+                    var instance = Core.AgentCore.Instance.GetOrCreateInstance(agentId);
                     instance.WsServer = server;
+                    server.AgentId = agentId;
                 }
                 return BoxedValue.FromBool(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ws_start_server error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"ws_start_server error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }
@@ -114,7 +141,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_stop_server(port)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ws_stop_server(port)");
                 return BoxedValue.FromBool(false);
             }
             try {
@@ -123,7 +150,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromBool(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ws_stop_server error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"ws_stop_server error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }
@@ -139,7 +166,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_get_client_count(port)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ws_get_client_count(port)");
                 return BoxedValue.From(0);
             }
             try {
@@ -152,7 +179,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.From(count);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ws_get_client_count error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"ws_get_client_count error: {ex.Message}");
                 return BoxedValue.From(0);
             }
         }
@@ -168,7 +195,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_get_receive_queue_count(port)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ws_get_receive_queue_count(port)");
                 return BoxedValue.From(0);
             }
             try {
@@ -181,7 +208,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.From(count);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ws_get_receive_queue_count error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"ws_get_receive_queue_count error: {ex.Message}");
                 return BoxedValue.From(0);
             }
         }
@@ -194,13 +221,13 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("ws_start_server", "ws_start_server(port)",
+            BatchCommand.BatchScript.Register("ws_start_server", "ws_start_server(port, [agentId])",
                 new ExpressionFactoryHelper<WsStartServerExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("ws_stop_server", "ws_stop_server(port)",
+            BatchCommand.BatchScript.Register("ws_stop_server", "ws_stop_server(port)",
                 new ExpressionFactoryHelper<WsStopServerExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("ws_get_client_count", "ws_get_client_count(port)",
+            BatchCommand.BatchScript.Register("ws_get_client_count", "ws_get_client_count(port)",
                 new ExpressionFactoryHelper<WsGetClientCountExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("ws_get_receive_queue_count", "ws_get_receive_queue_count(port)",
+            BatchCommand.BatchScript.Register("ws_get_receive_queue_count", "ws_get_receive_queue_count(port)",
                 new ExpressionFactoryHelper<WsGetReceiveQueueCountExp>());
         }
     }

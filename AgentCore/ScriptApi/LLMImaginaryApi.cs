@@ -4,8 +4,8 @@ using System.Text;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using AbstractAgent;
-using AbstractAgent.Utils;
+
+using BatchCommand.Utils;
 using AgentCore.Core;
 
 namespace AgentCore.ScriptApi
@@ -15,7 +15,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append(stringbuilder, val)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: append(stringbuilder, val)");
                 return BoxedValue.NullObject;
             }
 
@@ -29,44 +29,22 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(sb);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"fromjson error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"fromjson error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
         }
     }
-    sealed class AppendLineExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_line(stringbuilder, val)");
-                return BoxedValue.NullObject;
-            }
-
-            {
-                try {
-                    var sb = operands[0].As<StringBuilder>();
-                    var v = operands[1];
-                    var tmp = new StringBuilder();
-                    DslHelper.ConvertToString(v, tmp, 0, true);
-                    sb.AppendLine(tmp.ToString());
-                    return BoxedValue.FromObject(sb);
-                }
-                catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"fromjson error: {ex.Message}");
-                }
-            }
-            return BoxedValue.NullObject;
-        }
-    }
+    // AppendLineExp removed: identical implementation lives in
+    // BatchCommand.Api (SharedApis.cs); append_line is registered by
+    // BatchScriptApiRegistrar.RegisterSharedApis.
     internal sealed class StringIndexOfExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_index_of(str, substr[, start, count]), aliased as string_find|stringfind|index_of|indexof|string_indexof|stringindexof");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: string_index_of(str, substr[, start, count]), aliased as string_find|stringfind|index_of|indexof|string_indexof|stringindexof");
                 return BoxedValue.NullObject;
             }
 
@@ -97,7 +75,7 @@ namespace AgentCore.ScriptApi
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_last_index_of(str, substr[, start, count]), aliased as last_index_of|lastindexof|string_last_indexof|stringlastindexof");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: string_last_index_of(str, substr[, start, count]), aliased as last_index_of|lastindexof|string_last_indexof|stringlastindexof");
                 return BoxedValue.NullObject;
             }
 
@@ -128,7 +106,7 @@ namespace AgentCore.ScriptApi
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_index_of_any(str, substr[, start, count]), aliased as index_of_any|indexofany|string_indexof_any|stringindexofany");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: string_index_of_any(str, substr[, start, count]), aliased as index_of_any|indexofany|string_indexof_any|stringindexofany");
                 return BoxedValue.NullObject;
             }
 
@@ -172,7 +150,7 @@ namespace AgentCore.ScriptApi
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_last_index_of_any(str, substr[, start, count]), aliased as last_index_of_any|lastindexofany|string_last_indexof_any|stringlastindexofany");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: string_last_index_of_any(str, substr[, start, count]), aliased as last_index_of_any|lastindexofany|string_last_indexof_any|stringlastindexofany");
                 return BoxedValue.NullObject;
             }
 
@@ -226,7 +204,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: length(str_or_list_or_hashtable), aliased as len|size|count");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: length(str_or_list_or_hashtable), aliased as len|size|count");
                 return (BoxedValue)(-1);
             }
 
@@ -259,7 +237,7 @@ namespace AgentCore.ScriptApi
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: char_to_int(char_str)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: char_to_int(char_str)");
                 return BoxedValue.NullObject;
             }
 
@@ -279,7 +257,7 @@ namespace AgentCore.ScriptApi
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: int_to_char(int_ascii)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: int_to_char(int_ascii)");
                 return BoxedValue.NullObject;
             }
 

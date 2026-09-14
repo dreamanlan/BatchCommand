@@ -1,10 +1,11 @@
 ﻿using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using System.Linq;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 using AgentCore.Core;
 
 namespace AgentCore.ScriptApi
@@ -43,7 +44,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_init(collection)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_init(collection)");
                 return BoxedValue.From(false);
             }
 
@@ -54,7 +55,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.From(true);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_init error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_init error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -67,7 +68,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_is_ready(collection)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_is_ready(collection)");
                 return BoxedValue.From(false);
             }
 
@@ -77,7 +78,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.From(Core.AgentCore.Instance.SemanticIndex.IsReady(collection));
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_is_ready error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_is_ready error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -90,7 +91,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_add(collection, content[, metadata])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_add(collection, content[, metadata])");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -107,18 +108,18 @@ namespace AgentCore.ScriptApi
                         metadata = operands[2].AsString;
                         if (metadata == null) {
                             const string hint = "metadata is null (likely a bad MetaDSL argument, e.g. an undefined variable). To explicitly pass no metadata, omit the argument or pass an empty string \"\".";
-                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_add error: " + hint);
+                            AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_add error: " + hint);
                             return BoxedValue.FromString("[error] " + hint);
                         }
                     }
 
                     // Explicit null/empty checks: AsString may return null.
                     if (string.IsNullOrWhiteSpace(collection)) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_add error: collection is null or empty");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_add error: collection is null or empty");
                         return BoxedValue.FromString("[error] collection is null or empty");
                     }
                     if (string.IsNullOrWhiteSpace(content)) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_add error: content is null or empty");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_add error: content is null or empty");
                         return BoxedValue.FromString("[error] content is null or empty");
                     }
 
@@ -136,7 +137,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(id);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_add error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_add error: {ex.Message}");
                     return BoxedValue.FromString($"[error] {ex.Message}");
                 }
             }
@@ -149,7 +150,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search(collection, query[, keywords, topN[, meta_keywords]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search(collection, query[, keywords, topN[, meta_keywords]])");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -173,7 +174,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_search error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_search error: {ex.Message}");
                     return BoxedValue.FromString($"[error] {ex.Message}");
                 }
             }
@@ -186,7 +187,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -212,7 +213,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(SemanticIndex.ResultsToJson(items));
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_search_between error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_search_between error: {ex.Message}");
                     return BoxedValue.FromString($"[error] {ex.Message}");
                 }
             }
@@ -225,7 +226,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -243,7 +244,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(SemanticIndex.ResultsToJson(items));
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"keyword_search_between error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"keyword_search_between error: {ex.Message}");
                     return BoxedValue.FromString($"[error] {ex.Message}");
                 }
             }
@@ -256,7 +257,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_delete(collection)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_delete(collection)");
                 return BoxedValue.From(false);
             }
 
@@ -267,7 +268,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.From(true);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_delete error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_delete error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -280,7 +281,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_count(collection)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_count(collection)");
                 return BoxedValue.From(0);
             }
 
@@ -291,7 +292,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.From(count);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_count error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_count error: {ex.Message}");
                 }
             }
             return BoxedValue.From(0);
@@ -304,7 +305,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search(collection, query[, keywords, topN[, meta_keywords]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search(collection, query[, keywords, topN[, meta_keywords]])");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -319,7 +320,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"keyword_search error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"keyword_search error: {ex.Message}");
                     return BoxedValue.FromString($"[error] {ex.Message}");
                 }
             }
@@ -332,7 +333,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_get_recent(collection[, topN])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_get_recent(collection[, topN])");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -344,7 +345,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_get_recent error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_get_recent error: {ex.Message}");
                     return BoxedValue.FromString($"[error] {ex.Message}");
                 }
             }
@@ -357,7 +358,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_get_recent_as_list(collection[, topN])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_get_recent_as_list(collection[, topN])");
                 return BoxedValue.NullObject;
             }
 
@@ -369,7 +370,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_get_recent_as_list error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_get_recent_as_list error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -384,7 +385,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_as_list(collection, query[, keywords, topN[, meta_keywords]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_as_list(collection, query[, keywords, topN[, meta_keywords]])");
                 return BoxedValue.NullObject;
             }
 
@@ -398,13 +399,13 @@ namespace AgentCore.ScriptApi
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_search_as_list: embedding model not ready");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_search_as_list: embedding model not ready");
                         return BoxedValue.NullObject;
                     }
 
                     float[]? vector = embedding.Encode(query);
                     if (vector == null) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_search_as_list: encode failed");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_search_as_list: encode failed");
                         return BoxedValue.NullObject;
                     }
 
@@ -412,7 +413,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_search_as_list error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_search_as_list error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -425,7 +426,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_as_list(collection, query[, keywords, topN[, meta_keywords]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_as_list(collection, query[, keywords, topN[, meta_keywords]])");
                 return BoxedValue.NullObject;
             }
 
@@ -441,7 +442,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"keyword_search_as_list error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"keyword_search_as_list error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -454,7 +455,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
 
@@ -470,13 +471,13 @@ namespace AgentCore.ScriptApi
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_search_between_as_list: embedding model not ready");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_search_between_as_list: embedding model not ready");
                         return BoxedValue.NullObject;
                     }
 
                     float[]? vector = embedding.Encode(query);
                     if (vector == null) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_search_between_as_list: encode failed");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_search_between_as_list: encode failed");
                         return BoxedValue.NullObject;
                     }
 
@@ -484,7 +485,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_search_between_as_list error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_search_between_as_list error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -497,7 +498,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
 
@@ -515,7 +516,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"keyword_search_between_as_list error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"keyword_search_between_as_list error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -530,7 +531,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]])");
                 return BoxedValue.NullObject;
             }
 
@@ -545,13 +546,13 @@ namespace AgentCore.ScriptApi
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_search_order_by_time: embedding model not ready");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_search_order_by_time: embedding model not ready");
                         return BoxedValue.NullObject;
                     }
 
                     float[]? vector = embedding.Encode(query);
                     if (vector == null) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_search_order_by_time: encode failed");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_search_order_by_time: encode failed");
                         return BoxedValue.NullObject;
                     }
 
@@ -559,7 +560,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_search_order_by_time error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_search_order_by_time error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -572,7 +573,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]])");
                 return BoxedValue.NullObject;
             }
 
@@ -589,7 +590,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"keyword_search_order_by_time error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"keyword_search_order_by_time error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -602,7 +603,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 8) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
 
@@ -619,13 +620,13 @@ namespace AgentCore.ScriptApi
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_search_between_order_by_time: embedding model not ready");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_search_between_order_by_time: embedding model not ready");
                         return BoxedValue.NullObject;
                     }
 
                     float[]? vector = embedding.Encode(query);
                     if (vector == null) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_search_between_order_by_time: encode failed");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_search_between_order_by_time: encode failed");
                         return BoxedValue.NullObject;
                     }
 
@@ -633,7 +634,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_search_between_order_by_time error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_search_between_order_by_time error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -646,7 +647,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 8) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
 
@@ -665,7 +666,7 @@ namespace AgentCore.ScriptApi
                     return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"keyword_search_between_order_by_time error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"keyword_search_between_order_by_time error: {ex.Message}");
                     return BoxedValue.NullObject;
                 }
             }
@@ -678,7 +679,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_set_weights(vectorWeight, bm25Weight)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_set_weights(vectorWeight, bm25Weight)");
                 return BoxedValue.From(false);
             }
             try {
@@ -688,7 +689,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_set_weights error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_set_weights error: {ex.Message}");
             }
             return BoxedValue.From(false);
         }
@@ -700,7 +701,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_rebuild_fts(collection)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_rebuild_fts(collection)");
                 return BoxedValue.From(0);
             }
             try {
@@ -709,7 +710,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.From(count);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_rebuild_fts error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_rebuild_fts error: {ex.Message}");
             }
             return BoxedValue.From(0);
         }
@@ -721,20 +722,20 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_execute(sql)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_execute(sql)");
                 return BoxedValue.From(-1);
             }
             try {
                 string? sql = operands[0].AsString;
                 if (string.IsNullOrWhiteSpace(sql)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("sqlite_execute error: sql is null or empty");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("sqlite_execute error: sql is null or empty");
                     return BoxedValue.From(-1);
                 }
                 int affected = Core.AgentCore.Instance.SemanticIndex.ExecuteSql(sql);
                 return BoxedValue.From(affected);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_execute error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_execute error: {ex.Message}");
                 return BoxedValue.From(-1);
             }
         }
@@ -746,7 +747,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_query(sql)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_query(sql)");
                 return BoxedValue.FromString("[error] missing arguments");
             }
             try {
@@ -755,7 +756,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_query error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_query error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -767,7 +768,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_backup([path])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_backup([path])");
                 return BoxedValue.FromString("[error] too many arguments");
             }
             try {
@@ -776,7 +777,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_backup error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_backup error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -788,7 +789,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_restore(backupPath)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_restore(backupPath)");
                 return BoxedValue.FromString("[error] missing arguments");
             }
             try {
@@ -797,7 +798,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_restore error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_restore error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -809,7 +810,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_search(collection, query[, topN[, meta_keywords]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search(collection, query[, topN[, meta_keywords]])");
                 return BoxedValue.FromString("[error] missing arguments");
             }
             try {
@@ -821,7 +822,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(SemanticIndex.ResultsToJson(items));
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_search error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_search error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -833,7 +834,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_search_between(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_between(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.FromString("[error] missing arguments");
             }
             try {
@@ -847,7 +848,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(SemanticIndex.ResultsToJson(items));
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_search_between error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_search_between error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -859,7 +860,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_search_between_as_list(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_between_as_list(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
             try {
@@ -873,7 +874,7 @@ namespace AgentCore.ScriptApi
                 return SearchResultHelper.ToBoxedList(items);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_search_between_as_list error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_search_between_as_list error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -885,7 +886,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_search_order_by_time(collection, query[, topN[, isAsc[, meta_keywords]]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_order_by_time(collection, query[, topN[, isAsc[, meta_keywords]]])");
                 return BoxedValue.NullObject;
             }
             try {
@@ -898,7 +899,7 @@ namespace AgentCore.ScriptApi
                 return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_search_order_by_time error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_search_order_by_time error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -910,7 +911,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
             try {
@@ -925,7 +926,7 @@ namespace AgentCore.ScriptApi
                 return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_search_between_order_by_time error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_search_between_order_by_time error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -937,7 +938,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_query_as_list(sql)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_query_as_list(sql)");
                 return BoxedValue.NullObject;
             }
             try {
@@ -949,7 +950,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromObject(list);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_query_as_list error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_query_as_list error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -961,7 +962,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_search_as_list(collection, query[, topN[, meta_keywords]])");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_as_list(collection, query[, topN[, meta_keywords]])");
                 return BoxedValue.NullObject;
             }
             try {
@@ -973,7 +974,7 @@ namespace AgentCore.ScriptApi
                 return SearchResultHelper.ToBoxedList(items);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_search_as_list error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_search_as_list error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -989,7 +990,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(report);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_migrate_fts error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_migrate_fts error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -1005,7 +1006,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_list_tables error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_list_tables error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -1021,7 +1022,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"list_semantic_collections error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"list_semantic_collections error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -1032,49 +1033,49 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_init", "semantic_init(collection)", new ExpressionFactoryHelper<SemanticInitExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_is_ready", "semantic_is_ready(collection)", new ExpressionFactoryHelper<SemanticIsReadyExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_add", "semantic_add(collection, content[, metadata])", new ExpressionFactoryHelper<SemanticAddExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search", "semantic_search(collection, query[, keywords, topN[, meta_keywords]])", new ExpressionFactoryHelper<SemanticSearchExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_delete", "semantic_delete(collection)", new ExpressionFactoryHelper<SemanticDeleteExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_count", "semantic_count(collection)", new ExpressionFactoryHelper<SemanticCountExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_get_count", "semantic_get_count(collection)", new ExpressionFactoryHelper<SemanticCountExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_get_recent", "semantic_get_recent(collection[, topN])", new ExpressionFactoryHelper<SemanticGetRecentExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search", "keyword_search(collection, query[, keywords, topN[, meta_keywords]])", new ExpressionFactoryHelper<KeywordSearchExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_get_recent_as_list", "semantic_get_recent_as_list(collection[, topN]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticGetRecentAsListExp>());
+            BatchCommand.BatchScript.Register("semantic_init", "semantic_init(collection)", new ExpressionFactoryHelper<SemanticInitExp>());
+            BatchCommand.BatchScript.Register("semantic_is_ready", "semantic_is_ready(collection)", new ExpressionFactoryHelper<SemanticIsReadyExp>());
+            BatchCommand.BatchScript.Register("semantic_add", "semantic_add(collection, content[, metadata])", new ExpressionFactoryHelper<SemanticAddExp>());
+            BatchCommand.BatchScript.Register("semantic_search", "semantic_search(collection, query[, keywords, topN[, meta_keywords]])", new ExpressionFactoryHelper<SemanticSearchExp>());
+            BatchCommand.BatchScript.Register("semantic_delete", "semantic_delete(collection)", new ExpressionFactoryHelper<SemanticDeleteExp>());
+            BatchCommand.BatchScript.Register("semantic_count", "semantic_count(collection)", new ExpressionFactoryHelper<SemanticCountExp>());
+            BatchCommand.BatchScript.Register("semantic_get_count", "semantic_get_count(collection)", new ExpressionFactoryHelper<SemanticCountExp>());
+            BatchCommand.BatchScript.Register("semantic_get_recent", "semantic_get_recent(collection[, topN])", new ExpressionFactoryHelper<SemanticGetRecentExp>());
+            BatchCommand.BatchScript.Register("keyword_search", "keyword_search(collection, query[, keywords, topN[, meta_keywords]])", new ExpressionFactoryHelper<KeywordSearchExp>());
+            BatchCommand.BatchScript.Register("semantic_get_recent_as_list", "semantic_get_recent_as_list(collection[, topN]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticGetRecentAsListExp>());
             // between variants (JSON)
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between", "semantic_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SemanticSearchBetweenExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between", "keyword_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<KeywordSearchBetweenExp>());
+            BatchCommand.BatchScript.Register("semantic_search_between", "semantic_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SemanticSearchBetweenExp>());
+            BatchCommand.BatchScript.Register("keyword_search_between", "keyword_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<KeywordSearchBetweenExp>());
             // as_list variants
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_as_list", "semantic_search_as_list(collection, query[, keywords, topN[, meta_keywords]]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_as_list", "keyword_search_as_list(collection, query[, keywords, topN[, meta_keywords]]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between_as_list", "semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchBetweenAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between_as_list", "keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchBetweenAsListExp>());
+            BatchCommand.BatchScript.Register("semantic_search_as_list", "semantic_search_as_list(collection, query[, keywords, topN[, meta_keywords]]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchAsListExp>());
+            BatchCommand.BatchScript.Register("keyword_search_as_list", "keyword_search_as_list(collection, query[, keywords, topN[, meta_keywords]]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchAsListExp>());
+            BatchCommand.BatchScript.Register("semantic_search_between_as_list", "semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchBetweenAsListExp>());
+            BatchCommand.BatchScript.Register("keyword_search_between_as_list", "keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchBetweenAsListExp>());
             // order_by_time variants
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_order_by_time", "semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchOrderByTimeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_order_by_time", "keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchOrderByTimeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between_order_by_time", "semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchBetweenOrderByTimeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between_order_by_time", "keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchBetweenOrderByTimeExp>());
+            BatchCommand.BatchScript.Register("semantic_search_order_by_time", "semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchOrderByTimeExp>());
+            BatchCommand.BatchScript.Register("keyword_search_order_by_time", "keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]]) - return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchOrderByTimeExp>());
+            BatchCommand.BatchScript.Register("semantic_search_between_order_by_time", "semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchBetweenOrderByTimeExp>());
+            BatchCommand.BatchScript.Register("keyword_search_between_order_by_time", "keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.Score>0.5).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchBetweenOrderByTimeExp>());
             // search config APIs
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_set_weights", "semantic_set_weights(vectorWeight, bm25Weight) - set hybrid scoring weights, default 0.6/0.4", new ExpressionFactoryHelper<SemanticSetWeightsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_rebuild_fts", "semantic_rebuild_fts(collection) - rebuild FTS5 index with current segmenter, returns count", new ExpressionFactoryHelper<SemanticRebuildFtsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_migrate_fts", "semantic_migrate_fts() - migrate FTS schema to latest version, returns report", new ExpressionFactoryHelper<SemanticMigrateFtsExp>());
+            BatchCommand.BatchScript.Register("semantic_set_weights", "semantic_set_weights(vectorWeight, bm25Weight) - set hybrid scoring weights, default 0.6/0.4", new ExpressionFactoryHelper<SemanticSetWeightsExp>());
+            BatchCommand.BatchScript.Register("semantic_rebuild_fts", "semantic_rebuild_fts(collection) - rebuild FTS5 index with current segmenter, returns count", new ExpressionFactoryHelper<SemanticRebuildFtsExp>());
+            BatchCommand.BatchScript.Register("semantic_migrate_fts", "semantic_migrate_fts() - migrate FTS schema to latest version, returns report", new ExpressionFactoryHelper<SemanticMigrateFtsExp>());
             // SQLite direct execution APIs
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_execute", "sqlite_execute(sql) - execute non-query SQL (INSERT/UPDATE/DELETE/DDL), returns affected rows", new ExpressionFactoryHelper<SqliteExecuteExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query", "sqlite_query(sql) - execute query SQL (SELECT), returns JSON array of row objects", new ExpressionFactoryHelper<SqliteQueryExp>()); AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query_sql", "sqlite_query_sql(sql) - execute query SQL (SELECT), returns JSON array of row objects", false, new ExpressionFactoryHelper<SqliteQueryExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query_as_list", "sqlite_query_as_list(sql) - execute query SQL (SELECT), returns List<Dictionary<string,BoxedValue>> (column->value, native types preserved), supports LINQ. Example: linq($result,where,$$['score']>0.5)", new ExpressionFactoryHelper<SqliteQueryAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_backup", "sqlite_backup([path]) - backup database using VACUUM INTO, returns backup file path", new ExpressionFactoryHelper<SqliteBackupExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_restore", "sqlite_restore(backupPath) - restore database from backup file, clears in-memory indexes", new ExpressionFactoryHelper<SqliteRestoreExp>());
+            BatchCommand.BatchScript.Register("sqlite_execute", "sqlite_execute(sql) - execute non-query SQL (INSERT/UPDATE/DELETE/DDL), returns affected rows", new ExpressionFactoryHelper<SqliteExecuteExp>());
+            BatchCommand.BatchScript.Register("sqlite_query", "sqlite_query(sql) - execute query SQL (SELECT), returns JSON array of row objects", new ExpressionFactoryHelper<SqliteQueryExp>()); BatchCommand.BatchScript.Register("sqlite_query_sql", "sqlite_query_sql(sql) - execute query SQL (SELECT), returns JSON array of row objects", false, new ExpressionFactoryHelper<SqliteQueryExp>());
+            BatchCommand.BatchScript.Register("sqlite_query_as_list", "sqlite_query_as_list(sql) - execute query SQL (SELECT), returns List<Dictionary<string,BoxedValue>> (column->value, native types preserved), supports LINQ. Example: linq($result,where,$$['score']>0.5)", new ExpressionFactoryHelper<SqliteQueryAsListExp>());
+            BatchCommand.BatchScript.Register("sqlite_backup", "sqlite_backup([path]) - backup database using VACUUM INTO, returns backup file path", new ExpressionFactoryHelper<SqliteBackupExp>());
+            BatchCommand.BatchScript.Register("sqlite_restore", "sqlite_restore(backupPath) - restore database from backup file, clears in-memory indexes", new ExpressionFactoryHelper<SqliteRestoreExp>());
             // sqlite_* direct LIKE search APIs (no FTS/BM25, tokens AND'd, wildcards: %=any seq, _=single char, escape with \)
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search", "sqlite_search(collection, query[, topN[, meta_keywords]]) - direct LIKE search on semantic_records, tokens AND'd, returns JSON", new ExpressionFactoryHelper<SqliteSearchExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_between", "sqlite_search_between(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SqliteSearchBetweenExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_as_list", "sqlite_search_as_list(collection, query[, topN[, meta_keywords]]) - direct LIKE search, return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_between_as_list", "sqlite_search_between_as_list(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchBetweenAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_order_by_time", "sqlite_search_order_by_time(collection, query[, topN[, isAsc[, meta_keywords]]]) - return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchOrderByTimeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_between_order_by_time", "sqlite_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchBetweenOrderByTimeExp>());
+            BatchCommand.BatchScript.Register("sqlite_search", "sqlite_search(collection, query[, topN[, meta_keywords]]) - direct LIKE search on semantic_records, tokens AND'd, returns JSON", new ExpressionFactoryHelper<SqliteSearchExp>());
+            BatchCommand.BatchScript.Register("sqlite_search_between", "sqlite_search_between(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SqliteSearchBetweenExp>());
+            BatchCommand.BatchScript.Register("sqlite_search_as_list", "sqlite_search_as_list(collection, query[, topN[, meta_keywords]]) - direct LIKE search, return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchAsListExp>());
+            BatchCommand.BatchScript.Register("sqlite_search_between_as_list", "sqlite_search_between_as_list(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchBetweenAsListExp>());
+            BatchCommand.BatchScript.Register("sqlite_search_order_by_time", "sqlite_search_order_by_time(collection, query[, topN[, isAsc[, meta_keywords]]]) - return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchOrderByTimeExp>());
+            BatchCommand.BatchScript.Register("sqlite_search_between_order_by_time", "sqlite_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchBetweenOrderByTimeExp>());
             // list tables/collections
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_list_tables", "sqlite_list_tables() - list all user tables in the semantic sqlite database, returns JSON array", new ExpressionFactoryHelper<SqliteListTablesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("list_semantic_collections", "list_semantic_collections() - list all distinct collection names in semantic_records, returns JSON array", new ExpressionFactoryHelper<ListSemanticCollectionsExp>());
+            BatchCommand.BatchScript.Register("sqlite_list_tables", "sqlite_list_tables() - list all user tables in the semantic sqlite database, returns JSON array", new ExpressionFactoryHelper<SqliteListTablesExp>());
+            BatchCommand.BatchScript.Register("list_semantic_collections", "list_semantic_collections() - list all distinct collection names in semantic_records, returns JSON array", new ExpressionFactoryHelper<ListSemanticCollectionsExp>());
 
         }
     }

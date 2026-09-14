@@ -1,0 +1,14 @@
+{
+    "ID": "bddb2f7306664d819fd0132782efeacb",
+    "ActionKeywords": [
+        "dsl"
+    ],
+    "Name": "Dsl BatchCommand Plugin",
+    "Description": "use MetaDSL extend Flow-Launcher",
+    "Author": "dreamanlan",
+    "Version": "0.0.1",
+    "Language": "csharp",
+    "Website": "https://github.com/dreamanlan/BatchCommand/tree/master/Flow.Launcher.Plugin.BatchCommand",
+    "ExecuteFileName": "Flow.Launcher.Plugin.BatchCommand.dll",
+    "IcoPath": "Images\\dsl.png"
+}

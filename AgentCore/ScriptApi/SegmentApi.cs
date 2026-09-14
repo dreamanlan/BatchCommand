@@ -4,10 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using AbstractAgent;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 
 namespace AgentCore.ScriptApi
 {
@@ -17,7 +18,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: tokenize(text)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: tokenize(text)");
                 return BoxedValue.FromObject(new List<BoxedValue>());
             }
 
@@ -31,7 +32,7 @@ namespace AgentCore.ScriptApi
                     return BoxedValue.FromObject(list);
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"tokenize error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"tokenize error: {ex.Message}");
                 }
             }
             return BoxedValue.FromObject(new List<BoxedValue>());
@@ -44,7 +45,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_help_semantic_search(type)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_help_semantic_search(type)");
                 return BoxedValue.FromString("[error] missing argument");
             }
 
@@ -62,7 +63,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_help_reranker(enable)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_help_reranker(enable)");
                 return BoxedValue.FromString("[error] missing argument");
             }
 
@@ -79,7 +80,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sethelp_debug(enable)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sethelp_debug(enable)");
                 return BoxedValue.FromString("[error] missing argument");
             }
 
@@ -160,7 +161,7 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: update_help_freq(file)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: update_help_freq(file)");
                 return BoxedValue.FromString("[error] update_help_freq requires an output file path");
             }
 
@@ -201,11 +202,7 @@ namespace AgentCore.ScriptApi
                         documents.Add(tokens);
                 }
 
-                var native_api = AgentFrameworkService.Instance.NativeApi;
-                if (native_api == null)
-                    return BoxedValue.FromString("[error] native API is unavailable");
-
-                foreach (string document in native_api.GetHelpDocs())
+                foreach (string document in BatchScript.UserApiDocs.Values)
                     AddDocument(document);
                 foreach (var pair in Core.AgentCore.Instance.SkillMgr.Skills) {
                     AddDocument(pair.Key + "\n" + pair.Value.Document);
@@ -250,7 +247,7 @@ namespace AgentCore.ScriptApi
                 return BoxedValue.FromString($"ok: wrote {frequencies.Count} tokens to {file_path}");
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"UpdateHelpFreq error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"UpdateHelpFreq error: {ex.Message}");
                 return BoxedValue.FromString($"[error] {ex.Message}");
             }
         }
@@ -260,12 +257,12 @@ namespace AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            AgentFrameworkService.Instance.DslEngine!.Register("tokenize", "tokenize(text) => list", new ExpressionFactoryHelper<TokenizeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("update_help_freq", "update_help_freq(file) - rebuild help token frequency file from API and loaded Skill documents", new ExpressionFactoryHelper<UpdateHelpFreqExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("updatehelpfreq", "updatehelpfreq(file) - rebuild help token frequency file from API and loaded Skill documents", false, new ExpressionFactoryHelper<UpdateHelpFreqExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("set_help_semantic_search", "set_help_semantic_search(type) - 0=BagOfWords,1=TfIdf,2=Embedding", new ExpressionFactoryHelper<SetHelpSemanticSearchExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("set_help_reranker", "set_help_reranker(enable) - 1=enable,0=disable", new ExpressionFactoryHelper<SetHelpRerankerExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sethelp_debug", "sethelp_debug(enable) - 1=enable,0=disable help search diagnostics", new ExpressionFactoryHelper<SetHelpDebugExp>());
+            BatchCommand.BatchScript.Register("tokenize", "tokenize(text) => list", new ExpressionFactoryHelper<TokenizeExp>());
+            BatchCommand.BatchScript.Register("update_help_freq", "update_help_freq(file) - rebuild help token frequency file from API and loaded Skill documents", new ExpressionFactoryHelper<UpdateHelpFreqExp>());
+            BatchCommand.BatchScript.Register("updatehelpfreq", "updatehelpfreq(file) - rebuild help token frequency file from API and loaded Skill documents", false, new ExpressionFactoryHelper<UpdateHelpFreqExp>());
+            BatchCommand.BatchScript.Register("set_help_semantic_search", "set_help_semantic_search(type) - 0=BagOfWords,1=TfIdf,2=Embedding", new ExpressionFactoryHelper<SetHelpSemanticSearchExp>());
+            BatchCommand.BatchScript.Register("set_help_reranker", "set_help_reranker(enable) - 1=enable,0=disable", new ExpressionFactoryHelper<SetHelpRerankerExp>());
+            BatchCommand.BatchScript.Register("sethelp_debug", "sethelp_debug(enable) - 1=enable,0=disable help search diagnostics", new ExpressionFactoryHelper<SetHelpDebugExp>());
         }
     }
 }

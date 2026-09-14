@@ -62,11 +62,36 @@ class AgentBridge {
     }
   }
 
-  // Send command to C# backend
+  // Send command to agent backend. Channel priority: the relay transport
+  // (browser process -> standalone AgentCore, see relay_transport.js), then
+  // the legacy websocket worker, then the legacy callMetaDSL path (old
+  // in-process deployments). The relay registers lazily on first use; until
+  // it is up the previous behavior is unchanged.
+  _isRelayReady() {
+    return typeof relayTransport !== 'undefined' && relayTransport
+      && relayTransport.isRunning && relayTransport.isConnected;
+  }
+
+  // Relay registration in flight (auto-registers on bundle load): the message
+  // should wait for it instead of falling through to callMetaDSL, which is
+  // broken in the new deployment (the renderer process has no agent apis).
+  _isRelayPending() {
+    return typeof relayTransport !== 'undefined' && relayTransport
+      && relayTransport.relayAvailable && !relayTransport.isRunning;
+  }
+
+  _maybeStartRelay() {
+    if (this._relayTried) {
+      return;
+    }
+    this._relayTried = true;
+    if (typeof relayTransport !== 'undefined' && relayTransport && relayTransport.relayAvailable) {
+      relayTransport.register();
+    }
+  }
+
   sendCommand(cmd, params, callback) {
     this.logger.debug('sendCommand called', { cmd, params });
-    this.logger.debug('nativeMode:', { nativeMode: this.nativeMode });
-    this.logger.debug('typeof callMetaDSL:', { type: typeof callMetaDSL });
 
     if (!callback) {
       callback = () => { };
@@ -75,43 +100,123 @@ class AgentBridge {
     const commandId = ++this.commandId;
     this.callbacks.set(commandId, callback);
 
-    const message = {
+    // Timeout backstop (design doc §3.5): if the agent_result never arrives
+    // (message dropped, relay connection lost mid-flight), fail the callback
+    // instead of leaving it pending forever. handleResponse deletes the
+    // entry on success, so an answered command never hits this.
+    const self = this;
+    setTimeout(function () {
+      const cb = self.callbacks.get(commandId);
+      if (cb) {
+        self.callbacks.delete(commandId);
+        self.logger.warn('sendCommand timed out', { cmd: cmd, commandId: commandId });
+        try {
+          cb(false, null, 'timeout: no agent_result within 30s');
+        } catch (e) {
+          self.logger.error('timeout callback error', { error: e.toString() });
+        }
+      }
+    }, 30000);
+
+    this._dispatchCommand(commandId, {
       id: commandId,
       command: cmd,
       params: params || {}
-    };
-
-    if (this.nativeMode && typeof callMetaDSL !== 'undefined') {
-      // Use CEF native API - async call to flatten call stack.
-      // Response is delivered asynchronously via send_response_to_inject -> handleResponse.
-      this.logger.debug('Calling callMetaDSL handle_agent_command', { message });
-      setTimeout(() => {
-        callMetaDSL('handle_agent_command', JSON.stringify(message));
-      }, 0);
-    } else {
-      // Mock mode for testing
-      this.logger.warn('Mock mode - command not sent', { message });
-      setTimeout(() => callback(false, null, 'Native API not available'), 100);
-    }
+    }, 0);
 
     return commandId;
   }
 
+  _dispatchCommand(commandId, message, attempt) {
+    if (this._isRelayReady()) {
+      const envelope = {
+        type: 'agent_call',
+        id: commandId,
+        func: 'handle_agent_command',
+        args: [JSON.stringify(message)]
+      };
+      if (relayTransport.queueMessage(JSON.stringify(envelope))) {
+        return;
+      }
+      // Relay dropped the message (disconnect race): fall through.
+    } else {
+      this._maybeStartRelay();
+    }
+
+    // Relay still connecting: wait and retry instead of dropping (a fresh
+    // browser needs ~15s to boot the standalone AgentCore).
+    if (attempt < 60 && this._isRelayPending()) {
+      const self = this;
+      setTimeout(function () {
+        self._dispatchCommand(commandId, message, attempt + 1);
+      }, 300);
+      return;
+    }
+
+    // No channel available: fail the callback (the renderer has no agent
+    // apis in this architecture, there is no callMetaDSL fallback).
+    this.logger.warn('No channel available - command not sent', { message });
+    const cb = this.callbacks.get(commandId);
+    if (cb) {
+      this.callbacks.delete(commandId);
+      setTimeout(function () {
+        cb(false, null, 'No channel available');
+      }, 100);
+    }
+  }
+
   // Send notification (no response expected)
   sendNotification(type, data) {
+    // P2: attach the js state block so the agent side (standalone AgentCore)
+    // can read queue counts / llm category from the notification instead of
+    // the old CallJavascriptFuncInRenderer queries (agent-side renderer api).
+    data = data || {};
+    if (data.jsState === undefined) {
+      try {
+        const api = (typeof window !== 'undefined') ? window.AgentAPI : null;
+        data.jsState = {
+          operationQueueCount: (api && api.getOperationQueueCount) ? api.getOperationQueueCount() : 0,
+          sendQueueCount: (api && api.getSendQueueCount) ? api.getSendQueueCount() : 0,
+          receiveQueueCount: (api && api.getReceiveQueueCount) ? api.getReceiveQueueCount() : 0,
+          llmCategory: (api && api.getLLMCategory) ? api.getLLMCategory() : ''
+        };
+      } catch (e) {
+        data.jsState = { operationQueueCount: 0, sendQueueCount: 0, receiveQueueCount: 0, llmCategory: '' };
+      }
+    }
+
     const message = {
       type: type,
-      data: data || {}
+      data: data
     };
 
-    if (this.nativeMode && typeof callMetaDSL !== 'undefined') {
-      // Async call to flatten call stack
-      setTimeout(() => {
-        callMetaDSL('handle_agent_notification', JSON.stringify(message));
-      }, 0);
+    this._dispatchNotification(message, 0);
+  }
+
+  _dispatchNotification(message, attempt) {
+    if (this._isRelayReady()) {
+      const envelope = {
+        type: 'agent_notify',
+        func: 'handle_agent_notification',
+        args: [JSON.stringify(message)]
+      };
+      if (relayTransport.queueMessage(JSON.stringify(envelope))) {
+        return;
+      }
+      // Relay dropped the message (disconnect race): fall through.
     } else {
-      this.logger.debug('Mock notification', { message });
+      this._maybeStartRelay();
     }
+
+    if (attempt < 60 && this._isRelayPending()) {
+      const self = this;
+      setTimeout(function () {
+        self._dispatchNotification(message, attempt + 1);
+      }, 300);
+      return;
+    }
+
+    this.logger.warn('No channel available - notification dropped', { message });
   }
 
   // Handle response from C#

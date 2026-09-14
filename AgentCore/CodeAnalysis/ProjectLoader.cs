@@ -1,11 +1,13 @@
 using System;
-using AbstractAgent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using ScriptableFramework;
+using BatchCommand;
+using BatchCommand.Utils;
 using AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
@@ -59,7 +61,7 @@ namespace AgentCore.CodeAnalysis
                     _syntaxTrees[file] = tree;
                 }
                 catch (Exception ex) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Warning: Failed to parse {file}: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Warning: Failed to parse {file}: {ex.Message}");
                 }
             }
 
@@ -185,14 +187,14 @@ namespace AgentCore.CodeAnalysis
                         // Try to find compiled DLL
                         var refDir = Path.GetDirectoryName(refPath) ?? string.Empty;
                         var refName = Path.GetFileNameWithoutExtension(refPath);
-                        var dllPath = Path.Combine(refDir, "bin", "Debug", "net8.0", $"{refName}.dll");
+                        var dllPath = Path.Combine(refDir, "bin", "Debug", "net9.0", $"{refName}.dll");
 
                         if (File.Exists(dllPath)) {
                             references.Add(MetadataReference.CreateFromFile(dllPath));
                         }
                         else {
                             // Try other common paths
-                            dllPath = Path.Combine(refDir, "bin", "Release", "net8.0", $"{refName}.dll");
+                            dllPath = Path.Combine(refDir, "bin", "Release", "net9.0", $"{refName}.dll");
                             if (File.Exists(dllPath)) {
                                 references.Add(MetadataReference.CreateFromFile(dllPath));
                             }

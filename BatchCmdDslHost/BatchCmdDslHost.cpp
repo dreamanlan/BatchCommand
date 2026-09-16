@@ -308,6 +308,8 @@ typedef struct _MY_PEB {
 #elif defined(__APPLE__)
 #include <libproc.h>
 #include <sys/sysctl.h>
+#include <unistd.h>
+#include <sys/types.h>
 #endif
 
 int TerminateMonitoredProcess(const char* cmd_line_key) {
@@ -575,10 +577,10 @@ int TerminateMonitoredProcess(const char* cmd_line_key) {
 
         // Get process arguments
         char args_buffer[MAXPATHLEN * 4];
-        int mib[3] = { CTL_KERN, KERN_PROCARGS2, pids[i] };
+        int mib_args[3] = { CTL_KERN, KERN_PROCARGS2, pids[i] };
         size_t args_size = sizeof(args_buffer);
 
-        if (sysctl(mib, 3, args_buffer, &args_size, NULL, 0) != 0) {
+        if (sysctl(mib_args, 3, args_buffer, &args_size, NULL, 0) != 0) {
             continue;
         }
 
@@ -1177,6 +1179,12 @@ int host_count_process(const char* key)
     return CountMonitoredProcess(key);
 }
 
+// Raw command line captured from main() on non-Windows platforms
+// (replaces ::GetCommandLineW() which is Windows-only)
+#ifndef _MSC_VER
+static std::string g_raw_command_line;
+#endif
+
 // Function to call .NET Core method
 int call_dotnet_method(bool is_debug, int& rc)
 {
@@ -1223,8 +1231,12 @@ int call_dotnet_method(bool is_debug, int& rc)
     }
 
     if (init_entry) {
+#if defined(_MSC_VER)
         const wchar_t* raw_command_line_w = ::GetCommandLineW();
         std::string raw_command_line_utf8 = WideStringToUtf8(raw_command_line_w);
+#else
+        const std::string& raw_command_line_utf8 = g_raw_command_line;
+#endif
         std::string exeDir = GetExeDir();
         int result = init_entry(raw_command_line_utf8.c_str(), exeDir.c_str());
         printf("Init returned: %d\n", result);
@@ -1256,6 +1268,14 @@ int call_dotnet_method(bool is_debug, int& rc)
 int main(int argc, const char* argv[])
 {
     std::cout << "DonetHost started.\n";
+
+#ifndef _MSC_VER
+    // Capture raw command line on non-Windows platforms
+    for (int i = 0; i < argc; i++) {
+        if (i > 0) g_raw_command_line += " ";
+        g_raw_command_line += argv[i];
+    }
+#endif
 
     bool is_debug = false;
     int rc = 0;

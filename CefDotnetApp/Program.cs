@@ -2342,6 +2342,24 @@ namespace DotNetLib
             Console.SetOut(s_StringWriter);
             Console.SetError(s_StringWriter);
 
+            // macOS sandbox timing: Chromium's renderer sandbox (Seatbelt) is
+            // already active by the time OnBeforeCommandLineProcessing fires,
+            // so the warmup there is too late for lazily-loaded framework
+            // assemblies (e.g. System.Linq from the shared runtime dir outside
+            // the app bundle). OnInit is called from the process main() before
+            // CefInitialize applies the sandbox - the only guaranteed
+            // bootstrap window on every platform. On Windows this merely
+            // duplicates the later warmup (harmless, everything stays loaded).
+            if ((int)CefProcessType.RendererProcess == process_type) {
+                try {
+                    WarmupBeforeSandbox();
+                }
+                catch (Exception ex) {
+                    try { NativeLog($"[csharp] Early WarmupBeforeSandbox failed: {ex.GetType().FullName}: {ex.Message}"); }
+                    catch { /* logging is best-effort */ }
+                }
+            }
+
             try {
                 NativeLog(string.Format("[csharp] Call dsl on_init"));
 
@@ -3631,7 +3649,16 @@ namespace DotNetLib
             NativeLog($"[csharp] OnBeforeCommandLineProcessing: process_type={process_type}");
 
             if ((int)CefProcessType.RendererProcess == process_type) {
-                WarmupBeforeSandbox();
+                // NEVER let a warmup failure escape to the native delegate
+                // boundary: this is an UnmanagedCallersOnly entry, an unhandled
+                // exception kills the renderer process.
+                try {
+                    WarmupBeforeSandbox();
+                }
+                catch (Exception ex) {
+                    try { NativeLog($"[csharp] WarmupBeforeSandbox crashed: {ex.GetType().FullName}: {ex.Message}"); }
+                    catch { /* logging is best-effort */ }
+                }
             }
 
             try {
@@ -4796,36 +4823,64 @@ namespace DotNetLib
         }
         private static void WarmupBeforeSandbox()
         {
-            // Sandbox warmup (renderer): after LowerToken the renderer's file
-            // access is denied, so any assembly lazily loaded on FIRST USE
-            // later fails with an empty-message exception. Warm the proven
-            // cases NOW, in the bootstrap window where file access is still
-            // allowed: System.Linq (id-set snapshot) and the dsl value
-            // formatting path (DslHelper.ConvertToString references LitJson
-            // types - its JIT lazily loads LitJson.dll).
+            // Sandbox warmup (renderer): after the sandbox is active the
+            // renderer's file access is denied, so any assembly lazily loaded
+            // on FIRST USE later fails with an empty-message exception. Warm
+            // the proven cases NOW, while file access is still allowed:
+            // System.Linq (id-set snapshot), the dsl value formatting path
+            // (DslHelper.ConvertToString references LitJson types - its JIT
+            // lazily loads LitJson.dll) and TextCopy (clipboard apis).
+            //
+            // IMPLEMENTATION NOTE: every warmup item lives in its own leaf
+            // method. An assembly load failure happens at the JIT time of the
+            // method that references the missing assembly - i.e. when the
+            // leaf method is first CALLED, which is inside the try/catch
+            // below. A try/catch inside the leaf method itself cannot catch
+            // its own JIT failure, and one big warmup method with an internal
+            // try has the same flaw for its first reference.
             var sb = new StringBuilder();
             try {
-                _ = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Empty<int>());
-                var warmupSb = new System.Text.StringBuilder();
-                BatchCommand.Utils.DslHelper.ConvertToString(BoxedValue.FromString("warmup"), warmupSb, 0, true);
-                _ = warmupSb.ToString();
-                sb.Append("ok (System.Linq + DslHelper/LitJson)");
+                WarmupSystemLinq();
+                sb.Append("ok (System.Linq)");
             }
             catch (Exception ex) {
-                sb.Append($"failed: {ex.GetType().FullName}: {ex.Message}");
+                sb.Append($"failed: System.Linq: {ex.GetType().FullName}: {ex.Message}");
+            }
+            try {
+                WarmupDslFormat();
+                sb.Append(" + DslHelper/LitJson");
+            }
+            catch (Exception ex) {
+                sb.Append($" + DslHelper/LitJson(failed: {ex.GetType().Name}: {ex.Message})");
             }
             // TextCopy is a standalone lazily-loaded dependency (clipboard
             // apis): force its load - and the DI abstraction it references -
             // before lockdown. A clipboard READ failure is tolerated: the
             // assembly load + JIT has happened either way.
             try {
-                _ = TextCopy.ClipboardService.GetText();
+                WarmupTextCopy();
                 sb.Append(" + TextCopy");
             }
             catch (Exception ex) {
                 sb.Append($" + TextCopy(warmup call failed: {ex.GetType().Name})");
             }
             NativeLog(sb.ToString());
+        }
+        // Leaf warmup methods: keep each one referencing exactly one lazily
+        // loaded dependency so a JIT/load failure is isolated to its item.
+        private static void WarmupSystemLinq()
+        {
+            _ = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Empty<int>());
+        }
+        private static void WarmupDslFormat()
+        {
+            var warmupSb = new System.Text.StringBuilder();
+            BatchCommand.Utils.DslHelper.ConvertToString(BoxedValue.FromString("warmup"), warmupSb, 0, true);
+            _ = warmupSb.ToString();
+        }
+        private static void WarmupTextCopy()
+        {
+            _ = TextCopy.ClipboardService.GetText();
         }
 
         private static void TryLoadDSL()

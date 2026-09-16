@@ -8,10 +8,17 @@ script(init_global_consts)
     // Standalone agent process (AgentCore host) config.
     // 9540: new architecture port; 9527-9535 remain in use by the old
     // in-process deployments running in parallel during the migration.
-    // Note: the launcher is the native host BatchCmdDslHost.exe at the
-    // webagent root (managed/BatchCmdDsl.exe is just an empty-main apphost).
+    // Note: the launcher is the native host BatchCmdDslHost at the webagent
+    // root (managed/BatchCmdDsl is just an empty-main apphost). On macOS the
+    // bundle layout puts it in webagent.app/Contents/MacOS/ (basepath is
+    // webagent.app/Contents there, no .exe suffix).
     @AgentPort = 9540;
-    @AgentExe = combinepath(basepath, "BatchCmdDslHost.exe");
+    if (ismac) {
+        @AgentExe = combinepath(basepath, "MacOS", "BatchCmdDslHost");
+    }
+    else {
+        @AgentExe = combinepath(basepath, "BatchCmdDslHost.exe");
+    };
     @AgentArgs = format("--plugin=managed/AgentCore.dll --interval=50 --agentport={0}", @AgentPort);
     // Relay segment: the browser process is the only websocket client of the
     // standalone AgentCore (page js reaches it through cefQuery + this relay).

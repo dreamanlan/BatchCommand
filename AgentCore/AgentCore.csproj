@@ -126,7 +126,9 @@
   <!-- Deploy AgentCore.* to the WebAgent managed dir after build, mirroring
        the BatchCmdDsl csproj pattern (copy.dsl does the actual copying). -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(ProjectDir)..\bin\Debug\net9.0\BatchCommand.exe $(ProjectDir)copy.dsl bat" />
+    <!-- Windows-only deployment copy step: BatchCommand.exe is a Windows apphost.
+         On macOS/Linux the managed output is deployed manually. -->
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(ProjectDir)..\bin\Debug\net9.0\BatchCommand.exe $(ProjectDir)copy.dsl bat" />
   </Target>
 
 </Project>

@@ -81,3 +81,4 @@ x64/Debug/MonoBleedingEdge
 /AgentCore/.codebuddy
 *.ilk
 BatchCmdDslHost/x64/Debug/vc143.pdb
+/BatchCmdDslHost/build/build_osx

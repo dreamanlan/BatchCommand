@@ -55,6 +55,13 @@ namespace AgentCore
             if (System.IO.Path.GetFileName(rootPath).Equals("managed", StringComparison.OrdinalIgnoreCase)) {
                 rootPath = System.IO.Path.GetDirectoryName(rootPath) ?? rootPath;
             }
+            // macOS bundle layout: the native host exe lives in
+            // <app>.app/Contents/MacOS while the resources (managed/, onnx/,
+            // skills/) live in <app>.app/Contents - go up one level so
+            // resource-relative paths resolve like on Windows.
+            if (isMac && System.IO.Path.GetFileName(rootPath).Equals("MacOS", StringComparison.OrdinalIgnoreCase)) {
+                rootPath = System.IO.Path.GetDirectoryName(rootPath) ?? rootPath;
+            }
             // Fill the executor's process info (also parses --agentscript=/
             // --agentport=) before any dsl execution on this main thread.
             MetaDslExecutor.SetProcessInfo(cmdLine, rootPath, rootPath, isMac);

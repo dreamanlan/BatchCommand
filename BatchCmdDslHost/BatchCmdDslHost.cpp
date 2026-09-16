@@ -1234,11 +1234,22 @@ int call_dotnet_method(bool is_debug, int& rc)
 #if defined(_MSC_VER)
         const wchar_t* raw_command_line_w = ::GetCommandLineW();
         std::string raw_command_line_utf8 = WideStringToUtf8(raw_command_line_w);
+        std::string baseDir = GetExeDir();
 #else
         const std::string& raw_command_line_utf8 = g_raw_command_line;
+    #if defined(__APPLE__)
+        // macOS bundle layout: the exe lives in <app>.app/Contents/MacOS
+        // while the resources (managed/, onnx/, skills/) live in
+        // <app>.app/Contents. Pass Contents as the base path so the managed
+        // side resolves resource-relative paths the same way as on Windows,
+        // where the exe sits next to the resources.
+        std::string baseDir = GetAppBaseDirString();
+        baseDir += "Contents";
+    #else
+        std::string baseDir = GetExeDir();
+    #endif
 #endif
-        std::string exeDir = GetExeDir();
-        int result = init_entry(raw_command_line_utf8.c_str(), exeDir.c_str());
+        int result = init_entry(raw_command_line_utf8.c_str(), baseDir.c_str());
         printf("Init returned: %d\n", result);
     }
 

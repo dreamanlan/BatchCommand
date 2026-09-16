@@ -82,3 +82,4 @@ x64/Debug/MonoBleedingEdge
 *.ilk
 BatchCmdDslHost/x64/Debug/vc143.pdb
 /BatchCmdDslHost/build/build_osx
+/.vscode

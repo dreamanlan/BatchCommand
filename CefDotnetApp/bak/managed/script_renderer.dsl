@@ -5,14 +5,14 @@ script(init_global_consts)
 {
     setenv("PLAYWRIGHT_DRIVER_SEARCH_PATH", combinepath(basepath, "managed"));
 
-    if (processtype == 1) {
-        @UserName = getfilename(getdirectoryname(getdirectoryname(getenv("LOCALAPPDATA"))));
-    }
-    elif (ismac) {
+    if (ismac) {
         @UserName = getenv("USER");
     }
     else {
         @UserName = getenv("USERNAME");
+        if (isnullorempty(@UserName)) {
+            @UserName = getfilename(getdirectoryname(getdirectoryname(getenv("LOCALAPPDATA"))));
+        };
     };
 };
 script(on_init)
@@ -339,13 +339,13 @@ script(on_call_metadsl)params($func,$args)
 
 script(get_user_name)
 {
-    if (processtype == 1) {
-        return(getfilename(getdirectoryname(getdirectoryname(getenv("LOCALAPPDATA")))));
-    }
-    elif (ismac) {
+    if (ismac) {
         return(getenv("USER"));
     }
     else {
-        return(getenv("USERNAME"));
+        $userName = getenv("USERNAME");
+        if (isnullorempty($userName)) {
+            return(getfilename(getdirectoryname(getdirectoryname(getenv("LOCALAPPDATA")))));
+        };
     };
 };

@@ -1193,7 +1193,7 @@ int call_dotnet_method(bool is_debug, int& rc)
     rc = load_assembly_and_get_function_pointer(
         dotnet_assembly_path.c_str(),
         dotnet_class_name,
-        L"RegisterApi",
+        CHAR_T_LITERAL("RegisterApi"),
         UNMANAGEDCALLERSONLY_METHOD,
         nullptr,
         (void**)&register_entry);
@@ -1212,8 +1212,8 @@ int call_dotnet_method(bool is_debug, int& rc)
     rc = load_assembly_and_get_function_pointer(
         dotnet_assembly_path.c_str(),
         dotnet_class_name,
-        L"Init",
-        L"Program+InitDelegation, BatchCmdDsl",
+        CHAR_T_LITERAL("Init"),
+        CHAR_T_LITERAL("Program+InitDelegation, BatchCmdDsl"),
         nullptr, // Reserved for future use
         reinterpret_cast<void**>(&init_entry) // Output function pointer
     );
@@ -1235,8 +1235,8 @@ int call_dotnet_method(bool is_debug, int& rc)
     rc = load_assembly_and_get_function_pointer(
         dotnet_assembly_path.c_str(),
         dotnet_class_name,
-        L"Loop",
-        L"Program+LoopDelegation, BatchCmdDsl",
+        CHAR_T_LITERAL("Loop"),
+        CHAR_T_LITERAL("Program+LoopDelegation, BatchCmdDsl"),
         nullptr, // Reserved for future use
         reinterpret_cast<void**>(&loop_entry) // Output function pointer
     );

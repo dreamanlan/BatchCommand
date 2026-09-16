@@ -2342,14 +2342,12 @@ namespace DotNetLib
             Console.SetOut(s_StringWriter);
             Console.SetError(s_StringWriter);
 
-            // macOS sandbox timing: Chromium's renderer sandbox (Seatbelt) is
-            // already active by the time OnBeforeCommandLineProcessing fires,
-            // so the warmup there is too late for lazily-loaded framework
-            // assemblies (e.g. System.Linq from the shared runtime dir outside
-            // the app bundle). OnInit is called from the process main() before
-            // CefInitialize applies the sandbox - the only guaranteed
-            // bootstrap window on every platform. On Windows this merely
-            // duplicates the later warmup (harmless, everything stays loaded).
+            // Renderer sandbox warmup: OnBeforeCommandLineProcessing fires
+            // AFTER the sandbox is active on macOS (Chromium Seatbelt is
+            // applied inside CefInitialize; Windows LowerToken comes later),
+            // so this is the ONLY reliable warmup point. OnInit is called
+            // from the process main() before CefInitialize on every platform
+            // - the guaranteed pre-sandbox bootstrap window.
             if ((int)CefProcessType.RendererProcess == process_type) {
                 try {
                     WarmupBeforeSandbox();
@@ -3648,18 +3646,9 @@ namespace DotNetLib
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeLog($"[csharp] OnBeforeCommandLineProcessing: process_type={process_type}");
 
-            if ((int)CefProcessType.RendererProcess == process_type) {
-                // NEVER let a warmup failure escape to the native delegate
-                // boundary: this is an UnmanagedCallersOnly entry, an unhandled
-                // exception kills the renderer process.
-                try {
-                    WarmupBeforeSandbox();
-                }
-                catch (Exception ex) {
-                    try { NativeLog($"[csharp] WarmupBeforeSandbox crashed: {ex.GetType().FullName}: {ex.Message}"); }
-                    catch { /* logging is best-effort */ }
-                }
-            }
+            // Renderer sandbox warmup runs in OnInit (called from main()
+            // before CefInitialize on every platform - strictly earlier than
+            // this callback and before any sandbox takes effect).
 
             try {
                 if (null != s_NativeApi) {

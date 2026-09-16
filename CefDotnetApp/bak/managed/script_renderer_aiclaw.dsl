@@ -80,38 +80,10 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         //debuggerlaunch();
     };
 
-    // Add command line switches here
-    // Example: $cmdLine.AppendSwitch("disable-gpu");
-    // Example: $cmdLine.AppendSwitchWithValue("remote-debugging-port", "9222");
-
-    // Check if a switch exists
-    // if (!$cmdLine.HasSwitch("disable-gpu")) {
-    //     $cmdLine.AppendSwitch("disable-gpu");
-    // };
-
     $url = $cmdLine.GetSwitchValue("url");
 
     nativelog("[dsl] on_before_command_line_processing: process_type={0}, url={1}, pid={2}", $processType, $url, pid());
 
-    if (string_contains_any($url, "file:///", "http://localhost") && string_contains_any($url, "AgentCore/hotreload_test.html", "http://localhost:8080/agent.html", "http://localhost:8081", "http://localhost:8082")) {
-        $cmdLine.AppendSwitch("allow-file-access-from-files");
-    };
-
-    //$cmdLine.AppendSwitch("disable-web-security");
-    //$cmdLine.AppendSwitch("allow-file-access-from-files");
-    //$cmdLine.AppendSwitch("disable-site-isolation-trials");
-    // Prevent throttling/priority reduction when window is minimized or in background
-    $cmdLine.AppendSwitch("disable-background-timer-throttling");
-    $cmdLine.AppendSwitch("disable-renderer-backgrounding");
-    $cmdLine.AppendSwitch("disable-backgrounding-occluded-windows");
-
-    //--disable-chrome-login-prompt --proxy-pac-url=http://www.gamexyz.net/google_proxy.pac --ignore-certificate-errors-spki-list=2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=
-    //$cmdLine.AppendSwitch("disable-chrome-login-prompt");
-    //$cmdLine.AppendSwitchWithValue("proxy-pac-url", "http://www.gamexyz.net/google_proxy.pac");
-    //$cmdLine.AppendSwitchWithValue("ignore-certificate-errors-spki-list", "2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=");
-
-    // Override user-agent-product to look like standard Chrome
-    $cmdLine.AppendSwitchWithValue("user-agent-product", "Chromium/150.0.7871.187");
 };
 
 

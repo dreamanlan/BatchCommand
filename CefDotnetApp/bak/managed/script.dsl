@@ -63,7 +63,9 @@ script(on_init)
     set_heartbeat_interval(10);
     set_context_var("hbCount", 0);
     set_context_var("agentRetryAt", 0);
-    wsclient_open(@AgentWsUrl, "agent");
+    // 3rd arg 10: link-layer retry budget - the C# manager self-heals
+    // transient drops with the same id; exhaustion reports "failed".
+    wsclient_open(@AgentWsUrl, "agent", 10);
     // no_sandbox return: browser-process only, GLOBAL (all children).
     // Per-type disabling: use OnBeforeChildProcessLaunch
     // (NOT on_before_command_line_processing — that only fires at each process's own startup, too late on the child side).
@@ -86,6 +88,20 @@ script(on_wsclient_state)params($id, $state)
             remove_context_var("relayPending_" + $id);
             complete_native_callback($pending, true, $id);
         };
+        // Auto (re-)bind in the browser dsl: after a link-layer reconnect
+        // the server-side connection is new and lost the slot's agent id.
+        // Doing it here (not only via the page push) makes the re-send
+        // independent of renderer pushes - it cannot be lost.
+        $bindAgentId = get_context_var("relayAgent_" + $id);
+        if (!isnull($bindAgentId)) {
+            wsclient_send($id, to_json({"type": "agent_bind", "agentId": $bindAgentId}));
+        };
+        // Notify the page: after a link-layer reconnect the server-side
+        // connection is new (slots may re-send agent_bind too; idempotent).
+        $urlKey = get_context_var("relayUrl_" + $id);
+        if (!isnull($urlKey)) {
+            relay_push_to_page($id, to_json({"type": "relay_state", "state": "connected"}), $urlKey);
+        };
     };
     if ($id == "agent" && $state == "connected") {
         // Smoke test: full round trip through the standalone AgentCore
@@ -100,8 +116,18 @@ script(on_wsclient_state)params($id, $state)
         set_context_var("smokeResult", "");
         nativelog("[relay] smoke ping sent: {0}", $ok);
     };
-    // Registered relay clients: notify the page (relay_transport re-registers)
-    // and drop the url-key mapping (the wsclient id is dead after this).
+    // Link-layer retry in progress (same wsclient id): notify the page but
+    // keep the url-key mapping and any pending register - the link layer
+    // either reconnects (connected) or exhausts its budget (failed).
+    if ($state == "reconnecting") {
+        $urlKey = get_context_var("relayUrl_" + $id);
+        if (!isnull($urlKey)) {
+            relay_push_to_page($id, to_json({"type": "relay_state", "state": $state}), $urlKey);
+        };
+    };
+    // Registered relay clients: the connection is dead (retry budget
+    // exhausted or explicit close). Notify the page (relay_transport
+    // re-registers) and drop the url-key mapping.
     if ($state == "disconnected" || $state == "failed") {
         $pending = get_context_var("relayPending_" + $id);
         if (!isnull($pending)) {
@@ -113,6 +139,7 @@ script(on_wsclient_state)params($id, $state)
         if (!isnull($urlKey)) {
             relay_push_to_page($id, to_json({"type": "relay_state", "state": $state}), $urlKey);
             remove_context_var("relayUrl_" + $id);
+            remove_context_var("relayAgent_" + $id);
             remove_context_var("relayBrowser_" + $id);
         };
     };
@@ -258,6 +285,7 @@ script(on_heart_beat)params($processType,$deltaTime)
                             nativelog("[relay] reaper: browser {0} gone, closing zombie connection {1} (url key {2})", $bid, $cid, $urlKey);
                             wsclient_close($cid);
                             remove_context_var("relayUrl_" + $cid);
+                            remove_context_var("relayAgent_" + $cid);
                             remove_context_var("relayBrowser_" + $cid);
                         };
                     };
@@ -274,12 +302,15 @@ script(on_heart_beat)params($processType,$deltaTime)
                 };
             };
         };
-        // Reconnect the relay when it is down (the server may still be starting).
+        // Reconnect the relay "agent" link when the C# link layer gave up
+        // ("failed": retry budget exhausted - it already retried by itself;
+        // "unknown": entry gone). Transient drops are healed by the link
+        // layer (wsclient_open reconnect budget, see on_init).
         // Throttled by the beat counter (~1s at the 10ms heartbeat): time()
         // in this engine is unix SECONDS, a time()+N gate would wait N*1000s.
         if (($hbCount % 100) == 0) {
             $state = wsclient_state("agent");
-            if ($state == "disconnected" || $state == "failed" || $state == "unknown") {
+            if ($state == "failed" || $state == "unknown") {
                 if ($state != "unknown") {
                     wsclient_close("agent");
                 };
@@ -519,6 +550,7 @@ script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$
         if (!isnull($urlKey) && string_contains($url, $urlKey)) {
             wsclient_close($cid);
             remove_context_var("relayUrl_" + $cid);
+            remove_context_var("relayAgent_" + $cid);
             remove_context_var("relayBrowser_" + $cid);
             nativelog("[relay] renderer terminated: closed connection {0} (url key {1})", $cid, $urlKey);
         };
@@ -698,16 +730,24 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
         }
         // ---- relay transport (relay_transport.js -> wsclient -> AgentCore) ----
         elif ($action == "agent_register") {
-            // { action, urlKey } -> new wsclient connection to AgentCore,
-            // the wsclient id is the relay client id. The answer is deferred
-            // until on_wsclient_state reports connected (the connect itself
-            // is asynchronous), so the js side never races a send.
+            // { action, urlKey, agentId } -> new wsclient connection to
+            // AgentCore, the wsclient id is the relay client id. The answer
+            // is deferred until on_wsclient_state reports connected (the
+            // connect itself is asynchronous), so the js side never races a
+            // send. agentId (RelaySlot): stored so the browser dsl re-sends
+            // the agent_bind envelope itself on every (re)connect - this
+            // path does not depend on page pushes, so it cannot be lost.
             $urlKey = $msg["urlKey"];
-            $clientId = wsclient_open(@AgentWsUrl);
+            // "" id -> auto id; 10 = link-layer retry budget (same id).
+            $clientId = wsclient_open(@AgentWsUrl, "", 10);
             if ($clientId == "") {
                 return((false, -1));
             };
             set_context_var("relayUrl_" + $clientId, $urlKey);
+            $agentId = $msg["agentId"];
+            if (!isnullorempty($agentId)) {
+                set_context_var("relayAgent_" + $clientId, $agentId);
+            };
             set_context_var("relayPending_" + $clientId, $handle);
             // Owner browser id for the zombie reaper (see on_heart_beat).
             set_context_var("relayBrowser_" + $clientId, find_browser_id_by_url_key($urlKey));
@@ -727,8 +767,19 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
             // { action, clientId } -> close the relay connection.
             wsclient_close($msg["clientId"]);
             remove_context_var("relayUrl_" + $msg["clientId"]);
+            remove_context_var("relayAgent_" + $msg["clientId"]);
             remove_context_var("relayBrowser_" + $msg["clientId"]);
             return((false, 0));
+        }
+        elif ($action == "agent_state") {
+            // { action, clientId } -> current wsclient state string
+            // (connecting|connected|reconnecting|disconnected|failed|unknown).
+            // Pull-based resync for the page: heals a stuck local state when
+            // a relay_state push was lost (see the relay_transport.js
+            // watchdog). Answered synchronously via a taken-over callback.
+            $state = wsclient_state($msg["clientId"]);
+            complete_native_callback($handle, true, $state);
+            return((true, 0));
         }
         elif ($action == "lite_open") {
             // { action, connId, url, urlKey } -> one browser-side upstream

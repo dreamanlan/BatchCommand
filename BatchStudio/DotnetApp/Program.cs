@@ -1034,9 +1034,9 @@ namespace DotNetLib
             }
             var fi = new FileInfo(path);
             if (fi.Exists) {
-                if (fi.LastWriteTime != s_DslScriptTime || s_DslScriptPath != path) {
-                    s_DslScriptTime = fi.LastWriteTime;
-                    s_DslScriptPath = path;
+                if (fi.LastWriteTime != tls_DslScriptTime || tls_DslScriptPath != path) {
+                    tls_DslScriptTime = fi.LastWriteTime;
+                    tls_DslScriptPath = path;
                     BatchCommand.BatchScript.Load(fi.FullName);
                     var imports = s_NativeApi?.Imports;
                     if (null != imports) {
@@ -1060,10 +1060,10 @@ namespace DotNetLib
         }
         private static void PrepareBatchScript()
         {
-            if (!s_BatchScriptInited) {
+            if (!tls_BatchScriptInited) {
                 BatchCommand.BatchScript.Init();
                 RegisterBatchScriptApi();
-                s_BatchScriptInited = true;
+                tls_BatchScriptInited = true;
             }
         }
         private static void CheckDslError()
@@ -1074,11 +1074,11 @@ namespace DotNetLib
         }
 
         [ThreadStatic]
-        private static bool s_BatchScriptInited = false;
+        private static bool tls_BatchScriptInited = false;
         [ThreadStatic]
-        private static string? s_DslScriptPath;
+        private static string? tls_DslScriptPath;
         [ThreadStatic]
-        private static DateTime s_DslScriptTime;
+        private static DateTime tls_DslScriptTime;
 
         private static string s_BasePath = string.Empty;
         private static int s_MainThreadId = 0;

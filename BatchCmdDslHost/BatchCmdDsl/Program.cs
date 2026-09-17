@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using BatchCmdDsl;
+using BatchCommand.Api;
 using ScriptableFramework;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -63,26 +64,9 @@ namespace DotNetLib
         private HostTerminateProcessDelegation m_HostTerminateProcessApi;
         private HostCountProcessDelegation m_HostCountProcessApi;
     }
-    sealed class NativeLogExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            string fmt = string.Empty;
-            var al = new System.Collections.ArrayList();
-            for (int ix = 0; ix < operands.Count; ix++) {
-                BoxedValue v = operands[ix];
-                if (ix == 0) {
-                    fmt = v.AsString;
-                }
-                else {
-                    al.Add(v.GetObject());
-                }
-            }
-            string str = string.Format(fmt, al.ToArray());
-            Program.NativeLogNoLock(str);
-            return str;
-        }
-    }
+    // nativelog is provided by the shared BatchScriptApi api set (registered
+    // by DslHost.Prepare): it routes through DslHost.Current.Log, which is
+    // wired to Program.NativeLogNoLock by the console host below.
     sealed class RedirectToPluginExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -360,16 +344,15 @@ public static class Program
     private static int CallDslFunction(string functionName)
     {
         try {
-            TryLoadDSL();
-            BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-            BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-            BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-            BatchCommand.BatchScript.SetGlobalVariable("cmdargs", BoxedValue.FromObject(s_CmdArgs));
-            BatchCommand.BatchScript.SetGlobalVariable("cmdswitches", BoxedValue.FromObject(s_CmdSwitches));
+            if (null == s_ScriptFile) {
+                return 0;
+            }
+            SyncHostInfo();
+            Host.TryLoadDSL();
             var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
             var r = BatchCommand.BatchScript.Call(functionName, vargs);
             BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
-            CheckDslError();
+            Host.CheckDslError();
             if (!r.IsNullObject) {
                 return r.GetInt();
             }
@@ -380,66 +363,58 @@ public static class Program
         return 0;
     }
 
-    private static void TryLoadDSL()
-    {
-        if (null == s_ScriptFile) {
-            return;
-        }
-        BatchCommand.BatchScript.ClearDslErrors();
-        PrepareBatchScript();
-        string path = s_ScriptFile;
-        var fi = new FileInfo(path);
-        if (fi.Exists) {
-            if (fi.LastWriteTime != s_DslScriptTime || s_DslScriptPath != path) {
-                s_DslScriptTime = fi.LastWriteTime;
-                s_DslScriptPath = path;
+    // ---- shared dsl host (BatchCommand.Api.DslHost) ----------------------
+    // All interpreter machinery (per-thread init, timestamp based hot
+    // reload, unified error collection, the shared api set and the
+    // call_metadsl_task worker pool) lives in the shared DslHost; this wires
+    // it to the console host (native log sink, nativeapi/cmdargs/cmdswitches
+    // globals, the setinterval/redirecttoplugin apis).
 
-                string errorMsg = string.Empty;
-                if (File.Exists(fi.FullName)) {
-                    BatchCommand.BatchScript.Load(fi.FullName);
-                    NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
-                }
-                else {
-                    errorMsg = "DSL script file does not exist";
-                    NativeLogNoLock("[csharp] " + errorMsg + ": " + fi.FullName);
-                }
+    private static DslHost? s_DslHost;
+    private static DslHost Host {
+        get {
+            if (null == s_DslHost) {
+                s_DslHost = new DslHost {
+                    Name = "console",
+                    Log = NativeLogNoLock,
+                    RegisterHostApis = RegisterConsoleApis,
+                    SetHostGlobalVars = SetConsoleGlobalVars,
+                };
             }
-        }
-        else {
-            NativeLogNoLock("[csharp] Can't find dsl script: " + fi.FullName);
+            return s_DslHost;
         }
     }
 
-    private static void RegisterBatchScriptApi()
+    // Copies the console process info into the shared host before use.
+    // DslScriptFile accepts an absolute path: Path.Combine drops the
+    // "managed" prefix when the value is rooted (--script switch / first
+    // positional .dsl arg / the managed/monitor.dsl default).
+    private static void SyncHostInfo()
     {
-        BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<DotNetLib.NativeLogExp>());
+        var host = Host;
+        host.CmdLine = s_CmdLine;
+        host.BasePath = s_BasePath;
+        host.DslScriptFile = s_ScriptFile ?? string.Empty;
+        // Log missing script files like the old local TryLoadDSL did
+        // (DslHost only logs that when NoSandbox is set).
+        host.NoSandbox = true;
+    }
+
+    // Console specific dsl globals (the common ones come from
+    // DslHost.RefreshGlobalVars): nativeapi plus the parsed command line
+    // args and switches.
+    private static void SetConsoleGlobalVars()
+    {
+        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
+        BatchCommand.BatchScript.SetGlobalVariable("cmdargs", BoxedValue.FromObject(s_CmdArgs));
+        BatchCommand.BatchScript.SetGlobalVariable("cmdswitches", BoxedValue.FromObject(s_CmdSwitches));
+    }
+
+    private static void RegisterConsoleApis()
+    {
         BatchCommand.BatchScript.Register("setinterval", "setinterval(ms) api, set tick interval in milliseconds", new ExpressionFactoryHelper<DotNetLib.SetIntervalExp>());
         BatchCommand.BatchScript.Register("redirecttoplugin", "redirecttoplugin(dllpath[, init_cmdline]) api, load a plugin dll implementing IBatchCmdPlugin and hand over tick/shutdown to it", new ExpressionFactoryHelper<DotNetLib.RedirectToPluginExp>());
     }
-
-    private static void PrepareBatchScript()
-    {
-        if (!s_BatchScriptInited) {
-            BatchCommand.BatchScript.Init();
-            RegisterBatchScriptApi();
-            s_BatchScriptInited = true;
-        }
-    }
-
-    private static void CheckDslError()
-    {
-        if (BatchCommand.BatchScript.HasDslErrors) {
-            NativeLogNoLock("[csharp] Dsl error: " + BatchCommand.BatchScript.GetDslErrors());
-            BatchCommand.BatchScript.ClearDslErrors();
-        }
-    }
-
-    [ThreadStatic]
-    private static bool s_BatchScriptInited = false;
-    [ThreadStatic]
-    private static string? s_DslScriptPath;
-    [ThreadStatic]
-    private static DateTime s_DslScriptTime;
 
     private static string s_BasePath = string.Empty;
     private static int s_MainThreadId = 0;

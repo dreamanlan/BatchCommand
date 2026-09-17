@@ -21,12 +21,21 @@ namespace BatchCommand.Utils
     ///              every dequeued event; hosts call the dsl callbacks
     ///              on_wsclient_message(id, message) / on_wsclient_state(id, state)
     ///              there (kind: "message" | "state",
-    ///              state: connecting|connected|disconnected|failed).
+    ///              state: connecting|connected|reconnecting|disconnected|failed).
     ///              When Dispatch is null, drained events are dropped.
     ///
-    /// wsclient_open(url[, id]) starts the connection thread. Reconnect policy
-    /// is left to the dsl glue: it owns the url and the timing, this manager
-    /// only reports state transitions.
+    /// wsclient_open(url[, id[, reconnect_count]]) starts the connection
+    /// thread. With reconnect_count == 0 (default) the connection is
+    /// one-shot and the reconnect policy is left to the dsl glue. With
+    /// reconnect_count > 0 the manager acts as a link-layer keepalive: an
+    /// unexpected drop (io error / server close, never an explicit
+    /// wsclient_close) is retried with the SAME id until reconnect_count
+    /// consecutive attempts fail, then the connection dies with "failed"
+    /// (logical disconnect: the upper layer recovers by opening a fresh
+    /// connection, which resets the budget). A successful connect resets
+    /// the failure counter. Extra state during retries: "reconnecting".
+    /// Terminal states: "failed" (dead, will not return), "disconnected"
+    /// (explicit close, or a drop in one-shot mode).
     /// </summary>
     public static class WebSocketClientManager
     {
@@ -37,7 +46,8 @@ namespace BatchCommand.Utils
             public ClientWebSocket? Ws;
             public Thread? Thread;
             public volatile bool Closing;
-            public long State;  // 0=connecting 1=connected 2=disconnected 3=failed
+            public long State;  // 0=connecting 1=connected 2=disconnected 3=failed 4=reconnecting
+            public int ReconnectCount;  // link-layer retry budget (0 = one-shot)
         }
 
         private static readonly object s_Lock = new object();
@@ -54,10 +64,13 @@ namespace BatchCommand.Utils
         /// <summary>Host event dispatch (id, kind, payload) on the draining thread.</summary>
         public static Action<string, string, string>? Dispatch { get; set; }
 
-        public static string Open(string url, string? id)
+        public static string Open(string url, string? id, int reconnectCount = 0)
         {
             if (string.IsNullOrEmpty(url)) {
                 return string.Empty;
+            }
+            if (reconnectCount < 0) {
+                reconnectCount = 0;
             }
             lock (s_Lock) {
                 if (string.IsNullOrEmpty(id)) {
@@ -68,7 +81,7 @@ namespace BatchCommand.Utils
                 else if (s_Clients.ContainsKey(id)) {
                     return string.Empty;  // id already in use
                 }
-                var client = new Client { Id = id, Url = url };
+                var client = new Client { Id = id, Url = url, ReconnectCount = reconnectCount };
                 s_Clients[id] = client;
                 client.Thread = new Thread(() => ClientLoop(client)) {
                     IsBackground = true,
@@ -82,52 +95,97 @@ namespace BatchCommand.Utils
 
         private static async void ClientLoop(Client client)
         {
-            var ws = new ClientWebSocket();
-            // Never route through a system proxy: the targets are local relay
-            // links (or explicitly configured direct urls).
-            ws.Options.Proxy = null;
-            client.Ws = ws;
-            try {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                await ws.ConnectAsync(new Uri(client.Url), cts.Token);
+            bool everConnected = false;
+            int failures = 0;
+            while (!client.Closing) {
+                var ws = new ClientWebSocket();
+                // Never route through a system proxy: the targets are local relay
+                // links (or explicitly configured direct urls).
+                ws.Options.Proxy = null;
+                client.Ws = ws;
+                try {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    await ws.ConnectAsync(new Uri(client.Url), cts.Token);
+                    if (client.Closing) {
+                        break;
+                    }
+                    Interlocked.Exchange(ref client.State, 1);
+                    Enqueue(client.Id, "state", "connected");
+                    everConnected = true;
+                    failures = 0;  // link recovered: reset the retry budget
+                    var buffer = new byte[64 * 1024];
+                    bool closedByServer = false;
+                    while (!client.Closing) {
+                        var sb = new StringBuilder();
+                        WebSocketReceiveResult result;
+                        do {
+                            result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                            if (result.MessageType == WebSocketMessageType.Close) {
+                                closedByServer = true;  // graceful close by the server
+                                break;
+                            }
+                            if (result.Count > 0) {
+                                sb.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+                            }
+                        } while (!result.EndOfMessage);
+                        if (closedByServer) {
+                            break;
+                        }
+                        if (sb.Length > 0) {
+                            Enqueue(client.Id, "message", sb.ToString());
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    // connect failure / io error / disposed: surface the reason so
+                    // the host log shows why a client keeps failing (refused /
+                    // timeout / tls / proxy / ...).
+                    Log?.Invoke("[csharp] wsclient connect/recv error (id=" + client.Id + ", url=" + client.Url + "): " + ex.GetType().Name + ": " + ex.Message);
+                }
+                finally {
+                    try { ws.Dispose(); } catch { }
+                    if (ReferenceEquals(client.Ws, ws)) {
+                        client.Ws = null;
+                    }
+                }
+                // The link dropped (connect failure, io error or server close).
                 if (client.Closing) {
-                    return;
+                    break;
                 }
-                Interlocked.Exchange(ref client.State, 1);
-                Enqueue(client.Id, "state", "connected");
-                var buffer = new byte[64 * 1024];
-                while (!client.Closing) {
-                    var sb = new StringBuilder();
-                    WebSocketReceiveResult result;
-                    do {
-                        result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                        if (result.MessageType == WebSocketMessageType.Close) {
-                            return;  // graceful close by the server
-                        }
-                        if (result.Count > 0) {
-                            sb.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-                        }
-                    } while (!result.EndOfMessage);
-                    if (sb.Length > 0) {
-                        Enqueue(client.Id, "message", sb.ToString());
-                    }
+                if (client.ReconnectCount <= 0) {
+                    break;  // one-shot mode: terminal report below, no retry
+                }
+                failures = failures + 1;
+                if (failures >= client.ReconnectCount) {
+                    break;  // budget exhausted: logical disconnect for the upper layer
+                }
+                Interlocked.Exchange(ref client.State, 4);
+                Enqueue(client.Id, "state", "reconnecting");
+                try {
+                    await Task.Delay(500);  // short backoff, local links fail fast
+                }
+                catch (Exception) {
+                    break;
                 }
             }
-            catch (Exception ex) {
-                // connect failure / io error / disposed: surface the reason so
-                // the host log shows why a client keeps failing (refused /
-                // timeout / tls / proxy / ...).
-                Log?.Invoke("[csharp] wsclient connect/recv error (id=" + client.Id + ", url=" + client.Url + "): " + ex.GetType().Name + ": " + ex.Message);
+            // Terminal report (same wording as the original one-shot loop):
+            // explicit close -> disconnected; budget exhausted -> failed;
+            // one-shot never connected -> failed; one-shot drop -> disconnected.
+            string terminal;
+            if (client.Closing) {
+                terminal = "disconnected";
             }
-            finally {
-                bool neverConnected = Interlocked.Read(ref client.State) == 0 && !client.Closing;
-                Interlocked.Exchange(ref client.State, neverConnected ? 3 : 2);
-                Enqueue(client.Id, "state", neverConnected ? "failed" : "disconnected");
-                try { ws.Dispose(); } catch { }
-                lock (s_Lock) {
-                    if (s_Clients.TryGetValue(client.Id, out var cur) && cur == client) {
-                        s_Clients.Remove(client.Id);
-                    }
+            else if (client.ReconnectCount > 0) {
+                terminal = "failed";
+            }
+            else {
+                terminal = everConnected ? "disconnected" : "failed";
+            }
+            Interlocked.Exchange(ref client.State, terminal == "failed" ? 3 : 2);
+            Enqueue(client.Id, "state", terminal);
+            lock (s_Lock) {
+                if (s_Clients.TryGetValue(client.Id, out var cur) && cur == client) {
+                    s_Clients.Remove(client.Id);
                 }
             }
         }
@@ -220,6 +278,7 @@ namespace BatchCommand.Utils
                     1 => "connected",
                     2 => "disconnected",
                     3 => "failed",
+                    4 => "reconnecting",
                     _ => "unknown",
                 };
             }

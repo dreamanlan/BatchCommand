@@ -25,6 +25,7 @@ namespace AgentCore.Core
     {
         private static DslHost? s_Host;
         private static int s_AgentPort = 9527;
+        private static string s_InitialProjectIdentity = string.Empty;
 
         internal static DslHost Host {
             get {
@@ -33,7 +34,7 @@ namespace AgentCore.Core
                         Name = "agent",
                         Log = s => AgentCore.Instance.Logger.Info(s),
                         RegisterHostApis = RegisterAgentApis,
-                        SetHostGlobalVars = () => BatchCommand.BatchScript.SetGlobalVariable("agentport", BoxedValue.From(s_AgentPort)),
+                        SetHostGlobalVars = SetAgentGlobalVars,
                         SearchHelp = SearchHelp,
                         CaptureTaskState = () => CurrentContext,
                         OnTaskBegin = state => {
@@ -61,6 +62,17 @@ namespace AgentCore.Core
         private static void RegisterAgentApis()
         {
             ScriptApiRegistrar.RegisterAllApis();
+        }
+
+        // Agent specific dsl globals (the common ones come from
+        // DslHost.RefreshGlobalVars): agentport, initialprojectidentity and
+        // the fixed processtype (-1: the standalone agent is not a CEF
+        // process; the former DslHost fields moved back here).
+        private static void SetAgentGlobalVars()
+        {
+            BatchCommand.BatchScript.SetGlobalVariable("agentport", BoxedValue.From(s_AgentPort));
+            BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
+            BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(-1));
         }
 
         // ---- dsl host facade (delegates to the shared DslHost) --------------
@@ -224,9 +236,9 @@ namespace AgentCore.Core
             }
             // The browser relays its --projectidentity switch so the agent
             // process knows the initial project identity (exposed to dsl as
-            // the initialprojectidentity global via DslHost).
+            // the initialprojectidentity global via SetAgentGlobalVars).
             if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "projectidentity", out var identityValue) && !string.IsNullOrEmpty(identityValue)) {
-                host.InitialProjectIdentity = identityValue;
+                s_InitialProjectIdentity = identityValue;
             }
         }
 
@@ -504,24 +516,24 @@ namespace AgentCore.Core
         // from a metadsl task worker) are dropped and logged.
 
         [ThreadStatic]
-        private static Stack<DslContext>? s_ContextStack;
+        private static Stack<DslContext>? tls_ContextStack;
 
         internal static DslContext? CurrentContext {
             get {
-                var stack = s_ContextStack;
+                var stack = tls_ContextStack;
                 return (null != stack && stack.Count > 0) ? stack.Peek() : null;
             }
         }
         internal static void PushContext(DslContext ctx)
         {
-            if (null == s_ContextStack) {
-                s_ContextStack = new Stack<DslContext>();
+            if (null == tls_ContextStack) {
+                tls_ContextStack = new Stack<DslContext>();
             }
-            s_ContextStack.Push(ctx);
+            tls_ContextStack.Push(ctx);
         }
         internal static void PopContext()
         {
-            s_ContextStack?.Pop();
+            tls_ContextStack?.Pop();
         }
 
         internal static void EnqueueCallback(DslContext? ctx, string msgName, IList<BoxedValue> args)

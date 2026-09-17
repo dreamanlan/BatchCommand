@@ -13,31 +13,31 @@ namespace BatchCommand.Api
     public static class ApiErrorInfo
     {
         [ThreadStatic]
-        private static StringBuilder? t_Info;
+        private static StringBuilder? tls_Info;
 
         public static StringBuilder Info {
             get {
-                if (null == t_Info) {
-                    t_Info = new StringBuilder();
+                if (null == tls_Info) {
+                    tls_Info = new StringBuilder();
                 }
-                return t_Info;
+                return tls_Info;
             }
         }
 
         public static bool HasInfo {
             get {
-                return null != t_Info && t_Info.Length > 0;
+                return null != tls_Info && tls_Info.Length > 0;
             }
         }
 
         public static string GetInfo()
         {
-            return null != t_Info ? t_Info.ToString() : string.Empty;
+            return null != tls_Info ? tls_Info.ToString() : string.Empty;
         }
 
         public static void Clear()
         {
-            t_Info?.Clear();
+            tls_Info?.Clear();
         }
 
         public static void Append(string msg)

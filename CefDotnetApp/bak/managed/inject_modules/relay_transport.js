@@ -34,10 +34,8 @@ class RelayTransport {
       : (typeof location !== 'undefined' ? location.host : 'unknown');
     this.isRunning = false;      // registered with the browser relay
     this.isConnected = false;    // underlying wsclient connected to AgentCore
-    this.relayAvailable = true;  // false after repeated failures (stop trying)
-    this.registerAttempts = 0;
-    this.maxRegisterAttempts = 10;
-    this.registerTimeoutMs = 12000;  // C# connect timeout is 10s + margin
+    this.relayAvailable = true;  // false only when the transport is absent
+    this.registerTimeoutMs = 12000;  // safety net for a lost state event
     // Reply queue (raw MetaDSL results), same shape as metadslWorker's
     this.fromWorkerQueue = [];
     this.reconnectDelay = 2000;
@@ -63,16 +61,15 @@ class RelayTransport {
     if (urlKey) {
       this.urlKey = urlKey;
     }
-    this.registerAttempts = this.registerAttempts + 1;
     const sent = this._cefQuery({
       action: 'agent_register',
-      urlKey: this.urlKey
+      urlKey: this.urlKey,
+      agentId: ''  // control connection: envelope path, no agent_bind needed
     }, (clientId) => {
       this._clearRegisterTimer();
       this.clientId = clientId;
       this.isRunning = true;
       this.isConnected = true;
-      this.registerAttempts = 0;
       this.logger.info('relay registered: ' + clientId + ' (' + this.urlKey + ')');
     }, (code, msg) => {
       this._clearRegisterTimer();
@@ -89,6 +86,9 @@ class RelayTransport {
         this.logger.warn('relay register timed out after ' + this.registerTimeoutMs + 'ms');
         this._giveUpOrRetry();
       }, this.registerTimeoutMs);
+    } else {
+      // cefQuery / relay transport absent: permanent, do not spin.
+      this.relayAvailable = false;
     }
     return sent;
   }
@@ -101,12 +101,10 @@ class RelayTransport {
   }
 
   _giveUpOrRetry() {
-    if (this.registerAttempts >= this.maxRegisterAttempts) {
-      this.relayAvailable = false;
-      this.isRunning = false;
-      this.logger.warn('relay unavailable after ' + this.registerAttempts + ' attempts, staying on legacy channel');
-      return;
-    }
+    // Never give up while the transport exists: an AgentCore outage must not
+    // kill the page relay forever. Transient drops are absorbed by the C#
+    // link layer (same client id); a failure here means the logical
+    // connection is dead, so re-register (fresh connection, fresh budget).
     this._scheduleReconnect();
   }
 
@@ -140,6 +138,32 @@ class RelayTransport {
       this._reconnectTimer = null;
       this.register();
     }, this.reconnectDelay);
+  }
+
+  // Pull-based self-heal: a lost relay_state push can leave isConnected
+  // false although the link layer already reconnected. Ask the browser dsl
+  // for the true wsclient state and heal (or re-register when dead).
+  _resyncIfNeeded() {
+    if (!this.isRunning || this.isConnected || !this.clientId || !this.relayAvailable) {
+      return;
+    }
+    this._cefQuery({
+      action: 'agent_state',
+      clientId: this.clientId
+    }, (state) => {
+      if (!this.isRunning || this.isConnected) {
+        return;
+      }
+      if (state === 'connected') {
+        this.isConnected = true;
+        this.logger.info('relay resync: link is up, healed');
+      } else if (state === 'failed' || state === 'unknown') {
+        this.isConnected = false;
+        this.clientId = null;
+        this._scheduleReconnect();
+      }
+      // reconnecting / connecting: the link layer is still healing, wait.
+    }, () => { /* query failed: the next watchdog tick retries */ });
   }
 
   // ---- sending ---------------------------------------------------------
@@ -301,7 +325,13 @@ class RelayTransport {
     if (msg.state === 'connected') {
       this.isConnected = true;
       this.logger.info('relay connected');
+    } else if (msg.state === 'reconnecting' || msg.state === 'connecting') {
+      // Link-layer retry on the SAME connection (same client id): keep the
+      // id, just mark the link unusable; senders fail fast and re-send.
+      this.isConnected = false;
+      this.logger.warn('relay ' + msg.state + ', waiting for link recovery');
     } else {
+      // failed / disconnected: the connection is dead and will not return.
       this.isConnected = false;
       this.clientId = null;  // the wsclient id is dead, a register gets a new one
       this.logger.warn('relay ' + msg.state + ', will re-register');
@@ -417,7 +447,6 @@ class RelaySlot {
     this.onmessage = null;
     this.onclose = null;
     this.onerror = null;
-    this._registerAttempts = 0;
     this._registerTimer = null;
     this._reconnectTimer = null;
     this._closedByUser = false;
@@ -435,16 +464,15 @@ class RelaySlot {
       return;
     }
     this.readyState = RelaySlot._CONNECTING;
-    this._registerAttempts += 1;
     const self = this;
     const sent = relayTransport._cefQuery({
       action: 'agent_register',
-      urlKey: this.urlKey
+      urlKey: this.urlKey,
+      agentId: this.agentId  // browser dsl re-sends agent_bind on (re)connects
     }, function (clientId) {
       self._clearRegisterTimer();
       self.clientId = clientId;
       relaySlotRegistry.set(clientId, self);
-      self._registerAttempts = 0;
       // Bind the connection to this slot's agent id for the raw code path.
       relayTransport._cefQuery({
         action: 'agent_send',
@@ -460,13 +488,17 @@ class RelaySlot {
       self.loggerWarn('register failed (' + code + '): ' + msg);
       self._retryOrGiveUp();
     });
-    if (sent) {
-      this._registerTimer = setTimeout(function () {
-        self._registerTimer = null;
-        self.loggerWarn('register timed out');
-        self._retryOrGiveUp();
-      }, 12000);
+    if (!sent) {
+      // cefQuery / relay transport absent: permanent, stop retrying.
+      self.loggerWarn('relay transport unavailable, slot closed');
+      this.readyState = RelaySlot._CLOSED;
+      return;
     }
+    this._registerTimer = setTimeout(function () {
+      self._registerTimer = null;
+      self.loggerWarn('register timed out');
+      self._retryOrGiveUp();
+    }, 12000);
   }
 
   _clearRegisterTimer() {
@@ -480,13 +512,10 @@ class RelaySlot {
     if (this._closedByUser) {
       return;
     }
-    if (this._registerAttempts >= 60) {
-      this.loggerWarn('giving up after ' + this._registerAttempts + ' attempts');
-      this.readyState = RelaySlot._CLOSED;
-      if (typeof this.onerror === 'function') this.onerror();
-      if (typeof this.onclose === 'function') this.onclose();
-      return;
-    }
+    // Never give up while the transport exists: retry the logical
+    // registration forever (2s period); transient link drops are absorbed
+    // by the C# link layer, a failure here means the logical connection
+    // is dead.
     const self = this;
     if (!this._reconnectTimer) {
       this._reconnectTimer = setTimeout(function () {
@@ -561,6 +590,32 @@ class RelaySlot {
     this._retryOrGiveUp();
   }
 
+  // Pull-based self-heal: a lost relay_state(connected) push leaves the slot
+  // in CONNECTING forever while the link is actually up. The browser dsl
+  // has already re-sent agent_bind on its connected event; only the local
+  // readyState needs healing.
+  _resyncIfNeeded() {
+    if (this._closedByUser || this.readyState !== RelaySlot._CONNECTING || !this.clientId) {
+      return;
+    }
+    const self = this;
+    relayTransport._cefQuery({
+      action: 'agent_state',
+      clientId: this.clientId
+    }, function (state) {
+      if (self._closedByUser || self.readyState !== RelaySlot._CONNECTING) {
+        return;
+      }
+      if (state === 'connected') {
+        self.readyState = RelaySlot._OPEN;
+        if (typeof self.onopen === 'function') self.onopen();
+      } else if (state === 'failed' || state === 'unknown') {
+        self._handleDisconnect();
+      }
+      // reconnecting / connecting: the link layer is still healing, wait.
+    }, function () { });
+  }
+
   // Push entry: called by the window.onAgentEvent dispatcher when the
   // clientId matches this slot.
   _onPush(message) {
@@ -576,10 +631,23 @@ class RelaySlot {
       }
       if (msg && msg.type === 'relay_state') {
         if (msg.state === 'connected') {
+          // The link layer (re)connected: the server-side connection is
+          // brand new, so (re-)send agent_bind - AgentCore lost the
+          // per-connection binding on the reconnect.
+          if (this.clientId) {
+            relayTransport._cefQuery({
+              action: 'agent_send',
+              clientId: this.clientId,
+              message: JSON.stringify({ type: 'agent_bind', agentId: this.agentId })
+            }, function () { }, function () { });
+          }
           if (this.readyState !== RelaySlot._OPEN) {
             this.readyState = RelaySlot._OPEN;
             if (typeof this.onopen === 'function') this.onopen();
           }
+        } else if (msg.state === 'reconnecting' || msg.state === 'connecting') {
+          // Link healing on the same client id: not sendable, not dead.
+          this.readyState = RelaySlot._CONNECTING;
         } else {
           this._handleDisconnect();
         }
@@ -639,6 +707,19 @@ if (typeof window !== 'undefined') {
   setTimeout(function () {
     relayTransport.register();
   }, 0);
+
+  // Link-state watchdog (every 10s): relay_state pushes can be lost
+  // (renderer busy, js not ready); pull the true wsclient state for
+  // anything stuck and heal it - the raw MetaDSL channel must never
+  // stay broken silently.
+  setInterval(function () {
+    try {
+      relayTransport._resyncIfNeeded();
+      relaySlotRegistry.forEach(function (slot) {
+        try { slot._resyncIfNeeded(); } catch (e) { /* best effort */ }
+      });
+    } catch (e) { /* best effort */ }
+  }, 10000);
 
   // Zombie-connection cleanup (graceful path): on refresh/navigation/close
   // unregister the control connection and close every relay slot, so the

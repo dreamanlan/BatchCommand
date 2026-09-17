@@ -47,21 +47,18 @@ namespace BatchCommand.Api
         public Action<object?>? OnTaskEnd;
 
         // ---- process info exposed as dsl globals (set before first use) ----
+        // Only the truly common fields live here. Host specific process info
+        // (processtype/startupurl/... for CEF, agentport/initialprojectidentity
+        // for the agent) is owned by the host module and set through the
+        // SetHostGlobalVars hook, keeping this class host agnostic.
 
         public string Name = "dsl";
         public string CmdLine = string.Empty;
         public string BasePath = string.Empty;
         public string AppDir = string.Empty;
         public string DslScriptFile = string.Empty;
-        public string StartupUrl = string.Empty;
-        public string LastLoadedMainUrl = string.Empty;
-        public string LastLoadedUrl = string.Empty;
-        public string InitialDslScriptFile = string.Empty;
-        public string InitialProjectIdentity = string.Empty;
         public bool IsMac = false;
         public bool NoSandbox = false;
-        public int ProcessType = -1;
-        public int AgentPort = 0;
 
         /// <summary>The process wide host instance used by the shared framework expressions.</summary>
         public static DslHost? Current { get; private set; }
@@ -100,12 +97,19 @@ namespace BatchCommand.Api
 
         private static readonly List<string> s_EmptyArgs = new List<string>();
 
+        // Per-thread per-instance init tracking: the interpreter state is
+        // process wide [ThreadStatic] (one calculator per thread shared by
+        // every DslHost in the process), but EACH instance must run its own
+        // Init + api registration on a thread. A second instance re-Inits,
+        // which resets the per-thread api registry - the last registration
+        // wins, matching the pre-DslHost plugin-host behavior (console host
+        // Init followed by the agent plugin Init on the same thread).
         [ThreadStatic]
-        private static bool t_Inited;
+        private static HashSet<DslHost>? tls_InitedHosts;
         [ThreadStatic]
-        private static DateTime t_ScriptTime;
+        private static DateTime tls_ScriptTime;
         [ThreadStatic]
-        private static string? t_ScriptPath;
+        private static string? tls_ScriptPath;
 
         public DslHost()
         {
@@ -115,7 +119,7 @@ namespace BatchCommand.Api
         /// <summary>Path of the dsl script loaded on the current thread (the dslpath global).</summary>
         public string DslScriptPath {
             get {
-                return t_ScriptPath ?? string.Empty;
+                return tls_ScriptPath ?? string.Empty;
             }
         }
 
@@ -126,12 +130,12 @@ namespace BatchCommand.Api
         // BatchScriptApiRegistrar), then host apis.
         public void Prepare()
         {
-            if (!t_Inited) {
+            tls_InitedHosts ??= new HashSet<DslHost>();
+            if (tls_InitedHosts.Add(this)) {
                 BatchScript.Init();
                 AddCommonApiDocs();
                 BatchScriptApiRegistrar.RegisterAllApis();
                 RegisterHostApis?.Invoke();
-                t_Inited = true;
             }
         }
 
@@ -144,9 +148,9 @@ namespace BatchCommand.Api
             string path = Path.Combine(BasePath, "managed", DslScriptFile);
             var fi = new FileInfo(path);
             if (fi.Exists) {
-                if (fi.LastWriteTime != t_ScriptTime || t_ScriptPath != path) {
-                    t_ScriptTime = fi.LastWriteTime;
-                    t_ScriptPath = path;
+                if (fi.LastWriteTime != tls_ScriptTime || tls_ScriptPath != path) {
+                    tls_ScriptTime = fi.LastWriteTime;
+                    tls_ScriptPath = path;
 
                     string errorMsg = string.Empty;
                     if (File.Exists(fi.FullName)) {
@@ -167,8 +171,12 @@ namespace BatchCommand.Api
             RefreshGlobalVars();
             ApiErrorInfo.Clear();
             if (loaded) {
-                BatchScript.Call("init_global_consts");
-                CheckDslError();
+                // Optional entry point: only call it when the script defines
+                // it (e.g. monitor.dsl does not).
+                if (BatchScript.Calculator.TryGetFuncInfo("init_global_consts", out _)) {
+                    BatchScript.Call("init_global_consts");
+                    CheckDslError();
+                }
             }
         }
 
@@ -181,15 +189,9 @@ namespace BatchCommand.Api
             BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(BasePath));
             BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(AppDir));
             BatchScript.SetGlobalVariable("ismac", BoxedValue.From(IsMac));
-            BatchScript.SetGlobalVariable("processtype", BoxedValue.From(ProcessType));
             BatchScript.SetGlobalVariable("nosandbox", BoxedValue.From(NoSandbox));
-            BatchScript.SetGlobalVariable("startupurl", BoxedValue.FromString(StartupUrl));
-            BatchScript.SetGlobalVariable("lastloadedmainurl", BoxedValue.FromString(LastLoadedMainUrl));
-            BatchScript.SetGlobalVariable("lastloadedurl", BoxedValue.FromString(LastLoadedUrl));
             BatchScript.SetGlobalVariable("dslpath", BoxedValue.FromString(DslScriptPath));
             BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(DslScriptFile));
-            BatchScript.SetGlobalVariable("initialdslfile", BoxedValue.FromString(InitialDslScriptFile));
-            BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(InitialProjectIdentity));
             SetHostGlobalVars?.Invoke();
             BatchScript.ClearDslErrors();
         }

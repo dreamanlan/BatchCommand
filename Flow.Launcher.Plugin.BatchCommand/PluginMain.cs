@@ -825,20 +825,20 @@ public sealed class Main : IAsyncPlugin, IContextMenu, IAsyncReloadable, IPlugin
 
     private static AutoResetEvent GetThreadEvent()
     {
-        if (null == s_Event)
-            s_Event = new AutoResetEvent(false);
-        return s_Event;
+        if (null == tls_Event)
+            tls_Event = new AutoResetEvent(false);
+        return tls_Event;
     }
     private static ConcurrentQueue<Func<bool>> GetThreadFuncs()
     {
-        if (null == s_Funcs)
-            s_Funcs = new ConcurrentQueue<Func<bool>>();
-        return s_Funcs;
+        if (null == tls_Funcs)
+            tls_Funcs = new ConcurrentQueue<Func<bool>>();
+        return tls_Funcs;
     }
     [ThreadStatic]
-    private static AutoResetEvent s_Event = null;
+    private static AutoResetEvent tls_Event = null;
     [ThreadStatic]
-    private static ConcurrentQueue<Func<bool>> s_Funcs = null;
+    private static ConcurrentQueue<Func<bool>> tls_Funcs = null;
 
     private const int c_QueryNumPerTick = 2;
     private const int c_ActionNumPerTick = 16;

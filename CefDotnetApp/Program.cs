@@ -1023,15 +1023,15 @@ namespace DotNetLib
 
         public BrowserProxy? GetBrowser()
         {
-            if (s_Browser != IntPtr.Zero) {
-                return new BrowserProxy(s_Browser, this);
+            if (tls_Browser != IntPtr.Zero) {
+                return new BrowserProxy(tls_Browser, this);
             }
             return null;
         }
         public FrameProxy? GetFrame()
         {
-            if (s_Frame != IntPtr.Zero) {
-                return new FrameProxy(s_Frame, this);
+            if (tls_Frame != IntPtr.Zero) {
+                return new FrameProxy(tls_Frame, this);
             }
             return null;
         }
@@ -1111,19 +1111,19 @@ namespace DotNetLib
 
         internal static void SetContext(IntPtr browser, IntPtr frame)
         {
-            s_Browser = browser;
-            s_Frame = frame;
+            tls_Browser = browser;
+            tls_Frame = frame;
         }
 
         internal static nint Browser {
-            get => s_Browser;
-            set => s_Browser = value;
+            get => tls_Browser;
+            set => tls_Browser = value;
         }
         internal static nint Frame {
-            get => s_Frame;
-            set => s_Frame = value;
+            get => tls_Frame;
+            set => tls_Frame = value;
         }
-        internal static int LastSourceProcessId { get => s_LastSourceProcessId; set => s_LastSourceProcessId = value; }
+        internal static int LastSourceProcessId { get => tls_LastSourceProcessId; set => tls_LastSourceProcessId = value; }
 
         internal bool CommandLineHasSwitch(IntPtr commandLine, string name)
         {
@@ -1695,11 +1695,11 @@ namespace DotNetLib
             if (!isMainThread) {
                 return;
             }
-            if (s_Browser == IntPtr.Zero) {
-                s_Browser = Lib.GetBrowsersFirstValid();
-                s_Frame = BrowserGetMainFrame(s_Browser);
+            if (tls_Browser == IntPtr.Zero) {
+                tls_Browser = Lib.GetBrowsersFirstValid();
+                tls_Frame = BrowserGetMainFrame(tls_Browser);
             }
-            if (s_Browser == IntPtr.Zero) {
+            if (tls_Browser == IntPtr.Zero) {
                 Lib.NativeLog($"[csharp] Error HandleAllQueues, browser is null");
                 return;
             }
@@ -1893,11 +1893,11 @@ namespace DotNetLib
         private HostUnregisterCustomSchemeDelegation? m_UnregisterCustomSchemeApi;
 
         [ThreadStatic]
-        private static IntPtr s_Browser = IntPtr.Zero;
+        private static IntPtr tls_Browser = IntPtr.Zero;
         [ThreadStatic]
-        private static IntPtr s_Frame = IntPtr.Zero;
+        private static IntPtr tls_Frame = IntPtr.Zero;
         [ThreadStatic]
-        private static int s_LastSourceProcessId = -1;
+        private static int tls_LastSourceProcessId = -1;
 
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_NativeLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_JsLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
@@ -4903,7 +4903,7 @@ namespace DotNetLib
                         Name = "cef",
                         Log = NativeLog,
                         RegisterHostApis = RegisterCefApis,
-                        SetHostGlobalVars = () => BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi)),
+                        SetHostGlobalVars = SetCefHostGlobalVars,
                         OnTaskBegin = state => {
                             // NativeApi's context is [ThreadStatic] and a worker runs many
                             // jobs, so a context left by an earlier job on this thread would
@@ -4924,7 +4924,9 @@ namespace DotNetLib
         }
 
         // Copies the Lib process info (owned by the CEF lifecycle callbacks)
-        // into the shared host before the host uses it.
+        // into the shared host before the host uses it. The CEF specific
+        // info (processtype/startupurl/...) is pushed as dsl globals through
+        // SetCefHostGlobalVars instead of host fields.
         private static void SyncHostInfo()
         {
             var host = Host;
@@ -4932,14 +4934,23 @@ namespace DotNetLib
             host.BasePath = s_BasePath;
             host.AppDir = s_AppDir;
             host.IsMac = s_IsMac;
-            host.ProcessType = s_ProcessType;
             host.NoSandbox = s_NoSandbox;
             host.DslScriptFile = s_DslScriptFile;
-            host.StartupUrl = s_StartupUrl;
-            host.LastLoadedMainUrl = s_LastLoadedMainUrl;
-            host.LastLoadedUrl = s_LastLoadedUrl;
-            host.InitialDslScriptFile = s_InitialDslScriptFile;
-            host.InitialProjectIdentity = s_InitialProjectIdentity;
+        }
+
+        // CEF specific dsl globals (the common ones come from
+        // DslHost.RefreshGlobalVars): nativeapi plus the process info owned
+        // by this module (the former DslHost.ProcessType/StartupUrl/...
+        // fields, moved back here).
+        private static void SetCefHostGlobalVars()
+        {
+            BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
+            BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
+            BatchCommand.BatchScript.SetGlobalVariable("startupurl", BoxedValue.FromString(s_StartupUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("lastloadedmainurl", BoxedValue.FromString(s_LastLoadedMainUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("lastloadedurl", BoxedValue.FromString(s_LastLoadedUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("initialdslfile", BoxedValue.FromString(s_InitialDslScriptFile));
+            BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
         }
 
         // CEF specific apis; the common framework/utility apis are registered

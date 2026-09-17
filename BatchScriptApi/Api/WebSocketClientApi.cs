@@ -9,7 +9,11 @@ namespace BatchCommand.Api
     /// Generic websocket CLIENT api set (shared by all hosts; the manager
     /// core lives in BatchCommand.Utils.WebSocketClientManager):
     ///
-    ///   wsclient_open(url[, id])     -> client id ('' on error / id in use)
+    ///   wsclient_open(url[, id[, reconnect_count]])
+    ///                               -> client id ('' on error / id in use);
+    ///                                  reconnect_count > 0 enables link-layer
+    ///                                  auto reconnect with the same id (budget
+    ///                                  of reconnect_count consecutive failures)
     ///   wsclient_send(id, message)   -> true when queued
     ///   wsclient_close(id)           -> cooperative close
     ///   wsclient_close_all()         -> closed count
@@ -25,7 +29,7 @@ namespace BatchCommand.Api
         public static void RegisterApis()
         {
             BatchCommand.BatchScript.Register("wsclient_open",
-                "wsclient_open(url[, id]) - open a websocket client connection, returns the client id ('' on error or id in use)",
+                "wsclient_open(url[, id[, reconnect_count]]) - open a websocket client connection, returns the client id ('' on error or id in use); reconnect_count > 0 enables link-layer auto reconnect with the same id",
                 new ExpressionFactoryHelper<WsClientOpenExp>());
             BatchCommand.BatchScript.Register("wsclient_send",
                 "wsclient_send(id, message) - send a text message over the wsclient connection, returns true when queued",
@@ -40,7 +44,7 @@ namespace BatchCommand.Api
                 "wsclient_count() - number of managed wsclient connections",
                 new ExpressionFactoryHelper<WsClientCountExp>());
             BatchCommand.BatchScript.Register("wsclient_state",
-                "wsclient_state(id) - wsclient connection state: connecting|connected|disconnected|failed|unknown",
+                "wsclient_state(id) - wsclient connection state: connecting|connected|reconnecting|disconnected|failed|unknown",
                 new ExpressionFactoryHelper<WsClientStateExp>());
             BatchCommand.BatchScript.Register("wsclient_list",
                 "wsclient_list() - list of \"id|state|url\" strings",
@@ -55,13 +59,14 @@ namespace BatchCommand.Api
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: wsclient_open(url[, id])");
+            if (operands.Count < 1 || operands.Count > 3) {
+                ApiErrorInfo.AppendLine("Expected: wsclient_open(url[, id[, reconnect_count]])");
                 return BoxedValue.EmptyString;
             }
             string url = operands[0].AsString;
             string? id = operands.Count > 1 ? operands[1].AsString : null;
-            string result = WebSocketClientManager.Open(url, string.IsNullOrEmpty(id) ? null : id);
+            int reconnectCount = operands.Count > 2 ? operands[2].GetInt() : 0;
+            string result = WebSocketClientManager.Open(url, string.IsNullOrEmpty(id) ? null : id, reconnectCount);
             return BoxedValue.FromString(result);
         }
     }

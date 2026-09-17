@@ -1334,16 +1334,16 @@ namespace BatchCommand
     {
         public static bool TimeStatisticOn
         {
-            get { return s_TimeStatisticOn; }
-            set { s_TimeStatisticOn = value; }
+            get { return tls_TimeStatisticOn; }
+            set { tls_TimeStatisticOn = value; }
         }
         public static string ScriptDirectory
         {
             get {
-                if (null == s_ScriptDirectory) {
-                    s_ScriptDirectory = string.Empty;
+                if (null == tls_ScriptDirectory) {
+                    tls_ScriptDirectory = string.Empty;
                 }
-                return s_ScriptDirectory;
+                return tls_ScriptDirectory;
             }
         }
         public static bool HasDslErrors
@@ -1353,54 +1353,54 @@ namespace BatchCommand
         public static DslCalculator Calculator
         {
             get {
-                if (null == s_Calculator) {
-                    s_Calculator = new DslCalculator();
+                if (null == tls_Calculator) {
+                    tls_Calculator = new DslCalculator();
                 }
-                return s_Calculator;
+                return tls_Calculator;
             }
         }
         public static Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> AsyncTasks
         {
             get {
-                if (s_AsyncTasks == null)
-                    s_AsyncTasks = new Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>>();
-                return s_AsyncTasks;
+                if (tls_AsyncTasks == null)
+                    tls_AsyncTasks = new Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>>();
+                return tls_AsyncTasks;
             }
         }
         public static List<string> EmptyStringList
         {
             get {
-                if (null == s_EmptyStringList) {
-                    s_EmptyStringList = new List<string>();
+                if (null == tls_EmptyStringList) {
+                    tls_EmptyStringList = new List<string>();
                 }
-                return s_EmptyStringList;
+                return tls_EmptyStringList;
             }
         }
         public static List<BoxedValue> EmptyBoxedValueList
         {
             get {
-                if (null == s_EmptyBoxedValueList) {
-                    s_EmptyBoxedValueList = new List<BoxedValue>();
+                if (null == tls_EmptyBoxedValueList) {
+                    tls_EmptyBoxedValueList = new List<BoxedValue>();
                 }
-                return s_EmptyBoxedValueList;
+                return tls_EmptyBoxedValueList;
             }
         }
         public static StringBuilder DslErrorInfo
         {
             get {
-                if (null == s_DslErrorInfo) {
-                    s_DslErrorInfo = new StringBuilder();
+                if (null == tls_DslErrorInfo) {
+                    tls_DslErrorInfo = new StringBuilder();
                 }
-                return s_DslErrorInfo;
+                return tls_DslErrorInfo;
             }
         }
         public static SortedList<string, string> UserApiDocs
         {
             get {
-                if (null == s_UserApiDocs) {
-                    s_UserApiDocs = new SortedList<string, string>();
+                if (null == tls_UserApiDocs) {
+                    tls_UserApiDocs = new SortedList<string, string>();
                 }
-                return s_UserApiDocs;
+                return tls_UserApiDocs;
             }
         }
         public static SortedList<string, string> ApiDocs
@@ -1433,7 +1433,9 @@ namespace BatchCommand
             var provider = CodePagesEncodingProvider.Instance;
             Encoding.RegisterProvider(provider);
 #endif
-            DslErrorInfo.Clear();
+            ClearUserApiDocs();
+            ClearDslErrors();
+            ClearAllAsyncTaskInfo();
             Calculator.OnLog = msg => { OnDslError(msg); };
             Calculator.NewApiRegistry();
 
@@ -1554,7 +1556,7 @@ namespace BatchCommand
         {
             var sdir = Path.GetDirectoryName(scpFile);
             sdir = Path.Combine(Environment.CurrentDirectory, sdir);
-            s_ScriptDirectory = sdir;
+            tls_ScriptDirectory = sdir;
             Calculator.Clear();
             DslErrorInfo.Clear();
             LoadDslHelper(scpFile);
@@ -1773,6 +1775,11 @@ namespace BatchCommand
                 return Encoding.UTF8;
             }
         }
+        public static void ClearAllAsyncTaskInfo()
+        {
+            AsyncTasks.Clear();
+            AsyncTaskTickKeys.Clear();
+        }
         public static int StartAsyncTask(string func, List<BoxedValue> args)
         {
             var asyncResult = new AsyncCalcResult();
@@ -1873,14 +1880,14 @@ namespace BatchCommand
         internal static List<int> AsyncTaskTickKeys
         {
             get {
-                if (s_AsyncTaskTickKeys == null)
-                    s_AsyncTaskTickKeys = new List<int>();
-                return s_AsyncTaskTickKeys;
+                if (tls_AsyncTaskTickKeys == null)
+                    tls_AsyncTaskTickKeys = new List<int>();
+                return tls_AsyncTaskTickKeys;
             }
         }
         internal static int NextAsyncTaskId()
         {
-            return ++s_AsyncTaskIdSeed;
+            return ++tls_AsyncTaskIdSeed;
         }
         private static void LoadDslHelper(string file)
         {
@@ -1911,26 +1918,26 @@ namespace BatchCommand
         }
 
         [ThreadStatic]
-        private static bool s_TimeStatisticOn;
+        private static bool tls_TimeStatisticOn;
         [ThreadStatic]
-        private static string s_ScriptDirectory;
+        private static string tls_ScriptDirectory;
         [ThreadStatic]
-        private static DslCalculator s_Calculator;
+        private static DslCalculator tls_Calculator;
 
         [ThreadStatic]
-        private static List<string> s_EmptyStringList;
+        private static List<string> tls_EmptyStringList;
         [ThreadStatic]
-        private static List<BoxedValue> s_EmptyBoxedValueList;
+        private static List<BoxedValue> tls_EmptyBoxedValueList;
         [ThreadStatic]
-        private static StringBuilder s_DslErrorInfo;
+        private static StringBuilder tls_DslErrorInfo;
         [ThreadStatic]
-        private static SortedList<string, string> s_UserApiDocs;
+        private static SortedList<string, string> tls_UserApiDocs;
         [ThreadStatic]
-        private static Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> s_AsyncTasks;
+        private static Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> tls_AsyncTasks;
         [ThreadStatic]
-        private static int s_AsyncTaskIdSeed;
+        private static int tls_AsyncTaskIdSeed;
         [ThreadStatic]
-        private static List<int> s_AsyncTaskTickKeys;
+        private static List<int> tls_AsyncTaskTickKeys;
 
     }
 }

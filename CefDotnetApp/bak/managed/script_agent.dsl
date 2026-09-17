@@ -264,7 +264,7 @@ script(handle_update_agent_configs_command)params($id, $params)
     // LLM providers configured here; apiKey uses %var% placeholders expanded via agent environment
     llm_set_provider("ollama", "ollama", "http://localhost:11434", "", "qwen3.8:27b");
 
-    $pmModel = "hy3";
+    $pmModel = "glm-5.3-flash";
     if (ismac) {
         $pmModel = "deepseek-v4-flash";
     };

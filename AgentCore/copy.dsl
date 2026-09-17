@@ -11,6 +11,8 @@ script(main)
 	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Lucene.Net.Codecs.*");
 	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Microsoft.Windows.SDK.NET.*");
 	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","WinRT.Runtime.*");
+	// Self-signed https cert setup script for the webserver (standalone, run manually or via launch_process_with_admin).
+	copyfiles(".", "../../WebAgent/webagent", "ssl_selfsign_setup.ps1");
 
 	if (argnum() <= 1) {
 		echo("press any key ...");

@@ -6,13 +6,13 @@ script(init_global_consts)
     // Initialize global constants for browser here
     setenv("PLAYWRIGHT_DRIVER_SEARCH_PATH", combinepath(basepath, "managed"));
     // Standalone agent process (AgentCore host) config.
-    // 9540: new architecture port; 9527-9535 remain in use by the old
-    // in-process deployments running in parallel during the migration.
+    // 9527: the relay port (default of MetaDslExecutor.SetProcessInfo,
+    // overridable with --agentport; the site ports are retired).
     // Note: the launcher is the native host BatchCmdDslHost at the webagent
     // root (managed/BatchCmdDsl is just an empty-main apphost). On macOS the
     // bundle layout puts it in webagent.app/Contents/MacOS/ (basepath is
     // webagent.app/Contents there, no .exe suffix).
-    @AgentPort = 9540;
+    @AgentPort = 9527;
     if (ismac) {
         @AgentExe = combinepath(basepath, "MacOS", "BatchCmdDslHost");
     }

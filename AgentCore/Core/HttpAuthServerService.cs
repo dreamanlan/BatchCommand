@@ -11,7 +11,7 @@ using ScriptableFramework;
 using BatchCommand;
 using BatchCommand.Utils;
 
-namespace BatchCommand.Utils
+namespace AgentCore.Core
 {
     /// <summary>
     /// Generic local loopback HTTP redirect capturer. Provider-agnostic: works
@@ -28,6 +28,11 @@ namespace BatchCommand.Utils
     ///   5. self destroy once captured (or on timeout / manual stop).
     /// Note: implicit-flow fragments (#access_token=...) never reach a server,
     /// so callers must use response_type=code (or any query-based redirect).
+    ///
+    /// AgentCore side server tool (moved from BatchScriptApi 2026-09-17:
+    /// BatchScriptApi no longer hosts server-side tools). Logging and callback
+    /// routing go through the HostBridge hooks wired in
+    /// MetaDslExecutor.InitAgent (callbacks flow through the agent event queue).
     /// </summary>
     public sealed class HttpAuthServerService
     {

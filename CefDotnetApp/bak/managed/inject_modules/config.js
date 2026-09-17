@@ -59,11 +59,10 @@ class ConfigManager {
       },
 
       // WebSocket settings
-      // 9540: standalone AgentCore process port (new architecture).
-      // 9527-9535 are still used by the old in-process architecture
-      // deployments running in parallel during the migration.
+      // 9527: the standalone AgentCore relay port (default of
+      // MetaDslExecutor.SetProcessInfo, overridable with --agentport).
       websocket: {
-        port: 9540,
+        port: 9527,
         reconnectDelay: 3000
       },
 

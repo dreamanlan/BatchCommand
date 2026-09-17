@@ -88,6 +88,7 @@ namespace AgentCore
             if (_isInitialized) {
                 MetaDslExecutor.FinalizeAgent();
                 ScriptApi.WebSocketServerManager.StopAll();
+                ScriptApi.WebServerManager.StopAll();
                 Core.AgentCore.Instance.Logger.Info("AgentPlugin shutting down");
                 Core.AgentCore.Instance.Shutdown();
                 _isInitialized = false;

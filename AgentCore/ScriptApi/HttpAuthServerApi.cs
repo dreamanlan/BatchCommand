@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using BatchCommand.Utils;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand;
 
-namespace BatchCommand.Api
+namespace AgentCore.ScriptApi
 {
     /// <summary>
     /// start_http_auth_server(listen_port, url, tag)
@@ -23,13 +23,13 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
-                ApiErrorInfo.AppendLine("start_http_auth_server requires (listen_port, url, tag)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("start_http_auth_server requires (listen_port, url, tag)");
                 return BoxedValue.From(-1);
             }
             int listenPort = operands[0].GetInt();
             string url = operands[1].AsString;
             string tag = operands[2].AsString;
-            int port = HttpAuthServerService.Instance.Start(listenPort, url, tag);
+            int port = Core.HttpAuthServerService.Instance.Start(listenPort, url, tag);
             return BoxedValue.From(port);
         }
     }
@@ -44,11 +44,11 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                ApiErrorInfo.AppendLine("stop_http_auth_server requires (port)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("stop_http_auth_server requires (port)");
                 return BoxedValue.FromBool(false);
             }
             int port = operands[0].GetInt();
-            return BoxedValue.FromBool(HttpAuthServerService.Instance.Stop(port));
+            return BoxedValue.FromBool(Core.HttpAuthServerService.Instance.Stop(port));
         }
     }
 

@@ -36,7 +36,6 @@ namespace BatchCommand.Api
             RegisterWsClientApis();
             RegisterHttpApis();
             RegisterProcessApis();
-            RegisterHttpAuthApis();
         }
 
         /// <summary>Websocket client api set (WebSocketClientApi.cs): wsclient_open/send/close/... + handle_wsclient_queue, shared by every host.</summary>
@@ -55,12 +54,6 @@ namespace BatchCommand.Api
         public static void RegisterProcessApis()
         {
             Api.ProcessApi.RegisterApis();
-        }
-
-        /// <summary>HTTP auth server api set (HttpAuthServerApi.cs): start/stop_http_auth_server, shared by every host.</summary>
-        public static void RegisterHttpAuthApis()
-        {
-            Api.HttpAuthServerApi.RegisterApis();
         }
 
         /// <summary>BatchScript related apis (BatchScriptApi.cs): import, redirectcall, executemetadsl, the script task pool, nativelog, quote/strip, help, ...</summary>

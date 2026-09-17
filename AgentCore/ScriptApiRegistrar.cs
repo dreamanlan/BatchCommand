@@ -222,6 +222,15 @@ namespace AgentCore
             // WebSocket API
             WebSocketApi.RegisterApis();
 
+            // HTTP Proxy API (local CORS reverse proxy)
+            HttpProxyApi.RegisterApis();
+
+            // Static Web Server API (per-port document root, header rules, dsl pages)
+            WebServerApi.RegisterApis();
+
+            // Admin process launch (elevated, UAC)
+            AdminProcessApi.RegisterApis();
+
             // TreeSitter API Explorer
             TreeSitterExplorerApi.RegisterApis();
 
@@ -240,6 +249,7 @@ namespace AgentCore
             McpApi.RegisterApis();
 
             // HTTP Auth Server API (OAuth loopback redirect capture)
+            HttpAuthServerApi.RegisterApis();
 
             // Playwright Browser Automation API
             PlaywrightApi.RegisterApis();

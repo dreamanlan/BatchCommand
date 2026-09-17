@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AiClaw - Multi-Agent Chat Room</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+
+</head>
+
+<body>
+    <div id="app-layout">
+        <!-- Left: Sidebar - contacts & groups -->
+        <div id="sidebar-panel">
+            <div id="sidebar-header">
+                <span class="sidebar-title">Contacts</span>
+                <button id="new-group-btn" title="Create new group">+</button>
+            </div>
+            <div id="sidebar-list">
+                <!-- Groups section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-header" data-section="groups">
+                        <span class="sidebar-expand-icon">&#9660;</span>
+                        <span>Groups</span>
+                    </div>
+                    <div id="sidebar-groups" class="sidebar-section-body"></div>
+                </div>
+                <!-- Contacts section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-header" data-section="contacts">
+                        <span class="sidebar-expand-icon">&#9660;</span>
+                        <span>Contacts</span>
+                    </div>
+                    <div id="sidebar-contacts" class="sidebar-section-body"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Middle: Chat panel -->
+        <div id="chat-panel">
+            <!-- Connection config bar -->
+            <div id="config-bar">
+                <div id="config-row">
+                    <span id="status-dot"></span>
+                    <span id="status-text">disconnected</span>
+                    <button id="connect-btn">Connect</button>
+                    <button id="disconnect-btn">Disconnect</button> <button id="mode-btn"
+                        title="Toggle relay mode">Mute</button>
+
+                    <span id="solo-display" style="display:none; color:#ff0; margin:0 6px; font-size:13px;"></span>
+                    <button id="status-btn" title="Query relay status">Status</button>
+
+                    <button id="config-btn" title="Configure LLM clients">Config</button>
+                    <button id="pm-btn" title="Toggle PM private chat panel">PM</button> <span id="queue-display"
+                        style="color:#0ff; margin:0 6px; font-size:13px;">Queue: 0</span>
+                    <button id="queue-clear-btn" title="Clear message queue">Clear Q</button>
+                    <button id="clear-chat-btn" title="Clear chat display and history">Clear</button>
+
+
+                </div>
+            </div>
+            <!-- Chat messages -->
+            <div id="chat-messages"></div>
+            <!-- Chat input -->
+            <div id="chat-input-bar">
+                <textarea id="chat-input" rows="3" placeholder="Type a message..."></textarea>
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+        <!-- Right: Members panel -->
+        <div id="members-panel">
+            <div id="members-header">
+                <span class="members-title">Group Info</span>
+            </div>
+            <div id="announcement-section">
+                <label for="group-announcement">Announcement:</label>
+                <textarea id="group-announcement" rows="3" placeholder="Group announcement..."></textarea>
+            </div>
+            <div id="members-list-section">
+                <div class="members-list-header">Members</div>
+                <div id="members-list"></div>
+            </div>
+            <div id="members-actions">
+                <button id="save-group-btn">Save Group</button>
+                <button id="dissolve-group-btn">Dissolve</button>
+            </div>
+        </div>
+        <!-- Right: Phaser canvas -->
+        <div id="app-container"></div>
+    </div>
+    <!-- LLM Config Modal -->
+    <div id="llm-config-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>LLM Configuration</h3>
+                <button id="modal-close-btn" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="prompt-section">
+                    <label for="system-prompt">System Prompt:</label>
+                    <textarea id="system-prompt" rows="3"
+                        placeholder="Enter system prompt for LLM context..."></textarea>
+                </div>
+                <div class="pm-section">
+                    <h4>PM (Context Summarizer)</h4>
+                    <div class="pm-field">
+                        <label for="pm-base-url">Base URL:</label>
+                        <input type="text" id="pm-base-url" placeholder="https://knot-api-endpoint" />
+                    </div>
+                    <div class="pm-field">
+                        <label for="pm-api-key">API Key:</label>
+                        <input type="password" id="pm-api-key" placeholder="PM API Key" />
+                    </div>
+                    <div class="pm-field">
+                        <label for="pm-model">Model:</label>
+                        <input type="text" id="pm-model" placeholder="Model name (optional)" />
+                    </div>
+                </div>
+                <div class="pm-section">
+                    <h4>Relay Server</h4>
+                    <div class="pm-field">
+                        <label for="relay-ws-url">WebSocket URL:</label>
+                        <input type="text" id="relay-ws-url" placeholder="ws://localhost:8080" />
+                    </div>
+                    <div class="pm-field">
+                        <label for="relay-api-key">API Key:</label>
+                        <input type="password" id="relay-api-key" placeholder="Relay API Key" />
+                    </div>
+                </div>
+                <div class="pm-field" style="display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" id="wx-enabled" />
+                    <label for="wx-enabled">WeChat Bridge (ws://localhost:8083)</label>
+                </div>
+
+                <div id="llm-list"></div>
+                <button id="llm-add-btn" class="llm-add-btn">+ Add LLM</button>
+                <hr style="margin:12px 0;border-color:#444;">
+                <div class="config-io-section">
+                    <button id="config-export-btn" class="config-io-btn">Export Config</button>
+                    <button id="config-import-btn" class="config-io-btn">Import Config</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script src="js/secret_store.js"></script>
+    <script src="js/llm.js"></script>
+    <script src="js/relay.js"></script>
+    <script src="js/wx-bridge.js"></script>
+    <script src="js/metadsl_executor.js"></script>
+
+    <script src="js/contacts.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/pm-panel.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>

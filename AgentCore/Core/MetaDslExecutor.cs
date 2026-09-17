@@ -25,6 +25,7 @@ namespace AgentCore.Core
     {
         private static DslHost? s_Host;
         private static int s_AgentPort = 9527;
+        private static int s_HttpProxyPort = 9528;
         private static string s_InitialProjectIdentity = string.Empty;
 
         internal static DslHost Host {
@@ -71,6 +72,7 @@ namespace AgentCore.Core
         private static void SetAgentGlobalVars()
         {
             BatchCommand.BatchScript.SetGlobalVariable("agentport", BoxedValue.From(s_AgentPort));
+            BatchCommand.BatchScript.SetGlobalVariable("httpproxyport", BoxedValue.From(s_HttpProxyPort));
             BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
             BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(-1));
         }
@@ -97,6 +99,14 @@ namespace AgentCore.Core
         internal static string ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError)
         {
             return Host.ExecuteScript(script, maxResultSize, out hasError);
+        }
+
+        // Executes a full dsl FILE (function definitions supported, main()
+        // entry) for web pages - isolated on a dedicated interpreter thread,
+        // see DslHost.ExecuteDslFileInWorker.
+        internal static string ExecuteDslFileInWorker(string path, out bool hasError)
+        {
+            return Host.ExecuteDslFileInWorker(path, out hasError);
         }
 
         internal static string LoadFunc(string func, string code, IList<string> paramNames, bool update)
@@ -228,11 +238,16 @@ namespace AgentCore.Core
             if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "agentscript", out var scriptFile) && !string.IsNullOrEmpty(scriptFile)) {
                 host.DslScriptFile = scriptFile;
             }
-            // Default port 9540 (new architecture); 9527-9535 remain in use by
-            // the old in-process deployments during the migration.
-            s_AgentPort = 9540;
+            // Default relay port 9527 (the original relay port, site ports
+            // are retired); overridable with --agentport.
+            s_AgentPort = 9527;
             if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "agentport", out var portValue) && int.TryParse(portValue, out int port) && port > 0 && port <= 65535) {
                 s_AgentPort = port;
+            }
+            // Default http proxy port 9528; overridable with --httpproxyport.
+            s_HttpProxyPort = 9528;
+            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "httpproxyport", out var proxyPortValue) && int.TryParse(proxyPortValue, out int proxyPort) && proxyPort > 0 && proxyPort <= 65535) {
+                s_HttpProxyPort = proxyPort;
             }
             // The browser relays its --projectidentity switch so the agent
             // process knows the initial project identity (exposed to dsl as

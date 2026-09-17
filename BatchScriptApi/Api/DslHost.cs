@@ -258,6 +258,109 @@ namespace BatchCommand.Api
             }
         }
 
+        // ---- full dsl file execution (web pages and the like) ---------------
+        //
+        // ExecuteScript wraps the snippet with EvalAsFunc, which cannot define
+        // functions; a full dsl file needs BatchScript.Load, and Load CLEARS
+        // the thread's calculator (script functions and globals - the same
+        // clear every hot reload performs). Running that on the caller's
+        // thread would throw away that thread's main script state, so file
+        // execution is isolated on a dedicated worker thread instead (same
+        // idea as the call_metadsl_task pool: the BatchScript interpreter is
+        // [ThreadStatic], isolation is per thread). The worker thread never
+        // holds main script state - every job loads its own file - so there
+        // is nothing to break and nothing to restore.
+        //
+        // Convention: the file must define a main() entry; its return value
+        // is the execution result. Errors (api + dsl) are appended to the
+        // result text, metadsl style. Jobs run serially on one thread.
+
+        private sealed class DslFileJob
+        {
+            public string Path = string.Empty;
+            public TaskCompletionSource<(string Result, bool HasError)> Tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        private readonly BlockingCollection<DslFileJob> _dslFileJobs = new();
+        private Thread? _dslFileWorker;
+        private readonly object _dslFileLock = new object();
+
+        // Executes a full dsl file (function definitions supported) and
+        // returns its main() result text. Blocks the caller until the file
+        // has run on the dedicated worker thread.
+        public string ExecuteDslFileInWorker(string path, out bool hasError)
+        {
+            hasError = false;
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) {
+                hasError = true;
+                return "Error: dsl file not found: " + path;
+            }
+            var job = new DslFileJob { Path = path };
+            lock (_dslFileLock) {
+                if (null == _dslFileWorker || !_dslFileWorker.IsAlive) {
+                    _dslFileWorker = new Thread(DslFileWorkerLoop) {
+                        IsBackground = true,
+                        Name = "dsl_file_exec",
+                    };
+                    _dslFileWorker.Start();
+                }
+                _dslFileJobs.Add(job);
+            }
+            var (result, err) = job.Tcs.Task.GetAwaiter().GetResult();
+            hasError = err;
+            return result;
+        }
+
+        private void DslFileWorkerLoop()
+        {
+            foreach (var job in _dslFileJobs.GetConsumingEnumerable()) {
+                var resSb = new StringBuilder();
+                var errSb = new StringBuilder();
+                bool hasError = false;
+                try {
+                    // Registers apis on this thread once (Prepare is
+                    // idempotent); this thread never loads the main script -
+                    // every job loads its own file below.
+                    Prepare();
+                    BatchScript.Load(job.Path);
+                    if (BatchScript.HasDslErrors) {
+                        hasError = true;
+                        errSb.AppendLine(BatchScript.GetDslErrors());
+                    }
+                    else if (!BatchScript.Calculator.TryGetFuncInfo("main", out _)) {
+                        hasError = true;
+                        errSb.AppendLine("dsl file must define a main() entry function: " + job.Path);
+                    }
+                    else {
+                        // BatchScript.Load cleared the globals: re-establish
+                        // the common + host ones, with dslpath pointing at
+                        // the executed file, before running the entry.
+                        tls_ScriptPath = job.Path;
+                        RefreshGlobalVars();
+                        ApiErrorInfo.Clear();
+                        BatchScript.ClearDslErrors();
+                        var resultValue = BatchScript.Call("main");
+                        resSb.AppendLine(resultValue.IsNullObject ? "null" : ResultToString(resultValue));
+                        if (ApiErrorInfo.HasInfo) {
+                            hasError = true;
+                            errSb.AppendLine();
+                            errSb.AppendLine(ApiErrorInfo.GetInfo());
+                        }
+                        if (BatchScript.HasDslErrors) {
+                            hasError = true;
+                            errSb.AppendLine();
+                            errSb.AppendLine(BatchScript.GetDslErrors());
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    hasError = true;
+                    errSb.AppendLine("Error: " + ex.Message);
+                }
+                job.Tcs.SetResult((GetMetaDslResult(0, resSb, errSb), hasError));
+            }
+        }
+
         public void CheckDslError()
         {
             if (BatchScript.HasDslErrors) {

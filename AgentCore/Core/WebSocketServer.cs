@@ -864,10 +864,13 @@ namespace AgentCore.Core
             foreach (var kv in _workerStartTimes)
             {
                 int duration = (int)(now - kv.Value).TotalSeconds;
+                if (stuck > 0) {
+                    sb.Append('\t');
+                }
                 sb.AppendLine($"worker {kv.Key}: {duration}s");
                 if (duration > _workerTimeoutSeconds) stuck++;
             }
-            sb.AppendLine($"total: {_workerStartTimes.Count}, active: {_activeWorkers}/{_maxWorkerConcurrency}, stuck(>{_workerTimeoutSeconds}s): {stuck}");
+            sb.AppendLine($"\ttotal: {_workerStartTimes.Count}, active: {_activeWorkers}/{_maxWorkerConcurrency}, stuck(>{_workerTimeoutSeconds}s): {stuck}");
             return sb.ToString().TrimEnd();
         }
 

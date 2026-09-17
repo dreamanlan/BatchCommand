@@ -314,6 +314,9 @@ namespace AgentCore.Core
         public List<SearchResultItem> GetRecentCore(string collection, int topN = 20)
         {
             var result = new List<SearchResultItem>();
+            if (topN < 0) {
+                return result;
+            }
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"SELECT id, content, metadata, created_at FROM (
@@ -656,7 +659,7 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         {
             var tokens = TokenizeForLike(query);
             var metaTokens = TokenizeForLike(metaKeywords);
-            if (tokens.Count == 0 && metaTokens.Count == 0)
+            if (tokens.Count == 0 && metaTokens.Count == 0 || topN < 0)
                 return new List<SearchResultItem>();
 
             bool hasTimeFilter = startTime > 0 && endTime > 0;
@@ -706,7 +709,7 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         private List<SearchResultItem> KeywordSearchCoreInternal(string collection, string query, string keywords, int topN, long startTime, long endTime, string metaKeywords = "")
         {
             string ftsQuery = BuildFtsQuery(query);
-            if (string.IsNullOrEmpty(ftsQuery))
+            if (string.IsNullOrEmpty(ftsQuery) || topN < 0)
                 return new List<SearchResultItem>();
 
             // Build LIKE conditions from keywords (content) and metaKeywords (metadata)
@@ -883,6 +886,9 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         private List<(string id, double score)> RecallBm25Once(string collection, string ftsQuery, int recallN)
         {
             var result = new List<(string id, double score)>();
+            if (recallN < 0) {
+                return result;
+            }
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText = $"SELECT f.id, {GetBm25Expression()} AS score\nFROM semantic_fts f\nWHERE f.collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";

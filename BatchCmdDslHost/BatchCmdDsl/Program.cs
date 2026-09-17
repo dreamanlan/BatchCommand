@@ -115,6 +115,7 @@ public static class Program
     {
         s_CmdLine = cmdLine;
         s_BasePath = basePath;
+        s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
 
         lock (s_Lock) {
             try {
@@ -417,8 +418,8 @@ public static class Program
     }
 
     private static string s_BasePath = string.Empty;
-    private static int s_MainThreadId = 0;
     private static string s_CmdLine = string.Empty;
+    private static int s_MainThreadId = 0;
     private static object s_Lock = new object();
 
     private static List<string> s_EmptyArgs = new List<string>();

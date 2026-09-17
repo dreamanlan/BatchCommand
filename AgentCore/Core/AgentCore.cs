@@ -29,6 +29,7 @@ namespace AgentCore.Core
         private static string _appDir = string.Empty;
         private static bool _isMac = false;
 
+        private int _mainThreadId = 0;
         // Operation instances
         private DiffOperations _diffOps = null!;
         private LoggingAndDebugging _logger = null!;
@@ -56,6 +57,7 @@ namespace AgentCore.Core
         private readonly object _envResolveLock = new object();
 
         // Public properties - return concrete types for full access
+        public int MainThreadId => _mainThreadId;
         // FileOps now lives on the shared DslHost (single process wide instance)
         public FileOperations FileOps => MetaDslExecutor.Host.FileOps;
         public DiffOperations DiffOps => _diffOps;
@@ -297,6 +299,7 @@ namespace AgentCore.Core
             _appDir = appDir ?? Directory.GetCurrentDirectory();
             _isMac = isMac;
 
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
             // Initialize all operation instances
             _logger = new LoggingAndDebugging();
             _diffOps = new DiffOperations(_basePath, _appDir, isMac);

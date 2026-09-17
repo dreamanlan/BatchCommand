@@ -4268,11 +4268,6 @@ namespace DotNetLib
 
         internal static BoxedValue OnCallMetaDSL(string func_name, IList<BoxedValue> args, IntPtr browser, IntPtr frame)
         {
-            // No lock is taken here. Every C++ -> C# entry used to be serialized by
-            // s_Lock, but the bodies only touch state that is already thread safe
-            // (native logging queues to a ConcurrentQueue off the main thread, and the
-            // DSL interpreter is thread local), so the lock only added a serialization
-            // point where a slow call would block the UI thread's next callback.
             NativeApi.SetContext(browser, frame);
 
             try {

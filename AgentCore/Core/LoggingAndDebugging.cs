@@ -105,7 +105,9 @@ namespace AgentCore.Core
 
         private string FormatLogEntry(LogLevel level, string message)
         {
-            return $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{level,-7}] {message}";
+            bool isMainThread = Thread.CurrentThread.ManagedThreadId == AgentCore.Instance.MainThreadId;
+            string threadInfo = string.Format("thread:{0} {1}{2}", Thread.CurrentThread.ManagedThreadId, Thread.CurrentThread.Name, isMainThread ? "(main)" : string.Empty);
+            return $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{level,-7}] {threadInfo} {message}";
         }
     }
 }

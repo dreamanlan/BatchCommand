@@ -7,6 +7,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ScriptableFramework;
 
 namespace AgentCore.Core
 {
@@ -42,6 +43,20 @@ namespace AgentCore.Core
     ///   - no upstream restriction (user decision 2026-09-17: local pages may
     ///     reach any external site through this proxy).
     ///
+    /// Origin override: a non-empty 'origin' query parameter sets the
+    /// upstream Origin header (the local Origin is never forwarded) - the
+    /// same semantics as the ws tunnel below, for upstreams that require a
+    /// proper Origin without a dsl filter.
+    ///
+    /// Filters (httpproxy_add_filter / httpproxy_set_filter_dsl, see
+    /// Core/UrlFilterEngine.cs + Core/WebCallbacks.cs): matching urls
+    /// are handed to the filter dsl script before the upstream request is
+    /// sent (on_proxy_request: may modify headers/body, switch to the
+    /// manual redirect client or abort) and before the response goes out
+    /// (on_proxy_response: may modify status/headers/body; the body is only
+    /// buffered for modifiable text types with a bounded length, streaming
+    /// is otherwise untouched).
+    ///
     /// Exposure: the listener binds loopback only. Public pages are kept away
     /// by LNA: their preflight carries the PNA header and this server never
     /// answers Access-Control-Allow-Private-Network, so Chromium blocks the
@@ -54,6 +69,8 @@ namespace AgentCore.Core
         private int _port;
         private volatile bool _isRunning;
         private long _requestCount;
+        private readonly UrlFilterEngine _filters = new();
+        private string _filterDslPath = string.Empty;
 
         /// <summary>Gets whether the server is currently running.</summary>
         public bool IsRunning => _isRunning;
@@ -64,16 +81,32 @@ namespace AgentCore.Core
         /// <summary>Total number of accepted requests since Start.</summary>
         public long RequestCount => Interlocked.Read(ref _requestCount);
 
+        /// <summary>The url filter set of this proxy (httpproxy_add_filter).</summary>
+        public UrlFilterEngine Filters => _filters;
+
+        /// <summary>Sets the filter callback dsl file (httpproxy_set_filter_dsl). One active filter script per process is the intended usage (callback names distinguish proxy / web server).</summary>
+        public void SetFilterDsl(string path)
+        {
+            _filterDslPath = path ?? string.Empty;
+        }
+
         // Shared across all proxy instances: one connection pool, one cookie
         // container (upstream cookies are domain scoped, sharing is safe).
-        private static readonly HttpClient s_Client = CreateClient();
+        // Two clients over the same container: s_Client follows redirects
+        // (default, previous behaviour), s_ManualClient passes 3xx through
+        // for the manual redirect mode requested by an on_proxy_request
+        // callback (follow_redirects:false) - cookies keep flowing through
+        // the container on both paths.
+        private static readonly CookieContainer s_Cookies = new();
+        private static readonly HttpClient s_Client = CreateClient(true);
+        private static readonly HttpClient s_ManualClient = CreateClient(false);
 
-        private static HttpClient CreateClient()
+        private static HttpClient CreateClient(bool autoRedirect)
         {
             var handler = new HttpClientHandler {
-                CookieContainer = new CookieContainer(),
+                CookieContainer = s_Cookies,
                 UseProxy = false,  // never route through a system proxy
-                AllowAutoRedirect = true,
+                AllowAutoRedirect = autoRedirect,
             };
             // SSE streams can be long lived; each request gets its own 30min cts.
             return new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
@@ -148,7 +181,7 @@ namespace AgentCore.Core
             }
         }
 
-        private static async Task HandleAsync(HttpListenerContext context)
+        private async Task HandleAsync(HttpListenerContext context)
         {
             HttpListenerRequest req = context.Request;
             HttpListenerResponse resp = context.Response;
@@ -207,9 +240,67 @@ namespace AgentCore.Core
                     }
                 }
 
+                // Static Origin override, same semantics as the ws tunnel:
+                // the local Origin was stripped above; ?origin= lets the
+                // page declare the upstream Origin without a dsl filter (a
+                // dsl set_headers still applies after and overrides it).
+                string? customOrigin = req.QueryString["origin"];
+                if (!string.IsNullOrEmpty(customOrigin)) {
+                    upstream.Headers.TryAddWithoutValidation("Origin", customOrigin);
+                }
+
+                // ---- upstream (request) filter callback ----------------------
+                // on_proxy_request(filter_id, method, url, request, body)
+                // gets the upstream HttpRequestMessage and the body byte
+                // array as object references (read via
+                // http_get_request_headers / bytes_to_*), and returns a
+                // WebCallbacks.Result (new_web_result / set_web_result_*)
+                // that may replace headers/body, switch to the manual
+                // redirect client or abort the request. Note: a Cookie set
+                // here rides next to the shared CookieContainer cookies.
+                bool followRedirects = true;
+                var reqFilter = _filters.MatchRequest(target!, req.HttpMethod);
+                if (reqFilter != null && _filterDslPath.Length > 0) {
+                    byte[] reqBody = body.Length <= WebCallbacks.MaxCallbackBodyBytes
+                        ? body : Array.Empty<byte>();
+                    var reqMod = WebCallbacks.Invoke(_filterDslPath, "on_proxy_request",
+                        BoxedValue.From(reqFilter.Id),
+                        BoxedValue.FromString(req.HttpMethod),
+                        BoxedValue.FromString(target!),
+                        BoxedValue.FromObject(upstream),
+                        BoxedValue.FromObject(reqBody));
+                    if (reqMod != null) {
+                        if (reqMod.Abort) {
+                            WebCallbacks.WriteAbortResponse(resp, origin, reqMod, 403);
+                            return;
+                        }
+                        ApplyUpstreamHeaderMods(upstream, reqMod);
+                        if (reqMod.HasBody && reqMod.Body != null) {
+                            var oldContent = upstream.Content;
+                            upstream.Content = new ByteArrayContent(reqMod.Body);
+                            oldContent.Dispose();
+                        }
+                        if (reqMod.HasFollowRedirects) {
+                            followRedirects = reqMod.FollowRedirects;
+                        }
+                    }
+                }
+
                 using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30));
-                using var upstreamResp = await s_Client.SendAsync(upstream,
+                HttpClient client = followRedirects ? s_Client : s_ManualClient;
+                using var upstreamResp = await client.SendAsync(upstream,
                     HttpCompletionOption.ResponseHeadersRead, cts.Token);
+
+                // Manual redirect mode: pass the 3xx through to the page with
+                // the Location rewritten to this proxy, so the page's fetch
+                // keeps following through the proxy (cookies keep riding the
+                // shared container; redirect based verification flows become
+                // visible to the page / dsl for orchestration).
+                if (!followRedirects && IsRedirect(upstreamResp.StatusCode)
+                    && upstreamResp.Headers.Location != null) {
+                    WriteManualRedirect(resp, req, upstreamResp, target!, origin);
+                    return;
+                }
 
                 resp.StatusCode = (int)upstreamResp.StatusCode;
                 resp.ContentType = upstreamResp.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
@@ -224,6 +315,54 @@ namespace AgentCore.Core
                     try { resp.AddHeader(h.Key, string.Join(", ", h.Value)); } catch { }
                 }
                 resp.AddHeader("Access-Control-Allow-Origin", string.IsNullOrEmpty(origin) ? "*" : origin);
+
+                // ---- downstream (response) filter callback -------------------
+                // on_proxy_response(filter_id, status, url, response, body)
+                // gets the upstream HttpResponseMessage as an object
+                // reference (read via http_get_response_headers) and the
+                // buffered body byte array. The body is only buffered for
+                // modifiable text types with a known bounded length (SSE /
+                // binary / oversized or chunked bodies get a header-only
+                // callback with an empty body); streaming is otherwise
+                // untouched.
+                var respFilter = _filters.MatchResponse(target!, req.HttpMethod, resp.ContentType);
+                if (respFilter != null && _filterDslPath.Length > 0) {
+                    long? contentLength = upstreamResp.Content.Headers.ContentLength;
+                    bool bounded = contentLength.HasValue && contentLength.Value <= WebCallbacks.MaxCallbackBodyBytes;
+                    if (WebCallbacks.IsModifiableType(resp.ContentType) && bounded) {
+                        byte[] data;
+                        using (var src = await upstreamResp.Content.ReadAsStreamAsync(cts.Token)) {
+                            using var ms = new MemoryStream();
+                            await src.CopyToAsync(ms, cts.Token);
+                            data = ms.ToArray();
+                        }
+                        var respMod = WebCallbacks.Invoke(_filterDslPath, "on_proxy_response",
+                            BoxedValue.From(respFilter.Id),
+                            BoxedValue.From((int)upstreamResp.StatusCode),
+                            BoxedValue.FromString(target!),
+                            BoxedValue.FromObject(upstreamResp),
+                            BoxedValue.FromObject(data));
+                        WebCallbacks.ApplyToResponse(resp, respMod);
+                        byte[] outData = respMod != null && respMod.HasBody && respMod.Body != null
+                            ? respMod.Body : data;
+                        resp.ContentLength64 = outData.Length;
+                        if (req.HttpMethod != "HEAD" && outData.Length > 0) {
+                            await resp.OutputStream.WriteAsync(outData, 0, outData.Length, cts.Token);
+                        }
+                        resp.Close();
+                        return;
+                    }
+                    // Header-only callback (the streaming path below keeps
+                    // the body; a returned body is ignored here).
+                    var headMod = WebCallbacks.Invoke(_filterDslPath, "on_proxy_response",
+                        BoxedValue.From(respFilter.Id),
+                        BoxedValue.From((int)upstreamResp.StatusCode),
+                        BoxedValue.FromString(target!),
+                        BoxedValue.FromObject(upstreamResp),
+                        BoxedValue.FromObject(Array.Empty<byte>()));
+                    WebCallbacks.ApplyToResponse(resp, headMod);
+                }
+
                 // Stream the body chunk by chunk (SSE needs per-event flush).
                 resp.SendChunked = true;
                 using (var src = await upstreamResp.Content.ReadAsStreamAsync(cts.Token)) {
@@ -361,6 +500,46 @@ namespace AgentCore.Core
                 await dest.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count),
                     result.MessageType, result.EndOfMessage, ct);
             }
+        }
+
+        // ---- filter helpers --------------------------------------------------
+
+        // Applies del_headers / set_headers of a callback result to the
+        // outgoing upstream request (set wins, added where the framework
+        // accepts it).
+        private static void ApplyUpstreamHeaderMods(HttpRequestMessage upstream, WebCallbacks.Result mod)
+        {
+            foreach (string name in mod.DelHeaders) {
+                upstream.Headers.Remove(name);
+                upstream.Content!.Headers.Remove(name);
+            }
+            foreach (var kv in mod.SetHeaders) {
+                upstream.Headers.Remove(kv.Key);
+                upstream.Content!.Headers.Remove(kv.Key);
+                if (!upstream.Content.Headers.TryAddWithoutValidation(kv.Key, kv.Value)) {
+                    upstream.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
+                }
+            }
+        }
+
+        private static bool IsRedirect(HttpStatusCode code)
+        {
+            int c = (int)code;
+            return c == 301 || c == 302 || c == 303 || c == 307 || c == 308;
+        }
+
+        // Manual redirect: answers with the upstream 3xx and the Location
+        // rewritten to this proxy (absolute target in the 'target' query
+        // parameter), so the page's fetch keeps following through the proxy.
+        private void WriteManualRedirect(HttpListenerResponse resp, HttpListenerRequest req, HttpResponseMessage upstreamResp, string target, string? origin)
+        {
+            string absolute = new Uri(new Uri(target), upstreamResp.Headers.Location!).ToString();
+            string authority = req.Url?.GetLeftPart(UriPartial.Authority) ?? ("http://localhost:" + _port);
+            resp.StatusCode = (int)upstreamResp.StatusCode;
+            resp.ContentType = "text/plain; charset=utf-8";
+            resp.RedirectLocation = authority + "/r?target=" + Uri.EscapeDataString(absolute);
+            resp.AddHeader("Access-Control-Allow-Origin", string.IsNullOrEmpty(origin) ? "*" : origin);
+            resp.Close();
         }
 
         // Hop-by-hop or local-context headers that must not be forwarded.

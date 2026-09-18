@@ -232,6 +232,150 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// Adds a response url filter to the web server on the given port.
+    /// Usage: webserver_add_filter(port [, pattern ...] [, fields_json])
+    ///   pattern: plain substring of the request path (case insensitive;
+    ///     only plain characters, anything else compiles as a regex, "re:"
+    ///     forces regex) - several patterns are AND-ed
+    ///   fields_json: {"host":"..","path":"..","method":"..","type":".."} (one
+    ///     clause, AND of its fields) or an array of such objects (OR between
+    ///     clauses); "type" matches the served content type; the table is
+    ///     AND-ed with the positional patterns
+    /// Filters are OR-ed: the first matching filter wins. Returns the filter
+    /// id (increasing per port, -1 on error).
+    /// </summary>
+    sealed class WebServerAddFilterExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_add_filter(port [, pattern ...] [, fields_json])");
+                return BoxedValue.From(-1);
+            }
+            try {
+                int port = operands[0].GetInt();
+                var patterns = new List<string>();
+                List<Dictionary<string, string>>? clauses = null;
+                for (int i = 1; i < operands.Count; i++) {
+                    string s = operands[i].AsString ?? string.Empty;
+                    if (s.Length == 0) {
+                        continue;
+                    }
+                    // A trailing json object/array is the fields table, not a url pattern.
+                    if ((s.StartsWith("{") || s.StartsWith("[")) && clauses == null) {
+                        if (!Core.UrlFilterEngine.TryParseFieldClauses(s, out var parsed, out string fieldError)) {
+                            AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Invalid fields_json: {fieldError}");
+                            return BoxedValue.From(-1);
+                        }
+                        clauses = parsed;
+                    }
+                    else {
+                        patterns.Add(s);
+                    }
+                }
+                if (patterns.Count == 0 && clauses == null) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("webserver_add_filter requires at least one pattern or a fields_json");
+                    return BoxedValue.From(-1);
+                }
+                var server = WebServerManager.GetServer(port);
+                return BoxedValue.From(server.Filters.AddFilter(Core.UrlFilterEngine.FilterDirection.Response, patterns, clauses ?? new List<Dictionary<string, string>>()));
+            }
+            catch (Exception ex) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"webserver_add_filter error: {ex.Message}");
+                return BoxedValue.From(-1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes a filter previously added with webserver_add_filter.
+    /// Usage: webserver_remove_filter(port, filter_id)
+    /// Returns: true when the filter was found and removed
+    /// </summary>
+    sealed class WebServerRemoveFilterExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_remove_filter(port, filter_id)");
+                return BoxedValue.FromBool(false);
+            }
+            try {
+                int port = operands[0].GetInt();
+                int id = operands[1].GetInt();
+                return BoxedValue.FromBool(WebServerManager.GetServer(port).Filters.RemoveFilter(id));
+            }
+            catch (Exception ex) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"webserver_remove_filter error: {ex.Message}");
+                return BoxedValue.FromBool(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes every filter of the web server on the given port.
+    /// Usage: webserver_clear_filters(port)
+    /// Returns: true
+    /// </summary>
+    sealed class WebServerClearFiltersExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_clear_filters(port)");
+                return BoxedValue.FromBool(false);
+            }
+            try {
+                int port = operands[0].GetInt();
+                WebServerManager.GetServer(port).Filters.ClearFilters();
+                return BoxedValue.FromBool(true);
+            }
+            catch (Exception ex) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"webserver_clear_filters error: {ex.Message}");
+                return BoxedValue.FromBool(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sets the filter callback dsl file for the web server on the given
+    /// port. The file defines the callback (per filter, optional):
+    ///   on_webserver_response(filter_id, status, path, headers_json, body_b64)
+    ///     return "" (no change) or a json
+    ///     {"status":n,"set_headers":{..},"del_headers":[..],"body":"<b64>",
+    ///      "abort":true}
+    /// Any returned modification takes over the response (Range requests
+    /// then get a full 200 body). One active filter script per process is
+    /// the intended usage; the file is hot reloaded on timestamp change.
+    /// Usage: webserver_set_filter_dsl(port, path)
+    /// Returns: true when the file exists
+    /// </summary>
+    sealed class WebServerSetFilterDslExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_set_filter_dsl(port, path)");
+                return BoxedValue.FromBool(false);
+            }
+            try {
+                int port = operands[0].GetInt();
+                string path = operands[1].AsString ?? string.Empty;
+                if (!System.IO.File.Exists(path)) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"filter dsl file not found: {path}");
+                    return BoxedValue.FromBool(false);
+                }
+                WebServerManager.GetServer(port).SetFilterDsl(path);
+                return BoxedValue.FromBool(true);
+            }
+            catch (Exception ex) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"webserver_set_filter_dsl error: {ex.Message}");
+                return BoxedValue.FromBool(false);
+            }
+        }
+    }
+
+    /// <summary>
     /// Registers all web server APIs
     /// </summary>
     public static class WebServerApi
@@ -248,6 +392,14 @@ namespace AgentCore.ScriptApi
                 new ExpressionFactoryHelper<WebServerSetMimeExp>());
             BatchCommand.BatchScript.Register("webserver_get_request_count", "webserver_get_request_count(port) - total request count since start, returns integer",
                 new ExpressionFactoryHelper<WebServerGetRequestCountExp>());
+            BatchCommand.BatchScript.Register("webserver_add_filter", "webserver_add_filter(port [, pattern ...] [, fields_json]) - add a response url filter; patterns are case insensitive substrings of the request path (regex metacharacters compile as a regex, 're:' forces regex), several are AND-ed; fields_json = {\"host\",\"path\",\"method\",\"type\"} clause (AND) or an array of clauses (OR), AND-ed with the patterns ('type' matches the served content type); filters are OR-ed, first match wins; returns the filter id or -1",
+                new ExpressionFactoryHelper<WebServerAddFilterExp>());
+            BatchCommand.BatchScript.Register("webserver_remove_filter", "webserver_remove_filter(port, filter_id) - remove one filter added by webserver_add_filter, returns bool",
+                new ExpressionFactoryHelper<WebServerRemoveFilterExp>());
+            BatchCommand.BatchScript.Register("webserver_clear_filters", "webserver_clear_filters(port) - remove every filter of the web server, returns bool",
+                new ExpressionFactoryHelper<WebServerClearFiltersExp>());
+            BatchCommand.BatchScript.Register("webserver_set_filter_dsl", "webserver_set_filter_dsl(port, path) - set the filter callback dsl file (on_webserver_response, see Core/WebCallbacks.cs for the callback contract; one active filter script per process), returns bool",
+                new ExpressionFactoryHelper<WebServerSetFilterDslExp>());
         }
     }
 }

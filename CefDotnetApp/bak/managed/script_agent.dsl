@@ -582,7 +582,7 @@ script(induction_info)params($batch, $infos, $session)
                 append_line($induction, $infos[$j]);
             };
 
-            llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 100 * 1024, 1)));
+            llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。\n直接回复，不要使用metadsl代码（PM会话不执行）", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 100 * 1024, 1)));
         };
     }
     else {
@@ -672,6 +672,7 @@ script(induction_plan)params($count,$pageType)
         "（一次回复输出完成,字数控制到300~500字左右）。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $prompt);
 
     if (@EnableLlmPM) {
+        $prompt = format("{0}\n直接回复，不要使用metadsl代码（PM会话不执行）", $prompt);
         llm_chat_callback(@LlmProviderId, "llm_pm_align", "align_target", $prompt);
     }
     else {
@@ -723,7 +724,7 @@ script(trigger_reflection)params()
 
     // Send reflection request
     if (@EnableLlmPM) {
-        $prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录（300字以内）。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $prompt);
+        $prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录（300字以内）。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。\n直接回复，不要使用metadsl代码（PM会话不执行）", $prompt);
         llm_chat_callback(@LlmProviderId, "reflection", "reflection", $prompt);
     }
     else {

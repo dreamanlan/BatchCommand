@@ -167,6 +167,83 @@ namespace BatchCommand.Api
         }
     }
 
+    // set_dsl_file_worker_count(num) - set the default worker count of the
+    // dsl file execution pool (web pages / filter callbacks)
+    public sealed class SetDslFileWorkerCountExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                ApiErrorInfo.AppendLine("Expected: set_dsl_file_worker_count(num)");
+                return BoxedValue.From(0);
+            }
+            return BoxedValue.From(DslHost.Current!.SetDslFileWorkerCount(operands[0].GetInt()));
+        }
+    }
+
+    // get_dsl_file_worker_count() - live worker count of the dsl file
+    // execution pool
+    public sealed class GetDslFileWorkerCountExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(DslHost.Current!.GetDslFileWorkerCount());
+        }
+    }
+
+    // execute_dsl_file_in_worker(path, func [, args] [, timeout_ms] [, worker_index]) -
+    // run a named function of a full dsl file on the worker pool
+    // (ExecuteDslFileInWorker), returns (return_value, has_error, error_text)
+    public sealed class ExecuteDslFileInWorkerExp : SimpleExpressionBase
+    {
+        private const int c_DefaultTimeoutMs = 10_000;
+
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                string usage = "Expected: execute_dsl_file_in_worker(path, func [, args] [, timeout_ms] [, worker_index])";
+                ApiErrorInfo.AppendLine(usage);
+                return Tuple.Create(BoxedValue.NullObject, BoxedValue.FromBool(true), BoxedValue.FromString(usage));
+            }
+            // A worker must never wait on the pool it belongs to (same or
+            // busy target worker => deadlock until the timeout). Scripts
+            // running on a worker thread should use call_metadsl_task instead.
+            if (DslHost.IsDslFileWorkerThread) {
+                string err = "execute_dsl_file_in_worker must not run inside a dsl file worker thread (it would wait on its own pool); use call_metadsl_task";
+                ApiErrorInfo.AppendLine(err);
+                return Tuple.Create(BoxedValue.NullObject, BoxedValue.FromBool(true), BoxedValue.FromString(err));
+            }
+            try {
+                string path = operands[0].AsString;
+                string func = operands[1].AsString;
+                var args = new List<BoxedValue>();
+                if (operands.Count > 2 && !operands[2].IsNullObject) {
+                    var list = operands[2].As<IList<BoxedValue>>();
+                    if (list == null) {
+                        string err = "execute_dsl_file_in_worker: third argument (args) must be a list or null";
+                        ApiErrorInfo.AppendLine(err);
+                        return Tuple.Create(BoxedValue.NullObject, BoxedValue.FromBool(true), BoxedValue.FromString(err));
+                    }
+                    args.AddRange(list);
+                }
+                int timeoutMs = operands.Count > 3 ? operands[3].GetInt() : c_DefaultTimeoutMs;
+                // Default worker index = MinDslFileWorkerCount (hosts that
+                // reserve leading workers - e.g. AgentCore reserves 0 for
+                // filter callbacks and 1 for web pages - make scripts start
+                // past the reserved workers automatically).
+                int workerIndex = operands.Count > 4 ? operands[4].GetInt() : DslHost.MinDslFileWorkerCount;
+                string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, DslHost.Current!.BasePath);
+                var value = DslHost.Current!.ExecuteDslFileInWorker(fullPath, func, args, timeoutMs, workerIndex, out bool hasError, out string error);
+                return Tuple.Create(value, BoxedValue.FromBool(hasError), BoxedValue.FromString(error));
+            }
+            catch (Exception ex) {
+                string err = "execute_dsl_file_in_worker error: " + ex.Message;
+                ApiErrorInfo.AppendLine(err);
+                return Tuple.Create(BoxedValue.NullObject, BoxedValue.FromBool(true), BoxedValue.FromString(err));
+            }
+        }
+    }
+
     // nativelog(fmt, ...) - log to the host log sink
     public sealed class NativeLogExp : SimpleExpressionBase
     {

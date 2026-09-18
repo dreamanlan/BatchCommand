@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using ScriptableFramework;
 
 namespace AgentCore.Core
 {
@@ -26,8 +27,12 @@ namespace AgentCore.Core
     ///     (index.html, index.htm), 404 when none exists.
     ///   - GET/HEAD on a *.dsl file: the file is executed as a BatchScript
     ///     dsl page (full-file load, function definitions supported; the page
-    ///     must define a main() entry, its return value becomes the response
-    ///     body, see DslHost.ExecuteDslFileInWorker).
+    ///     must define a main(request, result) entry - request is the
+    ///     HttpListenerRequest (read via http_get_request_headers), result a
+    ///     WebCallbacks.Result the page fills with the set_web_result_* apis
+    ///     to override status/headers/body; the return value decides the
+    ///     body: a result object -> its body, a string -> the text, null ->
+    ///     the filled result body or empty, see DslHost.ExecuteDslFileInWorker).
     ///   - GET/HEAD on any other file: served verbatim with a MIME content
     ///     type (If-Modified-Since/304 conditional requests and single byte
     ///     ranges supported); 404 when missing.
@@ -41,6 +46,14 @@ namespace AgentCore.Core
     /// 'match' is a glob (* and ?) over the url path; a missing match means
     /// every path. Rules apply in order; later rules override earlier ones on
     /// the same header name. A rule may override Content-Type.
+    ///
+    /// Filters (webserver_add_filter / webserver_set_filter_dsl, see
+    /// Core/UrlFilterEngine.cs + Core/WebCallbacks.cs): matching urls
+    /// are handed to the filter dsl script before a static file is served
+    /// (on_webserver_response: may modify status/headers/body; any returned
+    /// modification takes over the response entirely - Range requests are
+    /// then answered with a full 200 body). Dsl pages are not filtered (they
+    /// have full dynamic control already).
     ///
     /// Exposure: the listener binds loopback only. Public pages are kept away
     /// by LNA: their preflight carries the PNA header and this server never
@@ -57,6 +70,8 @@ namespace AgentCore.Core
         private string _root = string.Empty;
         private List<HeaderRule> _headerRules = new();
         private readonly object _rulesLock = new object();
+        private readonly UrlFilterEngine _filters = new();
+        private string _filterDslPath = string.Empty;
 
         /// <summary>Gets whether the server is currently running.</summary>
         public bool IsRunning => _isRunning;
@@ -66,6 +81,15 @@ namespace AgentCore.Core
 
         /// <summary>Total number of accepted requests since Start.</summary>
         public long RequestCount => Interlocked.Read(ref _requestCount);
+
+        /// <summary>The url filter set of this server (webserver_add_filter; response direction only).</summary>
+        public UrlFilterEngine Filters => _filters;
+
+        /// <summary>Sets the filter callback dsl file (webserver_set_filter_dsl). One active filter script per process is the intended usage (callback names distinguish proxy / web server).</summary>
+        public void SetFilterDsl(string path)
+        {
+            _filterDslPath = path ?? string.Empty;
+        }
 
         /// <summary>One custom-response-header rule: a glob over the url path plus the headers to add.</summary>
         public sealed class HeaderRule
@@ -301,18 +325,61 @@ namespace AgentCore.Core
 
                 if (fullPath.EndsWith(".dsl", StringComparison.OrdinalIgnoreCase)) {
                     // Dsl page: full-file BatchScript execution (function
-                    // definitions supported, main() entry), isolated on a
-                    // dedicated interpreter thread
-                    // (DslHost.ExecuteDslFileInWorker).
-                    bool hasError;
-                    string result = MetaDslExecutor.ExecuteDslFileInWorker(fullPath, out hasError);
-                    byte[] data = Encoding.UTF8.GetBytes(result);
-                    resp.StatusCode = 200;
+                    // definitions supported, main(request, result) entry),
+                    // isolated on a dedicated interpreter thread
+                    // (DslHost.ExecuteDslFileInWorker). request is the
+                    // HttpListenerRequest (read via
+                    // http_get_request_headers), result a WebCallbacks.Result
+                    // the page fills with the set_web_result_* apis; the
+                    // return value decides the body: a result object -> its
+                    // body, a string -> the text, null -> the filled result
+                    // body or empty. Page errors answer 500 + error text.
+                    var pageResult = new WebCallbacks.Result();
+                    var pageArgs = new List<BoxedValue> {
+                        BoxedValue.FromObject(req),
+                        BoxedValue.FromObject(pageResult),
+                    };
+                    bool pageHasError;
+                    string pageError;
+                    var pageValue = MetaDslExecutor.ExecuteDslFileInWorker(fullPath, "main", pageArgs, Timeout.Infinite, WebCallbacks.PageWorkerIndex, out pageHasError, out pageError);
+                    if (pageHasError) {
+                        resp.StatusCode = 500;
+                        resp.ContentType = "text/plain; charset=utf-8";
+                        byte[] errData = Encoding.UTF8.GetBytes(pageError);
+                        resp.ContentLength64 = errData.Length;
+                        if (req.HttpMethod != "HEAD") {
+                            await resp.OutputStream.WriteAsync(errData, 0, errData.Length);
+                        }
+                        resp.Close();
+                        return;
+                    }
+                    object? ret = pageValue.IsNullObject ? null : pageValue.GetObject();
+                    var apply = pageResult;
+                    byte[] data;
+                    if (ret is WebCallbacks.Result rr) {
+                        apply = rr;
+                        data = rr.HasBody && rr.Body != null ? rr.Body : Array.Empty<byte>();
+                    }
+                    else if (ret is string s) {
+                        // String return: the text is the body; modifications
+                        // made through the passed-in result object still
+                        // apply (it is the same reference).
+                        data = Encoding.UTF8.GetBytes(s);
+                    }
+                    else {
+                        // Null / other return: the passed-in result body or
+                        // empty.
+                        data = pageResult.HasBody && pageResult.Body != null ? pageResult.Body : Array.Empty<byte>();
+                    }
+                    WebCallbacks.ApplyToResponse(resp, apply);
+                    if (!apply.HasStatus) {
+                        resp.StatusCode = 200;
+                    }
                     if (string.IsNullOrEmpty(resp.ContentType)) {
                         resp.ContentType = "text/plain; charset=utf-8";
                     }
                     resp.ContentLength64 = data.Length;
-                    if (req.HttpMethod != "HEAD") {
+                    if (req.HttpMethod != "HEAD" && data.Length > 0) {
                         await resp.OutputStream.WriteAsync(data, 0, data.Length);
                     }
                     resp.Close();
@@ -336,6 +403,58 @@ namespace AgentCore.Core
                     resp.Close();
                     return;
                 }
+
+                // ---- downstream (response) filter callback (static files) --
+                // on_webserver_response(filter_id, status, path, headers,
+                // body) gets the response headers as a Dictionary (the same
+                // data http_get_response_headers returns) and the file body
+                // as a byte array; it returns a WebCallbacks.Result
+                // (new_web_result / set_web_result_*) - any returned
+                // modification takes over the response entirely (status /
+                // headers / body - Range requests are then answered with a
+                // full body). Only modifiable text types within the size cap
+                // are handed over.
+                string fileContentType = string.IsNullOrEmpty(resp.ContentType) ? GetContentType(fullPath) : resp.ContentType;
+                var respFilter = _filters.MatchResponse(urlPath, req.HttpMethod, fileContentType);
+                if (respFilter != null && _filterDslPath.Length > 0 &&
+                    WebCallbacks.IsModifiableType(fileContentType) && fileLength <= WebCallbacks.MaxCallbackBodyBytes) {
+                    byte[] fileData = await File.ReadAllBytesAsync(fullPath);
+                    var hdrDict = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase) {
+                        ["Content-Type"] = new List<string> { fileContentType },
+                        ["Last-Modified"] = new List<string> { lastModifiedUtc.ToString("R") },
+                    };
+                    foreach (var kv in customHeaders) {
+                        hdrDict[kv.Key] = new List<string> { kv.Value };
+                    }
+                    var respMod = WebCallbacks.Invoke(_filterDslPath, "on_webserver_response",
+                        BoxedValue.From(respFilter.Id),
+                        BoxedValue.From(200),
+                        BoxedValue.FromString(urlPath),
+                        BoxedValue.FromObject(hdrDict),
+                        BoxedValue.FromObject(fileData));
+                    if (respMod != null) {
+                        if (respMod.Abort) {
+                            WebCallbacks.WriteAbortResponse(resp, origin, respMod, 403);
+                            return;
+                        }
+                        WebCallbacks.ApplyToResponse(resp, respMod);
+                        byte[] outData = respMod.HasBody && respMod.Body != null
+                            ? respMod.Body : fileData;
+                        if (!respMod.HasStatus) {
+                            resp.StatusCode = 200;
+                        }
+                        resp.ContentLength64 = outData.Length;
+                        if (req.HttpMethod != "HEAD" && outData.Length > 0) {
+                            await resp.OutputStream.WriteAsync(outData, 0, outData.Length);
+                        }
+                        resp.Close();
+                        return;
+                    }
+                    // No modification: fall through to the normal path (the
+                    // data read above is dropped, the normal path re-reads it
+                    // with range support).
+                }
+
                 long rangeStart = 0, rangeEnd = fileLength - 1;
                 bool unsatisfiable = false;
                 bool isRange = req.HttpMethod == "GET" &&

@@ -910,6 +910,8 @@ class APIClient {
                 { value: 'ext-glm-5.3', label: 'GLM-5.3 (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'tokenhub_glm-5.3-flash', label: 'GLM-5.3-Flash (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'tokenhub_kimi-k3', label: 'Kimi-K3', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'gemini-3.8-flash', label: 'Gemini-3.8-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'gemini-3.5-flash', label: 'Gemini-3.5-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'hy4-preview', label: 'HY-4', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
                 { value: 'hy3', label: 'HY-3', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
                 { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code', thinking: false, reasoningEfforts: [], contextWindows: [] },

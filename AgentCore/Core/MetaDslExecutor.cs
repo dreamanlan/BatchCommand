@@ -101,12 +101,16 @@ namespace AgentCore.Core
             return Host.ExecuteScript(script, maxResultSize, out hasError);
         }
 
-        // Executes a full dsl FILE (function definitions supported, main()
-        // entry) for web pages - isolated on a dedicated interpreter thread,
-        // see DslHost.ExecuteDslFileInWorker.
-        internal static string ExecuteDslFileInWorker(string path, out bool hasError)
+        // Executes a full dsl FILE (function definitions supported, named
+        // entry function with caller supplied arguments) for web pages and
+        // filter callbacks - isolated on the dedicated interpreter worker
+        // threads, returns the raw entry return value, see
+        // DslHost.ExecuteDslFileInWorker (timeoutMs: >0 limited wait, <0
+        // infinite, 0 fire and forget; workerIndex: >=0 that worker, <0 the
+        // shortest queue).
+        internal static BoxedValue ExecuteDslFileInWorker(string path, string func, IList<BoxedValue> args, int timeoutMs, int workerIndex, out bool hasError, out string error)
         {
-            return Host.ExecuteDslFileInWorker(path, out hasError);
+            return Host.ExecuteDslFileInWorker(path, func, args, timeoutMs, workerIndex, out hasError, out error);
         }
 
         internal static string LoadFunc(string func, string code, IList<string> paramNames, bool update)

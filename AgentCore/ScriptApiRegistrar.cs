@@ -23,6 +23,14 @@ namespace AgentCore
             // by BatchScriptApiRegistrar via DslHost.Prepare, see
             // BatchScriptApi/Api/{FileOperationsApi,FileSizeApi,DiffApi,OtherOperationsApi,RegexApi}.cs).
 
+            // AgentCore worker pool convention (DslHost dsl file execution
+            // pool): reserve worker 0 for the httpproxy / webserver filter
+            // callbacks and worker 1 for the web server dsl pages (see
+            // Core/WebCallbacks.cs); scripts calling
+            // execute_dsl_file_in_worker start at this index by default.
+            // Idempotent: RegisterAllApis runs per prepared thread.
+            BatchCommand.Api.DslHost.MinDslFileWorkerCount = 2;
+
             // Code Editing Operations
             BatchCommand.BatchScript.Register("replace_in_file", "replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]), exactMatch=true requires exact whitespace; false (default) falls back to trimmed and normalized-whitespace matching; encoding supports -bom/-no-bom/-nobom suffixes", new ExpressionFactoryHelper<ReplaceInFileExp>());
             BatchCommand.BatchScript.Register("replaceinfile", "replaceinfile(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]), exactMatch=true requires exact whitespace; false (default) falls back to trimmed and normalized-whitespace matching; encoding supports -bom/-no-bom/-nobom suffixes", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
@@ -227,6 +235,10 @@ namespace AgentCore
 
             // Static Web Server API (per-port document root, header rules, dsl pages)
             WebServerApi.RegisterApis();
+
+            // Web result object APIs (httpproxy / webserver filter callbacks,
+            // web server dsl pages)
+            WebApi.RegisterApis();
 
             // Admin process launch (elevated, UAC)
             AdminProcessApi.RegisterApis();

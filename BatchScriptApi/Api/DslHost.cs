@@ -258,106 +258,356 @@ namespace BatchCommand.Api
             }
         }
 
-        // ---- full dsl file execution (web pages and the like) ---------------
+        // ---- full dsl file execution (web pages, filters and the like) -----
         //
         // ExecuteScript wraps the snippet with EvalAsFunc, which cannot define
         // functions; a full dsl file needs BatchScript.Load, and Load CLEARS
         // the thread's calculator (script functions and globals - the same
         // clear every hot reload performs). Running that on the caller's
         // thread would throw away that thread's main script state, so file
-        // execution is isolated on a dedicated worker thread instead (same
+        // execution is isolated on dedicated worker threads instead (same
         // idea as the call_metadsl_task pool: the BatchScript interpreter is
-        // [ThreadStatic], isolation is per thread). The worker thread never
-        // holds main script state - every job loads its own file - so there
-        // is nothing to break and nothing to restore.
+        // [ThreadStatic], isolation is per thread). The worker threads never
+        // hold main script state - every job loads its own file - so there is
+        // nothing to break and nothing to restore.
         //
-        // Convention: the file must define a main() entry; its return value
-        // is the execution result. Errors (api + dsl) are appended to the
-        // result text, metadsl style. Jobs run serially on one thread.
+        // Worker pool (elastic, unlike the sticky call_metadsl_task pool):
+        // every worker owns its queue; jobs are routed by workerIndex
+        // (>= 0 = that worker - an index past the live count TEMPORARILY
+        // grows the pool without touching the configured count, the extra
+        // workers retire after being idle for c_DslFileIdleMs; < 0 =
+        // automatic, the worker with the shortest queue). The pool never
+        // shrinks below DslFileWorkerFloor (the configured count, the host
+        // minimum and one live worker). set_dsl_file_worker_count /
+        // get_dsl_file_worker_count (dsl) read and write the configured
+        // count; lowering it retires idle workers tail first, so queued work
+        // always runs.
+        //
+        // Worker convention of the built-in callers (AgentCore): the proxy /
+        // web server FILTER callbacks run on worker 0 (quick, mostly header
+        // munging - a slow one degrades through the caller timeout, not by
+        // blocking the pool), the web server dsl PAGES run on worker 1 (slow
+        // jobs must never occupy the filter worker). Each worker therefore
+        // keeps its script loaded without switching.
+        //
+        // Loaded script caching: every worker caches the script it last
+        // loaded (per thread - each worker owns its own calculator) and hot
+        // reloads it when the file timestamp changes; a different path
+        // simply switches the script. Globals of a cached script therefore
+        // SURVIVE between jobs on the same worker thread - scripts must not
+        // rely on per-call global state.
+        //
+        // Convention: the caller decides the entry function name AND the
+        // argument list (the web server pages use main(request, result), the
+        // proxy / web server filters use on_proxy_request / on_proxy_response
+        // / on_webserver_response). The raw entry return value is passed back
+        // AS IS (object references included - never a string conversion);
+        // errors are reported through hasError/error.
+        //
+        // timeoutMs: > 0 waits at most that long (on timeout the job is
+        // abandoned - fail-open at the caller - and its result is dropped
+        // whenever a worker eventually finishes it); < 0 (Timeout.Infinite)
+        // waits forever; 0 does not wait at all (fire and forget - the job is
+        // queued, the call returns immediately with a null value and no
+        // error).
+        //
+        // Reentrancy note (filters): if a filter script itself calls through
+        // the proxy, every worker could be busy, the proxy thread times out
+        // and forwards the request unmodified - the call then completes, so
+        // the worst case is one timeout delay, not a deadlock. Filter scripts
+        // should call upstream sites directly, never through the proxy.
 
         private sealed class DslFileJob
         {
             public string Path = string.Empty;
-            public TaskCompletionSource<(string Result, bool HasError)> Tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            public string Func = string.Empty;
+            public List<BoxedValue> Args = new();
+            public TaskCompletionSource<(BoxedValue Value, string Error, bool HasError)> Tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
-        private readonly BlockingCollection<DslFileJob> _dslFileJobs = new();
-        private Thread? _dslFileWorker;
-        private readonly object _dslFileLock = new object();
+        private sealed class DslFileWorker
+        {
+            public readonly BlockingCollection<DslFileJob> Queue = new BlockingCollection<DslFileJob>();
+        }
 
-        // Executes a full dsl file (function definitions supported) and
-        // returns its main() result text. Blocks the caller until the file
-        // has run on the dedicated worker thread.
-        public string ExecuteDslFileInWorker(string path, out bool hasError)
+        // Guards _dslFileWorkers and _dslFileWorkerCount only. It is never
+        // held while running dsl.
+        private readonly object _dslFileLock = new object();
+        private readonly List<DslFileWorker> _dslFileWorkers = new List<DslFileWorker>();
+        // The minimum worker count a host may not shrink below (hosts that
+        // reserve leading workers raise this: AgentCore sets 2 - worker 0 =
+        // filter callbacks, worker 1 = web pages, see the convention above).
+        // The pool itself always keeps at least one worker alive regardless
+        // of this value. Also the default worker index of the
+        // execute_dsl_file_in_worker dsl api (scripts start past the reserved
+        // workers).
+        public static int MinDslFileWorkerCount = 0;
+        private int _dslFileWorkerCount = MinDslFileWorkerCount;
+        // How long a worker waits for work before checking whether it should retire.
+        private const int c_DslFileIdleMs = 30000;
+        // Hard upper bound for a workerIndex (protects against typos / abuse;
+        // growing is meant for giving one slow job its own thread).
+        private const int c_MaxDslFileWorkerIndex = 100;
+
+        // Caller must hold _dslFileLock. The pool never shrinks below this:
+        // the configured count, the host minimum (reserved workers) and one
+        // live worker.
+        private int DslFileWorkerFloor
+        {
+            get {
+                int floor = _dslFileWorkerCount > MinDslFileWorkerCount ? _dslFileWorkerCount : MinDslFileWorkerCount;
+                return floor > 1 ? floor : 1;
+            }
+        }
+
+        // Per worker thread: the script this thread last loaded (+ its write
+        // timestamp), so a cached script keeps running without a reload and
+        // hot reloads when the file changes.
+        [ThreadStatic]
+        private static string? tls_LoadedDslPath;
+        [ThreadStatic]
+        private static DateTime tls_LoadedDslWriteUtc;
+        // True while this thread is running a dsl file job (guards against
+        // call_dsl_file deadlocking a worker on itself, see ExecuteDslFileInWorker).
+        [ThreadStatic]
+        private static bool tls_InDslFileWorker;
+
+        /// <summary>True when called from a dsl file worker thread (the worker pool must not wait on itself).</summary>
+        public static bool IsDslFileWorkerThread => tls_InDslFileWorker;
+
+        // Executes a full dsl file (function definitions supported) with the
+        // given entry function and arguments on the worker threads, and
+        // returns the raw entry return value. workerIndex >= 0 routes the
+        // job to that worker (temporarily growing the pool past the live
+        // count without touching the configured count - the extra workers
+        // retire after being idle; indices above c_MaxDslFileWorkerIndex are
+        // rejected), < 0 picks the worker with the shortest queue
+        // automatically. Blocks the caller per the timeoutMs semantics
+        // above.
+        public BoxedValue ExecuteDslFileInWorker(string path, string func, IList<BoxedValue>? args, int timeoutMs, int workerIndex, out bool hasError, out string error)
         {
             hasError = false;
+            error = string.Empty;
             if (string.IsNullOrEmpty(path) || !File.Exists(path)) {
                 hasError = true;
-                return "Error: dsl file not found: " + path;
+                error = "Error: dsl file not found: " + path;
+                return BoxedValue.NullObject;
             }
-            var job = new DslFileJob { Path = path };
+            if (string.IsNullOrEmpty(func)) {
+                hasError = true;
+                error = "Error: entry function name must not be empty";
+                return BoxedValue.NullObject;
+            }
+            var job = new DslFileJob { Path = path, Func = func };
+            if (args != null) {
+                job.Args.AddRange(args);
+            }
             lock (_dslFileLock) {
-                if (null == _dslFileWorker || !_dslFileWorker.IsAlive) {
-                    _dslFileWorker = new Thread(DslFileWorkerLoop) {
-                        IsBackground = true,
-                        Name = "dsl_file_exec",
-                    };
-                    _dslFileWorker.Start();
+                if (workerIndex > c_MaxDslFileWorkerIndex) {
+                    hasError = true;
+                    error = string.Format("worker index {0} is above the maximum {1}, func: {2}",
+                        workerIndex, c_MaxDslFileWorkerIndex, func);
+                    return BoxedValue.NullObject;
                 }
-                _dslFileJobs.Add(job);
+                // A directed index past the live count grows the pool for
+                // this job only - the configured count stays, the extra
+                // workers retire once idle.
+                int need = DslFileWorkerFloor;
+                if (workerIndex >= 0 && workerIndex + 1 > need) {
+                    need = workerIndex + 1;
+                }
+                EnsureDslFileWorkers(need);
+                DslFileWorker worker;
+                if (workerIndex >= 0) {
+                    worker = _dslFileWorkers[workerIndex];
+                }
+                else {
+                    // Automatic: the shortest queue wins, first on ties.
+                    worker = _dslFileWorkers[0];
+                    int min = worker.Queue.Count;
+                    for (int i = 1; i < _dslFileWorkers.Count; i++) {
+                        int count = _dslFileWorkers[i].Queue.Count;
+                        if (count < min) {
+                            min = count;
+                            worker = _dslFileWorkers[i];
+                        }
+                    }
+                }
+                worker.Queue.Add(job);
             }
-            var (result, err) = job.Tcs.Task.GetAwaiter().GetResult();
+            if (timeoutMs == 0) {
+                // Fire and forget: a worker runs the job whenever it gets
+                // there, the result is dropped.
+                return BoxedValue.NullObject;
+            }
+            if (!job.Tcs.Task.Wait(timeoutMs < 0 ? Timeout.Infinite : timeoutMs)) {
+                hasError = true;
+                error = "Error: dsl callback timeout: " + func;
+                return BoxedValue.NullObject;
+            }
+            var (value, errText, err) = job.Tcs.Task.Result;
             hasError = err;
-            return result;
+            error = errText;
+            return value;
         }
 
-        private void DslFileWorkerLoop()
+        // Caller must hold _dslFileLock. Grows the pool to at least num
+        // workers and returns the live count.
+        private int EnsureDslFileWorkers(int num)
         {
-            foreach (var job in _dslFileJobs.GetConsumingEnumerable()) {
-                var resSb = new StringBuilder();
-                var errSb = new StringBuilder();
-                bool hasError = false;
-                try {
-                    // Registers apis on this thread once (Prepare is
-                    // idempotent); this thread never loads the main script -
-                    // every job loads its own file below.
-                    Prepare();
-                    BatchScript.Load(job.Path);
+            while (_dslFileWorkers.Count < num) {
+                int index = _dslFileWorkers.Count;
+                var worker = new DslFileWorker();
+                var thread = new Thread(() => DslWorkerLoop(worker)) {
+                    IsBackground = true,
+                    Name = "dsl_worker_" + index,
+                };
+                _dslFileWorkers.Add(worker);
+                thread.Start();
+            }
+            return _dslFileWorkers.Count;
+        }
+
+        // Worker loop. Waits for work, and once it has been idle for a while
+        // it retires itself if set_dsl_file_worker_count has since lowered
+        // the count below the live number.
+        //
+        // Only the LAST worker may retire, which is what keeps workerIndex
+        // meaningful: an index IS a position in _dslFileWorkers, so removing
+        // from the middle would silently renumber every worker above it.
+        // Shrinking therefore peels off the tail, and an idle worker in the
+        // middle retires once the ones after it are gone.
+        private void DslWorkerLoop(DslFileWorker worker)
+        {
+            while (true) {
+                if (worker.Queue.TryTake(out var job, c_DslFileIdleMs)) {
+                    RunDslFileJob(job);
+                    continue;
+                }
+                // Idle. Decide under the lock so this cannot interleave with
+                // a producer picking this worker and queueing to it. The
+                // queue is re-checked here because work may have arrived
+                // since TryTake gave up.
+                lock (_dslFileLock) {
+                    int last = _dslFileWorkers.Count - 1;
+                    if (_dslFileWorkers.Count > DslFileWorkerFloor
+                        && last >= 0
+                        && _dslFileWorkers[last] == worker
+                        && worker.Queue.Count == 0) {
+                        _dslFileWorkers.RemoveAt(last);
+                        // Nothing can reach this worker any more: producers
+                        // only read the list while holding the lock this
+                        // thread is holding right now.
+                        worker.Queue.Dispose();
+                        return;
+                    }
+                }
+            }
+        }
+
+        private void RunDslFileJob(DslFileJob job)
+        {
+            var value = BoxedValue.NullObject;
+            var errSb = new StringBuilder();
+            bool hasError = false;
+            tls_InDslFileWorker = true;
+            try {
+                // Registers apis on this thread once (Prepare is idempotent);
+                // this thread never loads the main script - every job loads
+                // its own file below.
+                Prepare();
+                if (!LoadScriptCached(job.Path)) {
+                    hasError = true;
+                    errSb.AppendLine("Error: dsl file failed to load: " + job.Path);
+                    if (BatchScript.HasDslErrors) {
+                        errSb.AppendLine(BatchScript.GetDslErrors());
+                    }
+                }
+                else if (!BatchScript.Calculator.TryGetFuncInfo(job.Func, out _)) {
+                    hasError = true;
+                    errSb.AppendLine("dsl file must define a '" + job.Func + "' entry function: " + job.Path);
+                }
+                else {
+                    // BatchScript.Load cleared the globals: re-establish the
+                    // common + host ones, with dslpath pointing at the
+                    // executed file, before running the entry.
+                    tls_ScriptPath = job.Path;
+                    RefreshGlobalVars();
+                    ApiErrorInfo.Clear();
+                    BatchScript.ClearDslErrors();
+                    // The return value is passed through AS IS (object
+                    // references included): the caller decides how to
+                    // interpret it, never a string conversion.
+                    value = BatchScript.Call(job.Func, job.Args);
+                    if (ApiErrorInfo.HasInfo) {
+                        hasError = true;
+                        errSb.AppendLine(ApiErrorInfo.GetInfo());
+                    }
                     if (BatchScript.HasDslErrors) {
                         hasError = true;
                         errSb.AppendLine(BatchScript.GetDslErrors());
                     }
-                    else if (!BatchScript.Calculator.TryGetFuncInfo("main", out _)) {
-                        hasError = true;
-                        errSb.AppendLine("dsl file must define a main() entry function: " + job.Path);
-                    }
-                    else {
-                        // BatchScript.Load cleared the globals: re-establish
-                        // the common + host ones, with dslpath pointing at
-                        // the executed file, before running the entry.
-                        tls_ScriptPath = job.Path;
-                        RefreshGlobalVars();
-                        ApiErrorInfo.Clear();
-                        BatchScript.ClearDslErrors();
-                        var resultValue = BatchScript.Call("main");
-                        resSb.AppendLine(resultValue.IsNullObject ? "null" : ResultToString(resultValue));
-                        if (ApiErrorInfo.HasInfo) {
-                            hasError = true;
-                            errSb.AppendLine();
-                            errSb.AppendLine(ApiErrorInfo.GetInfo());
-                        }
-                        if (BatchScript.HasDslErrors) {
-                            hasError = true;
-                            errSb.AppendLine();
-                            errSb.AppendLine(BatchScript.GetDslErrors());
-                        }
-                    }
                 }
-                catch (Exception ex) {
-                    hasError = true;
-                    errSb.AppendLine("Error: " + ex.Message);
+            }
+            catch (Exception ex) {
+                hasError = true;
+                errSb.AppendLine("Error: " + ex.Message);
+            }
+            finally {
+                tls_InDslFileWorker = false;
+            }
+            job.Tcs.SetResult((value, errSb.ToString().TrimEnd(), hasError));
+        }
+
+        // Loads the dsl file on this worker thread when the path differs
+        // from the one this thread last loaded or its file timestamp changed
+        // (hot reload). Returns false on a load error (the thread's loaded
+        // path is reset so the next job retries).
+        private static bool LoadScriptCached(string path)
+        {
+            try {
+                DateTime stamp = File.GetLastWriteTimeUtc(path);
+                if (!string.Equals(path, tls_LoadedDslPath, StringComparison.OrdinalIgnoreCase) || stamp != tls_LoadedDslWriteUtc) {
+                    BatchScript.Load(path);
+                    if (BatchScript.HasDslErrors) {
+                        tls_LoadedDslPath = null;
+                        return false;
+                    }
+                    tls_LoadedDslPath = path;
+                    tls_LoadedDslWriteUtc = stamp;
                 }
-                job.Tcs.SetResult((GetMetaDslResult(0, resSb, errSb), hasError));
+                return true;
+            }
+            catch {
+                tls_LoadedDslPath = null;
+                return false;
+            }
+        }
+
+        // Sets the configured worker count and returns the live count
+        // afterwards. Raising it creates the missing workers at once.
+        // It never goes below MinDslFileWorkerCount (host reserved workers);
+        // the pool itself always keeps DslFileWorkerFloor workers alive
+        // (configured count, host minimum, one live worker), and lowering
+        // kills nothing immediately: each worker above the floor retires on
+        // its own once it has been idle for c_DslFileIdleMs, tail first, so
+        // queued work always still runs. That means the returned count can
+        // be larger than num until the extra workers go idle.
+        public int SetDslFileWorkerCount(int num)
+        {
+            if (num < MinDslFileWorkerCount) {
+                num = MinDslFileWorkerCount;
+            }
+            lock (_dslFileLock) {
+                _dslFileWorkerCount = num;
+                return EnsureDslFileWorkers(DslFileWorkerFloor);
+            }
+        }
+
+        public int GetDslFileWorkerCount()
+        {
+            lock (_dslFileLock) {
+                return _dslFileWorkers.Count;
             }
         }
 

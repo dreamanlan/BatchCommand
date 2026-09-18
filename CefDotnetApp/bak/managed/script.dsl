@@ -207,9 +207,9 @@ script(on_browser_init)
     $notFirst = get_context_var("notFirst");
     if (isnull($notFirst)) {
         set_context_var("notFirst", 1);
-        deletefile(combinepath(basepath, "agentcore_early.log"));
+        deletefile(combinepath(basepath, "agentcore.log"));
         deletefile(combinepath(basepath, "debug.log"));
-        deletefile(combinepath(basepath, "cefclient_cache/chrome_debug.log"));
+        deletefile(combinepath(basepath, "webagent_cache/chrome_debug.log"));
     };
 };
 // Default handler for the C# hot reload watcher (watch_file / watch_dir /

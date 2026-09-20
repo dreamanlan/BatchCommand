@@ -11,6 +11,8 @@ namespace AgentCore.Core
     ///   &lt;think&gt; ... &lt;/think&gt;
     ///   &lt;thinking&gt; ... &lt;/thinking&gt;
     ///   &lt;reasoning&gt; ... &lt;/reasoning&gt;
+    /// plus tool-call markup emitted by some upstream agents:
+    ///   &lt;tool&gt; ... &lt;/tool&gt;
     ///
     /// Out-of-band reasoning fields (reasoning_content, message.thinking, etc.)
     /// are handled in each provider directly by simply not concatenating them
@@ -31,11 +33,18 @@ namespace AgentCore.Core
             @"<\s*reasoning\s*>[\s\S]*?<\s*/\s*reasoning\s*>",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        // Some upstream agents emit tool-call markup in the text payload
+        // (e.g. "<tool>...</tool>" around a task_planning block). It is not a
+        // user-facing answer either, so it is stripped like the think blocks.
+        private static readonly Regex s_toolRe = new Regex(
+            @"<\s*tool\s*>[\s\S]*?<\s*/\s*tool\s*>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         // Defensively clean up an unmatched dangling open-tag tail
         // (e.g. content ends with "...<think>partial" because the upstream
         //  truncated the response). Drop everything from the open tag on.
         private static readonly Regex s_danglingOpenRe = new Regex(
-            @"<\s*(think|thinking|reasoning)\s*>[\s\S]*$",
+            @"<\s*(think|thinking|reasoning|tool)\s*>[\s\S]*$",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
@@ -49,6 +58,7 @@ namespace AgentCore.Core
             string s = s_thinkRe.Replace(content, "");
             s = s_thinkingRe.Replace(s, "");
             s = s_reasoningRe.Replace(s, "");
+            s = s_toolRe.Replace(s, "");
             s = s_danglingOpenRe.Replace(s, "");
             return s.Trim();
         }

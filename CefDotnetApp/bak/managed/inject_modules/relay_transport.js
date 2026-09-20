@@ -38,6 +38,7 @@ class RelayTransport {
     this.registerTimeoutMs = 12000;  // safety net for a lost state event
     // Reply queue (raw MetaDSL results), same shape as metadslWorker's
     this.fromWorkerQueue = [];
+    this.maxReplyQueue = 100;       // bound: see _pushReply
     this.reconnectDelay = 2000;
     this._reconnectTimer = null;
     this._registerTimer = null;
@@ -264,8 +265,19 @@ class RelayTransport {
   // ---- reply queue (metadslWorker compatible surface) ------------------
 
   queueReply(message, noAgentMarker = false, channelId = null) {
-    this.fromWorkerQueue.push({ message: message, noAgentMarker: noAgentMarker, channelId: channelId });
+    this._pushReply({ message: message, noAgentMarker: noAgentMarker, channelId: channelId });
     return true;
+  }
+
+  // Bounded push: while the agent cannot drain the queue (relay down, page
+  // stuck) it would otherwise grow without limit and flood the LLM on
+  // recovery. Oldest first, so the freshest result survives.
+  _pushReply(item) {
+    if (this.fromWorkerQueue.length >= this.maxReplyQueue) {
+      this.fromWorkerQueue.shift();
+      this.logger.warn('relay reply queue full (' + this.maxReplyQueue + '), dropped oldest');
+    }
+    this.fromWorkerQueue.push(item);
   }
 
   dequeueMessage() {
@@ -303,7 +315,7 @@ class RelayTransport {
     }
     // Raw MetaDSL result text: same queue semantics as the worker transport.
     this.logger.info('onAgentEvent raw result queued (length: ' + message.length + ')');
-    this.fromWorkerQueue.push({
+    this._pushReply({
       message: message + "\n\n请简要复述本次执行要点以留存；如有新的MetaDSL代码同一轮发出（有才发，不要重复发），避免下轮结果遗忘傻眼。",
       noAgentMarker: false
     });
@@ -333,6 +345,11 @@ class RelayTransport {
     } else {
       // failed / disconnected: the connection is dead and will not return.
       this.isConnected = false;
+      // The logical connection is gone: clear isRunning too, otherwise
+      // register() short-circuits on it forever and no new agent_register is
+      // ever sent (isRunning is only cleared by stop()). This was a permanent
+      // dead channel that only a page reload could recover from.
+      this.isRunning = false;
       this.clientId = null;  // the wsclient id is dead, a register gets a new one
       this.logger.warn('relay ' + msg.state + ', will re-register');
       this._scheduleReconnect();
@@ -684,7 +701,10 @@ RelayTransport.prototype.createSlot = function (agentId, urlKey) {
 };
 
 // The browser pushes with: window.onAgentEvent('<clientId>', '<message>')
-if (typeof window !== 'undefined' && typeof window.onAgentEvent === 'undefined') {
+if (typeof window !== 'undefined') {
+  // Always install, and chain to a pre-existing handler: skipping the install
+  // when the name is already taken would silently drop every relay push.
+  const previousHandler = typeof window.onAgentEvent === 'function' ? window.onAgentEvent : null;
   window.onAgentEvent = function (clientId, message) {
     if (clientId === relayTransport.clientId) {
       relayTransport.onAgentEvent(clientId, message);
@@ -693,6 +713,10 @@ if (typeof window !== 'undefined' && typeof window.onAgentEvent === 'undefined')
     const slot = relaySlotRegistry.get(clientId);
     if (slot) {
       slot._onPush(message);
+      return;
+    }
+    if (previousHandler) {
+      previousHandler(clientId, message);
       return;
     }
     // Stale client id (registration died / re-registered): ignore.

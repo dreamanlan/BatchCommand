@@ -8,6 +8,7 @@ class MetaDSLMonitor {
     this.pageAdapter = pageAdapter;
     this.metadslWorker = metadslWorker;
     this.started = false; // Only controlled by panel start/stop
+    this._runGeneration = 0; // Invalidates a previous runStateMachine loop
     this.processedMessages = new Set();
     this.processedBlocks = new Set();
     this.panel = null;
@@ -27,12 +28,15 @@ class MetaDSLMonitor {
     this.pageStableTimer = null;
     this.isProcessingQueue = false;
     this.pageStableDelay = CONFIG.config.panel.streamingPage ? CONFIG.pageStableDelay : 1500;
-    this.operationDelay = CONFIG.operationDelay;
     // Timeout fallback for onPageStable's unrendered-fence wait: if a residual
     // (unpairable / malformed) code fence lingers, count retries and force-continue
     // after the limit to avoid a permanent deadlock (no self-heal).
     this.unrenderedFenceRetryCount = 0;
     this.unrenderedFenceRetryLimit = 3;
+    // Same fallback for onPageStable's "still generating" wait: a stuck loading
+    // indicator would reschedule the scan forever. Timestamp of the first
+    // "still generating" observation in the current round; 0 = not armed.
+    this.generatingSince = 0;
 
     // Block ID cache for stable ID generation
     this.blockIdCache = new WeakMap();
@@ -60,6 +64,11 @@ class MetaDSLMonitor {
     this.stateHistory = [];
     this.maxSendRetries = CONFIG.maxSendRetries;
     this.sendRetryDelay = CONFIG.sendRetryDelay;
+    // Upper bound for the operation queue (see enqueueOperation).
+    this.maxOperationQueue = 100;
+    // Upper bound for processedMessages: unlike processedBlocks (trimmed by
+    // maxProcessedBlocks) it grew for the whole session.
+    this.maxProcessedMessages = 2000;
 
     // Callback for LLM response forwarding (set by main.js)
     this.onLLMResponse = null;
@@ -150,6 +159,12 @@ class MetaDSLMonitor {
     this.info('Stopping...');
     this.started = false;
     this.enabled = false;
+    // Drop the current state so a later start() re-enters AGENT_EXECUTING
+    // (transitionTo() would otherwise short-circuit on the same name and skip
+    // enter(), leaving the input monitor stopped) and so the old run loop,
+    // which may be parked in await, stops driving it.
+    this.currentState = null;
+    this.currentStateName = null;
     this.canExecuteNewCommands = false;
     this.processedMessages.clear();
     // Keep processedBlocks to prevent re-processing on restart
@@ -197,6 +212,12 @@ class MetaDSLMonitor {
     }
 
     this.processedMessages.add(messageHash);
+    // Bound the set: it is only cleared on stop(), so a long session grew it
+    // without limit (processedBlocks is trimmed by maxProcessedBlocks).
+    if (this.processedMessages.size > this.maxProcessedMessages) {
+      const oldest = this.processedMessages.values().next().value;
+      this.processedMessages.delete(oldest);
+    }
 
     // Response processed - MetaDSL code blocks will be handled by scanForNewCodeBlocks()
     // No command extraction here - MetaDSL only executes from code blocks
@@ -319,17 +340,26 @@ class MetaDSLMonitor {
     // Monitor send button state changes and user send actions
     const footer = document.querySelector('#room-footer') || document.body;
 
-    this.sendButtonObserver = new MutationObserver(() => {
-      if (this.started) {
-        this.checkSendButtonState();
-      }
-    });
+    // The observer only re-checks the send button, which just logs at debug
+    // level. On pages without #room-footer it would fall back to document.body
+    // and turn every class change on the page into a full-document query for
+    // nothing, so it is skipped there. The click listener below is kept: it is
+    // what actually detects that the user sent a message.
+    if (footer !== document.body) {
+      this.sendButtonObserver = new MutationObserver(() => {
+        if (this.started) {
+          this.checkSendButtonState();
+        }
+      });
 
-    this.sendButtonObserver.observe(footer, {
-      attributes: true,
-      attributeFilter: ['class'],
-      subtree: true
-    });
+      this.sendButtonObserver.observe(footer, {
+        attributes: true,
+        attributeFilter: ['class'],
+        subtree: true
+      });
+    } else {
+      this.info('Send button class observer skipped: #room-footer not found');
+    }
 
     // Monitor send button clicks to detect when user sends a message
     footer.addEventListener('click', (e) => {
@@ -478,8 +508,11 @@ class MetaDSLMonitor {
   }
 
   async runStateMachine() {
-    // Main state machine execution loop
-    while (this.started) {
+    // Main state machine execution loop. The generation counter keeps a
+    // stop()/start() pair that happens while this loop is parked in await from
+    // leaving two concurrent loops driving the same states.
+    const generation = ++this._runGeneration;
+    while (this.started && generation === this._runGeneration) {
       try {
         if (this.currentState) {
           await this.currentState.run();
@@ -504,6 +537,11 @@ class MetaDSLMonitor {
     // Use document.body to ensure lazy-loaded messages are captured
     // (virtual scroll may insert nodes outside specific chat containers)
     const chatContainer = document.body;
+    // Keep it on the instance: the control panel disconnects the observer
+    // while the user types in the script input and re-attaches it from
+    // this.chatContainer. Without this the observer stayed disconnected
+    // forever after the first keystroke.
+    this.chatContainer = chatContainer;
     const specificContainer = document.querySelector('.chat-container') ||
       document.querySelector('.message-container') ||
       document.querySelector('[role="main"]');
@@ -520,15 +558,13 @@ class MetaDSLMonitor {
         return;
       }
 
-      // Filter out mutations from the control panel to avoid crashes
+      // Filter out mutations from the control panel to avoid crashes.
+      // The panel node is resolved once per batch: walking up the ancestors of
+      // every mutation record is one of the hottest paths during streaming.
+      const panelEl = document.getElementById('agent-control-panel');
       const relevantMutations = mutations.filter(mutation => {
-        // Check if mutation is inside the control panel
-        let node = mutation.target;
-        while (node) {
-          if (node.id === 'metadsl-control-panel') {
-            return false; // Ignore mutations inside panel
-          }
-          node = node.parentElement;
+        if (panelEl && panelEl.contains(mutation.target)) {
+          return false; // Ignore mutations inside panel
         }
         // Ignore pure text node replacements (e.g. clock/timer UI animations)
         // These are childList mutations where all added/removed nodes are text nodes
@@ -589,7 +625,7 @@ class MetaDSLMonitor {
     const codeBlocks = Array.from(allCodeBlocks).filter(block => {
       let node = block;
       while (node) {
-        if (node.id === 'metadsl-control-panel') {
+        if (node.id === 'agent-control-panel') {
           return false; // Exclude blocks inside panel
         }
         node = node.parentElement;
@@ -776,9 +812,24 @@ class MetaDSLMonitor {
 
     if (isInLLMRespondingState || isLLMGenerating) {
       this.info(`LLM is still generating (state=${this.currentStateName}, isGenerating=${isLLMGenerating}), skipping code block scan to avoid incomplete code`);
-      // Reset timer to check again later
-      this.resetPageStableTimer();
-      return;
+      // Deadline: a stuck loading indicator (or a permanent element matching
+      // the selector) would reschedule this check forever and the scan would
+      // never run. The deadline mirrors LLMRespondingState's response timeout -
+      // it must never be shorter, or a legitimately long reply would be
+      // scanned while it is still streaming.
+      if (!this.generatingSince) {
+        this.generatingSince = Date.now();
+        this.resetPageStableTimer();
+        return;
+      }
+      if (Date.now() - this.generatingSince < CONFIG.llmResponseTimeoutMin * 60000) {
+        this.resetPageStableTimer();
+        return;
+      }
+      this.warn(`Page reported generating for ${CONFIG.llmResponseTimeoutMin}min; forcing scan to avoid deadlock`);
+      this.generatingSince = 0;
+    } else {
+      this.generatingSince = 0;
     }
 
     // Check if markdown rendering is complete by looking for unrendered code fences
@@ -939,7 +990,7 @@ class MetaDSLMonitor {
     const codeBlocks = Array.from(allCodeBlocks).filter(block => {
       let node = block;
       while (node) {
-        if (node.id === 'metadsl-control-panel') {
+        if (node.id === 'agent-control-panel') {
           return false;
         }
         node = node.parentElement;
@@ -1121,6 +1172,13 @@ class MetaDSLMonitor {
         this.debug(`Skipping duplicate operation: ${operation.type}`);
         return;
       }
+    }
+
+    // Bound the queue: a page that keeps producing commands while the agent
+    // is stuck would otherwise grow it without limit.
+    if (this.operationQueue.length >= this.maxOperationQueue) {
+      this.warn(`Operation queue full (${this.maxOperationQueue}), dropping oldest operation`);
+      this.operationQueue.shift();
     }
 
     this.operationQueue.push(operation);
@@ -1582,7 +1640,7 @@ class MetaDSLMonitor {
 
       if (!this.metadslWorker || !this.metadslWorker.isRunning) {
         this.error('MetaDSL Worker is not running');
-        return;
+        return false;
       }
 
       // Send MetaDSL code directly via MetaDSL Worker
@@ -1592,8 +1650,14 @@ class MetaDSLMonitor {
       } else {
         this.error('Failed to queue MetaDSL command');
       }
+      // Returns false only when the command did not reach the transport, so
+      // the state machine can retry instead of waiting for a reply that will
+      // never arrive. js_request / local_js paths return undefined (= handled
+      // locally, no transport involved).
+      return success;
     } catch (error) {
       this.error('Error in executeCommand:', error);
+      return false;
     }
   }
   sendResultToLLM(message, noAgentMarker = false) {

@@ -979,9 +979,13 @@ class AgentPanel {
           if (this.metadslMonitor) {
             this.metadslMonitor.enabled = true;
             if (this.metadslMonitor.observer && this.metadslMonitor.chatContainer) {
+              // Same options as the initial observe() in startCodeBlockObserver:
+              // characterData is required, otherwise streaming text updates are
+              // no longer seen after a re-attach.
               this.metadslMonitor.observer.observe(this.metadslMonitor.chatContainer, {
                 childList: true,
-                subtree: true
+                subtree: true,
+                characterData: true
               });
             }
           }
@@ -1320,18 +1324,28 @@ class AgentPanel {
   log(message) {
     const timestamp = new Date().toLocaleTimeString();
     this.logArea.value += `[${timestamp}] ${message}\n`;
+    this._logLineCount = (this._logLineCount || 0) + 1;
 
-    // Limit log area to max configured lines to prevent memory issues
-    const lines = this.logArea.value.split('\n');
-    if (lines.length > CONFIG.maxLogLines) {
-      this.logArea.value = lines.slice(-CONFIG.maxLogLines).join('\n');
+    // Limit log area to max configured lines to prevent memory issues.
+    // Splitting the whole value on every line is O(n) per line (it grows to
+    // ~100KB in a long session), so count lines instead and trim by half only
+    // when the cap is exceeded - amortized O(1) per line.
+    if (this._logLineCount > CONFIG.maxLogLines) {
+      const keep = Math.floor(CONFIG.maxLogLines / 2);
+      const lines = this.logArea.value.split('\n');
+      this.logArea.value = lines.slice(-keep).join('\n');
+      this._logLineCount = keep;
     }
 
-    this.logArea.scrollTop = this.logArea.scrollHeight;
+    // Reading scrollHeight forces a synchronous layout: skip it while hidden.
+    if (this.visible) {
+      this.logArea.scrollTop = this.logArea.scrollHeight;
+    }
   }
 
   clearLog() {
     this.logArea.value = '';
+    this._logLineCount = 0;
   }
 
   openChatRoom() {

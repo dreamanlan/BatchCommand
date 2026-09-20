@@ -7,14 +7,14 @@ class PageAdapter {
     this.bridge = bridge;
     this.pageType = this.detectPageType();
     this.lastResponse = null;
-    this.messageHistory = [];
     this.onPageTypeChanged = null; // Callback for page type changes
 
     // Last scanned response: set after code block scan completes
     this.lastScannedResponse = null;
     this.lastScannedElement = null;
 
-    // If detection failed, retry after DOM is fully loaded
+    // If detection failed, keep retrying until the page renders its input
+    // element - SPA pages build the DOM after the document is loaded.
     if (this.pageType === 'unknown') {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
@@ -23,25 +23,36 @@ class PageAdapter {
           if (this.onPageTypeChanged) {
             this.onPageTypeChanged(this.pageType);
           }
+          // Still unknown: the app may fill the DOM later than this event, so
+          // do not give up after this single attempt.
+          if (this.pageType === 'unknown') {
+            this.startPageTypeRetry();
+          }
         });
       } else {
-        // DOM already loaded, retry after a short delay
-        const f = () => {
-          const newType = this.detectPageType();
-          if (newType !== 'unknown') {
-            this.pageType = newType;
-            this.logger.debug('Re-detected page type after delay', { pageType: this.pageType });
-            if (this.onPageTypeChanged) {
-              this.onPageTypeChanged(this.pageType);
-            }
-          }
-          else {
-            setTimeout(f, 500);
-          }
-        };
-        setTimeout(f, 500);
+        this.startPageTypeRetry();
       }
     }
+  }
+
+  // Poll detectPageType until a page type is recognized; stops polling on the
+  // first recognized type. Fires onPageTypeChanged when one is wired.
+  startPageTypeRetry() {
+    // DOM already loaded, retry after a short delay
+    const f = () => {
+      const newType = this.detectPageType();
+      if (newType !== 'unknown') {
+        this.pageType = newType;
+        this.logger.debug('Re-detected page type after delay', { pageType: this.pageType });
+        if (this.onPageTypeChanged) {
+          this.onPageTypeChanged(this.pageType);
+        }
+      }
+      else {
+        setTimeout(f, 500);
+      }
+    };
+    setTimeout(f, 500);
   }
 
   detectPageType() {
@@ -140,7 +151,7 @@ class PageAdapter {
   // Replaces the old fixed "[...metadsl...]" placeholder, which starved the LLM
   // of context and made it noticeably less effective across rounds.
   collapseMetaDSLForHistory(codeText) {
-    if (!CONFIG.config.panel.keepMetaDslLines) return '[...metadsl...]';
+    if (!CONFIG.get('panel.keepMetaDslLines')) return '[...metadsl...]';
     const lines = String(codeText || '').replace(/\r\n?/g, '\n').split('\n');
     if (lines.length && lines[lines.length - 1] === '') lines.pop();
     const MAX_LINES = 30;
@@ -514,20 +525,27 @@ class LLMPageAdapter extends PageAdapter {
     const config = { childList: true, subtree: true };
 
     this.observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
+      // One extraction per batch, not per mutation record: extractLatestResponse()
+      // queries the whole message list and converts DOM to markdown, so running
+      // it for every record (dozens per batch while the LLM streams) is
+      // quadratic in the size of the answer.
+      let hasAddedNodes = false;
+      for (const mutation of mutations) {
         if (mutation.addedNodes.length > 0) {
-          // Check if new response elements were added
-          const newResponse = this.extractLatestResponse();
-          if (newResponse && newResponse !== this.lastResponse) {
-            this.lastResponse = newResponse;
-            this.messageHistory.push({
-              timestamp: Date.now(),
-              content: newResponse
-            });
-            this.notifyResponseChange(newResponse);
-          }
+          hasAddedNodes = true;
+          break;
         }
-      });
+      }
+      if (!hasAddedNodes) {
+        return;
+      }
+
+      // Check if new response elements were added
+      const newResponse = this.extractLatestResponse();
+      if (newResponse && newResponse !== this.lastResponse) {
+        this.lastResponse = newResponse;
+        this.notifyResponseChange(newResponse);
+      }
     });
 
     this.observer.observe(targetNode, config);

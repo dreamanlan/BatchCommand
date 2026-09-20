@@ -101,6 +101,10 @@
         panel.updateMetaDSLButtonState();
       }
     };
+    // Resync the label: the panel is constructed before the page type retry
+    // succeeds, so its initial snapshot may still say unknown when the retry
+    // completed while onPageTypeChanged was not wired yet.
+    panel.updateLLMType();
   } else {
     // No panel, but still need to start monitor when page type is detected
     pageAdapter.onPageTypeChanged = (newType) => {

@@ -31,6 +31,16 @@ function disableSpellcheckGlobally() {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) {
+          // Mark handled nodes: this observer runs for the whole session and
+          // re-visits the same elements on every re-render, and the descendant
+          // query below is the expensive part during streaming.
+          if (node.dataset && node.dataset.spellcheckOff === '1') {
+            return;
+          }
+          if (node.dataset) {
+            node.dataset.spellcheckOff = '1';
+          }
+
           // Check if the node itself is contenteditable
           if (node.getAttribute('contenteditable') === 'true') {
             node.setAttribute('spellcheck', 'false');

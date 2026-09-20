@@ -39,7 +39,6 @@ class ConfigManager {
         userInputTimeout: 10000,
         userTypingDelay: 2000,
         pageStableDelay: 5000,
-        operationDelay: 500,
         sendRetryDelay: 1000,
         operationExecuteTimeout: 5000,
       },
@@ -275,7 +274,6 @@ class ConfigManager {
   get websocketPort() { return this.config.websocket.port; }
   get websocketReconnectDelay() { return this.config.websocket.reconnectDelay; }
   get pageStableDelay() { return this.config.timing.pageStableDelay; }
-  get operationDelay() { return this.config.timing.operationDelay; }
   get maxProcessedBlocks() { return this.config.metadsl.maxProcessedBlocks; }
   get maxSendRetries() { return this.config.metadsl.maxSendRetries; }
   get sendRetryDelay() { return this.config.timing.sendRetryDelay; }

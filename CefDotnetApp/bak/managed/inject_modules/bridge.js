@@ -8,6 +8,13 @@ class AgentBridge {
     this.callbacks = new Map();
     this.autoPlanEnabled = true; // Auto plan enabled by default
     this._lockUntil = 0; // Lock deadline timestamp (ms); 0 means not locked
+    // Duplicate trigger_decision suppression: same last scanned message is
+    // dropped only inside this window. Without an expiry the suppression was
+    // permanent whenever the scanned message never changed (e.g. a collapsed
+    // "[Agent reply omitted]"), which deadlocked the planning loop.
+    this.duplicateDecisionWindowMs = 60000;
+    this._lastTriggerDecisionMsg = '';
+    this._lastTriggerDecisionAt = 0;
 
     // Initialize CEF native API
     this.initNativeApi();
@@ -225,8 +232,14 @@ class AgentBridge {
       const response = JSON.parse(message);
       const callback = this.callbacks.get(response.id);
       if (callback) {
-        callback(response.success, response.data, response.error);
+        // Remove first: a throwing callback must not be retried by the 30s
+        // timeout fallback (that would deliver the same result twice).
         this.callbacks.delete(response.id);
+        try {
+          callback(response.success, response.data, response.error);
+        } catch (e) {
+          this.logger.error('Error in command callback', { error: e.toString() });
+        }
       }
     } catch (e) {
       this.logger.error('Error parsing response', { error: e.toString() });
@@ -236,8 +249,11 @@ class AgentBridge {
   // Send agent decision notification (encapsulated for reuse)
   // JS-side decider filters easy cases; 'trigger_decision' falls through to DSL.
   dispatchAgentDecision(state, panel, force) {
-    let pageAdapter = panel.pageAdapter;
-    let metadslWorker = panel.metadslWorker;
+    // panel is null when CONFIG.panel.enabled is false: the callers (state
+    // machine planning, monitor init) must not throw, or the agent silently
+    // stops planning / never enables command execution.
+    let pageAdapter = panel ? panel.pageAdapter : null;
+    let metadslWorker = panel ? panel.metadslWorker : null;
     const data = {
       state: state,
       timestamp: Date.now(),
@@ -267,39 +283,52 @@ class AgentBridge {
 
     this.logger.info('Agent decision', { state, action: decision.action, reason: decision.reason });
 
+    // Returns whether anything was actually sent to the agent side: the state
+    // machine must not treat a suppressed decision as "operation executed",
+    // otherwise it waits for a reply that will never be produced.
     switch (decision.action) {
       case 'skip':
       case 'none':
-        return;
+        return false;
       case 'reply':
         if (decision.text && typeof metadslWorker !== 'undefined'
           && metadslWorker && typeof metadslWorker.queueReply === 'function') {
           metadslWorker.queueReply(decision.text);
+          return true;
         }
-        return;
+        return false;
       case 'command':
         if (decision.command === 'start_auto_plan' && typeof window !== 'undefined'
           && window.AgentAPI && typeof window.AgentAPI.startAutoPlan === 'function') {
           window.AgentAPI.startAutoPlan();
+          return true;
         } else if (decision.command === 'stop_auto_plan' && typeof window !== 'undefined'
           && window.AgentAPI && typeof window.AgentAPI.stopAutoPlan === 'function') {
           window.AgentAPI.stopAutoPlan();
+          return true;
         }
-        return;
+        return false;
       case 'trigger_decision':
       default: {
         const curMsg = data.lastScannedMessage || '';
-        if (!force && curMsg && this._lastTriggerDecisionMsg === curMsg) {
+        const now = Date.now();
+        // The suppression expires: an unchanged scanned message (e.g. a
+        // collapsed reply) must not silence planning forever.
+        const withinWindow = this._lastTriggerDecisionAt > 0
+          && now - this._lastTriggerDecisionAt < this.duplicateDecisionWindowMs;
+        if (!force && curMsg && this._lastTriggerDecisionMsg === curMsg && withinWindow) {
           this.logger.info('Skip duplicate trigger_decision (same message)', {
             state,
-            msgPrefix: curMsg.substring(0, 30)
+            msgPrefix: curMsg.substring(0, 30),
+            ageMs: now - this._lastTriggerDecisionAt
           });
-          return;
+          return false;
         }
         this._lastTriggerDecisionMsg = curMsg;
+        this._lastTriggerDecisionAt = now;
         this.logger.info('Sending agent_need_to_decide notification to DSL', { state, force: !!force });
         this.sendNotification('agent_need_to_decide', data);
-        return;
+        return true;
       }
     }
   }

@@ -30,17 +30,14 @@ class State {
   }
 
   checkLocalAgentResponding() {
-    // Check for loading indicator in local-agent
-    const loadingIcon = document.querySelector('.el-icon.is-loading');
-    const loadingIndicator = document.querySelector('#loading-indicator.active');
-    return loadingIcon !== null || loadingIndicator !== null;
+    // Check for loading indicator in local-agent. One combined query instead of
+    // two: this runs from several 100ms/500ms loops.
+    return document.querySelector('.el-icon.is-loading, #loading-indicator.active') !== null;
   }
 
   checkCustomLLMResponding() {
     // Check for loading indicator in both custom-llm and local-agent
-    const loadingIcon = document.querySelector('.el-icon.is-loading');
-    const loadingIndicator = document.querySelector('#loading-indicator.active');
-    return loadingIcon !== null || loadingIndicator !== null;
+    return document.querySelector('.el-icon.is-loading, #loading-indicator.active') !== null;
   }
 
   // Utility methods
@@ -158,24 +155,47 @@ class LLMRespondingState extends State {
     // is forced forward instead of deadlocking in LLM_RESPONDING forever.
     this.stopRetryIntervalMs = 5000;
     this.stopGraceMs = 30000;
+    // Grace window (ms) for "no generation and no reply" (e.g. the request
+    // failed server side): leave LLM_RESPONDING instead of waiting for the
+    // full response timeout, which stalls the whole flow.
+    this.noOutputGraceMs = 15000;
+    // Start window (ms) before the no-output check is armed: the state can be
+    // entered from AGENT_EXECUTING ("Agent operation completed") while the
+    // page has not started generating yet, so an immediate check would exit
+    // while the request is still queued.
+    this.startGraceMs = 15000;
   }
 
   enter() {
     this.info('Entering LLM responding state');
     // Record start time for response timeout check
     this.responseStartTime = Date.now();
+    // Entry time for the no-output start window. Note: responseStartTime is
+    // cleared once a timeout stop fires, so the start window needs its own.
+    this.enterTime = Date.now();
+    // Timestamp since generation has been stopped with no reply; 0 = not armed
+    this.noOutputSince = 0;
     // Flag: stop button clicked due to timeout, force transition once LLM stops
     this.timeoutStopTriggered = false;
     // Timestamp when the timeout stop was first attempted; 0 = none
     this.timeoutStopAt = 0;
-    // Flag: "stuck, please continue" nudge already sent after timeout stop
+    // Flag: "stuck, please continue" nudge already sent after leaving with no
+    // usable reply (timeout stop or generation stopped without any output)
     this.timeoutNudgeSent = false;
+    // Flag: this state was left because generation produced no output at all
+    this.noOutputExit = false;
     // Timestamp of the last stop click attempt (first try or retry)
     this.stopRetryLastTs = 0;
     // User must have sent a message to trigger LLM response
     this.monitor.onUserSendMessage();
     // Record the last user message node after a short delay (wait for DOM render)
     setTimeout(() => {
+      // The state may already be left (the first poll is 500ms too): writing
+      // the wrapper then would make a later exit() collapse a message that is
+      // no longer the pending agent reply.
+      if (this.monitor.currentStateName !== 'LLM_RESPONDING') {
+        return;
+      }
       const userMsgBoxes = document.querySelectorAll('.vac-message-box.vac-offset-current');
       this.monitor.pendingAgentMessageWrapper = userMsgBoxes.length > 0 ? userMsgBoxes[userMsgBoxes.length - 1] : null;
       this.info(`Recorded pending agent message wrapper, found ${userMsgBoxes.length} user messages`);
@@ -214,17 +234,18 @@ class LLMRespondingState extends State {
       this.monitor.pendingAgentMessageWrapper = null;
     }
 
-    // After a timeout stop, nudge the LLM to continue when LockAgent mode is
-    // active, so long-term agent planning resumes immediately. Only send once
-    // generation has actually stopped: sending while still generating would
-    // click the stop icon (the send button swaps to stop during generation)
-    // and leave the text stranded in the input.
-    if (this.timeoutStopTriggered && !this.timeoutNudgeSent) {
+    // Nudge the LLM to continue when auto planning is active, so long-term
+    // agent planning resumes immediately after a timeout stop or after a
+    // response that produced no output at all. Only send once generation has
+    // actually stopped: sending while still generating would click the stop
+    // icon (the send button swaps to stop during generation) and leave the
+    // text stranded in the input.
+    if ((this.timeoutStopTriggered || this.noOutputExit) && !this.timeoutNudgeSent) {
       this.timeoutNudgeSent = true;
       if (this.checkLLMResponding()) {
         this.warn('[LLMRespondingState] Still generating at exit, skip continue nudge');
-      } else if (this.monitor.bridge && this.monitor.bridge.lockAgentEnabled) {
-        this.info('[LLMRespondingState] LockAgent on, sending continue nudge to LLM');
+      } else if (this.monitor.bridge && this.monitor.bridge.autoPlanEnabled) {
+        this.info('[LLMRespondingState] AutoPlan on, sending continue nudge to LLM');
         this.monitor.sendResultToLLM('卡了，请继续');
       }
     }
@@ -254,6 +275,30 @@ class LLMRespondingState extends State {
         this.info('[LLMRespondingState] Timeout stop confirmed, forcing transition to SCANNING_CODE_BLOCKS');
         this.monitor.transitionTo('SCANNING_CODE_BLOCKS', 'LLM response timeout stopped');
         break;
+      }
+
+      // No generation and no reply at all (e.g. the request failed server
+      // side, or the page never started generating). Nothing will ever arrive,
+      // so leave the state instead of stalling until the response timeout.
+      // The condition must hold continuously: during normal streaming the
+      // loading indicator can blink off for a moment before the reply node is
+      // inserted. The start window covers the case where the state was entered
+      // before the page even began generating.
+      if (!isResponding && !lastFromLLM) {
+        if (Date.now() - this.enterTime < this.startGraceMs) {
+          // Still inside the start window: keep waiting for generation.
+          this.noOutputSince = 0;
+        } else if (!this.noOutputSince) {
+          this.noOutputSince = Date.now();
+        } else if (Date.now() - this.noOutputSince >= this.noOutputGraceMs) {
+          this.warn(`[LLMRespondingState] No generation and no output for ${this.noOutputGraceMs}ms, transitioning to SCANNING_CODE_BLOCKS`);
+          // Set before the transition: exit() sends the continue nudge.
+          this.noOutputExit = true;
+          this.monitor.transitionTo('SCANNING_CODE_BLOCKS', 'LLM response produced no output');
+          break;
+        }
+      } else {
+        this.noOutputSince = 0;
       }
 
       // Check response timeout
@@ -501,10 +546,14 @@ class AgentExecutingState extends State {
               // Still initializing, wait for user first message before planning
               this.debug('Still initializing, skipping need_to_plan');
             } else {
-              // Send notification to Script.dsl to trigger planning
-              this.monitor.bridge.dispatchAgentDecision('AGENT_EXECUTING', this.monitor.panel);
-              // Mark as executed to avoid sending notification repeatedly
-              this.operationExecuted = true;
+              // Send notification to Script.dsl to trigger planning. Only a
+              // decision that actually reached the agent side counts as
+              // executed: a suppressed duplicate is not progress, and treating
+              // it as executed made the fallback below (operationExecuteTimeout)
+              // bounce the state machine back to USER_INPUT forever, never
+              // entering LLM_RESPONDING again.
+              const dispatched = this.monitor.bridge.dispatchAgentDecision('AGENT_EXECUTING', this.monitor.panel);
+              this.operationExecuted = dispatched;
               this.operationExecuteTime = Date.now();
             }
           }
@@ -530,6 +579,13 @@ class AgentExecutingState extends State {
 
     try {
       if (operation.type === 'execute') {
+        // Retry gate: a previous attempt failed to reach the transport, wait
+        // out the retry delay before trying again.
+        if (operation.nextRetryAt && Date.now() < operation.nextRetryAt) {
+          this.monitor.operationQueue.unshift(operation);
+          return false;
+        }
+
         // Mark as executed
         blocks.forEach((block) => {
           block.dataset.metadslStatus = 'executed';
@@ -537,7 +593,21 @@ class AgentExecutingState extends State {
 
         // Execute the code
         this.info('Executing MetaDSL code block...');
-        this.monitor.executeCommand(operation.code);
+        const sent = this.monitor.executeCommand(operation.code);
+        if (sent === false) {
+          // The command never reached the transport: leaving the state machine
+          // to wait for its reply would stall until the response timeout.
+          // Requeue and retry, bounded by maxSendRetries.
+          operation.retryCount = (operation.retryCount || 0) + 1;
+          operation.nextRetryAt = Date.now() + this.monitor.sendRetryDelay;
+          if (operation.retryCount > this.monitor.maxSendRetries) {
+            this.error(`Send failed after ${operation.retryCount - 1} retries, dropping operation ${operation.blockId}`);
+            return true;
+          }
+          this.warn(`Send failed, requeue retry ${operation.retryCount}/${this.monitor.maxSendRetries} for ${operation.blockId}`);
+          this.monitor.operationQueue.unshift(operation);
+          return false;
+        }
 
         blocks.forEach((block) => {
           // Add visual indicator

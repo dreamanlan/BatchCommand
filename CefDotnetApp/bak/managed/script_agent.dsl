@@ -49,7 +49,10 @@ script(init_global_consts)
         @UserName = getenv("USERNAME");
     };
     @EnableLlmPM = (@UserName == "dreamanlan" || @UserName == "dreaman" || @UserName == "lanxiang");
-    @LlmProviderId = "auto_metadsl";
+    // PM agent. Every LLM call in this script (decision, align, induction,
+    // reflection) goes through it: the provider id also names the environment
+    // group its credentials are read from (llm/webagent_pm/agent_id).
+    @PmLlmProviderId = "webagent_pm";
 
     @ProjectIdentity = agent_get_project_identity(@AgentId);
     @ProjectDirectory = agent_get_project_dir(@AgentId);
@@ -284,11 +287,29 @@ script(handle_update_agent_configs_command)params($id, $params)
     // LLM providers configured here; apiKey uses %var% placeholders expanded via agent environment
     llm_set_provider("ollama", "ollama", "http://localhost:11434", "", "qwen3.8:27b");
 
-    $pmModel = "glm-5.3-flash";
+    $pmModel = "hy3";
     if (ismac) {
         $pmModel = "deepseek-v4-flash";
     };
-    llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/%agent_id%", "%person_token%", $pmModel);
+    // PM agent: %agent_id% / %person_token% resolve from the environment group
+    // named after the provider id (llm/webagent_pm/agent_id, .../person_token).
+    llm_set_provider(@PmLlmProviderId, "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/%agent_id%", "%person_token%", $pmModel);
+
+    // PM is on the critical path of every decision: fail fast instead of
+    // waiting out the defaults (600s per request, 600s watchdog, up to 3
+    // retries). timeout caps a single HTTP request, max_busy_seconds is the
+    // watchdog that cancels a stuck session and makes llm_callback fire with
+    // an [error] reply - handle_llm_callback drops those.
+    llm_set_provider_option(@PmLlmProviderId, "timeout", "60");
+    llm_set_provider_option(@PmLlmProviderId, "max_busy_seconds", "90");
+
+    // hy3 supports a "no_think" reasoning effort: the PM only has to classify
+    // the last LLM message, so reasoning here is pure latency. Only sent on
+    // Windows - deepseek-v4-flash (mac) has no reasoningEfforts in the
+    // capability matrix and would just reject the unknown field.
+    if (!ismac) {
+        llm_set_provider_option(@PmLlmProviderId, "reasoning_effort", "no_think");
+    };
 
     // Search services configured here; apiKey uses %var% placeholders
     // brave_set_api_key("%brave_api_key%");
@@ -372,38 +393,47 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
     $activeWorkers = agent_get_active_workers(@AgentId);
     nativelog("[agent] llm_callback: provider={0} tag={1} topic={2} reply_len={3} operation={4} send={5} receive={6} active_workers={7}", $providerId, $tag, $topic, strlen($reply), $operationQueueCount, $sendQueueCount, $receiveQueueCount, $activeWorkers);
 
+    // A failed or cancelled request still delivers its result, as "[error] ...".
+    // Never treat that as a PM reply: the branches below would write it into
+    // plan.txt / memory or forward it to the LLM as if the PM had said it.
+    if (string_contains($reply, "[error]")) {
+        nativelog("[agent] llm_callback dropped: error reply for tag={0}, reply={1}", $tag, get_string_in_length($reply, 200));
+        llm_clear_history($providerId, $tag);
+        return;
+    };
+
     if ($tag == "llm_pm_align") {
         $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
         write_file($planFile, $reply);
         agent_set_plan(@AgentId, $reply);
-        llm_clear_history(@LlmProviderId, $tag);
+        llm_clear_history($providerId, $tag);
     }
     elif ($tag == "reflection") {
         if (strlen($reply) > 1500) {
-            llm_chat_callback(@LlmProviderId, "reflection", "reflection", "超长了，请控制到300字左右");
+            llm_chat_callback($providerId, "reflection", "reflection", "超长了，请控制到300字左右");
             nativelog("[agent] Episodic memory too long: {0}", get_string_in_length($reply, 500));
         }
         else {
             semantic_add(@EpisodicMemory, $reply, to_json({source: "reflection", date: date_time_str(), type: "episodic"}));
-            llm_clear_history(@LlmProviderId, "reflection");
+            llm_clear_history($providerId, "reflection");
             nativelog("[agent] Episodic memory saved: {0}", get_string_in_length($reply, 500));
         };
     }
     elif ($tag == "llm_pm_marquis") {
         semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
-        llm_clear_history(@LlmProviderId, "llm_pm_marquis");
+        llm_clear_history($providerId, "llm_pm_marquis");
     }
     elif ($tag == "llm_pm_chiliarch") {
         semantic_add(@ChiliarchHistory, $reply, to_json({source: "inject", date: date_time_str()}));
-        llm_clear_history(@LlmProviderId, "llm_pm_chiliarch");
+        llm_clear_history($providerId, "llm_pm_chiliarch");
     }
     elif ($tag == "llm_pm_centurion") {
         semantic_add(@CenturionHistory, $reply, to_json({source: "inject", date: date_time_str()}));
-        llm_clear_history(@LlmProviderId, "llm_pm_centurion");
+        llm_clear_history($providerId, "llm_pm_centurion");
     }
     elif ($tag == "llm_pm_decurion") {
         semantic_add(@DecurionHistory, $reply, to_json({source: "inject", date: date_time_str()}));
-        llm_clear_history(@LlmProviderId, "llm_pm_decurion");
+        llm_clear_history($providerId, "llm_pm_decurion");
     }
     elif ($tag == "llm_pm_decision") {
         // Forward PM's fixed decision text as user reply to LLM.
@@ -448,7 +478,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
                 send_command_to_inject("send_message", to_json({text: $reply}));
             };
         };
-        llm_clear_history(@LlmProviderId, "llm_pm_decision");
+        llm_clear_history($providerId, "llm_pm_decision");
     }
     else {
         $workers = agent_get_active_workers(@AgentId);
@@ -551,8 +581,8 @@ script(update_system_prompt)params($pageType,$isFirst)
     if (@EnableLlmPM) {
         $note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
         $llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
-        llm_set_system_prompt(@LlmProviderId, "llm_pm_decision", "");
-        llm_set_system_prompt(@LlmProviderId, "llm_pm_align", $llm_sys_prompt);
+        llm_set_system_prompt(@PmLlmProviderId, "llm_pm_decision", "");
+        llm_set_system_prompt(@PmLlmProviderId, "llm_pm_align", $llm_sys_prompt);
     };
 
     if ($isFirst) {
@@ -582,7 +612,7 @@ script(induction_info)params($batch, $infos, $session)
                 append_line($induction, $infos[$j]);
             };
 
-            llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。\n直接回复，不要使用metadsl代码（PM会话不执行）", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 100 * 1024, 1)));
+            llm_chat_callback(@PmLlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。\n直接回复，不要使用metadsl代码（PM会话不执行）", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 100 * 1024, 1)));
         };
     }
     else {
@@ -647,7 +677,7 @@ script(induction_decision)params($lastMsg,$autoPlan,$lockAgent)
     $prompt = format($promptTpl, $autoPlan, $lockAgent, $lastMsg);
 
     if (@EnableLlmPM) {
-        llm_chat_callback(@LlmProviderId, "llm_pm_decision", "reply_decision", $prompt);
+        llm_chat_callback(@PmLlmProviderId, "llm_pm_decision", "reply_decision", $prompt);
     }
     elif ($autoPlan == true || $autoPlan == "True" || $autoPlan == "true") {
         // Fallback when PM is disabled: just send "continue" to keep LLM moving.
@@ -673,7 +703,7 @@ script(induction_plan)params($count,$pageType)
 
     if (@EnableLlmPM) {
         $prompt = format("{0}\n直接回复，不要使用metadsl代码（PM会话不执行）", $prompt);
-        llm_chat_callback(@LlmProviderId, "llm_pm_align", "align_target", $prompt);
+        llm_chat_callback(@PmLlmProviderId, "llm_pm_align", "align_target", $prompt);
     }
     else {
         $prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
@@ -720,12 +750,12 @@ script(trigger_reflection)params()
 
     // Set reflection system prompt
     $sysPrompt = read_file(combine_path(basepath, "docs/reflection_prompt.txt"));
-    llm_set_system_prompt(@LlmProviderId, "reflection", $sysPrompt);
+    llm_set_system_prompt(@PmLlmProviderId, "reflection", $sysPrompt);
 
     // Send reflection request
     if (@EnableLlmPM) {
         $prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录（300字以内）。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。\n直接回复，不要使用metadsl代码（PM会话不执行）", $prompt);
-        llm_chat_callback(@LlmProviderId, "reflection", "reflection", $prompt);
+        llm_chat_callback(@PmLlmProviderId, "reflection", "reflection", $prompt);
     }
     else {
         $prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录（300字以内），然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $prompt,

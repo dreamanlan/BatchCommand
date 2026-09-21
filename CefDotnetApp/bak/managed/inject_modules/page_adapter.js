@@ -108,6 +108,93 @@ class PageAdapter {
     return scannedMsgBox === lastMsgBox;
   }
 
+  // Message wrappers in document order (oldest first). The page rebuilds the
+  // message DOM at will (Vue re-render, history reload), so nothing written
+  // into it can be used to recognize a message again - the sequence below is
+  // rebuilt from content on every scan instead.
+  getMessageWrappers() {
+    return Array.from(document.querySelectorAll('.vac-message-wrapper'));
+  }
+
+  // Fingerprint of one message: role + hash of its body text. Used to align
+  // the message sequence so newly arrived replies can be told from re-loaded
+  // history. Uniqueness is NOT required - two identical short replies get the
+  // same fingerprint and are told apart by their position in the sequence.
+  // Decoration (token tag, action links, avatar) is stripped: it is not part
+  // of the message content and may be missing or different between renders.
+  getMessageFingerprint(wrapper) {
+    if (!wrapper) return null;
+    switch (this.pageType) {
+      case 'local-agent': return this.getMessageFingerprint_LocalAgent(wrapper);
+      default: return this.getMessageFingerprint_CustomLLM(wrapper);
+    }
+  }
+
+  getMessageFingerprint_CustomLLM(wrapper) {
+    const box = wrapper.querySelector('.vac-message-box');
+    if (!box) return null;
+    const role = box.classList.contains('vac-offset-current') ? 'user' : 'ai';
+    // .message is the body container on the LLM page; .message-content is the
+    // one our own local-agent page builds. Accept both so a page type that has
+    // not been detected yet still yields a fingerprint instead of none.
+    const body = box.querySelector('.message') || box.querySelector('.message-content');
+    // A message collapsed by collapseHistoryAgentMessages() has no body
+    // element left, only its "[Agent reply omitted]" placeholder. Hash that
+    // instead of dropping the message: it still has to take part in the
+    // sequence alignment, and the placeholder is stable anyway.
+    const text = body ? this.messageBodyText(body) : (box.textContent || '').trim().slice(0, 256);
+    if (!text) return null;
+    return role + '|' + this.hashString(text);
+  }
+
+  // local-agent flags user messages with a "user" class on the wrapper itself
+  // and renders the body into .message-content.
+  getMessageFingerprint_LocalAgent(wrapper) {
+    const box = wrapper.querySelector('.vac-message-box');
+    const role = wrapper.classList.contains('user') ? 'user' : 'ai';
+    const body = wrapper.querySelector('.message-content') || wrapper.querySelector('.message');
+    const text = body ? this.messageBodyText(body)
+      : ((box ? box.textContent : wrapper.textContent) || '').trim().slice(0, 256);
+    if (!text) return null;
+    return role + '|' + this.hashString(text);
+  }
+
+  // Body text of a message, decoration excluded. Walks text nodes instead of
+  // cloning the subtree: a long reply holds thousands of nodes and this runs
+  // for every message on every scan. Stops as soon as the prefix is long
+  // enough, because only the head of a message is hashed.
+  messageBodyText(body) {
+    const DECO = '.el-tag, a.el-link, .el-avatar';
+    let text = '';
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null);
+    let node = walker.nextNode();
+    while (node && text.length < 256) {
+      let parent = node.parentElement;
+      let decorated = false;
+      while (parent && parent !== body) {
+        if (parent.matches && parent.matches(DECO)) {
+          decorated = true;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+      if (!decorated) {
+        text += node.nodeValue;
+      }
+      node = walker.nextNode();
+    }
+    return text.trim().slice(0, 256);
+  }
+
+  hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash = hash | 0; // Convert to 32-bit integer
+    }
+    return hash.toString();
+  }
+
   observeResponseChanges(callback) {
     throw new Error('observeResponseChanges must be implemented by subclass');
   }

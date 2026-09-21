@@ -2,6 +2,14 @@
 // AgentPanel - Visual Control Panel
 // ============================================================================
 class AgentPanel {
+  // Runtime state that has to survive a page reload. Kept out of the
+  // Export/Import key list on purpose: that one carries configuration, this
+  // one carries what the agent was doing (auto plan, lock, panel visibility).
+  // sessionStorage, not localStorage: the point is to get through a reload,
+  // not to remember it for the next session - otherwise yesterday's
+  // "auto plan off" would silently apply to a page opened tomorrow.
+  static RUNTIME_STATE_KEY = 'inject_runtime_state';
+
   constructor(bridge, metadslMonitor, pageAdapter, metadslWorker) {
     this.bridge = bridge;
     this.metadslMonitor = metadslMonitor;
@@ -1319,6 +1327,7 @@ class AgentPanel {
     } else {
       this.show();
     }
+    this.saveRuntimeState();
   }
 
   log(message) {
@@ -1397,6 +1406,57 @@ class AgentPanel {
       this.autoPlanButton.style.background = '#666';
       this.log('✗ Auto plan disabled');
     }
+    this.saveRuntimeState();
+  }
+
+  // ---- Runtime state across a page reload ----
+  //
+  // A reload rebuilds the whole JS world, so anything held in memory is lost.
+  // autoPlan and the agent lock are the two that matter: without them a reload
+  // would silently flip auto plan back on (the constructor default) and drop a
+  // lock the user had set.
+
+  saveRuntimeState() {
+    try {
+      const state = {
+        autoPlan: this.bridge.autoPlanEnabled,
+        lockUntil: this.bridge.lockUntil || 0,
+        panelVisible: this.visible,
+        savedAt: Date.now()
+      };
+      sessionStorage.setItem(AgentPanel.RUNTIME_STATE_KEY, JSON.stringify(state));
+    } catch (e) {
+      // Storage unavailable (private mode, quota): a reload then falls back to
+      // the defaults, which is the previous behaviour anyway.
+    }
+  }
+
+  applyRuntimeState() {
+    let state = null;
+    try {
+      const raw = sessionStorage.getItem(AgentPanel.RUNTIME_STATE_KEY);
+      if (raw) state = JSON.parse(raw);
+    } catch (e) {
+      state = null;
+    }
+    if (!state) return;
+    if (typeof state.autoPlan === 'boolean' && state.autoPlan !== this.bridge.autoPlanEnabled) {
+      // Set the flag directly: toggleAutoPlan() would flip it and log.
+      this.bridge.autoPlanEnabled = state.autoPlan;
+      this.autoPlanButton.textContent = state.autoPlan ? '✓ Auto Plan' : '✗ Auto Plan';
+      this.autoPlanButton.style.background = state.autoPlan ? '#4caf50' : '#666';
+      this.log(`Restored auto plan: ${state.autoPlan ? 'on' : 'off'}`);
+    }
+    if (state.lockUntil) {
+      this.bridge.lockUntil = state.lockUntil;
+      if (this.bridge.lockAgentEnabled) {
+        const until = new Date(this.bridge.lockUntil).toLocaleTimeString();
+        this.log(`✓ Restored agent lock (until ${until})`);
+      }
+    }
+    if (state.panelVisible && !this.visible) {
+      this.show();
+    }
   }
 
   toggleLockAgent() {
@@ -1410,6 +1470,7 @@ class AgentPanel {
       this.log('\u2713 Lock Agent enabled for ' + min + ' min (until ' + until + ') - stop_auto_plan requests will be rejected');
     }
     this.updateLockAgentButtonState();
+    this.saveRuntimeState();
   }
 
   updateLockAgentButtonState() {

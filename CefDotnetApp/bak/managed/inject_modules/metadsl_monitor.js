@@ -38,12 +38,26 @@ class MetaDSLMonitor {
     // "still generating" observation in the current round; 0 = not armed.
     this.generatingSince = 0;
 
-    // Block ID cache for stable ID generation
+    // Block ID cache. Keyed by DOM node: the id is derived from the message
+    // fingerprint, which changes while the message is still streaming, so the
+    // cache only holds the value computed for this very node.
     this.blockIdCache = new WeakMap();
     this.nextBlockId = 0;
 
-    // Track last content of code blocks to detect if still changing
-    this.lastBlockContent = new Map();
+    // Fingerprints of the messages already handled, in document order. Every
+    // scan aligns the current message sequence against this one to tell newly
+    // arrived replies from re-loaded history (see alignMessages). Nothing else
+    // is used to recognize a message: the page rebuilds its DOM, and wrapper
+    // ids are not stable when history messages are loaded.
+    this.seenFingerprints = [];
+    // Per-round cache of newMessageWrappers() (see onPageStable).
+    this._newWrappers = null;
+    this._roundAlign = null;
+
+    // Track last content of code blocks to detect if still changing.
+    // Keyed by DOM node (a WeakMap) because a block id is not enough: the same
+    // id can survive a re-render while the node is a different one.
+    this.lastBlockContent = new WeakMap();
 
     // Create user input monitor
     this.userInputMonitor = new UserInputMonitor(pageAdapter);
@@ -169,7 +183,8 @@ class MetaDSLMonitor {
     this.processedMessages.clear();
     // Keep processedBlocks to prevent re-processing on restart
     // processedBlocks is also backed by DOM data-metadsl-status attribute
-    this.lastBlockContent.clear();
+    // WeakMap has no clear(): drop the whole map.
+    this.lastBlockContent = new WeakMap();
 
     // Clear operation queue
     this.operationQueue = [];
@@ -587,21 +602,6 @@ class MetaDSLMonitor {
 
         // Reset page stable timer
         this.resetPageStableTimer();
-
-        // During initialization, mark newly added message boxes as history immediately
-        if (this.isInitializing) {
-          for (const mutation of relevantMutations) {
-            for (const node of mutation.addedNodes) {
-              if (node.nodeType !== Node.ELEMENT_NODE) continue;
-              const msgBoxes = node.classList && node.classList.contains('vac-message-box')
-                ? [node]
-                : Array.from(node.querySelectorAll('.vac-message-box'));
-              for (const msgBox of msgBoxes) {
-                msgBox.dataset.historyMsg = '1';
-              }
-            }
-          }
-        }
       }
     });
 
@@ -637,15 +637,6 @@ class MetaDSLMonitor {
       const rawCode = block.textContent || '';
       const metadslCode = this.extractMetaDSLCode(rawCode);
 
-      // Mark the message container as history
-      let msgContainer = block.parentElement;
-      while (msgContainer && !msgContainer.classList.contains('vac-message-box')) {
-        msgContainer = msgContainer.parentElement;
-      }
-      if (msgContainer) {
-        msgContainer.dataset.historyMsg = '1';
-      }
-
       if (metadslCode) {
         const blockId = this.getBlockId(block);
         this.processedBlocks.add(blockId);
@@ -664,15 +655,25 @@ class MetaDSLMonitor {
 
     this.info(`Marked ${this.processedBlocks.size} history code blocks (not executed)`);
 
-    // Mark ALL existing vac-message-box nodes as history (not just those with code blocks)
-    document.querySelectorAll('.vac-message-box').forEach(box => {
-      box.dataset.historyMsg = '1';
-    });
-
     // Mark all existing wrappers as already saved (no need to save history conversations)
     document.querySelectorAll('.vac-message-wrapper').forEach(wrapper => {
       wrapper.dataset.agentSaved = '1';
     });
+
+    // Seed the known message sequence: every message currently on the page is
+    // history, so a later scan only executes blocks inside messages that
+    // appear after these ones.
+    const seedWrappers = this.pageAdapter.getMessageWrappers
+      ? this.pageAdapter.getMessageWrappers()
+      : Array.from(document.querySelectorAll('.vac-message-wrapper'));
+    this.seenFingerprints = seedWrappers.map(w => {
+      try {
+        return this.pageAdapter.getMessageFingerprint(w);
+      } catch (e) {
+        return null;
+      }
+    }).filter(Boolean);
+    this.info(`Seeded ${this.seenFingerprints.length} known messages from the current page`);
 
     // Collapse all existing agent reply messages on page
     this.collapseHistoryAgentMessages();
@@ -683,9 +684,102 @@ class MetaDSLMonitor {
     this.debug('History marking complete, waiting for user interaction to finish initialization');
   }
 
-  // Returns true if the given DOM node is a history node (marked during initial scan or lazy-load re-marking)
-  isHistoryNode(node) {
-    return !!(node.dataset && node.dataset.historyMsg === '1');
+  // Align the message sequence currently on the page against the fingerprints
+  // already known (seenFingerprints).
+  //
+  // Messages are time ordered, so a re-loaded history block is inserted in
+  // FRONT of the messages we already know, and a new reply is appended at the
+  // END. The known sequence is therefore matched against the tail of the
+  // current one:
+  //   - fingerprints at the end of the page that are not known -> new messages
+  //   - fingerprints in front of the aligned block             -> re-loaded history
+  //
+  // Uniqueness of a fingerprint is not required: two identical short replies
+  // share one and are told apart by their position in the sequence.
+  //
+  // Returns { wrappers, fingerprints, newIdx, matched, reseeded } where newIdx
+  // holds indices into wrappers/fingerprints, oldest first.
+  // matched === 0 while the known sequence is not empty means the two have
+  // nothing in common (the conversation was replaced, the window moved away
+  // from the newest messages, ...). The known sequence is then re-seeded from
+  // the page and every message counts as history - the safe direction: never
+  // execute what cannot be recognized.
+  alignMessages() {
+    const wrappers = this.pageAdapter.getMessageWrappers
+      ? this.pageAdapter.getMessageWrappers()
+      : Array.from(document.querySelectorAll('.vac-message-wrapper'));
+    const fingerprints = wrappers.map(w => {
+      try {
+        return this.pageAdapter.getMessageFingerprint(w);
+      } catch (e) {
+        return null;
+      }
+    });
+    const seen = this.seenFingerprints;
+    const newIdx = [];
+    let i = fingerprints.length - 1;
+    let j = seen.length - 1;
+    let matched = 0;
+    while (i >= 0 && j >= 0) {
+      if (fingerprints[i] && fingerprints[i] === seen[j]) {
+        matched++; i--; j--;
+      } else if (matched === 0) {
+        // Not part of the known sequence: a message that arrived after it.
+        newIdx.push(i); i--;
+      } else {
+        break;
+      }
+    }
+    newIdx.reverse();
+
+    if (matched === 0 && seen.length > 0) {
+      this.warn('Known message sequence not found on the page; re-seeding from the current messages (all treated as history)');
+      this.seenFingerprints = fingerprints.filter(Boolean);
+      return { wrappers, fingerprints, newIdx: [], matched: 0, reseeded: true };
+    }
+    return { wrappers, fingerprints, newIdx, matched, reseeded: false };
+  }
+
+  // Remember the messages handled by this scan as known, so the next scan
+  // aligns them instead of treating them as new.
+  markMessagesAsSeen(align) {
+    if (!align || !align.newIdx.length) return;
+    for (const k of align.newIdx) {
+      const fp = align.fingerprints[k];
+      // Duplicates are kept on purpose: two identical short replies share a
+      // fingerprint and are told apart by their position in the sequence, so
+      // the known sequence has to hold one entry per message.
+      if (fp) {
+        this.seenFingerprints.push(fp);
+      }
+    }
+    const limit = this.maxProcessedMessages || 2000;
+    if (this.seenFingerprints.length > limit) {
+      this.seenFingerprints.splice(0, this.seenFingerprints.length - limit);
+    }
+  }
+
+  // Annotate a code block as history: it is never queued for execution. The
+  // attribute also lets page_adapter collapse the block when the conversation
+  // is saved, so the visual mark and the archive stay in sync.
+  markBlockAsHistory(block) {
+    if (!block || block.dataset.metadslStatus) return;
+    block.dataset.metadslStatus = 'history';
+    block.style.borderLeft = '3px solid #9E9E9E';
+    block.style.backgroundColor = 'rgba(158, 158, 158, 0.05)';
+    this.scheduleHideContainer(block);
+  }
+
+  // Wrappers of the messages that arrived after the already known sequence,
+  // as a Set so callers can test membership. Cached for one scan round: the
+  // validation step and the code block scan must see the same answer.
+  newMessageWrappers() {
+    if (!this._newWrappers) {
+      const align = this.alignMessages();
+      this._roundAlign = align;
+      this._newWrappers = new Set(align.newIdx.map(k => align.wrappers[k]));
+    }
+    return this._newWrappers;
   }
 
   // ========================================================================
@@ -803,6 +897,12 @@ class MetaDSLMonitor {
   onPageStable() {
     this.info(`Page stable, isInitializing=${this.isInitializing}, state=${this.currentStateName}`);
     this.pageStableTimer = null;
+    // First thing: a reload makes everything below pointless.
+    if (this.checkMemoryGuard()) return;
+    // One alignment per round: the validation below and the code block scan
+    // have to agree on which messages are new.
+    this._newWrappers = null;
+    this._roundAlign = null;
 
     // Check if LLM is still generating using state machine and checkLLMResponding
     const isInLLMRespondingState = this.currentStateName === 'LLM_RESPONDING';
@@ -866,7 +966,14 @@ class MetaDSLMonitor {
       const alreadyValidated = lastMsgBoxForValidate
         && (lastMsgBoxForValidate.dataset.metadslInvalid === '1'
           || lastMsgBoxForValidate.dataset.metadslValidated === '1');
-      if (lastMsgBoxForValidate && !alreadyValidated && !this.isHistoryNode(lastMsgBoxForValidate)) {
+      // Only validate a message that actually just arrived. A DOM attribute
+      // cannot tell that (the page rebuilds the message list), the sequence
+      // alignment can - otherwise a re-loaded history reply would be validated
+      // and the model would be told about a format error it never produced.
+      const validateWrapper = lastMsgBoxForValidate && lastMsgBoxForValidate.closest
+        ? lastMsgBoxForValidate.closest('.vac-message-wrapper')
+        : null;
+      if (lastMsgBoxForValidate && !alreadyValidated && this.newMessageWrappers().has(validateWrapper)) {
         const rawMarkdown = this.pageAdapter.extractLatestResponse();
         const validation = this.validateLatestResponseMetaDSL(lastMsgBoxForValidate);
 
@@ -908,26 +1015,6 @@ class MetaDSLMonitor {
     }
 
     this.info('LLM has stopped generating, processing code blocks...');
-
-    // Re-mark any lazy-loaded history message boxes by DOM order:
-    // find the last wrapper that already has historyMsg='1', then mark all preceding unmarked wrappers
-    const allWrappers = Array.from(document.querySelectorAll('.vac-message-wrapper'));
-    let lastHistoryIdx = -1;
-    for (let i = allWrappers.length - 1; i >= 0; i--) {
-      const box = allWrappers[i].querySelector('.vac-message-box');
-      if (box && box.dataset.historyMsg === '1') {
-        lastHistoryIdx = i;
-        break;
-      }
-    }
-    if (lastHistoryIdx > 0) {
-      for (let i = 0; i < lastHistoryIdx; i++) {
-        const box = allWrappers[i].querySelector('.vac-message-box');
-        if (box && !box.dataset.historyMsg) {
-          box.dataset.historyMsg = '1';
-        }
-      }
-    }
 
     // Collapse any lazy-loaded history agent reply messages
     this.collapseHistoryAgentMessages();
@@ -981,6 +1068,66 @@ class MetaDSLMonitor {
     this.pruneOldMessages();
   }
 
+  // Memory guard. Every round adds DOM nodes and JS objects that the page
+  // never lets go of, and Chromium keeps the freed pages, so a long session
+  // climbs towards 2GB (measured: ~213MB heap right after a reload, ~490MB
+  // after a day) and never recovers on its own. Reloading rebuilds the JS
+  // world; the message sequence is re-seeded from the page afterwards, so no
+  // history code runs twice and no code is lost.
+  // Returns true when a reload has been triggered.
+  checkMemoryGuard() {
+    const thresholdMB = CONFIG.get('panel.reloadHeapMB') || 450;
+    const auto = !!CONFIG.get('panel.autoReloadOnHighMemory');
+    const mem = (typeof performance !== 'undefined') ? performance.memory : null;
+    if (!mem || !mem.usedJSHeapSize) return false;
+    const usedMB = mem.usedJSHeapSize / 1048576;
+    if (usedMB < thresholdMB) return false;
+
+    // Cooldown: a fresh page starts small, so never reload twice in a row.
+    let lastReload = 0;
+    try {
+      lastReload = Number(sessionStorage.getItem('inject_last_reload') || 0);
+    } catch (e) { /* storage unavailable */ }
+    if (lastReload && Date.now() - lastReload < 10 * 60 * 1000) return false;
+
+    // onPageStable runs every few seconds, so throttle the reports: one line
+    // every 10 minutes instead of one per round.
+    const warn = (msg) => {
+      let lastWarn = 0;
+      try {
+        lastWarn = Number(sessionStorage.getItem('inject_mem_warn') || 0);
+      } catch (e) { /* storage unavailable */ }
+      if (Date.now() - lastWarn < 10 * 60 * 1000) return;
+      try {
+        sessionStorage.setItem('inject_mem_warn', String(Date.now()));
+      } catch (e) { /* storage unavailable */ }
+      this.warn(msg);
+    };
+
+    // Never interrupt work in progress: a reply being waited on and queued
+    // operations are both lost by a reload.
+    const busy = this.currentStateName === 'LLM_RESPONDING' || this.operationQueue.length > 0;
+    if (busy) {
+      warn(`Heap ${usedMB.toFixed(0)}MB is over ${thresholdMB}MB, but work is in progress (state=${this.currentStateName}, queue=${this.operationQueue.length}); reload postponed`);
+      return false;
+    }
+
+    if (!auto) {
+      warn(`Heap ${usedMB.toFixed(0)}MB is over ${thresholdMB}MB: a page reload is needed (panel.autoReloadOnHighMemory is off, reload manually)`);
+      return false;
+    }
+
+    if (this.panel && typeof this.panel.saveRuntimeState === 'function') {
+      this.panel.saveRuntimeState();
+    }
+    try {
+      sessionStorage.setItem('inject_last_reload', String(Date.now()));
+    } catch (e) { /* storage unavailable */ }
+    this.warn(`Heap ${usedMB.toFixed(0)}MB is over ${thresholdMB}MB: reloading the page`);
+    location.reload();
+    return true;
+  }
+
   scanForNewCodeBlocks() {
     // Find all code blocks with comprehensive selectors
     // Returns true if any block's content is still changing (needs rescan)
@@ -1000,6 +1147,18 @@ class MetaDSLMonitor {
 
     this.info(`Scanning for new code blocks, found ${codeBlocks.length} total blocks`);
 
+    // Only blocks inside messages that arrived AFTER the already known message
+    // sequence may be executed. Everything else belongs to history that was
+    // (re)loaded, or to a message already handled - those are annotated and
+    // never queued, which is what keeps a history reload from re-running code.
+    const newWrappers = this.newMessageWrappers();
+    const align = this._roundAlign || this.alignMessages();
+    if (align.reseeded) {
+      this.info('Message sequence was reseeded, no block will be executed this round');
+    } else if (align.newIdx.length > 0) {
+      this.debug(`Message alignment: ${align.matched} known, ${align.newIdx.length} new`);
+    }
+
     let newBlocksCount = 0;
     let metadslBlocksCount = 0;
     let unstableBlocksCount = 0;
@@ -1008,27 +1167,19 @@ class MetaDSLMonitor {
     const items = [];
 
     codeBlocks.forEach((block) => {
+      // A block whose message is not part of the newly arrived ones is history
+      // (or already handled): annotate it and leave it alone.
+      const msgWrapper = block.closest ? block.closest('.vac-message-wrapper') : null;
+      if (!newWrappers.has(msgWrapper)) {
+        this.markBlockAsHistory(block);
+        return;
+      }
+
       const blockId = this.getBlockId(block);
 
       // Skip already processed blocks (check both in-memory set and DOM attribute)
       if (this.processedBlocks.has(blockId) || block.dataset.metadslStatus) {
         return;
-      }
-
-      // Check if this is a stable block upgrading from a streaming prefix.
-      // Streaming blocks have ID "blk_<hash>_", stable blocks "blk_<hash>_<tokenHash>".
-      // If a prefix match is found, upgrade: replace the old prefix ID with the full ID.
-      const idParts = blockId.split('_');
-      if (idParts.length === 3 && idParts[2] !== '') {
-        // This is a stable block (has tokenInfoHash), check for streaming prefix
-        const streamingPrefix = `blk_${idParts[1]}_`;
-        if (this.processedBlocks.has(streamingPrefix)) {
-          this.processedBlocks.delete(streamingPrefix);
-          this.processedBlocks.add(blockId);
-          this.lastBlockContent.delete(streamingPrefix);
-          this.debug(`Upgraded streaming block ${streamingPrefix} -> ${blockId}`);
-          return;
-        }
       }
 
       newBlocksCount++;
@@ -1063,19 +1214,19 @@ class MetaDSLMonitor {
       const head = cmdBlocks[0];
 
       const changing = cmdBlocks.filter(it => {
-        const lastContent = this.lastBlockContent.get(it.blockId);
+        const lastContent = this.lastBlockContent.get(it.block);
         return lastContent !== undefined && lastContent !== it.rawCode;
       });
       if (changing.length > 0) {
         // Content is still changing, update cache but skip processing
-        cmdBlocks.forEach(it => this.lastBlockContent.set(it.blockId, it.rawCode));
+        cmdBlocks.forEach(it => this.lastBlockContent.set(it.block, it.rawCode));
         unstableBlocksCount++;
         this.debug(`Command of ${cmdBlocks.length} block(s) still changing, skipping (${changing.length} unstable)`);
         return;
       }
 
       // Content is stable (first time or unchanged), record it
-      cmdBlocks.forEach(it => this.lastBlockContent.set(it.blockId, it.rawCode));
+      cmdBlocks.forEach(it => this.lastBlockContent.set(it.block, it.rawCode));
 
       // The marker line is stripped from every fence that carries one; the
       // remaining fences hold plain code and are appended verbatim.
@@ -1093,23 +1244,13 @@ class MetaDSLMonitor {
         // Mark as processed immediately.
         cmdBlocks.forEach(it => this.processedBlocks.add(it.blockId));
 
-        // Check if this block is inside a history message container
-        let isHistoryBlock = this.isInitializing;
-        if (!isHistoryBlock) {
-          const msgContainer = this.findMessageContainer(head.block);
-          if (msgContainer && this.isHistoryNode(msgContainer)) {
-            isHistoryBlock = true;
-          }
-        }
-
-        if (isHistoryBlock) {
-          cmdBlocks.forEach(it => {
-            it.block.dataset.metadslStatus = 'history';
-            it.block.style.borderLeft = '3px solid #9E9E9E';
-            it.block.style.backgroundColor = 'rgba(158, 158, 158, 0.05)';
-            this.scheduleHideContainer(it.block);
-          });
-          this.debug(`✓ Marked late-arriving history block: ${head.blockId} (command of ${cmdBlocks.length})`);
+        // While initializing, every block is history by definition. Past that
+        // point anything reaching here belongs to a newly arrived message:
+        // blocks of already known messages never get this far, the sequence
+        // alignment in scanForNewCodeBlocks filters them out.
+        if (this.isInitializing) {
+          cmdBlocks.forEach(it => this.markBlockAsHistory(it.block));
+          this.debug(`✓ Marked block seen during initialization: ${head.blockId} (command of ${cmdBlocks.length})`);
           return;
         }
 
@@ -1150,6 +1291,19 @@ class MetaDSLMonitor {
     if (newBlocksCount > 0 || unstableBlocksCount > 0) {
       this.info(`Scan complete: ${newBlocksCount} new blocks, ${metadslBlocksCount} MetaDSL, ${unstableBlocksCount} unstable`);
     }
+
+    // Remember the messages handled now, so the next scan aligns them instead
+    // of running their blocks again. Skipped while a block is still changing:
+    // that message is not finished and has to be scanned once more.
+    if (unstableBlocksCount === 0) {
+      this.markMessagesAsSeen(align);
+    }
+
+    // Drop the per-round alignment. This method is also called directly from
+    // the state machine, and the page may have moved on since it was computed,
+    // so the next scan has to look at the page again.
+    this._newWrappers = null;
+    this._roundAlign = null;
 
     // Limit processed blocks size to prevent memory leak
     if (this.processedBlocks.size > this.maxProcessedBlocks) {
@@ -1217,49 +1371,53 @@ class MetaDSLMonitor {
     }
   }
 
+  // Identity of a code block: which message it belongs to (message
+  // fingerprint) plus which code block it is inside that message.
+  //
+  // Both parts survive a DOM rebuild and a history reload. The previous id
+  // also carried the token tag text, which is absent or different depending on
+  // how the page renders a message, so the same block got a different id after
+  // a reload and was executed again.
+  //
+  // The block content is deliberately NOT part of the id: it changes on every
+  // streamed token, and lastBlockContent needs a stable key to notice that.
   getBlockId(block) {
-    // Use cached ID if available, but only if it has tokenInfoHash (stable)
-    if (this.blockIdCache.has(block)) {
-      const cached = this.blockIdCache.get(block);
-      // Only return cached value if it has tokenInfoHash (not ending with _)
-      const parts = cached.split('_');
-      if (parts.length === 3 && parts[2] !== '') {
-        return cached;
+    if (!block) return null;
+    const msgWrapper = block.closest ? block.closest('.vac-message-wrapper') : null;
+    let msgFp = null;
+    try {
+      msgFp = msgWrapper ? this.pageAdapter.getMessageFingerprint(msgWrapper) : null;
+    } catch (e) {
+      msgFp = null;
+    }
+
+    // Cache is only valid while the message fingerprint it was built from is
+    // unchanged - a streaming message keeps re-rendering with new content.
+    const cached = this.blockIdCache.get(block);
+    if (cached && cached.fp === msgFp) {
+      return cached.id;
+    }
+
+    let blockId;
+    if (msgFp) {
+      let indexInMessage = 0;
+      if (msgWrapper) {
+        const all = msgWrapper.querySelectorAll('code.code-block-body, code[class*="language-"], pre code');
+        const idx = Array.prototype.indexOf.call(all, block);
+        indexInMessage = idx >= 0 ? idx : 0;
+      } else {
+        indexInMessage = this.nextBlockId++;
       }
-      // Cached ID has no tokenInfoHash, re-check if token info is now available
+      blockId = `blk_${msgFp}_#${indexInMessage}`;
+    } else {
+      // No fingerprint (page type not recognized, unexpected markup): fall
+      // back to the block content. Every block then keeps its own identity
+      // across renders, instead of all of them collapsing onto one shared id
+      // and swallowing each other.
+      const content = (block.textContent || '').trim();
+      blockId = `blk_content_${this.hashString(content)}`;
     }
-
-    // Generate stable ID: blk_${contentHash}_${tokenInfoHash}
-    // When token info is absent (streaming), tokenInfoHash is empty,
-    // producing a prefix ID like "blk_abc123_". Once the message completes
-    // and token info appears, the full ID becomes "blk_abc123_tok456".
-    // This prefix relationship is used to upgrade streaming blocks to stable ones.
-    const content = block.textContent.trim();
-    const contentHash = this.hashString(content);
-
-    // Find token info from the parent message container's el-tag
-    let tokenInfoHash = '';
-    let msgContainer = block.parentElement;
-    while (msgContainer && !msgContainer.classList.contains('vac-message-box')) {
-      msgContainer = msgContainer.parentElement;
-    }
-    if (msgContainer) {
-      const tokenTag = msgContainer.querySelector('.el-tag .el-tag__content');
-      if (tokenTag) {
-        const tokenText = tokenTag.textContent.trim();
-        if (tokenText) {
-          tokenInfoHash = this.hashString(tokenText);
-        }
-      }
-    }
-
-    const blockId = `blk_${contentHash}_${tokenInfoHash}`;
-
-    // Only cache when tokenInfoHash is present (stable ID)
-    if (tokenInfoHash) {
-      this.blockIdCache.set(block, blockId);
-    }
-
+    this.blockIdCache.set(block, { fp: msgFp, id: blockId });
     return blockId;
   }
 

@@ -140,6 +140,13 @@
     url: window.location.href
   });
 
+  // Restore what the previous page load was doing (auto plan, agent lock)
+  // before the monitor starts: both shape what the state machine does, and
+  // both would otherwise fall back to their constructor defaults.
+  if (panel) {
+    panel.applyRuntimeState();
+  }
+
   // Auto-start MetaDSL monitor only if page type is detected
   if (pageAdapter.pageType !== 'unknown') {
     metadslMonitor.start();

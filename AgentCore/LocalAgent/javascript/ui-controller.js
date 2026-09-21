@@ -466,9 +466,6 @@ class UIController {
             // Save assistant response
             this.messageHandler.addMessage('assistant', fullResponse);
 
-            // Add el-tag with timestamp for block ID stability (same structure as custom-llm)
-            this.addMessageTag(assistantMessageId, new Date().toLocaleTimeString());
-
         } catch (error) {
             if (error.message === 'Request cancelled') {
                 // User clicked Stop: save partial response if any
@@ -476,7 +473,6 @@ class UIController {
                 this.finalizeAssistantReasoning(assistantMessageId);
                 if (fullResponse) {
                     this.messageHandler.addMessage('assistant', fullResponse);
-                    this.addMessageTag(assistantMessageId, new Date().toLocaleTimeString());
                     this.finalizeAssistantMessage(assistantMessageId, fullResponse);
                 }
 
@@ -622,29 +618,6 @@ class UIController {
         }
     }
 
-    addMessageTag(messageId, timeText) {
-        // Add el-tag element to assistant message for block ID stability
-        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
-        if (wrapper) {
-            this.addMessageTagToWrapper(wrapper, timeText);
-        }
-    }
-
-    addMessageTagToWrapper(wrapper, timeText) {
-        // Add el-tag element (same structure as custom-llm) for block ID computation
-        const box = wrapper.querySelector('.vac-message-box');
-        if (box && !box.querySelector('.el-tag')) {
-            const tag = document.createElement('span');
-            tag.className = 'el-tag';
-            const tagContent = document.createElement('span');
-            tagContent.className = 'el-tag__content';
-            tagContent.textContent = timeText;
-            tag.appendChild(tagContent);
-            tag.style.display = 'none'; // Hidden, only used for block ID
-            box.appendChild(tag);
-        }
-    }
-
     showLoading() {
         this.elements.loadingIndicator.classList.add('active');
     }
@@ -669,12 +642,7 @@ class UIController {
         }
 
         messagesToDisplay.forEach(msg => {
-            const wrapper = this.displayMessage(msg.role, msg.content);
-            // Add el-tag for assistant messages (history messages are already complete)
-            if (msg.role === 'assistant' && wrapper) {
-                const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
-                this.addMessageTagToWrapper(wrapper, time);
-            }
+            this.displayMessage(msg.role, msg.content);
         });
     }
 

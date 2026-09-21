@@ -46,6 +46,14 @@ class AgentBridge {
     return this._lockUntil;
   }
 
+  // Restores a deadline saved before a page reload. Unlike the
+  // lockAgentEnabled setter this keeps the original end time instead of
+  // starting a fresh lockTimeMin window. An already expired value is dropped.
+  set lockUntil(ts) {
+    const n = Number(ts) || 0;
+    this._lockUntil = n > Date.now() ? n : 0;
+  }
+
   initNativeApi() {
     // Check if CEF native API is available
     this.logger.debug('Checking native API...');

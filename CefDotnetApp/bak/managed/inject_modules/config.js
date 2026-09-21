@@ -25,7 +25,16 @@ class ConfigManager {
         keepMetaDslLines: false,
         maxConversationRounds: 12,
         llmResponseTimeoutMin: 5,
-        lockTimeMin: 60
+        lockTimeMin: 60,
+        // Memory guard. The renderer accumulates DOM and JS for every round and
+        // Chromium never hands the freed pages back, so a long session climbs
+        // to ~2GB (measured: 213MB heap right after a reload, ~490MB after a
+        // day). Past reloadHeapMB the monitor reports it and, when
+        // autoReloadOnHighMemory is true, reloads the page during an idle
+        // moment. A reload rebuilds the JS world; the message sequence is
+        // re-seeded from the page afterwards, so no history code runs twice.
+        reloadHeapMB: 450,
+        autoReloadOnHighMemory: false
       },
 
       // Timing settings

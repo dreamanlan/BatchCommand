@@ -39,6 +39,7 @@
 
 **代码修改步骤**
 
+0. 如果是复杂c/c++代码，优先使用grep_file查找代码；其它语言在1~3步查询失败时也使用grep_file
 1. 使用`view_file_structure`或`read_file`了解实现
 2. 确定修改内容
 3. 优先用`find_methods`（类方法）/`find_functions`（全局函数）结合`read_lines(path, startLine, endLine[, encoding])`获取精确上下文（注意，read_lines返回字符串列表，使用`to_string`转成字符串）

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -400,6 +401,79 @@ namespace BatchCommand.Utils
                 _processes.Clear();
                 _processStartTimes.Clear();
             }
+        }
+
+        /// <summary>
+        /// Memory footprint in bytes of the current process (both arguments
+        /// omitted), of a pid, or of the largest process carrying a name (with
+        /// or without the .exe suffix). Returns 0 when nothing matches.
+        /// </summary>
+        /// <remarks>
+        /// This is the number a memory guard has to watch. The JS heap alone is
+        /// misleading: a long lived page reported ~1.3GB of heap while its
+        /// renderer process held ~6GB, the difference being Blink objects and
+        /// allocator pages that are never handed back. The renderer process runs
+        /// managed code too, so the no-argument form reports the very process
+        /// that is growing.
+        /// </remarks>
+        public long GetProcessMemoryBytes(int pid = 0, string? name = null)
+        {
+            try {
+                if (pid > 0) {
+                    try {
+                        using var p = Process.GetProcessById(pid);
+                        return MemoryBytes(p);
+                    }
+                    catch (ArgumentException) {
+                        return 0; // process already gone
+                    }
+                }
+                if (!string.IsNullOrEmpty(name)) {
+                    var processName = name;
+                    if (processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) {
+                        processName = processName.Substring(0, processName.Length - 4);
+                    }
+                    long largest = 0;
+                    foreach (var p in Process.GetProcessesByName(processName)) {
+                        try {
+                            long v = MemoryBytes(p);
+                            if (v > largest) largest = v;
+                        }
+                        catch {
+                            // access denied, or exited between enumeration and read
+                        }
+                        finally {
+                            p.Dispose();
+                        }
+                    }
+                    return largest;
+                }
+                using var self = Process.GetCurrentProcess();
+                return MemoryBytes(self);
+            }
+            catch (Exception ex) {
+                HostBridge.Log?.Invoke($"[ProcessOperations] GetProcessMemoryBytes failed: {ex.Message}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Private bytes on Windows (the real footprint), working set elsewhere
+        /// where private bytes is not available. Counters are cached on the
+        /// Process instance, so a refresh is needed for a current reading.
+        /// </summary>
+        private static long MemoryBytes(Process p)
+        {
+            p.Refresh();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                try {
+                    return p.PrivateMemorySize64;
+                }
+                catch {
+                    return p.WorkingSet64;
+                }
+            }
+            return p.WorkingSet64;
         }
 
         public List<string> GetRunningProcessIds()

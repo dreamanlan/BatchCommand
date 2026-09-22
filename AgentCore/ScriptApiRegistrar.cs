@@ -128,6 +128,7 @@ namespace AgentCore
             BatchCommand.BatchScript.Register("send_response_to_inject", "send_response_to_inject(responseJson)", new ExpressionFactoryHelper<SendResponseToInjectExp>());
 
             BatchCommand.BatchScript.Register("hot_reload", "hot_reload()", new ExpressionFactoryHelper<HotReloadExp>());
+            BatchCommand.BatchScript.Register("restart_page", "restart_page() - restart the page: close the window, terminate the renderers and reopen it (no dll update)", new ExpressionFactoryHelper<RestartPageExp>());
 
             BatchCommand.BatchScript.Register("call_skill", "call_skill(skill_name, arg1, arg2, ...)", new ExpressionFactoryHelper<CallSkillExp>());
             BatchCommand.BatchScript.Register("refresh_skills", "refresh_skills()", new ExpressionFactoryHelper<RefreshSkillsExp>());

@@ -14,6 +14,17 @@ script(init_global_consts)
             @UserName = getfilename(getdirectoryname(getdirectoryname(getenv("LOCALAPPDATA"))));
         };
     };
+
+    // Renderer memory guard threshold (MB, see check_memory_guard).
+    // get_process_memory returns private bytes on Windows and the working set
+    // elsewhere; the working set includes shared pages and runs higher, hence
+    // the larger value off Windows.
+    if (ismac) {
+        @MemGuardThresholdMB = 3500;
+    }
+    else {
+        @MemGuardThresholdMB = 2500;
+    };
 };
 script(on_init)
 {
@@ -49,7 +60,36 @@ script(on_renderer_finalize)
 {
     nativelog("[dsl] on_renderer_finalize finish");
 };
-script(on_heart_beat)params($processType,$deltaTime)
+
+// ---- Memory guard query (called by the inject side) -----------------------
+// Every conversation round leaks a Vue component tree the page never releases,
+// so a long auto-plan session pushes the renderer process into the GBs. Only a
+// real process restart reclaims it: location.reload() keeps the same renderer
+// process (and its allocator arenas) alive.
+// The inject side owns the schedule and the reaction - it is the only side that
+// knows whether the agent is idle. The dsl only answers the one question js
+// cannot answer itself: is this process over the limit. That needs a process
+// level reading (get_process_memory), while performance.memory only covers the
+// js heap, a small fraction of the real footprint.
+// The threshold lives here because the reading differs per platform: private
+// bytes on Windows, the working set (shared pages included) elsewhere.
+script(check_memory_guard)
+{
+    $usedMB = get_process_memory();
+    if ($usedMB <= 0) {
+        return(false);
+    };
+    return($usedMB >= @MemGuardThresholdMB);
+};
+
+// The renderer process memory in MB (0 when it cannot be read). Kept separate so
+// the inject side can log the figure it is about to act on.
+script(get_renderer_memory)
+{
+    return(get_process_memory());
+};
+
+script(on_heartbeat)params($processType,$deltaTime)
 {
     // Renderer process: ensure context points to the correct browser/frame
     if ($processType == 1) {

@@ -49,7 +49,7 @@ script(on_renderer_finalize)
 {
     nativelog("[dsl] on_renderer_finalize finish");
 };
-script(on_heart_beat)params($processType,$deltaTime)
+script(on_heartbeat)params($processType,$deltaTime)
 {
     // Renderer process: ensure context points to the correct browser/frame
     if ($processType == 1) {

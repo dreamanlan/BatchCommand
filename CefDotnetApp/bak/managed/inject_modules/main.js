@@ -268,6 +268,58 @@ window.onAgentCallback = function (msg, args) {
   }
 };
 
+// Restart the browser window: ask C++ to close the window, terminate the
+// renderers and reopen the page with the current url (the hot_reload flow).
+// files is intentionally empty: C# dlls (AgentCore.dll) stay locked while the
+// pages and the agent process are up, so the dll update itself is done outside
+// this flow, in the window of time when the page is closed. Skipping the copy
+// also avoids the 10s file-lock wait in C++.
+// The single implementation behind the hot_reload command (component agentcore
+// or restart): the C# side and the dsl api restart_page() reach it through
+// onAgentCommand, the memory guard in metadsl_monitor.js calls it directly - it
+// cannot push a command of its own, because window.onAgentCommand is
+// re-assigned by the page adapters, which drop the commands they do not know.
+function restartBrowserWindow(label) {
+  const hotReloadRequest = {
+    action: 'hot_reload',
+    files: []
+  };
+
+  logger.debug('Sending cefQuery for hot_reload', { request: hotReloadRequest });
+  logger.debug('About to call cefQuery', {
+    cefQueryAvailable: typeof window.cefQuery !== 'undefined',
+    request: hotReloadRequest
+  });
+
+  if (typeof window.cefQuery !== 'undefined') {
+    window.cefQuery({
+      request: JSON.stringify(hotReloadRequest),
+      persistent: false,
+      onSuccess: function (response) {
+        logger.info(label + ' cefQuery success', { response });
+        logger.debug('cefQuery success', { response: response });
+
+        if (panel) {
+          panel.log('✓ ' + label + ' completed: ' + response);
+        }
+      },
+      onFailure: function (error_code, error_message) {
+        logger.error(label + ' cefQuery failed', { error_code, error_message });
+        logger.error('cefQuery failed', {
+          error_code: error_code,
+          error_message: error_message
+        });
+
+        if (panel) {
+          panel.log('✗ ' + label + ' failed: ' + error_message);
+        }
+      }
+    });
+  } else {
+    logger.error('cefQuery not available');
+  }
+};
+
 // Receive commands from C# (called by C#)
 window.onAgentCommand = function (commandJson) {
   try {
@@ -318,51 +370,14 @@ window.onAgentCommand = function (commandJson) {
       logger.info('Processing hot_reload command', { component });
 
       if (component === 'agentcore') {
-        // Send cefQuery to C++ hot_reload_test
-        const hotReloadRequest = {
-          action: 'hot_reload',
-          files: [
-            {
-              source: 'd:\\GitHub\\BatchCommand\\AgentCore\\bin\\Debug\\net8.0\\AgentCore.dll',
-              dest: 'd:\\GitHub\\WebAgent\\cefclient\\managed\\AgentCore.dll'
-            }
-          ],
-          custom_process_killer: false
-        };
-
-        logger.debug('Sending cefQuery for hot_reload', { request: hotReloadRequest });
-        logger.debug('About to call cefQuery', {
-          cefQueryAvailable: typeof window.cefQuery !== 'undefined',
-          request: hotReloadRequest
-        });
-
-        if (typeof window.cefQuery !== 'undefined') {
-          window.cefQuery({
-            request: JSON.stringify(hotReloadRequest),
-            persistent: false,
-            onSuccess: function (response) {
-              logger.info('Hot reload cefQuery success', { response });
-              logger.debug('cefQuery success', { response: response });
-
-              if (panel) {
-                panel.log('✓ Hot reload completed: ' + response);
-              }
-            },
-            onFailure: function (error_code, error_message) {
-              logger.error('Hot reload cefQuery failed', { error_code, error_message });
-              logger.error('cefQuery failed', {
-                error_code: error_code,
-                error_message: error_message
-              });
-
-              if (panel) {
-                panel.log('✗ Hot reload failed: ' + error_message);
-              }
-            }
-          });
-        } else {
-          logger.error('cefQuery not available');
-        }
+        // AgentCore.dll update flow: close the page first so the dll is unlocked,
+        // then (outside this flow) stop the AgentCore process, rebuild + copy the
+        // dll, restart the process; the reopened page reconnects to the new one.
+        restartBrowserWindow('Hot reload');
+      } else if (component === 'restart') {
+        // Plain restart: drop the renderer process and reopen the page, e.g. to
+        // reclaim the memory a long running session accumulates. No dll update.
+        restartBrowserWindow('Restart');
       } else if (component === 'inject') {
         // Check JS hot reload toggle
         if (!CONFIG.config.panel.jsHotReload) {

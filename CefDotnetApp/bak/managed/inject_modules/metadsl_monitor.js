@@ -162,6 +162,10 @@ class MetaDSLMonitor {
 
     // Start state machine execution loop
     this.runStateMachine();
+
+    // Poll the renderer process footprint (the dsl owns the threshold, this
+    // side owns the schedule and the restart)
+    this.startMemoryGuard();
   }
 
   stop() {
@@ -180,6 +184,7 @@ class MetaDSLMonitor {
     this.currentState = null;
     this.currentStateName = null;
     this.canExecuteNewCommands = false;
+    this.stopMemoryGuard();
     this.processedMessages.clear();
     // Keep processedBlocks to prevent re-processing on restart
     // processedBlocks is also backed by DOM data-metadsl-status attribute
@@ -882,6 +887,83 @@ class MetaDSLMonitor {
     return false;
   }
 
+  // ---- Memory guard ------------------------------------------------------
+  // Every round leaks a Vue component tree the page never releases, so a long
+  // auto-plan session pushes the renderer process into the GBs. Only a real
+  // process restart reclaims it: location.reload() keeps the same renderer
+  // process (and its allocator arenas) alive.
+  // The verdict comes from the dsl (callMetaDSL -> check_memory_guard in
+  // script_renderer.dsl), the only side that can read a process level figure -
+  // performance.memory covers the js heap alone, a small fraction of the real
+  // footprint. The schedule, the cooldown, the "is the agent idle" check and
+  // the restart itself stay here, in the side that knows them.
+  startMemoryGuard() {
+    if (this.memoryGuardTimer) return;
+    const intervalSec = CONFIG.get('panel.memoryGuardIntervalSec') || 60;
+    this.memoryGuardTimer = setInterval(() => {
+      try {
+        this.checkProcessMemory();
+      } catch (e) {
+        this.warn('Memory guard check failed: ' + e);
+      }
+    }, intervalSec * 1000);
+  }
+
+  stopMemoryGuard() {
+    if (this.memoryGuardTimer) {
+      clearInterval(this.memoryGuardTimer);
+      this.memoryGuardTimer = null;
+    }
+  }
+
+  // Returns true when a restart has been requested.
+  checkProcessMemory() {
+    if (typeof callMetaDSL !== 'function') return false;
+
+    let over = false;
+    try {
+      over = callMetaDSL('check_memory_guard') === true;
+    } catch (e) {
+      this.warn('callMetaDSL(check_memory_guard) failed: ' + e);
+      return false;
+    }
+    if (!over) return false;
+
+    // Cooldown: the restart rebuilds the process, so never ask twice in a row.
+    let lastRestart = 0;
+    try {
+      lastRestart = Number(sessionStorage.getItem('inject_last_restart') || 0);
+    } catch (e) { /* storage unavailable */ }
+    if (lastRestart && Date.now() - lastRestart < 10 * 60 * 1000) return false;
+
+    // A restart drops whatever round is in flight, so wait for a quiet moment.
+    if (!(this.currentStateName === 'USER_INPUT' && this.operationQueue.length === 0)) {
+      this.warn(`Renderer memory is over the limit, restart postponed (state=${this.currentStateName}, queue=${this.operationQueue.length})`);
+      return false;
+    }
+
+    let usedMB = 0;
+    try {
+      usedMB = Number(callMetaDSL('get_renderer_memory')) || 0;
+    } catch (e) { /* the figure is only used for the log */ }
+    try {
+      sessionStorage.setItem('inject_last_restart', String(Date.now()));
+    } catch (e) { /* storage unavailable */ }
+
+    this.warn(`Renderer process at ${usedMB.toFixed(0)}MB is over the limit: restarting the browser window`);
+    // restartBrowserWindow is the single implementation behind the hot_reload
+    // command (component agentcore / restart), so this is the same action the
+    // dsl api restart_page() and the C# side end up performing. It is called
+    // directly instead of pushing a command because window.onAgentCommand is
+    // re-assigned by the page adapters, which drop commands they do not know.
+    if (typeof restartBrowserWindow === 'function') {
+      restartBrowserWindow('Restart');
+      return true;
+    }
+    this.warn('restartBrowserWindow is unavailable, cannot restart');
+    return false;
+  }
+
   resetPageStableTimer() {
     // Clear existing timer
     if (this.pageStableTimer) {
@@ -897,8 +979,6 @@ class MetaDSLMonitor {
   onPageStable() {
     this.info(`Page stable, isInitializing=${this.isInitializing}, state=${this.currentStateName}`);
     this.pageStableTimer = null;
-    // First thing: a reload makes everything below pointless.
-    if (this.checkMemoryGuard()) return;
     // One alignment per round: the validation below and the code block scan
     // have to agree on which messages are new.
     this._newWrappers = null;
@@ -1066,66 +1146,6 @@ class MetaDSLMonitor {
 
     // Prune old conversation DOM nodes to prevent page slowdown
     this.pruneOldMessages();
-  }
-
-  // Memory guard. Every round adds DOM nodes and JS objects that the page
-  // never lets go of, and Chromium keeps the freed pages, so a long session
-  // climbs towards 2GB (measured: ~213MB heap right after a reload, ~490MB
-  // after a day) and never recovers on its own. Reloading rebuilds the JS
-  // world; the message sequence is re-seeded from the page afterwards, so no
-  // history code runs twice and no code is lost.
-  // Returns true when a reload has been triggered.
-  checkMemoryGuard() {
-    const thresholdMB = CONFIG.get('panel.reloadHeapMB') || 450;
-    const auto = !!CONFIG.get('panel.autoReloadOnHighMemory');
-    const mem = (typeof performance !== 'undefined') ? performance.memory : null;
-    if (!mem || !mem.usedJSHeapSize) return false;
-    const usedMB = mem.usedJSHeapSize / 1048576;
-    if (usedMB < thresholdMB) return false;
-
-    // Cooldown: a fresh page starts small, so never reload twice in a row.
-    let lastReload = 0;
-    try {
-      lastReload = Number(sessionStorage.getItem('inject_last_reload') || 0);
-    } catch (e) { /* storage unavailable */ }
-    if (lastReload && Date.now() - lastReload < 10 * 60 * 1000) return false;
-
-    // onPageStable runs every few seconds, so throttle the reports: one line
-    // every 10 minutes instead of one per round.
-    const warn = (msg) => {
-      let lastWarn = 0;
-      try {
-        lastWarn = Number(sessionStorage.getItem('inject_mem_warn') || 0);
-      } catch (e) { /* storage unavailable */ }
-      if (Date.now() - lastWarn < 10 * 60 * 1000) return;
-      try {
-        sessionStorage.setItem('inject_mem_warn', String(Date.now()));
-      } catch (e) { /* storage unavailable */ }
-      this.warn(msg);
-    };
-
-    // Never interrupt work in progress: a reply being waited on and queued
-    // operations are both lost by a reload.
-    const busy = this.currentStateName === 'LLM_RESPONDING' || this.operationQueue.length > 0;
-    if (busy) {
-      warn(`Heap ${usedMB.toFixed(0)}MB is over ${thresholdMB}MB, but work is in progress (state=${this.currentStateName}, queue=${this.operationQueue.length}); reload postponed`);
-      return false;
-    }
-
-    if (!auto) {
-      warn(`Heap ${usedMB.toFixed(0)}MB is over ${thresholdMB}MB: a page reload is needed (panel.autoReloadOnHighMemory is off, reload manually)`);
-      return false;
-    }
-
-    if (this.panel && typeof this.panel.saveRuntimeState === 'function') {
-      this.panel.saveRuntimeState();
-    }
-    try {
-      sessionStorage.setItem('inject_last_reload', String(Date.now()));
-    } catch (e) { /* storage unavailable */ }
-    this.warn(`Heap ${usedMB.toFixed(0)}MB is over ${thresholdMB}MB: reloading the page`);
-    location.reload();
-    return true;
   }
 
   scanForNewCodeBlocks() {

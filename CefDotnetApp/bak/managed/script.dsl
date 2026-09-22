@@ -59,7 +59,7 @@ script(on_init)
     start_agent_process();
     // Relay: a fast heartbeat drives wsclient event dispatch on the main
     // thread (~10-20ms relay latency); the heavy keep-alive work in
-    // on_heart_beat is throttled by a beat counter.
+    // on_heartbeat is throttled by a beat counter.
     set_heartbeat_interval(10);
     set_context_var("hbCount", 0);
     set_context_var("agentRetryAt", 0);
@@ -251,7 +251,7 @@ script(on_browser_finalize)params($remainingBrowsers)
     nativelog("[dsl] on_browser_finalize finish");
 };
 
-script(on_heart_beat)params($processType,$deltaTime)
+script(on_heartbeat)params($processType,$deltaTime)
 {
     // Do something every heart beat
     if ($processType == 0) {
@@ -671,17 +671,21 @@ script(on_call_metadsl)params($func,$args)
     nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
 };
 
-script(on_browser_hot_reload_copyfiles)params($url)
+// Called after the renderer processes are gone and before the page is
+// restarted: the window is closed, so nothing holds the files any more - this
+// is the moment to copy or update them. Return true to skip the default copy
+// of the file list carried by the request.
+script(on_browser_hot_reload_before_restart)params($url)
 {
-    nativelog("[dsl] on_browser_hot_reload_copyfiles called, url: {0}", $url);
+    nativelog("[dsl] on_browser_hot_reload_before_restart called, url: {0}", $url);
     return(false);
 };
 
-// Called after browser hot reload completes (AgentCore.dll updated)
+// Called after the page has been restarted (new window up and running)
 script(on_browser_hot_reload_completed)params($url)
 {
-    nativelog("[dsl] on_browser_hot_reload called - AgentCore.dll has been reloaded, url: {0}", $url);
-    nativelog("[dsl] Browser window was closed, DLL updated, and window reopened");
+    nativelog("[dsl] on_browser_hot_reload called - browser reloaded, url: {0}", $url);
+    nativelog("[dsl] Browser window was closed and reopened");
 
     // You can add initialization logic here after hot reload
     // For example: reload configuration, reinitialize state, etc.
@@ -749,7 +753,7 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
                 set_context_var("relayAgent_" + $clientId, $agentId);
             };
             set_context_var("relayPending_" + $clientId, $handle);
-            // Owner browser id for the zombie reaper (see on_heart_beat).
+            // Owner browser id for the zombie reaper (see on_heartbeat).
             set_context_var("relayBrowser_" + $clientId, find_browser_id_by_url_key($urlKey));
             return((true, 0));
         }

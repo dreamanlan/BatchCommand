@@ -634,6 +634,43 @@ namespace BatchCommand.Api
             }
         }
     }
+    // Memory footprint of a process, in MB: the current process (no argument),
+    // a pid, or the largest process carrying a given name.
+    //
+    // This is the number a memory guard has to look at. The JS heap alone is
+    // misleading: on a long lived page the heap reported by performance.memory
+    // was ~1.3GB while the renderer process held ~6GB, the difference being
+    // Blink objects and allocator pages that are never returned. The renderer
+    // process runs managed code too (see the per-process dsl script selection),
+    // so calling this with no argument reports the very process that is growing.
+    sealed class GetProcessMemoryExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count > 1) {
+                ApiErrorInfo.AppendLine("Expected: get_process_memory([name_or_pid])");
+                return BoxedValue.From(0.0);
+            }
+            try {
+                long bytes;
+                if (operands.Count == 1 && operands[0].IsInteger) {
+                    bytes = ProcessOperations.Shared.GetProcessMemoryBytes(operands[0].GetInt());
+                }
+                else if (operands.Count == 1) {
+                    bytes = ProcessOperations.Shared.GetProcessMemoryBytes(0, operands[0].AsString);
+                }
+                else {
+                    bytes = ProcessOperations.Shared.GetProcessMemoryBytes();
+                }
+                return BoxedValue.From(bytes / (1024.0 * 1024.0));
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"get_process_memory error: {ex.Message}");
+                return BoxedValue.From(0.0);
+            }
+        }
+    }
+
     /// <summary>
     /// Process / script execution api set (moved from AgentCore; service core
     /// in BatchCommand.Utils.ProcessOperations). Async variants deliver via
@@ -654,6 +691,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("read_process_output", "read_process_output(processId)", new ExpressionFactoryHelper<ReadProcessOutputExp>());
             BatchCommand.BatchScript.Register("read_process_error", "read_process_error(processId)", new ExpressionFactoryHelper<ReadProcessErrorExp>());
             BatchCommand.BatchScript.Register("get_command_status", "get_command_status() - returns status of all active callback commands (id, duration, command)", new ExpressionFactoryHelper<GetCommandStatusExp>());
+            BatchCommand.BatchScript.Register("get_process_memory", "get_process_memory([name_or_pid]) - memory footprint in MB: the current process when called without arguments, a pid, or the largest process with that name (with or without .exe); returns 0 when no process matches. Private bytes on Windows, working set elsewhere.", new ExpressionFactoryHelper<GetProcessMemoryExp>());
             // OS-level process management (merged from CefDotnetApp; one set for
             // every host). launch_process spawns and returns the OS pid;
             // count_process counts by name; kill_process kills by name or pid

@@ -146,6 +146,10 @@ public struct HostApi
     // Custom scheme handler factory (un)registration (browser process)
     public IntPtr RegisterCustomScheme;
     public IntPtr UnregisterCustomScheme;
+    // Process control by keyword (cross-platform): matches the command line, or
+    // the executable name when the command line cannot be read.
+    public IntPtr TerminateProcess;
+    public IntPtr CountProcess;
 }
 
 // delegate for native api
@@ -388,6 +392,14 @@ public delegate int HostNativeCallbackCompleteDelegation(long handle, int ok, [M
 public delegate int HostRegisterCustomSchemeDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string domain);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int HostUnregisterCustomSchemeDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string domain);
+// Terminate every process whose command line (or executable name, when the
+// command line cannot be read) contains |key|. Returns the number terminated,
+// or -1 on error.
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostTerminateProcessDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string key);
+// Count the processes matching |key|. Returns -1 on error.
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostCountProcessDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string key);
 
 namespace DotNetLib
 {
@@ -880,6 +892,9 @@ namespace DotNetLib
             // Custom scheme handler factory (un)registration
             m_RegisterCustomSchemeApi = Marshal.GetDelegateForFunctionPointer<HostRegisterCustomSchemeDelegation>(hostApi.RegisterCustomScheme);
             m_UnregisterCustomSchemeApi = Marshal.GetDelegateForFunctionPointer<HostUnregisterCustomSchemeDelegation>(hostApi.UnregisterCustomScheme);
+            // Process control by keyword
+            m_TerminateProcessApi = Marshal.GetDelegateForFunctionPointer<HostTerminateProcessDelegation>(hostApi.TerminateProcess);
+            m_CountProcessApi = Marshal.GetDelegateForFunctionPointer<HostCountProcessDelegation>(hostApi.CountProcess);
         }
 
         public void NativeLog(string msg)
@@ -1684,6 +1699,31 @@ namespace DotNetLib
             if (string.IsNullOrEmpty(scheme) || m_UnregisterCustomSchemeApi == null) return false;
             return m_UnregisterCustomSchemeApi(scheme, domain ?? string.Empty) != 0;
         }
+        // Terminates every process whose command line (or executable name) contains
+        // |key|. Returns the number terminated, or -1 on error. On Linux/macOS only
+        // the children of this process are considered.
+        public int TerminateProcess(string key)
+        {
+            if (m_TerminateProcessApi == null) return -1;
+            return m_TerminateProcessApi(key ?? string.Empty);
+        }
+        // Number of processes matching |key|, or -1 on error.
+        public int CountProcess(string key)
+        {
+            if (m_CountProcessApi == null) return -1;
+            return m_CountProcessApi(key ?? string.Empty);
+        }
+        // Convenience wrappers for the renderer processes of this browser: they
+        // are the ones carrying --type=renderer on the command line. Same as
+        // TerminateProcess/CountProcess with that key.
+        public int TerminateRenderProcess()
+        {
+            return TerminateProcess(RendererProcessKey);
+        }
+        public int CountRenderProcess()
+        {
+            return CountProcess(RendererProcessKey);
+        }
         public void EnqueueCefMessage(string msgName, IList<BoxedValue> args)
         {
             s_CefMessageQueue.Enqueue(new Tuple<string, IList<BoxedValue>>(msgName, args));
@@ -1891,6 +1931,11 @@ namespace DotNetLib
         private HostNativeCallbackCompleteDelegation? m_NativeCallbackCompleteApi;
         private HostRegisterCustomSchemeDelegation? m_RegisterCustomSchemeApi;
         private HostUnregisterCustomSchemeDelegation? m_UnregisterCustomSchemeApi;
+        private HostTerminateProcessDelegation? m_TerminateProcessApi;
+        private HostCountProcessDelegation? m_CountProcessApi;
+
+        // Command line marker carried by this browser's renderer processes.
+        private const string RendererProcessKey = "--type=renderer";
 
         [ThreadStatic]
         private static IntPtr tls_Browser = IntPtr.Zero;
@@ -2232,7 +2277,7 @@ namespace DotNetLib
         public delegate void OnBrowserInitDelegation(IntPtr browser);
         public delegate void OnBrowserFinalizeDelegation(IntPtr browser);
         [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnBrowserHotReloadCopyFilesDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string url);
+        public delegate bool OnBrowserHotReloadBeforeRestartDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         public delegate void OnBrowserHotReloadCompletedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBrowserCefQueryDelegation(IntPtr browser, IntPtr frame, long query_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, [MarshalAs(UnmanagedType.U1)] bool persistent, long handle, ref int out_result);
@@ -2695,17 +2740,20 @@ namespace DotNetLib
             return buf;
         }
 
-        internal static bool OnBrowserHotReloadCopyFiles(string url)
+        // Called with the renderer processes gone and before the page is
+        // restarted: nothing holds the files any more, so this is when they can
+        // be copied or updated.
+        internal static bool OnBrowserHotReloadBeforeRestart(string url)
         {
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            NativeLog("[csharp] Browser Hot Reload Copy Files, url: " + url);
+            NativeLog("[csharp] Browser Hot Reload before restart, url: " + url);
 
             try {
-                NativeLog(string.Format("[csharp] Call dsl on_browser_hot_reload_copyfiles"));
+                NativeLog(string.Format("[csharp] Call dsl on_browser_hot_reload_before_restart"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
-                    BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_copyfiles", url);
+                    BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_before_restart", url);
                     CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
@@ -4217,7 +4265,7 @@ namespace DotNetLib
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.From(process_type));
                     vargs.Add(BoxedValue.From(delta_time));
-                    BatchCommand.BatchScript.Call("on_heart_beat", vargs);
+                    BatchCommand.BatchScript.Call("on_heartbeat", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
                 }
@@ -4529,6 +4577,36 @@ namespace DotNetLib
             if (null == s_NativeApi)
                 return false;
             return s_NativeApi.UnregisterCustomScheme(scheme, domain);
+        }
+        // Terminate every process whose command line (or executable name) contains
+        // |key|. Returns the number terminated, or -1 on error / when unavailable.
+        internal static int TerminateProcess(string key)
+        {
+            if (null == s_NativeApi)
+                return -1;
+            return s_NativeApi.TerminateProcess(key ?? string.Empty);
+        }
+        // Number of processes matching |key|, or -1 on error / when unavailable.
+        internal static int CountProcess(string key)
+        {
+            if (null == s_NativeApi)
+                return -1;
+            return s_NativeApi.CountProcess(key ?? string.Empty);
+        }
+        // Terminate the renderer processes of this browser; returns the number
+        // terminated, or -1 on error / when unavailable.
+        internal static int TerminateRenderProcess()
+        {
+            if (null == s_NativeApi)
+                return -1;
+            return s_NativeApi.TerminateRenderProcess();
+        }
+        // Number of renderer processes of this browser, or -1 on error.
+        internal static int CountRenderProcess()
+        {
+            if (null == s_NativeApi)
+                return -1;
+            return s_NativeApi.CountRenderProcess();
         }
         internal static IntPtr GetBrowsersFirstValid()
         {

@@ -547,6 +547,28 @@ namespace AgentCore.Core
             }
         }
 
+        // Plain page restart: close the window, terminate the renderers and
+        // reopen the page. No dll is touched - this is the path used when the
+        // renderer has simply grown too big (see the memory guard in
+        // inject_modules/metadsl_monitor.js). TriggerHotReload is the
+        // AgentCore.dll update flow and stays the one that unlocks the dll.
+        public void TriggerRestartPage()
+        {
+            _logger.Info("Triggering page restart...");
+
+            try {
+                AgentPush.SendCommandToInject("hot_reload", new Dictionary<string, object>
+                {
+                    { "component", "restart" }
+                });
+
+                _logger.Info("Restart command sent to inject.js");
+            }
+            catch (Exception ex) {
+                _logger.Error($"Error triggering page restart: {ex.Message}");
+            }
+        }
+
         public void Shutdown()
         {
             // Dispose ONNX sessions, SQLite connections and other native resources

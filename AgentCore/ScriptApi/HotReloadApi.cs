@@ -38,14 +38,13 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// Restart page expression.
-    /// Asks the page to close the window, terminate the renderers and reopen
-    /// with the current url: the same C++ flow as hot_reload, with no dll
+    /// Reopen browser expression.
+    /// Close all pages, then reopen them. the same C++ flow as hot_reload, with no dll
     /// involved (hot_reload with component "restart", see main.js). This is the
     /// plain "the renderer has grown too big, give it a fresh process" path,
     /// handy for testing the memory guard without waiting for it to trigger.
     /// </summary>
-    sealed class RestartPageExp : SimpleExpressionBase
+    sealed class ReopenBrowserExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
@@ -55,16 +54,16 @@ namespace AgentCore.ScriptApi
                     return "Error: AgentCore not initialized";
                 }
 
-                agentCore.Logger.Info("Restarting the page");
+                agentCore.Logger.Info("Reopening the browser");
 
-                agentCore.TriggerRestartPage();
+                agentCore.TriggerReopenBrowser();
 
-                return "Page restart triggered";
+                return "Browser reopen triggered";
             }
             catch (Exception ex) {
-                Core.AgentCore.Instance?.Logger.Error($"Error restarting the page: {ex.Message}");
+                Core.AgentCore.Instance?.Logger.Error($"Error reopening the browser: {ex.Message}");
                 if (Core.AgentCore.IsInitialized) {
-                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"restart_page error: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"reopen_browser error: {ex.Message}");
                 }
                 return $"Error: {ex.Message}";
             }

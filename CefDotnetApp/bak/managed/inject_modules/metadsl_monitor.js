@@ -951,16 +951,16 @@ class MetaDSLMonitor {
     } catch (e) { /* storage unavailable */ }
 
     this.warn(`Renderer process at ${usedMB.toFixed(0)}MB is over the limit: restarting the browser window`);
-    // restartBrowserWindow is the single implementation behind the hot_reload
+    // reopenBrowserWindow is the single implementation behind the hot_reload
     // command (component agentcore / restart), so this is the same action the
-    // dsl api restart_page() and the C# side end up performing. It is called
+    // dsl api reopen_browser() and the C# side end up performing. It is called
     // directly instead of pushing a command because window.onAgentCommand is
     // re-assigned by the page adapters, which drop commands they do not know.
-    if (typeof restartBrowserWindow === 'function') {
-      restartBrowserWindow('Restart');
+    if (typeof reopenBrowserWindow === 'function') {
+      reopenBrowserWindow('Restart');
       return true;
     }
-    this.warn('restartBrowserWindow is unavailable, cannot restart');
+    this.warn('reopenBrowserWindow is unavailable, cannot restart');
     return false;
   }
 

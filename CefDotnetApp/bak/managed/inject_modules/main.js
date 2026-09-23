@@ -268,18 +268,18 @@ window.onAgentCallback = function (msg, args) {
   }
 };
 
-// Restart the browser window: ask C++ to close the window, terminate the
+// Reopen the browser window: ask C++ to close the window, terminate the
 // renderers and reopen the page with the current url (the hot_reload flow).
 // files is intentionally empty: C# dlls (AgentCore.dll) stay locked while the
 // pages and the agent process are up, so the dll update itself is done outside
 // this flow, in the window of time when the page is closed. Skipping the copy
 // also avoids the 10s file-lock wait in C++.
 // The single implementation behind the hot_reload command (component agentcore
-// or restart): the C# side and the dsl api restart_page() reach it through
+// or reopen): the C# side and the dsl api reopen_browser() reach it through
 // onAgentCommand, the memory guard in metadsl_monitor.js calls it directly - it
 // cannot push a command of its own, because window.onAgentCommand is
 // re-assigned by the page adapters, which drop the commands they do not know.
-function restartBrowserWindow(label) {
+function reopenBrowserWindow(label) {
   const hotReloadRequest = {
     action: 'hot_reload',
     files: []
@@ -373,11 +373,11 @@ window.onAgentCommand = function (commandJson) {
         // AgentCore.dll update flow: close the page first so the dll is unlocked,
         // then (outside this flow) stop the AgentCore process, rebuild + copy the
         // dll, restart the process; the reopened page reconnects to the new one.
-        restartBrowserWindow('Hot reload');
-      } else if (component === 'restart') {
-        // Plain restart: drop the renderer process and reopen the page, e.g. to
+        reopenBrowserWindow('Hot reload');
+      } else if (component === 'reopen') {
+        // Plain reopen: close all pages and reopen them, e.g. to
         // reclaim the memory a long running session accumulates. No dll update.
-        restartBrowserWindow('Restart');
+        reopenBrowserWindow('Reopen');
       } else if (component === 'inject') {
         // Check JS hot reload toggle
         if (!CONFIG.config.panel.jsHotReload) {

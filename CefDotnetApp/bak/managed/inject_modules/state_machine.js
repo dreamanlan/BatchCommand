@@ -15,6 +15,14 @@ class State {
   // Main loop for this state
   async run() { }
 
+  createStateGuard() {
+    const token = this.monitor._stateToken;
+    return () => this.monitor.started &&
+      token != null &&
+      this.monitor.currentState === this &&
+      this.monitor._stateToken === token;
+  }
+
   // Shared LLM detection methods
   checkLLMResponding() {
     const pageType = this.monitor.pageAdapter.pageType;
@@ -107,8 +115,10 @@ class UserInputState extends State {
   }
 
   async run() {
+    const isCurrent = this.createStateGuard();
     while (this.monitor.currentStateName === 'USER_INPUT') {
       await this.sleep(CONFIG.stateCheckInterval);
+      if (!isCurrent()) return;
 
       if (!this.monitor.userInputMonitor.checkInputHasContent()) {
         // Check if LLM started responding
@@ -189,11 +199,12 @@ class LLMRespondingState extends State {
     // User must have sent a message to trigger LLM response
     this.monitor.onUserSendMessage();
     // Record the last user message node after a short delay (wait for DOM render)
+    const isCurrent = this.createStateGuard();
     setTimeout(() => {
       // The state may already be left (the first poll is 500ms too): writing
       // the wrapper then would make a later exit() collapse a message that is
       // no longer the pending agent reply.
-      if (this.monitor.currentStateName !== 'LLM_RESPONDING') {
+      if (!isCurrent()) {
         return;
       }
       const userMsgBoxes = document.querySelectorAll('.vac-message-box.vac-offset-current');
@@ -252,10 +263,12 @@ class LLMRespondingState extends State {
   }
 
   async run() {
+    const isCurrent = this.createStateGuard();
     this.info(`[LLMRespondingState] Starting run loop, pageType=${this.monitor.pageAdapter.pageType}`);
 
     while (this.monitor.currentStateName === 'LLM_RESPONDING') {
       await this.sleep(CONFIG.llmRespondingCheckInterval);
+      if (!isCurrent()) return;
 
       const isResponding = this.checkLLMResponding();
       const lastFromLLM = this.monitor.pageAdapter.isLastMessageFromLLM();
@@ -400,11 +413,13 @@ class ScanningCodeBlocksState extends State {
   }
 
   async run() {
+    const isCurrent = this.createStateGuard();
     this.info('[ScanningCodeBlocksState] Waiting for code block scan to complete');
     const maxWait = this.enterTime + this.scanTimeout;
 
     while (this.monitor.currentStateName === 'SCANNING_CODE_BLOCKS') {
       await this.sleep(CONFIG.stateCheckInterval);
+      if (!isCurrent()) return;
 
       if (this.monitor.scanComplete) {
         this.info('[ScanningCodeBlocksState] Scan complete, transitioning to AGENT_EXECUTING');
@@ -455,8 +470,10 @@ class AgentExecutingState extends State {
   }
 
   async run() {
+    const isCurrent = this.createStateGuard();
     while (this.monitor.currentStateName === 'AGENT_EXECUTING') {
       await this.sleep(CONFIG.stateCheckInterval);
+      if (!isCurrent()) return;
 
       // 1. Check if user has input (highest priority)
       const hasInput = this.monitor.userInputMonitor.hasUserInput;
@@ -482,6 +499,7 @@ class AgentExecutingState extends State {
         if (item) {
           this.info('Received MetaDSL execution result from C#');
           if (item.channelId && window.Relay && window.Relay.ws) { window.Relay.ws._lastChannelId = item.channelId; }
+          this.monitor.handleExecutionReply(item.rawMessage);
           // Send result directly to LLM, respecting noAgentMarker flag
           this.monitor.sendResultToLLM(item.message, item.noAgentMarker);
           continue; // Continue processing more results
@@ -524,6 +542,7 @@ class AgentExecutingState extends State {
           let handled = false;
           for (let ix = 0; ix < 10; ++ix) {
             await this.sleep(CONFIG.stateCheckInterval);
+            if (!isCurrent()) return;
             const hasInput2 = this.monitor.userInputMonitor.hasUserInput;
             const isTyping2 = this.monitor.userInputMonitor.isUserTyping;
             const hasContent2 = this.monitor.userInputMonitor.checkInputHasContent();
@@ -535,13 +554,20 @@ class AgentExecutingState extends State {
             }
             const isLLMResponding = this.checkLLMResponding();
             if (isLLMResponding) {
-              this.info('LLM is responding, transitioning to LLM_RESPONDING');
-              this.monitor.transitionTo('LLM_RESPONDING', 'LLM started responding');
-              handled = true;
-              break;
+                this.info('LLM is responding, transitioning to LLM_RESPONDING');
+                this.monitor.transitionTo('LLM_RESPONDING', 'LLM started responding');
+                handled = true;
+                break;
             }
-          }
-          if (!handled) {
+            // Defer planning when work arrived during the wait.
+            if (this.monitor.operationQueue.length > 0 ||
+                    (this.monitor.metadslWorker &&
+                      this.monitor.metadslWorker.getReceiveQueueCount() > 0)) {
+                handled = true;
+                break;
+            }
+        }
+        if (!handled) {
             if (this.monitor.isInitializing) {
               // Still initializing, wait for user first message before planning
               this.debug('Still initializing, skipping need_to_plan');
@@ -586,14 +612,14 @@ class AgentExecutingState extends State {
           return false;
         }
 
-        // Mark as executed
+        // Sending is not proof of delivery or execution.
         blocks.forEach((block) => {
-          block.dataset.metadslStatus = 'executed';
+          block.dataset.metadslStatus = 'sending';
         });
 
         // Execute the code
         this.info('Executing MetaDSL code block...');
-        const sent = this.monitor.executeCommand(operation.code);
+        const sent = this.monitor.executeCommand(operation.code, blocks);
         if (sent === false) {
           // The command never reached the transport: leaving the state machine
           // to wait for its reply would stall until the response timeout.
@@ -601,22 +627,32 @@ class AgentExecutingState extends State {
           operation.retryCount = (operation.retryCount || 0) + 1;
           operation.nextRetryAt = Date.now() + this.monitor.sendRetryDelay;
           if (operation.retryCount > this.monitor.maxSendRetries) {
+            blocks.forEach((block) => {
+              block.dataset.metadslStatus = 'failed';
+            });
             this.error(`Send failed after ${operation.retryCount - 1} retries, dropping operation ${operation.blockId}`);
             return true;
           }
           this.warn(`Send failed, requeue retry ${operation.retryCount}/${this.monitor.maxSendRetries} for ${operation.blockId}`);
+          blocks.forEach((block) => {
+            block.dataset.metadslStatus = 'retrying';
+          });
           this.monitor.operationQueue.unshift(operation);
           return false;
         }
 
+        // undefined means locally handled; true only means submitted.
+        const status = sent === undefined ? 'executed'
+          : sent === true ? 'submitted' : 'unknown';
         blocks.forEach((block) => {
-          // Add visual indicator
-          this.monitor.addVisualIndicator(block, 'executed');
-          // Schedule hiding the container after 3 seconds
-          this.monitor.scheduleHideContainer(block);
+          block.dataset.metadslStatus = status;
+          this.monitor.addVisualIndicator(block, status);
+          if (status === 'executed') {
+            this.monitor.scheduleHideContainer(block);
+          }
         });
 
-        this.info('✓ Executed code block:', operation.blockId);
+        this.info(`Command status: ${status}`, operation.blockId);
 
         // Update state display after operation completes
         if (window.agentPanel) {
@@ -660,8 +696,15 @@ class AgentExecutingState extends State {
     } catch (error) {
       this.info(`Error executing operation: ${error.message}`);
       this.error('Error executing operation:', error);
-      // On error, mark as executed to avoid infinite loop
+      if (operation.type === 'execute') {
+        blocks.forEach((block) => {
+          if (block) block.dataset.metadslStatus = 'unknown';
+        });
+      }
+      // Delivery is ambiguous. Do not automatically resend.
       return true;
+    } finally {
+      this.monitor.resumeDeferredScan();
     }
 
     // Default: mark as executed

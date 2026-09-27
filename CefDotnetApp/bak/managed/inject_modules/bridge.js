@@ -144,12 +144,7 @@ class AgentBridge {
 
   _dispatchCommand(commandId, message, attempt) {
     if (this._isRelayReady()) {
-      const envelope = {
-        type: 'agent_call',
-        id: commandId,
-        func: 'handle_agent_command',
-        args: [JSON.stringify(message)]
-      };
+      const envelope = relayTransport.createAgentCommandEnvelope(JSON.stringify(message));
       if (relayTransport.queueMessage(JSON.stringify(envelope))) {
         return;
       }

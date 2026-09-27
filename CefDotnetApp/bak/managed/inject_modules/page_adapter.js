@@ -263,7 +263,10 @@ class PageAdapter {
       if (isMetadslCode || isMetadslPre) {
         const codeEl = isMetadslCode ? node : node.querySelector('code[data-metadsl-status]');
         const codeText = codeEl ? codeEl.textContent : node.textContent;
-        text += '\n' + this.collapseMetaDSLForHistory(codeText) + '\n';
+        const status = codeEl && codeEl.dataset.metadslStatus;
+        const canCollapse = status === 'executed' || status === 'history';
+        text += '\n' + (canCollapse
+          ? this.collapseMetaDSLForHistory(codeText) : codeText) + '\n';
         continue;
       }
       text += this.getVisibleTextForHistory(node);

@@ -7,6 +7,9 @@ class MetaDSLMonitor {
     this.bridge = bridge;
     this.pageAdapter = pageAdapter;
     this.metadslWorker = metadslWorker;
+    this.pendingExecutions = new Map();
+    this.executionSessionId = Array.from(crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16).padStart(8, '0')).join('');
+    this.executionSequence = 0;
     this.started = false; // Only controlled by panel start/stop
     this._runGeneration = 0; // Invalidates a previous runStateMachine loop
     this.processedMessages = new Set();
@@ -25,6 +28,8 @@ class MetaDSLMonitor {
 
     // Operation queue mechanism
     this.operationQueue = [];
+    this._capacityDeferred = false;
+    this._deferredWrappers = new Set();
     this.pageStableTimer = null;
     this.isProcessingQueue = false;
     this.pageStableDelay = CONFIG.config.panel.streamingPage ? CONFIG.pageStableDelay : 1500;
@@ -43,6 +48,9 @@ class MetaDSLMonitor {
     // cache only holds the value computed for this very node.
     this.blockIdCache = new WeakMap();
     this.nextBlockId = 0;
+    this.messageIdCache = new WeakMap();
+    this.nextMessageId = 0;
+    this.messageSequence = [];
 
     // Fingerprints of the messages already handled, in document order. Every
     // scan aligns the current message sequence against this one to tell newly
@@ -73,6 +81,7 @@ class MetaDSLMonitor {
       AGENT_EXECUTING: new AgentExecutingState(this)
     };
     this.currentState = null;
+    this._stateToken = null;
     this.currentStateName = null; // Will be set by transitionTo in start()
     this.isTransitioning = false; // Prevent concurrent state transitions
     this.stateHistory = [];
@@ -139,6 +148,8 @@ class MetaDSLMonitor {
     // Reset initialization flags for proper restart behavior
     this.isInitializing = true;
     this.canExecuteNewCommands = false;
+    this._capacityDeferred = false;
+    this._deferredWrappers.clear();
 
     // Initialize state machine with State Pattern
     this.transitionTo('AGENT_EXECUTING', 'Initial state');
@@ -182,6 +193,7 @@ class MetaDSLMonitor {
     // enter(), leaving the input monitor stopped) and so the old run loop,
     // which may be parked in await, stops driving it.
     this.currentState = null;
+    this._stateToken = null;
     this.currentStateName = null;
     this.canExecuteNewCommands = false;
     this.stopMemoryGuard();
@@ -193,6 +205,8 @@ class MetaDSLMonitor {
 
     // Clear operation queue
     this.operationQueue = [];
+    this._capacityDeferred = false;
+    this._deferredWrappers.clear();
 
     if (this.pageStableTimer) {
       clearTimeout(this.pageStableTimer);
@@ -221,6 +235,44 @@ class MetaDSLMonitor {
 
     // Process response immediately (no debounce needed)
     this.processResponse(response);
+  }
+
+  handleExecutionReply(rawMessage) {
+    if (typeof rawMessage !== 'string') return false;
+    const text = '\n' + rawMessage.replace(/\r\n/g, '\n');
+    const header = '\nMetaDSL <{:>\n';
+    let selected = null;
+    for (let offset = text.indexOf(header); offset >= 0; offset = text.indexOf(header, offset + 1)) {
+      const current = text.slice(offset + header.length);
+      const match = /^\/\/ webagent_request_id: ([0-9a-f]{32}_[0-9]+)\n/.exec(current);
+      if (!match) continue;
+      const pending = this.pendingExecutions.get(match[1]);
+      if (!pending) continue;
+      const prefix = pending.command.replace(/\r\n/g, '\n') + '\n<:}>;\nResult <{:>\n';
+      if (!current.startsWith(prefix)) continue;
+      // Ambiguous echoes must not change execution state.
+      if (selected) return false;
+      selected = { current, match, pending, prefix };
+    }
+    if (!selected) return false;
+    const { current, match, pending, prefix } = selected;
+    const result = current.slice(prefix.length);
+    const failed = /(?:^|\n)<:}>\nHasError;\s*$/.test(result);
+    if (!failed && !/(?:^|\n)<:}>;\s*$/.test(result)) return false;
+    const status = failed ? 'failed' : 'executed';
+    this.pendingExecutions.delete(match[1]);
+    pending.blocks.forEach((block) => {
+      if (!block || !block.dataset) return;
+      block.dataset.metadslStatus = status;
+      this.addVisualIndicator(block, status);
+      if (!failed) {
+        this.scheduleHideContainer(block);
+      }
+    });
+    if (window.agentPanel) {
+      window.agentPanel.updateStateDisplay();
+    }
+    return true;
   }
 
   processResponse(response) {
@@ -281,7 +333,7 @@ class MetaDSLMonitor {
         count: count
       }
     };
-    this.enqueueOperation(operation);
+    return this.enqueueOperation(operation);
   }
 
   startAutoPlan() {
@@ -313,7 +365,7 @@ class MetaDSLMonitor {
         count: count
       }
     };
-    this.enqueueOperation(operation);
+    return this.enqueueOperation(operation);
   }
   triggerReflection() {
     const operation = {
@@ -323,7 +375,7 @@ class MetaDSLMonitor {
         pageType: this.pageAdapter.pageType
       }
     };
-    this.enqueueOperation(operation);
+    return this.enqueueOperation(operation);
   }
   updateSystemPrompt() {
     const operation = {
@@ -333,7 +385,7 @@ class MetaDSLMonitor {
         pageType: this.pageAdapter.pageType
       }
     };
-    this.enqueueOperation(operation);
+    return this.enqueueOperation(operation);
   }
 
   // ========================================================================
@@ -402,7 +454,9 @@ class MetaDSLMonitor {
       // Mark all existing code blocks as history and collapse agent replies
       this.markHistoryCodeBlocks();
       // First dialog, update system prompt
-      this.updateSystemPrompt();
+      if (this.updateSystemPrompt() === false) {
+        this.warn('System prompt update notification rejected: operation queue full.');
+      }
       // Only send AGENT_INITIALIZED on first start, skip on restart
       if (!this.hasEverInitialized) {
         this.hasEverInitialized = true;
@@ -511,6 +565,7 @@ class MetaDSLMonitor {
       // Enter new state with error handling
       this.currentStateName = stateName;
       this.currentState = this.states[stateName];
+      this._stateToken = {};
 
       try {
         this.currentState.enter();
@@ -671,13 +726,20 @@ class MetaDSLMonitor {
     const seedWrappers = this.pageAdapter.getMessageWrappers
       ? this.pageAdapter.getMessageWrappers()
       : Array.from(document.querySelectorAll('.vac-message-wrapper'));
-    this.seenFingerprints = seedWrappers.map(w => {
+    this.messageSequence = seedWrappers.map(w => {
+      let fp = null;
       try {
-        return this.pageAdapter.getMessageFingerprint(w);
+        fp = this.pageAdapter.getMessageFingerprint(w);
       } catch (e) {
-        return null;
+        fp = null;
       }
-    }).filter(Boolean);
+      return { id: this.getMessageId(w), fp, seen: true };
+    });
+    const seedLimit = this.maxProcessedMessages || 2000;
+    if (this.messageSequence.length > seedLimit) {
+      this.messageSequence = this.messageSequence.slice(-seedLimit);
+    }
+    this.seenFingerprints = this.messageSequence.map(record => record.fp).filter(Boolean);
     this.info(`Seeded ${this.seenFingerprints.length} known messages from the current page`);
 
     // Collapse all existing agent reply messages on page
@@ -709,6 +771,16 @@ class MetaDSLMonitor {
   // from the newest messages, ...). The known sequence is then re-seeded from
   // the page and every message counts as history - the safe direction: never
   // execute what cannot be recognized.
+  getMessageId(wrapper) {
+    if (!wrapper) return null;
+    let id = this.messageIdCache.get(wrapper);
+    if (!id) {
+      id = `msg_${this.nextMessageId++}`;
+      this.messageIdCache.set(wrapper, id);
+    }
+    return id;
+  }
+
   alignMessages() {
     const wrappers = this.pageAdapter.getMessageWrappers
       ? this.pageAdapter.getMessageWrappers()
@@ -720,48 +792,77 @@ class MetaDSLMonitor {
         return null;
       }
     });
-    const seen = this.seenFingerprints;
-    const newIdx = [];
-    let i = fingerprints.length - 1;
-    let j = seen.length - 1;
+    const previous = this.messageSequence;
+    const previousById = new Map(previous.map(record => [record.id, record]));
+    const cachedIds = wrappers.map(w => this.messageIdCache.get(w));
     let matched = 0;
-    while (i >= 0 && j >= 0) {
-      if (fingerprints[i] && fingerprints[i] === seen[j]) {
-        matched++; i--; j--;
-      } else if (matched === 0) {
-        // Not part of the known sequence: a message that arrived after it.
-        newIdx.push(i); i--;
-      } else {
-        break;
+    let matchedEnd = -1;
+    let matchedNodes = -1;
+    // Live node identities outrank fingerprints. For rebuilt DOM, prefer the
+    // longest suffix match and keep the latest anchor when still ambiguous.
+    for (let end = fingerprints.length - 1; end >= 0; end--) {
+      let count = 0;
+      let nodes = 0;
+      while (end - count >= 0 && previous.length - 1 - count >= 0) {
+        const k = end - count;
+        const record = previous[previous.length - 1 - count];
+        const cachedId = cachedIds[k];
+        if (cachedId) {
+          if (cachedId !== record.id) break;
+          nodes++;
+        } else if (!fingerprints[k] || fingerprints[k] !== record.fp) {
+          break;
+        }
+        count++;
+      }
+      if (count > 0 && (nodes > matchedNodes ||
+          (nodes === matchedNodes && count > matched))) {
+        matched = count;
+        matchedEnd = end;
+        matchedNodes = nodes;
       }
     }
-    newIdx.reverse();
 
-    if (matched === 0 && seen.length > 0) {
+    const hasKnownNodes = cachedIds.some(id => previousById.has(id));
+    const reseeded = previous.length > 0 && matched === 0 && !hasKnownNodes;
+    if (reseeded) {
       this.warn('Known message sequence not found on the page; re-seeding from the current messages (all treated as history)');
-      this.seenFingerprints = fingerprints.filter(Boolean);
-      return { wrappers, fingerprints, newIdx: [], matched: 0, reseeded: true };
     }
-    return { wrappers, fingerprints, newIdx, matched, reseeded: false };
+    const newIdx = [];
+    const records = wrappers.map((wrapper, k) => {
+      let record = previousById.get(cachedIds[k]);
+      if (!record && matched > 0 && k > matchedEnd - matched && k <= matchedEnd) {
+        record = previous[previous.length - 1 - (matchedEnd - k)];
+      }
+      const id = record ? record.id : this.getMessageId(wrapper);
+      this.messageIdCache.set(wrapper, id);
+      // With no suffix anchor, retain known pending nodes but do not execute
+      // unrecognized nodes. A history prepend must never become a command.
+      const seen = record ? record.seen :
+        previous.length > 0 && (reseeded || matched === 0 || k <= matchedEnd);
+      const current = { id, fp: fingerprints[k], seen };
+      if (!seen) newIdx.push(k);
+      return current;
+    });
+    // Keep pending identities too: stability retries must not reclassify them
+    // as handled merely because their fingerprints were observed once.
+    const limit = this.maxProcessedMessages || 2000;
+    this.messageSequence = records.slice(-limit);
+    this.seenFingerprints = this.messageSequence
+      .filter(record => record.seen && record.fp).map(record => record.fp);
+    return { wrappers, fingerprints, records, newIdx, matched, reseeded };
   }
 
   // Remember the messages handled by this scan as known, so the next scan
   // aligns them instead of treating them as new.
-  markMessagesAsSeen(align) {
-    if (!align || !align.newIdx.length) return;
-    for (const k of align.newIdx) {
-      const fp = align.fingerprints[k];
-      // Duplicates are kept on purpose: two identical short replies share a
-      // fingerprint and are told apart by their position in the sequence, so
-      // the known sequence has to hold one entry per message.
-      if (fp) {
-        this.seenFingerprints.push(fp);
-      }
+  markMessagesAsSeen(align, pendingWrappers = new Set()) {
+   if (!align || !align.newIdx.length) return;
+   for (const k of align.newIdx) {
+    if (pendingWrappers.has(align.wrappers[k])) continue;
+    align.records[k].seen = true;
     }
-    const limit = this.maxProcessedMessages || 2000;
-    if (this.seenFingerprints.length > limit) {
-      this.seenFingerprints.splice(0, this.seenFingerprints.length - limit);
-    }
+    this.seenFingerprints = this.messageSequence
+      .filter(record => record.seen && record.fp).map(record => record.fp);
   }
 
   // Annotate a code block as history: it is never queued for execution. The
@@ -773,6 +874,17 @@ class MetaDSLMonitor {
     block.style.borderLeft = '3px solid #9E9E9E';
     block.style.backgroundColor = 'rgba(158, 158, 158, 0.05)';
     this.scheduleHideContainer(block);
+  }
+
+  // Record that a code block was scanned and belongs to no command (it is not
+  // a MetaDSL block and does not continue one). Deliberately NOT annotated
+  // with data-metadsl-status: that attribute is what makes page_adapter
+  // collapse a block when the conversation is archived and what makes
+  // scheduleHideContainer hide it on the page, and both are MetaDSL-only.
+  // A plain markdown code block has to stay visible and verbatim.
+  markBlockAsScanned(block) {
+    if (!block) return;
+    block.dataset.metadslScan = 'skipped';
   }
 
   // Wrappers of the messages that arrived after the already known sequence,
@@ -792,6 +904,9 @@ class MetaDSLMonitor {
   // ========================================================================
 
   pruneOldMessages() {
+    // Preserve message alignment and DOM references until pending work settles.
+    if (!this.scanComplete || this.operationQueue.length > 0 ||
+        this._capacityDeferred || this._deferredWrappers.size > 0) return;
     const maxRounds = CONFIG.get('panel.maxConversationRounds');
     if (!maxRounds || maxRounds <= 0) return;
 
@@ -1185,36 +1300,45 @@ class MetaDSLMonitor {
 
     // Phase 1: collect every unprocessed block that has content.
     const items = [];
+    const pendingWrappers = new Set();
 
     codeBlocks.forEach((block) => {
       // A block whose message is not part of the newly arrived ones is history
-      // (or already handled): annotate it and leave it alone.
+      // (or already handled): it belongs to no command, so only record that it
+      // was scanned. Only a MetaDSL block may be hidden and collapsed in the
+      // archive; an ordinary markdown block has to stay as it is.
       const msgWrapper = block.closest ? block.closest('.vac-message-wrapper') : null;
       if (!newWrappers.has(msgWrapper)) {
-        this.markBlockAsHistory(block);
+        this.markBlockAsScanned(block);
         return;
       }
 
       const blockId = this.getBlockId(block);
 
       // Skip already processed blocks (check both in-memory set and DOM attribute)
-      if (this.processedBlocks.has(blockId) || block.dataset.metadslStatus) {
+      if (this.processedBlocks.has(blockId) || block.dataset.metadslStatus || block.dataset.metadslScan) {
         return;
       }
 
       newBlocksCount++;
 
       const rawCode = block.textContent || '';
+      if (this.lastBlockContent.get(block) !== rawCode) {
+        unstableBlocksCount++;
+      }
+      this.lastBlockContent.set(block, rawCode);
       if (!rawCode.trim()) {
-        return;
+       pendingWrappers.add(msgWrapper);
+       return;
       }
 
       // A MetaDSL marker opens a command unit; a marker-less block continues
       // the preceding unit when only whitespace separates them (stage 1).
       items.push({
-        block,
-        blockId,
-        rawCode,
+       block,
+       blockId,
+       msgWrapper,
+       rawCode,
         root: this.findMessageContainer(block),
         starts: this.stripMetaDSLMarker(rawCode) !== null,
       });
@@ -1223,7 +1347,38 @@ class MetaDSLMonitor {
     // Phase 2: build the command per message (stage 1 + stage 2), then gate on
     // the whole command. Gating per block instead would enqueue the leading
     // fragment on its own whenever a later fence was still streaming.
-    this.groupCommandUnitsByMessage(items).forEach(entry => {
+    if (unstableBlocksCount > 0) {
+      // Wait for another observation, including empty and marker-less blocks.
+      // Schedule here because direct callers may ignore the return value.
+      this.scanComplete = false;
+      this._newWrappers = null;
+      this._roundAlign = null;
+      pendingWrappers.forEach(wrapper => this._deferredWrappers.add(wrapper));
+      this.resetPageStableTimer();
+      return true;
+    }
+
+    this._capacityDeferred = false;
+    const commandEntries = this.groupCommandUnitsByMessage(items);
+    // Check units before merging so a complete unit cannot consume an
+    // unfinished one. A marker followed by a plain continuation is valid.
+    commandEntries.forEach(entry => {
+     entry.units.forEach(unit => {
+      const code = unit.map(it => {
+       const stripped = this.stripMetaDSLMarker(it.rawCode);
+       return stripped !== null ? stripped : it.rawCode;
+      }).join('\n').trim();
+      if (!code) {
+       unit.forEach(it => pendingWrappers.add(it.msgWrapper));
+      }
+     });
+    });
+    commandEntries.forEach(entry => {
+     // Defer the whole message without scheduling an idle rescan.
+     if (entry.units.some(unit =>
+      unit.some(it => pendingWrappers.has(it.msgWrapper)))) {
+      return;
+     }
       // Plain blocks that continue no command are left alone: they are not
       // recorded as processed, matching the pre-existing behaviour that only
       // executed blocks are consumed.
@@ -1232,21 +1387,6 @@ class MetaDSLMonitor {
         return;
       }
       const head = cmdBlocks[0];
-
-      const changing = cmdBlocks.filter(it => {
-        const lastContent = this.lastBlockContent.get(it.block);
-        return lastContent !== undefined && lastContent !== it.rawCode;
-      });
-      if (changing.length > 0) {
-        // Content is still changing, update cache but skip processing
-        cmdBlocks.forEach(it => this.lastBlockContent.set(it.block, it.rawCode));
-        unstableBlocksCount++;
-        this.debug(`Command of ${cmdBlocks.length} block(s) still changing, skipping (${changing.length} unstable)`);
-        return;
-      }
-
-      // Content is stable (first time or unchanged), record it
-      cmdBlocks.forEach(it => this.lastBlockContent.set(it.block, it.rawCode));
 
       // The marker line is stripped from every fence that carries one; the
       // remaining fences hold plain code and are appended verbatim.
@@ -1261,7 +1401,16 @@ class MetaDSLMonitor {
         }
         metadslBlocksCount++;
 
-        // Mark as processed immediately.
+        // Reserve capacity before changing block or message bookkeeping.
+        // This scan and enqueue are synchronous; no consumer runs between them.
+        if (!this.isInitializing &&
+            this.operationQueue.length >= this.maxOperationQueue) {
+          cmdBlocks.forEach(it => pendingWrappers.add(it.msgWrapper));
+          this._capacityDeferred = true;
+          return;
+        }
+
+        // Initialization consumes history; other commands have queue capacity.
         cmdBlocks.forEach(it => this.processedBlocks.add(it.blockId));
 
         // While initializing, every block is history by definition. Past that
@@ -1316,8 +1465,9 @@ class MetaDSLMonitor {
     // of running their blocks again. Skipped while a block is still changing:
     // that message is not finished and has to be scanned once more.
     if (unstableBlocksCount === 0) {
-      this.markMessagesAsSeen(align);
+     this.markMessagesAsSeen(align, pendingWrappers);
     }
+    this._deferredWrappers = pendingWrappers;
 
     // Drop the per-round alignment. This method is also called directly from
     // the state machine, and the page may have moved on since it was computed,
@@ -1338,21 +1488,32 @@ class MetaDSLMonitor {
     return unstableBlocksCount > 0;
   }
 
+  resumeDeferredScan() {
+    if (!this.started || !this.enabled || !this._capacityDeferred ||
+        this.operationQueue.length >= this.maxOperationQueue) return;
+    // Called only after consumption and any retry requeue have finished.
+    this._capacityDeferred = false;
+    this.scanComplete = false;
+    this._newWrappers = null;
+    this._roundAlign = null;
+    this.resetPageStableTimer();
+  }
+
   enqueueOperation(operation) {
     // Check if the last operation in queue is identical to current operation
     if (this.operationQueue.length > 0) {
       const lastOperation = this.operationQueue[this.operationQueue.length - 1];
       if (this.areOperationsEqual(lastOperation, operation)) {
         this.debug(`Skipping duplicate operation: ${operation.type}`);
-        return;
+        return true;
       }
     }
 
     // Bound the queue: a page that keeps producing commands while the agent
     // is stuck would otherwise grow it without limit.
     if (this.operationQueue.length >= this.maxOperationQueue) {
-      this.warn(`Operation queue full (${this.maxOperationQueue}), dropping oldest operation`);
-      this.operationQueue.shift();
+      this.warn(`Operation queue full (${this.maxOperationQueue}), rejected new operation: ${operation.notificationType || operation.type}`);
+      return false;
     }
 
     this.operationQueue.push(operation);
@@ -1361,12 +1522,15 @@ class MetaDSLMonitor {
     if (window.agentPanel) {
       window.agentPanel.updateStateDisplay();
     }
+    return true;
   }
 
   areOperationsEqual(op1, op2) {
     // Compare operations by their essential properties, skip DOM elements
     if (op1 === op2) return true;
     if (!op1 || !op2) return false;
+    if (op1.type !== op2.type) return false;
+    if (!op1.blockId || !op2.blockId) return false;
 
     // Compare blockId instead of block element
     if (op1.blockId !== op2.blockId) return false;
@@ -1399,45 +1563,29 @@ class MetaDSLMonitor {
   // how the page renders a message, so the same block got a different id after
   // a reload and was executed again.
   //
-  // The block content is deliberately NOT part of the id: it changes on every
-  // streamed token, and lastBlockContent needs a stable key to notice that.
+  // Message identity and block position survive an aligned DOM rebuild.
+  // Content is not identity; stability is tracked separately by DOM node.
   getBlockId(block) {
     if (!block) return null;
     const msgWrapper = block.closest ? block.closest('.vac-message-wrapper') : null;
-    let msgFp = null;
-    try {
-      msgFp = msgWrapper ? this.pageAdapter.getMessageFingerprint(msgWrapper) : null;
-    } catch (e) {
-      msgFp = null;
-    }
-
-    // Cache is only valid while the message fingerprint it was built from is
-    // unchanged - a streaming message keeps re-rendering with new content.
+    const messageId = this.getMessageId(msgWrapper);
     const cached = this.blockIdCache.get(block);
-    if (cached && cached.fp === msgFp) {
+    if (cached && cached.messageId === messageId) {
       return cached.id;
     }
 
     let blockId;
-    if (msgFp) {
-      let indexInMessage = 0;
-      if (msgWrapper) {
-        const all = msgWrapper.querySelectorAll('code.code-block-body, code[class*="language-"], pre code');
-        const idx = Array.prototype.indexOf.call(all, block);
-        indexInMessage = idx >= 0 ? idx : 0;
-      } else {
-        indexInMessage = this.nextBlockId++;
-      }
-      blockId = `blk_${msgFp}_#${indexInMessage}`;
+    if (messageId) {
+      const all = msgWrapper.querySelectorAll('code.code-block-body, code[class*="language-"], pre code');
+      const indexInMessage = Array.prototype.indexOf.call(all, block);
+      blockId = indexInMessage >= 0
+        ? `blk_${messageId}_#${indexInMessage}`
+        : `blk_node_${this.nextBlockId++}`;
     } else {
-      // No fingerprint (page type not recognized, unexpected markup): fall
-      // back to the block content. Every block then keeps its own identity
-      // across renders, instead of all of them collapsing onto one shared id
-      // and swallowing each other.
-      const content = (block.textContent || '').trim();
-      blockId = `blk_content_${this.hashString(content)}`;
+      // Without a message anchor, only this node's identity is guaranteed.
+      blockId = `blk_node_${this.nextBlockId++}`;
     }
-    this.blockIdCache.set(block, { fp: msgFp, id: blockId });
+    this.blockIdCache.set(block, { messageId, id: blockId });
     return blockId;
   }
 
@@ -1446,6 +1594,8 @@ class MetaDSLMonitor {
     const container = block.closest('pre') || block.closest('div.code-block') || block.parentElement || block;
     this.info(`scheduleHideContainer: block=${block.tagName}.${this._getClassStr(block).slice(0, 30)}, container=${container.tagName}.${this._getClassStr(container).slice(0, 30)}`);
     setTimeout(() => {
+      if (!CONFIG.get('panel.hideMetaDslBlock')) return;
+      if (!['executed', 'history'].includes(block.dataset.metadslStatus)) return;
       container.style.display = 'none';
       this.info(`scheduleHideContainer: hidden container=${container.tagName}, display=${container.style.display}`);
     }, 3000);
@@ -1574,6 +1724,7 @@ class MetaDSLMonitor {
         cur.push(it);
       } else {
         dropped.push(it);
+        cur = null;
       }
       prev = it;
     });
@@ -1753,7 +1904,7 @@ class MetaDSLMonitor {
   // Command Execution
   // ========================================================================
 
-  executeCommand(command) {
+  executeCommand(command, blocks = []) {
     try {
       // Check if this is a JavaScript request (not MetaDSL)
       const js_request_prefix = "js_request:";
@@ -1774,12 +1925,17 @@ class MetaDSLMonitor {
           return;
         }
         else if (jsRequest === "keep_llm_context") {
-          this.keepContext(CONFIG.llmContextCountModuloForKeep);
+          if (this.keepContext(CONFIG.llmContextCountModuloForKeep) === false) {
+            this.sendResultToLLM("Context notification not enqueued: operation queue full. No automatic retry.");
+          }
           return;
         }
         else if (jsRequest === "reflect") {
-          this.triggerReflection();
-          this.sendResultToLLM("Reflection triggered, episodic_reflection notification enqueued.");
+          if (this.triggerReflection() === false) {
+            this.sendResultToLLM("Reflection notification not enqueued: operation queue full. No automatic retry.");
+          } else {
+            this.sendResultToLLM("Reflection triggered, episodic_reflection notification enqueued.");
+          }
           return;
         }
 
@@ -1821,8 +1977,21 @@ class MetaDSLMonitor {
         return false;
       }
 
-      // Send MetaDSL code directly via MetaDSL Worker
-      const success = this.metadslWorker.queueMessage(command);
+      // Track only remote code-block commands, before transport submission.
+      const requestId = blocks.length > 0
+        ? `${this.executionSessionId}_${++this.executionSequence}` : null;
+      const wireCommand = requestId
+        ? `// webagent_request_id: ${requestId}\n${command}` : command;
+      if (requestId) {
+        this.pendingExecutions.set(requestId, {
+          command: wireCommand,
+          blocks: blocks.slice()
+        });
+      }
+      const success = this.metadslWorker.queueMessage(wireCommand);
+      if (success === false && requestId) {
+        this.pendingExecutions.delete(requestId);
+      }
       if (success) {
         this.info('✓ MetaDSL command queued for execution');
       } else {
@@ -1835,7 +2004,8 @@ class MetaDSLMonitor {
       return success;
     } catch (error) {
       this.error('Error in executeCommand:', error);
-      return false;
+      // Delivery may have started. Never retry an ambiguous exception.
+      return null;
     }
   }
   sendResultToLLM(message, noAgentMarker = false) {

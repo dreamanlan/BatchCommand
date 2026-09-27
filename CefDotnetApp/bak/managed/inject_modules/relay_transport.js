@@ -160,6 +160,7 @@ class RelayTransport {
         this.logger.info('relay resync: link is up, healed');
       } else if (state === 'failed' || state === 'unknown') {
         this.isConnected = false;
+        this.isRunning = false;
         this.clientId = null;
         this._scheduleReconnect();
       }
@@ -219,12 +220,26 @@ class RelayTransport {
   // (msgJson: {id, command, params}); the reply arrives via
   // window.onAgentResponse (agent_result envelope routed in
   // _dispatchAgentEnvelope below).
+  // Even wire IDs belong to commands; restore the caller's ID on receipt.
+  createAgentCommandEnvelope(msgJson) {
+    const message = JSON.parse(msgJson);
+    const wireId = Number(message.id || 0) * 2;
+    if (!Number.isSafeInteger(wireId) || wireId < 0) {
+      throw new Error('Invalid agent command ID');
+    }
+    message.id = wireId;
+    return {
+      type: 'agent_call',
+      // This branch has no explicit business reply; retain its automatic reply.
+      id: message.command === 'handle_thread_queue' ? wireId : 0,
+      func: 'handle_agent_command',
+      args: [JSON.stringify(message)]
+    };
+  }
+
   sendAgentCommandJson(msgJson) {
-    let id = 0;
-    try {
-      id = JSON.parse(msgJson).id || 0;
-    } catch (e) { /* keep id 0 */ }
-    return this._sendAgentEnvelope('agent_call', id, 'handle_agent_command', [msgJson], 0);
+    const envelope = this.createAgentCommandEnvelope(msgJson);
+    return this._sendAgentEnvelope(envelope.type, envelope.id, envelope.func, envelope.args, 0);
   }
 
   // Fire-and-forget handle_agent_notification for the single-page adapters.
@@ -239,7 +254,12 @@ class RelayTransport {
     const self = this;
     timeoutMs = timeoutMs || 8000;
     return new Promise(function (resolve, reject) {
-      const id = ++self.callId;
+      // Odd wire IDs are reserved for Promise calls.
+      const id = ++self.callId * 2 - 1;
+      if (!Number.isSafeInteger(id) || id <= 0) {
+        reject(new Error('Agent call ID exhausted'));
+        return;
+      }
       let settled = false;
       const timer = setTimeout(function () {
         if (settled) return;
@@ -316,6 +336,7 @@ class RelayTransport {
     // Raw MetaDSL result text: same queue semantics as the worker transport.
     this.logger.info('onAgentEvent raw result queued (length: ' + message.length + ')');
     this._pushReply({
+      rawMessage: message,
       message: message + "\n\n请简要复述本次执行要点以留存；如有新的MetaDSL代码同一轮发出（有才发，不要重复发），避免下轮结果遗忘傻眼。",
       noAgentMarker: false
     });
@@ -372,12 +393,18 @@ class RelayTransport {
       return false;
     }
     if (msg.type === 'agent_result') {
-      // Promise calls (relayTransport.callAgent) first, then the main bundle
-      // bridge, then the single-page adapters' window.onAgentResponse.
-      const cb = this.pendingCalls.get(msg.id);
-      if (cb) {
-        cb(msg.success !== false, msg.data, msg.error || '');
+      // Odd IDs are Promise replies, including late or duplicate replies.
+      // Even IDs are command replies and must bypass pendingCalls.
+      if (Number.isSafeInteger(msg.id) && msg.id > 0 && msg.id % 2 === 1) {
+        const cb = this.pendingCalls.get(msg.id);
+        if (cb) {
+          cb(msg.success !== false, msg.data, msg.error || '');
+        }
         return true;
+      }
+      if (Number.isSafeInteger(msg.id) && msg.id > 0 && msg.id % 2 === 0) {
+        msg.id = msg.id / 2;
+        text = JSON.stringify(msg);
       }
       if (typeof bridge !== 'undefined' && bridge && typeof bridge.handleResponse === 'function') {
         bridge.handleResponse(text);

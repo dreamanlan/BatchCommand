@@ -2,7 +2,7 @@
 #include <string.h>
 
 #if defined(_WIN32)
-#elif defined(__APPLE__) && TARGET_OS_IPHONE
+#elif defined(__APPLE__) && TARGET_OS_OSX
 #elif defined(__ANDROID__)
 #else
 int GetReadableRangeAround(void* addr,

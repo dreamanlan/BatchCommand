@@ -1,4 +1,4 @@
-#if defined(__APPLE__) && TARGET_OS_IPHONE
+#if defined(__APPLE__) && TARGET_OS_OSX
 
 #include "ReadableRange.h"
 #include <mach/mach.h>

@@ -2496,6 +2496,8 @@ namespace DotNetLib
                 NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
+                BatchCommand.Utils.TcpClientManager.CloseAll();
+                BatchCommand.Utils.UdpClientManager.CloseAll();
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
                 NativeApi.LastSourceProcessId = -1;
 
@@ -4249,6 +4251,83 @@ namespace DotNetLib
             }
         }
 
+        internal static void DispatchTcpClientEvent(string id, string kind, object payload)
+        {
+            if (null == s_NativeApi) {
+                return;
+            }
+            try {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+                TryLoadDSL();
+                string func;
+                if (kind == "message") func = "on_tcpclient_message";
+                else if (kind == "state") func = "on_tcpclient_state";
+                else if (kind == "error") func = "on_tcpclient_error";
+                else return;
+                if (BatchCommand.BatchScript.Calculator.TryGetFuncInfo(func, out _)) {
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    try {
+                        vargs.Add(BoxedValue.FromString(id));
+                        vargs.Add(kind == "message" ? BoxedValue.FromObject(payload) : BoxedValue.FromString((string)payload));
+                        BatchCommand.BatchScript.Call(func, vargs);
+                    }
+                    finally {
+                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    }
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception in tcpclient dispatch (" + kind + "): " + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+        }
+
+        // Message callback: id, byte[] data, remote address, remote port.
+        internal static void DispatchUdpClientEvent(string id, string kind, object payload)
+        {
+            if (null == s_NativeApi) {
+                return;
+            }
+            try {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+                TryLoadDSL();
+                string func;
+                if (kind == "message") func = "on_udpclient_message";
+                else if (kind == "state") func = "on_udpclient_state";
+                else if (kind == "error") func = "on_udpclient_error";
+                else return;
+                if (BatchCommand.BatchScript.Calculator.TryGetFuncInfo(func, out _)) {
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    try {
+                        vargs.Add(BoxedValue.FromString(id));
+                        if (kind == "message") {
+                            var datagram = (BatchCommand.Utils.UdpClientManager.Datagram)payload;
+                            vargs.Add(BoxedValue.FromObject(datagram.Data));
+                            vargs.Add(BoxedValue.FromString(datagram.RemoteAddress));
+                            vargs.Add(BoxedValue.From(datagram.RemotePort));
+                        }
+                        else {
+                            vargs.Add(BoxedValue.FromString((string)payload));
+                        }
+                        BatchCommand.BatchScript.Call(func, vargs);
+                    }
+                    finally {
+                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    }
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception in udpclient dispatch (" + kind + "): " + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+        }
+
         internal static void OnHeartBeat(int process_type, float delta_time)
         {
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -4259,6 +4338,8 @@ namespace DotNetLib
                     // can drain manually too).
                     if (process_type == 0) {
                         BatchCommand.Utils.WebSocketClientManager.DrainQueue(256);
+                        BatchCommand.Utils.TcpClientManager.DrainQueue(256);
+                        BatchCommand.Utils.UdpClientManager.DrainQueue(256);
                     }
                     TryLoadDSL();
 
@@ -5043,6 +5124,10 @@ namespace DotNetLib
             // HostBridge: shared http/process services route their diagnostics here.
             BatchCommand.Utils.HostBridge.Log = s => NativeLog(s);
             BatchCommand.Utils.WebSocketClientManager.Dispatch = Lib.DispatchWsClientEvent;
+            BatchCommand.Utils.TcpClientManager.Log = s => NativeLog(s);
+            BatchCommand.Utils.TcpClientManager.Dispatch = Lib.DispatchTcpClientEvent;
+            BatchCommand.Utils.UdpClientManager.Log = s => NativeLog(s);
+            BatchCommand.Utils.UdpClientManager.Dispatch = Lib.DispatchUdpClientEvent;
 
             // Only valid in MainThread
             BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());

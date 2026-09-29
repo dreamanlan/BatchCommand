@@ -1,1 +1,8 @@
-﻿  DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll
+﻿  DebugScriptVM.cpp
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(507,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(529,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(551,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2732,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+  LINK : 没有找到 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll 或上一个增量链接没有生成它；正在执行完全链接
+    正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
+  DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

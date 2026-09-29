@@ -324,6 +324,10 @@ namespace AgentCore.Core
                 // main thread (drained every tick, see TickAgent).
                 BatchCommand.Utils.WebSocketClientManager.Log = s => AgentCore.Instance.Logger.Info(s);
                 BatchCommand.Utils.WebSocketClientManager.Dispatch = DispatchWsClientEvent;
+                BatchCommand.Utils.TcpClientManager.Log = s => AgentCore.Instance.Logger.Info(s);
+                BatchCommand.Utils.TcpClientManager.Dispatch = DispatchTcpClientEvent;
+                BatchCommand.Utils.UdpClientManager.Log = s => AgentCore.Instance.Logger.Info(s);
+                BatchCommand.Utils.UdpClientManager.Dispatch = DispatchUdpClientEvent;
                 // HostBridge wiring for the shared http/process services
                 // (BatchScriptApi): callbacks flow through the agent event
                 // queue like every other async result.
@@ -351,6 +355,8 @@ namespace AgentCore.Core
                 DrainAgentEvents();
                 // Shared wsclient events -> dsl callbacks (main thread).
                 BatchCommand.Utils.WebSocketClientManager.DrainQueue(256);
+                BatchCommand.Utils.TcpClientManager.DrainQueue(256);
+                BatchCommand.Utils.UdpClientManager.DrainQueue(256);
                 return CallOptionalFunc("on_tick");
             }
             catch (Exception ex) {
@@ -385,6 +391,67 @@ namespace AgentCore.Core
             }
         }
 
+        private static void DispatchTcpClientEvent(string id, string kind, object payload)
+        {
+            try {
+                string func;
+                if (kind == "message") func = "on_tcpclient_message";
+                else if (kind == "state") func = "on_tcpclient_state";
+                else if (kind == "error") func = "on_tcpclient_error";
+                else return;
+                if (BatchCommand.BatchScript.Calculator.TryGetFuncInfo(func, out _)) {
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    try {
+                        vargs.Add(BoxedValue.FromString(id));
+                        vargs.Add(kind == "message" ? BoxedValue.FromObject(payload) : BoxedValue.FromString((string)payload));
+                        BatchCommand.BatchScript.Call(func, vargs);
+                    }
+                    finally {
+                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    }
+                    CheckDslError();
+                }
+            }
+            catch (Exception ex) {
+                AgentCore.Instance.Logger.Error("[csharp] tcpclient dispatch error (" + kind + "): " + ex.Message);
+            }
+        }
+
+        // Message callback: id, byte[] data, remote address, remote port.
+        private static void DispatchUdpClientEvent(string id, string kind, object payload)
+        {
+            try {
+                string func;
+                if (kind == "message") func = "on_udpclient_message";
+                else if (kind == "state") func = "on_udpclient_state";
+                else if (kind == "error") func = "on_udpclient_error";
+                else return;
+                if (BatchCommand.BatchScript.Calculator.TryGetFuncInfo(func, out _)) {
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    try {
+                        vargs.Add(BoxedValue.FromString(id));
+                        if (kind == "message") {
+                            var datagram = (BatchCommand.Utils.UdpClientManager.Datagram)payload;
+                            vargs.Add(BoxedValue.FromObject(datagram.Data));
+                            vargs.Add(BoxedValue.FromString(datagram.RemoteAddress));
+                            vargs.Add(BoxedValue.From(datagram.RemotePort));
+                        }
+                        else {
+                            vargs.Add(BoxedValue.FromString((string)payload));
+                        }
+                        BatchCommand.BatchScript.Call(func, vargs);
+                    }
+                    finally {
+                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    }
+                    CheckDslError();
+                }
+            }
+            catch (Exception ex) {
+                AgentCore.Instance.Logger.Error("[csharp] udpclient dispatch error (" + kind + "): " + ex.Message);
+            }
+        }
+
         internal static int FinalizeAgent()
         {
             try {
@@ -398,6 +465,10 @@ namespace AgentCore.Core
             catch (Exception ex) {
                 AgentCore.Instance.Logger.Error("[csharp] FinalizeAgent failed: " + ex.Message + "\n" + ex.StackTrace);
                 return 0;
+            }
+            finally {
+                BatchCommand.Utils.TcpClientManager.CloseAll();
+                BatchCommand.Utils.UdpClientManager.CloseAll();
             }
         }
 

@@ -34,6 +34,8 @@ namespace BatchCommand.Api
             RegisterRegexApis();
             RegisterFrameworkAliasApis();
             RegisterWsClientApis();
+            RegisterTcpClientApis();
+            RegisterUdpClientApis();
             RegisterHttpApis();
             RegisterProcessApis();
         }
@@ -42,6 +44,18 @@ namespace BatchCommand.Api
         public static void RegisterWsClientApis()
         {
             Api.WebSocketClientApi.RegisterApis();
+        }
+
+        /// <summary>TCP client APIs with binary payloads and host-thread event dispatch.</summary>
+        public static void RegisterTcpClientApis()
+        {
+            Api.TcpClientApi.RegisterApis();
+        }
+
+        /// <summary>UDP client APIs with datagram boundaries and source endpoints.</summary>
+        public static void RegisterUdpClientApis()
+        {
+            Api.UdpClientApi.RegisterApis();
         }
 
         /// <summary>HTTP api set (HttpApi.cs): http_get/post/... + *_callback async variants + download_file, shared by every host.</summary>

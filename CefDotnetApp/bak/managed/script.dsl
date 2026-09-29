@@ -29,6 +29,16 @@ script(init_global_consts)
     // browser-side connection per agent, "wxb_<agentId>"; the bridge keeps
     // routing by registered connection name, zero bridge changes).
     @LiteBridgeUrl = "ws://localhost:3000";
+    // Local page retry: the standalone AgentCore opens its site ports
+    // (8080 -> LocalAgent, 8082 -> ChatRoom) after its own startup, so the
+    // first navigation here can hit ERR_CONNECTION_REFUSED (see
+    // arm_local_page_retry / tick_local_page_retry).
+    @LocalPageRetrySeconds = 60;
+    @LocalPageProbeId = "localpageprobe";
+    // Waiting page shown over the native data: error page while the port is
+    // down (see maybe_swap_local_page_error). The "WaitingAgentCore" marker
+    // word tells the swap logic apart from the native error page.
+    @LocalPageWaitUrl = "data:text/html,%3Chtml%3E%3Cbody%20style=%22font-family:Arial;background:%231e1e2e;color:%23cdd6f4;display:flex;align-items:center;justify-content:center;height:100vh%22%3E%3Cdiv%20style=%22text-align:center%22%3E%3Cdiv%20style=%22font-size:22px;margin-bottom:14px%22%3EWaitingAgentCore%3C/div%3E%3Cdiv%20style=%22font-size:15px;color:%23a6adc8%22%3EAgent%20service%20is%20starting,%20the%20page%20will%20load%20automatically...%3C/div%3E%3C/div%3E%3C/body%3E%3C/html%3E";
 };
 
 // Start the standalone agent host process when it is not running.
@@ -50,6 +60,162 @@ script(start_agent_process)
         // this instance launched it (see on_browser_finalize).
         set_context_var("agentSelfLaunchPid", $pid);
         nativelog("[dsl] start_agent_process: launched pid={0} args={1}", $pid, $args);
+    };
+};
+
+// ----------------------------------------------------------------------------
+// Local page retry.
+// The browser launches the standalone AgentCore in on_init, but that process
+// opens its static site ports (webserver_start_server in script_agent.dsl)
+// only after its own startup - .NET host load plus the model load, several
+// seconds. The first navigation to http://localhost:<port>/... can therefore
+// fail with ERR_CONNECTION_REFUSED (-102) before the listener exists.
+// The retry is a race fix, not a health check:
+//   - arm (on_load_error): remember the browser whose local page was refused.
+//   - tick (on_heartbeat): probe the port with a bare tcp connection; when it
+//     connects, the server is listening, so navigate the page back to the
+//     refused url (Reload would just reload the data: error page the native
+//     side put up after the failure).
+// Navigating only after a successful probe keeps the error page from
+// flickering, and a navigation that fails again just re-arms through
+// on_load_error (self healing) until the retry window runs out.
+// ----------------------------------------------------------------------------
+// Port of a local page url (http://localhost:<port>/...), 0 when it is not one.
+script(local_page_port)params($url)
+{
+    if (isnullorempty($url) || string_not_contains($url, "http://localhost:")) {
+        return(0);
+    };
+    // "http://localhost:8080/agent.html" -> ["http", "//localhost", "8080/agent.html"]
+    $parts = split($url, ":");
+    if (listsize($parts) < 3) {
+        return(0);
+    };
+    $tail = split($parts[2], "/");
+    return(str_to_int($tail[0]));
+};
+// Arm the retry for the browser of a refused local page. Returns the browser
+// id, or 0 when there is nothing to retry.
+script(arm_local_page_retry)params($url)
+{
+    $port = local_page_port($url);
+    if ($port <= 0) {
+        return(0);
+    };
+    // The failing browser is the current context when on_load_error runs; the
+    // url key lookup is the fallback for the calls that arrive without one.
+    $bid = 0;
+    $browser = nativeapi.GetBrowser();
+    if (!isnull($browser)) {
+        $bid = $browser.Id;
+    };
+    if ($bid <= 0) {
+        $bid = find_browser_id_by_url_key(format("localhost:{0}", $port));
+    };
+    if ($bid <= 0) {
+        nativelog("[retry] local page {0} refused but no browser found, retry skipped", $url);
+        return(0);
+    };
+    set_context_var("localPageRetryBid", $bid);
+    set_context_var("localPageRetryPort", $port);
+    set_context_var("localPageRetryUrl", $url);
+    set_context_var("localPageRetryAt", now());
+    nativelog("[retry] local page {0} refused, armed retry on browser {1} (give up after {2}s)", $url, $bid, @LocalPageRetrySeconds);
+    return($bid);
+};
+// One retry step: probe the pending port, reload the page once it is listening.
+// Returns 1 when the page was reloaded.
+script(tick_local_page_retry)
+{
+    $bid = get_context_var("localPageRetryBid");
+    if (isnull($bid) || $bid <= 0) {
+        return(0);
+    };
+    $port = get_context_var("localPageRetryPort");
+    $armedAt = get_context_var("localPageRetryAt");
+    if (!isnull($armedAt) && get_diff_time_seconds($armedAt, now()) > @LocalPageRetrySeconds) {
+        nativelog("[retry] local page port {0} still down after {1}s, give up (browser {2})", $port, @LocalPageRetrySeconds, $bid);
+        clear_local_page_retry();
+        tcpclient_close(@LocalPageProbeId);
+        return(0);
+    };
+    // The probe state is polled here; the C# host drains the tcpclient event
+    // queue before every heartbeat (no dsl handler is registered for it).
+    // Fallback swap in case the loading-state callback was missed: check the
+    // browser's current url directly.
+    if (set_context_by_id($bid)) {
+        $curBrowser = nativeapi.GetBrowser();
+        if (!isnull($curBrowser)) {
+            maybe_swap_local_page_error($curBrowser.Url);
+        };
+    };
+    $state = tcpclient_state(@LocalPageProbeId);
+    if ($state == "connected") {
+        tcpclient_close(@LocalPageProbeId);
+        if (!set_context_by_id($bid)) {
+            nativelog("[retry] browser {0} is gone, stop the retry", $bid);
+            clear_local_page_retry();
+            return(0);
+        };
+        // The port is listening: navigate back to the refused page (NOT
+        // Reload - the native side already swapped the current page to a
+        // data:text/html error page, a reload would just reload that).
+        // A navigation that fails again re-arms through on_load_error.
+        $retryUrl = get_context_var("localPageRetryUrl");
+        $browser = nativeapi.GetBrowser();
+        if (!isnull($browser) && !isnullorempty($retryUrl)) {
+            $frame = $browser.GetMainFrame();
+            if (!isnull($frame)) {
+                nativelog("[retry] local page port {0} is up, navigate browser {1} back to {2}", $port, $bid, $retryUrl);
+                $frame.LoadUrl($retryUrl);
+            };
+        };
+        clear_local_page_retry();
+        return(1);
+    };
+    // unknown / disconnected / failed: no probe in flight, start the next try.
+    if ($state != "connecting") {
+        tcpclient_close(@LocalPageProbeId);
+        tcpclient_open("localhost", $port, @LocalPageProbeId, "raw", 0);
+    };
+    return(0);
+};
+script(clear_local_page_retry)
+{
+    remove_context_var("localPageRetryBid");
+    remove_context_var("localPageRetryPort");
+    remove_context_var("localPageRetryUrl");
+    remove_context_var("localPageRetryAt");
+};
+// Put the waiting page up over the failed page. Called from
+// on_loading_state_change (fastest, fires when the error page starts
+// loading) and as a fallback from the retry tick. Two shapes are handled:
+//   - the native data:text/html error page (swap)
+//   - still sitting on the refused page (its error navigation was cancelled
+//     by on_before_browse - nothing rendered since, put the waiting page up)
+script(maybe_swap_local_page_error)params($url)
+{
+    $bid = get_context_var("localPageRetryBid");
+    if (isnull($bid) || $bid <= 0) {
+        return;
+    };
+    // Never loop on our own waiting page.
+    if (string_contains($url, "WaitingAgentCore")) {
+        return;
+    };
+    $retryUrl = get_context_var("localPageRetryUrl");
+    $isErrorPage = string_contains($url, "data:text/html");
+    $isStuckOnFailed = (!isnullorempty($retryUrl) && string_contains($url, $retryUrl)) || isnull($url) || $url == "";
+    if (!$isErrorPage && !$isStuckOnFailed) {
+        return;
+    };
+    $browser = nativeapi.GetBrowser();
+    if (!isnull($browser) && $browser.Id == $bid) {
+        $frame = $browser.GetMainFrame();
+        if (!isnull($frame)) {
+            nativelog("[retry] swap the error page for the waiting page (browser {0})", $bid);
+            $frame.LoadUrl(@LocalPageWaitUrl);
+        };
     };
 };
 script(on_init)
@@ -266,6 +432,11 @@ script(on_heartbeat)params($processType,$deltaTime)
         };
         $hbCount = $hbCount + 1;
         set_context_var("hbCount", $hbCount);
+        // Local page retry: probe the pending site port every ~30 beats
+        // (300ms) and reload the page once it is listening.
+        if (($hbCount % 30) == 0) {
+            tick_local_page_retry();
+        };
         if (($hbCount % 200) == 0) {
             // Keep the standalone agent host alive (restarts it if it died).
             start_agent_process();
@@ -383,6 +554,21 @@ script(on_already_running_app_relaunch)params($cmdLine, $curDir)
 script(on_before_browse)params($request,$userGesture,$isRedirect)
 {
     nativelog("[dsl] on_before_browse: url={0} method={1} userGesture={2} isRedirect={3}", $request.Url, $request.Method, $userGesture, $isRedirect);
+    // Local page retry: cancel the native data: error page navigation the
+    // moment it starts, so it never renders (zero flicker). The waiting page
+    // is put up by the retry tick fallback (maybe_swap_local_page_error
+    // checks GetBrowser().Url, which still reports the refused page after
+    // the cancelled navigation). Only while armed and only for the error
+    // page (data:text/html without our WaitingAgentCore marker) - our own
+    // waiting page navigation and everything else pass through untouched.
+    $bid = get_context_var("localPageRetryBid");
+    if (!isnull($bid) && $bid > 0) {
+        $navUrl = $request.Url;
+        if (string_contains($navUrl, "data:text/html") && !string_contains($navUrl, "WaitingAgentCore")) {
+            nativelog("[retry] cancel the error page navigation (browser {0})", $bid);
+            return((true, true));
+        };
+    };
     return((false, false));
 };
 
@@ -528,10 +714,19 @@ script(on_custom_scheme)params($scheme,$url,$method,$referrer,$handle)
 script(on_loading_state_change)params($url,$isLoading,$canGoBack,$canGoForward)
 {
     nativelog("[dsl] on_loading_state_change: url={0}, isLoading={1}, canGoBack={2}, canGoForward={3}", $url, $isLoading, $canGoBack, $canGoForward);
+    // Local page retry: put the waiting page over the native error page as
+    // soon as it starts loading (see maybe_swap_local_page_error).
+    maybe_swap_local_page_error($url);
 };
 script(on_load_error)params($errorCode,$errorText,$failedUrl)
 {
     nativelog("[dsl] on_load_error:{0} {1} {2}", $errorCode, $errorText, $failedUrl);
+    // -102 = ERR_CONNECTION_REFUSED: a local page was requested before the
+    // standalone AgentCore opened its site port. Arm the retry (see
+    // arm_local_page_retry); every other error keeps the CEF error page.
+    if ($errorCode == -102) {
+        arm_local_page_retry($failedUrl);
+    };
 };
 script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$errorString)
 {

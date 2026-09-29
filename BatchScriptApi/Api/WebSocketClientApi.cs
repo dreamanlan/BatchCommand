@@ -34,6 +34,15 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("wsclient_send",
                 "wsclient_send(id, message) - send a text message over the wsclient connection, returns true when queued",
                 new ExpressionFactoryHelper<WsClientSendExp>());
+            BatchCommand.BatchScript.Register("wsclient_drain_send",
+                "wsclient_drain_send(id[, timeout_ms_def_10000]) - stop accepting sends and drain accepted sends; positive operation timeout aborts the connection; success means local send completion only",
+                new ExpressionFactoryHelper<WsClientDrainSendExp>());
+            BatchCommand.BatchScript.Register("wsclient_drain_send_status",
+                "wsclient_drain_send_status(id) - query send drain state, error and generation without waiting",
+                new ExpressionFactoryHelper<WsClientDrainSendStatusExp>());
+            BatchCommand.BatchScript.Register("wsclient_drain_wait",
+                "wsclient_drain_wait(id[, wait_timeout_ms_def_1000]) - wait only for an existing drain; nonnegative timeout; returns state, error, generation and wait_timed_out; never cancels I/O or dispatches callbacks",
+                new ExpressionFactoryHelper<WsClientDrainWaitExp>());
             BatchCommand.BatchScript.Register("wsclient_close",
                 "wsclient_close(id) - close a wsclient connection (cooperative), returns bool",
                 new ExpressionFactoryHelper<WsClientCloseExp>());
@@ -82,6 +91,47 @@ namespace BatchCommand.Api
             string id = operands[0].AsString;
             string message = operands[1].AsString ?? string.Empty;
             return BoxedValue.From(WebSocketClientManager.Send(id, message));
+        }
+    }
+
+    internal sealed class WsClientDrainSendExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                ApiErrorInfo.AppendLine("Expected: wsclient_drain_send(id[, timeout_ms])");
+                return BoxedValue.From(false);
+            }
+            int timeoutMs = operands.Count > 1 ? operands[1].GetInt() : 10000;
+            return BoxedValue.From(WebSocketClientManager.DrainSend(
+                operands[0].AsString, timeoutMs));
+        }
+    }
+
+    internal sealed class WsClientDrainSendStatusExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                ApiErrorInfo.AppendLine("Expected: wsclient_drain_send_status(id)");
+                return BoxedValue.NullObject;
+            }
+            return BoxedValue.FromObject(
+                WebSocketClientManager.GetSendDrainStatus(operands[0].AsString));
+        }
+    }
+
+    internal sealed class WsClientDrainWaitExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                ApiErrorInfo.AppendLine("Expected: wsclient_drain_wait(id[, wait_timeout_ms])");
+                return BoxedValue.NullObject;
+            }
+            int waitTimeoutMs = operands.Count > 1 ? operands[1].GetInt() : 1000;
+            return BoxedValue.FromObject(
+                WebSocketClientManager.WaitSendDrain(operands[0].AsString, waitTimeoutMs));
         }
     }
 

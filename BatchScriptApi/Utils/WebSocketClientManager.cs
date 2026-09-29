@@ -39,13 +39,43 @@ namespace BatchCommand.Utils
     /// </summary>
     public static class WebSocketClientManager
     {
+        // All mutable session fields are protected by s_Lock.
+        private sealed class SendSession
+        {
+            public Task Tail = Task.CompletedTask;
+            public int Pending;
+            public bool Retired;
+            public string SendError = string.Empty;
+            public string DrainState = "not_requested";
+            public string DrainError = string.Empty;
+            public Timer? DrainTimer;
+            public readonly TaskCompletionSource<(string State, string Error)> Completion =
+                new TaskCompletionSource<(string State, string Error)>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public void FinishDrain(string state, string error)
+            {
+                if (DrainState != "draining") {
+                    return;
+                }
+                DrainState = state;
+                DrainError = error;
+                DrainTimer?.Dispose();
+                DrainTimer = null;
+                Completion.TrySetResult((state, error));
+            }
+        }
+
         private sealed class Client
         {
             public string Id = string.Empty;
             public string Url = string.Empty;
             public ClientWebSocket? Ws;
+            public SendSession? Session;
+            public long Generation;
             public Thread? Thread;
             public volatile bool Closing;
+            public volatile bool DrainRequested;
             public long State;  // 0=connecting 1=connected 2=disconnected 3=failed 4=reconnecting
             public int ReconnectCount;  // link-layer retry budget (0 = one-shot)
         }
@@ -53,6 +83,7 @@ namespace BatchCommand.Utils
         private static readonly object s_Lock = new object();
         private static readonly Dictionary<string, Client> s_Clients = new Dictionary<string, Client>();
         private static int s_AutoId = 0;
+        private static long s_Generation;
 
         // (id, kind, payload); kind: "message" | "state"
         private static readonly ConcurrentQueue<Tuple<string, string, string>> s_Queue
@@ -81,7 +112,8 @@ namespace BatchCommand.Utils
                 else if (s_Clients.ContainsKey(id)) {
                     return string.Empty;  // id already in use
                 }
-                var client = new Client { Id = id, Url = url, ReconnectCount = reconnectCount };
+                var client = new Client { Id = id, Url = url, ReconnectCount = reconnectCount,
+                    Generation = ++s_Generation };
                 s_Clients[id] = client;
                 client.Thread = new Thread(() => ClientLoop(client)) {
                     IsBackground = true,
@@ -102,7 +134,15 @@ namespace BatchCommand.Utils
                 // Never route through a system proxy: the targets are local relay
                 // links (or explicitly configured direct urls).
                 ws.Options.Proxy = null;
-                client.Ws = ws;
+                var session = new SendSession();
+                lock (s_Lock) {
+                    if (client.Closing || client.DrainRequested) {
+                        ws.Dispose();
+                        break;
+                    }
+                    client.Ws = ws;
+                    client.Session = session;
+                }
                 try {
                     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                     await ws.ConnectAsync(new Uri(client.Url), cts.Token);
@@ -143,13 +183,17 @@ namespace BatchCommand.Utils
                     Log?.Invoke("[csharp] wsclient connect/recv error (id=" + client.Id + ", url=" + client.Url + "): " + ex.GetType().Name + ": " + ex.Message);
                 }
                 finally {
-                    try { ws.Dispose(); } catch { }
-                    if (ReferenceEquals(client.Ws, ws)) {
-                        client.Ws = null;
+                    lock (s_Lock) {
+                        session.Retired = true;
+                        session.FinishDrain("failed", "WebSocket session ended before send drain completed.");
+                        if (ReferenceEquals(client.Ws, ws)) {
+                            client.Ws = null;
+                        }
                     }
+                    try { ws.Dispose(); } catch { }
                 }
                 // The link dropped (connect failure, io error or server close).
-                if (client.Closing) {
+                if (client.Closing || client.DrainRequested) {
                     break;
                 }
                 if (client.ReconnectCount <= 0) {
@@ -192,30 +236,179 @@ namespace BatchCommand.Utils
 
         public static bool Send(string id, string message)
         {
-            Client? client;
-            lock (s_Lock) {
-                s_Clients.TryGetValue(id, out client);
-            }
-            if (null == client || client.Ws is not { State: WebSocketState.Open }) {
-                return false;
-            }
-            var ws = client.Ws;
             var bytes = Encoding.UTF8.GetBytes(message ?? string.Empty);
-            // Fire-and-forget on a pool thread: a websocket allows a single
-            // outstanding send, the per-client lock serializes wsclient_send
-            // calls; never blocks the calling (main) thread.
-            Task.Run(() => {
-                lock (client) {
-                    try {
-                        ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None)
-                          .GetAwaiter().GetResult();
-                    }
-                    catch (Exception ex) {
-                        Log?.Invoke("[csharp] wsclient_send failed (id=" + id + "): " + ex.Message);
+            lock (s_Lock) {
+                if (!s_Clients.TryGetValue(id, out var client) ||
+                    client.Closing || client.DrainRequested ||
+                    client.Ws is not { State: WebSocketState.Open } ||
+                    client.Session == null || client.Session.Retired ||
+                    client.Session.SendError.Length != 0) {
+                    return false;
+                }
+                var ws = client.Ws;
+                var session = client.Session;
+                var previous = session.Tail;
+                session.Pending++;
+                try {
+                    session.Tail = Task.Run(() => SendQueuedAsync(id, ws, session, previous, bytes));
+                }
+                catch {
+                    session.Pending--;
+                    throw;
+                }
+                return true;
+            }
+        }
+
+        private static async Task SendQueuedAsync(string id, ClientWebSocket ws,
+            SendSession session, Task previous, byte[] bytes)
+        {
+            string error = string.Empty;
+            try {
+                await previous.ConfigureAwait(false);
+                lock (s_Lock) {
+                    if (session.Retired || session.SendError.Length != 0) {
+                        throw new OperationCanceledException("WebSocket send session is no longer writable.");
                     }
                 }
-            });
-            return true;
+                await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text,
+                    true, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex) {
+                error = ex.Message;
+            }
+            finally {
+                lock (s_Lock) {
+                    session.Pending--;
+                    if (error.Length != 0) {
+                        if (session.SendError.Length == 0) {
+                            session.SendError = error;
+                        }
+                        session.FinishDrain("failed", session.SendError);
+                    }
+                    else if (session.Pending == 0 && !session.Retired) {
+                        session.FinishDrain("succeeded", string.Empty);
+                    }
+                }
+            }
+            if (error.Length != 0) {
+                try {
+                    Log?.Invoke("[csharp] wsclient_send failed (id=" + id + "): " + error);
+                }
+                catch {
+                    // Diagnostics must not fault the send chain.
+                }
+            }
+        }
+
+        // Drains accepted sends without closing the receive side on success.
+        public static bool DrainSend(string id, int timeoutMs = 10000)
+        {
+            if (string.IsNullOrEmpty(id) || timeoutMs <= 0) {
+                return false;
+            }
+            lock (s_Lock) {
+                if (!s_Clients.TryGetValue(id, out var client) ||
+                    client.Closing ||
+                    client.Ws is not { State: WebSocketState.Open } ||
+                    client.Session == null || client.Session.Retired ||
+                    client.Session.SendError.Length != 0) {
+                    return false;
+                }
+                if (client.DrainRequested) {
+                    return true;
+                }
+                var ws = client.Ws;
+                var session = client.Session;
+                client.DrainRequested = true;
+                session.DrainState = "draining";
+                if (session.Pending == 0) {
+                    session.FinishDrain("succeeded", string.Empty);
+                }
+                else {
+                    session.DrainTimer = new Timer(_ => {
+                        lock (s_Lock) {
+                            if (session.DrainState != "draining") {
+                                return;
+                            }
+                            session.Retired = true;
+                            client.Closing = true;
+                            session.FinishDrain("timed_out", "WebSocket send drain timed out.");
+                        }
+                        // Abort only the captured socket, never a replacement session.
+                        try {
+                            ws.Abort();
+                        }
+                        catch (Exception) {
+                            // The receive loop may already have disposed the socket.
+                        }
+                    }, null, timeoutMs, Timeout.Infinite);
+                }
+                return true;
+            }
+        }
+
+        public static Dictionary<string, object> GetSendDrainStatus(string id)
+        {
+            lock (s_Lock) {
+                long generation = 0L;
+                string state = "unknown";
+                string error = string.Empty;
+                if (!string.IsNullOrEmpty(id) &&
+                    s_Clients.TryGetValue(id, out var client)) {
+                    generation = client.Generation;
+                    state = client.Session?.DrainState ?? "not_requested";
+                    error = client.Session?.DrainError ?? string.Empty;
+                }
+                return new Dictionary<string, object> {
+                    ["state"] = state,
+                    ["error"] = error,
+                    ["generation"] = generation
+                };
+            }
+        }
+
+        // Wait only: never requests draining, cancels I/O, or dispatches callbacks.
+        public static Dictionary<string, object> WaitSendDrain(
+            string id, int waitTimeoutMs = 1000)
+        {
+            long generation = 0L;
+            (string State, string Error) status = ("unknown", string.Empty);
+            Task<(string State, string Error)>? completion = null;
+            if (waitTimeoutMs < 0) {
+                status = ("invalid_argument", "waitTimeoutMs must be nonnegative.");
+            }
+            else {
+                lock (s_Lock) {
+                    if (!string.IsNullOrEmpty(id) &&
+                        s_Clients.TryGetValue(id, out var client)) {
+                        generation = client.Generation;
+                        var session = client.Session;
+                        status = session != null
+                            ? (session.DrainState, session.DrainError)
+                            : ("not_requested", string.Empty);
+                        if (status.State == "draining" && session != null) {
+                            // Pin this session even if the ID is replaced while waiting.
+                            completion = session.Completion.Task;
+                        }
+                    }
+                }
+            }
+            bool waitTimedOut = false;
+            if (completion != null) {
+                if (completion.Wait(waitTimeoutMs)) {
+                    status = completion.GetAwaiter().GetResult();
+                }
+                else {
+                    waitTimedOut = true;
+                }
+            }
+            return new Dictionary<string, object> {
+                ["state"] = status.State,
+                ["error"] = status.Error,
+                ["generation"] = generation,
+                ["wait_timed_out"] = waitTimedOut
+            };
         }
 
         public static bool Close(string id)
@@ -233,8 +426,15 @@ namespace BatchCommand.Utils
 
         private static void CloseClient(Client client)
         {
-            client.Closing = true;
-            var ws = client.Ws;
+            ClientWebSocket? ws;
+            lock (s_Lock) {
+                client.Closing = true;
+                ws = client.Ws;
+                if (client.Session != null) {
+                    client.Session.Retired = true;
+                    client.Session.FinishDrain("cancelled", "WebSocket client closed before send drain completed.");
+                }
+            }
             if (null != ws) {
                 Task.Run(async () => {
                     try {

@@ -1330,7 +1330,7 @@ namespace BatchCommand
         private const int c_MaxHistoryCount = 1024;
     }
 
-    public sealed class BatchScript
+    public static class BatchScript
     {
         public static bool TimeStatisticOn
         {
@@ -1429,6 +1429,10 @@ namespace BatchCommand
         }
         public static void Init()
         {
+            Init(null);
+        }
+        public static void Init(DslCalculatorApiRegistry? apiRegistry)
+        {
 #if NET || NETSTANDARD
             var provider = CodePagesEncodingProvider.Instance;
             Encoding.RegisterProvider(provider);
@@ -1437,7 +1441,12 @@ namespace BatchCommand
             ClearDslErrors();
             ClearAllAsyncTaskInfo();
             Calculator.OnLog = msg => { OnDslError(msg); };
-            Calculator.NewApiRegistry();
+            if (null != apiRegistry) {
+                Calculator.ApiRegistry = apiRegistry;
+            }
+            else {
+                Calculator.NewApiRegistry();
+            }
 
             //register Gm Command
             Calculator.Register("startasynctask", "startasynctask(func_name,arg1,arg2,...) api, start an async script function and return a handle", new ExpressionFactoryHelper<StartAsyncTaskExp>());

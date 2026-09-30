@@ -90,46 +90,6 @@ namespace AgentCore.ScriptApi
         }
     }
 
-    // Get parameter from agent command params
-    sealed class GetMessageParamExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 2) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: get_message_param(paramsObj, key)");
-                return BoxedValue.NullObject;
-            }
-
-            try {
-                var paramsObj = operands[0].GetObject();
-                string key = operands[1].AsString;
-
-                if (null != key) {
-                    if (paramsObj is IDictionary<BoxedValue, BoxedValue> bvdict) {
-                        paramsObj = DslHelper.GetDictionaryFromBoxedValue(bvdict);
-                    }
-                    if (paramsObj is IDictionary<string, object?> dict && dict.ContainsKey(key)) {
-                        var value = dict[key];
-                        return DslHelper.GetBoxedValueFromValue(value);
-                    }
-                    else if (paramsObj is LitJson.JsonData jsonData) {
-                        if (jsonData.IsObject) {
-                            var value = jsonData[key];
-                            return DslHelper.GetBoxedValueFromJsonValue(value);
-                        }
-                    }
-                }
-                return BoxedValue.NullObject;
-            }
-            catch (Exception ex) {
-                if (Core.AgentCore.IsInitialized) {
-                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Error getting command param: {ex.Message}");
-                }
-                return BoxedValue.NullObject;
-            }
-        }
-    }
-
     // Send command to inject.js
     sealed class SendCommandToInjectExp : SimpleExpressionBase
     {

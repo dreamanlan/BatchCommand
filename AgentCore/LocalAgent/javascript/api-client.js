@@ -893,6 +893,7 @@ class APIClient {
             //   reasoningEfforts: allowed chat_extra.reasoning_effort values ([] = unsupported)
             //   contextWindows: allowed chat_extra.max_context_tokens values ([] = unsupported)
             return [
+                { value: 'claude-opus-5.5', label: 'Claude-Opus-5.5', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-opus-5', label: 'Claude-Opus-5', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-5-sonnet', label: 'Claude-5-Sonnet', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-4.8-opus', label: 'Claude-4.8-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },

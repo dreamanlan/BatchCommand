@@ -4,12 +4,12 @@ script(main)
 	cd(curdir);
 	fileecho(true);
 
-	copyfiles(".", "../managed","DotnetApp.*");
-	copyfiles(".", "../managed","Common.*");
-	copyfiles(".", "../managed","DotnetStoryScript.*");
-	copyfiles(".", "../managed","Dsl.*");
-	copyfiles(".", "../managed","LitJson.*");
-	copyfiles(".", "../managed","ScriptFrameworkLibrary.*");
+	copyfiles("bin/Debug/net9.0", "../managed","DotnetApp.*");
+	copyfiles("bin/Debug/net9.0", "../managed","Common.*");
+	copyfiles("bin/Debug/net9.0", "../managed","DotnetStoryScript.*");
+	copyfiles("bin/Debug/net9.0", "../managed","Dsl.*");
+	copyfiles("bin/Debug/net9.0", "../managed","LitJson.*");
+	copyfiles("bin/Debug/net9.0", "../managed","ScriptFrameworkLibrary.*");
 
 	if (argnum() <= 1) {
 		echo("press any key ...");

@@ -16,6 +16,9 @@
 
 #if defined(_MSC_VER)
 #include "windows.h"
+// GetModuleBaseNameA, used by the exe name fallback of the process matching.
+#include <psapi.h>
+#pragma comment(lib, "psapi.lib")
 // Ensure NTSTATUS and other NT types are available
 #ifndef NTSTATUS
 typedef LONG NTSTATUS;
@@ -441,6 +444,21 @@ int TerminateMonitoredProcess(const char* cmd_line_key) {
             }
         }
 
+        if (!is_target && !pNtQueryInformationProcess) {
+            // Fallback: NtQueryInformationProcess is unavailable, so match the
+            // executable base name instead (less precise - same fallback as the
+            // CEF host's terminate_process_by_key).
+            char exe_name[MAX_PATH];
+            if (GetModuleBaseNameA(process, NULL, exe_name, MAX_PATH)) {
+                if (strstr(exe_name, cmd_line_key)) {
+                    is_target = true;
+                    printf_log(LOG_SEVERITY_WARNING,
+                        "TerminateMonitoredProcess: exe name fallback for PID=%d",
+                        pe32.th32ProcessID);
+                }
+            }
+        }
+
         // Terminate monitored process
         if (is_target) {
             if (TerminateProcess(process, 0)) {
@@ -759,6 +777,21 @@ int CountMonitoredProcess(const char* cmd_line_key) {
                             free(cmd_line);
                         }
                     }
+                }
+            }
+        }
+
+        if (!is_target && !pNtQueryInformationProcess) {
+            // Fallback: NtQueryInformationProcess is unavailable, so match the
+            // executable base name instead (less precise - same fallback as the
+            // CEF host's count_process_by_key).
+            char exe_name[MAX_PATH];
+            if (GetModuleBaseNameA(process, NULL, exe_name, MAX_PATH)) {
+                if (strstr(exe_name, cmd_line_key)) {
+                    is_target = true;
+                    printf_log(LOG_SEVERITY_WARNING,
+                        "CountMonitoredProcess: exe name fallback for PID=%d",
+                        pe32.th32ProcessID);
                 }
             }
         }

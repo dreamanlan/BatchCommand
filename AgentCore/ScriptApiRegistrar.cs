@@ -122,7 +122,6 @@ namespace AgentCore
             // Agent Command Operations
             BatchCommand.BatchScript.Register("parse_agent_command", "parse_agent_command(jsonData)", new ExpressionFactoryHelper<ParseAgentCommandExp>());
             BatchCommand.BatchScript.Register("parse_agent_notification", "parse_agent_notification(jsonData)", new ExpressionFactoryHelper<ParseAgentNotificationExp>());
-            BatchCommand.BatchScript.Register("get_message_param", "get_message_param(paramsObj, key)", new ExpressionFactoryHelper<GetMessageParamExp>());
             BatchCommand.BatchScript.Register("send_command_to_inject", "send_command_to_inject(command, paramsJson)", new ExpressionFactoryHelper<SendCommandToInjectExp>());
             BatchCommand.BatchScript.Register("build_agent_response", "build_agent_response(messageId, success, data, error)", new ExpressionFactoryHelper<BuildAgentResponseExp>());
             BatchCommand.BatchScript.Register("send_response_to_inject", "send_response_to_inject(responseJson)", new ExpressionFactoryHelper<SendResponseToInjectExp>());

@@ -30,7 +30,7 @@ namespace BatchCommand
             for (int i = 1; i < operands.Count; i++) {
                 args.Add(operands[i]);
             }
-            int handle = BatchScript.StartAsyncTask(funcName, args);
+            long handle = BatchScript.StartAsyncTask(funcName, args);
             BatchScript.RecycleCalculatorValueList(args);
             return BoxedValue.From(handle);
         }
@@ -51,7 +51,7 @@ namespace BatchCommand
         {
             if (operands.Count != 1)
                 throw new Exception("Expected: stopasynctask(handle) api");
-            int handle = operands[0].GetInt();
+            long handle = operands[0].GetLong();
             bool removed = BatchScript.StopAsyncTask(handle);
             return BoxedValue.FromBool(removed);
         }
@@ -72,7 +72,7 @@ namespace BatchCommand
         {
             if (operands.Count != 1)
                 throw new Exception("Expected: getasynctaskresult(handle) api");
-            int handle = operands[0].GetInt();
+            long handle = operands[0].GetLong();
             bool res = BatchScript.TryGetAsyncTaskResult(handle, out bool isCompleted, out BoxedValue value);
             return Tuple.Create(BoxedValue.FromBool(res), BoxedValue.FromBool(isCompleted), value);
         }
@@ -892,6 +892,25 @@ namespace BatchCommand
         }
     }
 
+    // Terminate the current process immediately (Environment.Exit). This is the
+    // hard exit: no graceful shutdown chain runs (the CEF host's on_browser_finalize
+    // hook, the window state save and the other threads' finally blocks are all
+    // skipped), so it is the fallback for a graceful shutdown that did not happen
+    // rather than the normal way out. Nothing after this call runs; the return
+    // value only exists for the (never taken) no-exit path.
+    internal sealed class ExitProcessExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            int exitCode = 0;
+            if (operands.Count >= 1) {
+                exitCode = operands[0].GetInt();
+            }
+            Environment.Exit(exitCode);
+            return BoxedValue.From(exitCode);
+        }
+    }
+
     internal sealed class RegReadExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1299,8 +1318,7 @@ namespace BatchCommand
             int top = s_StartTop + dt;
             return (left, top);
         }
-        private static int MaxLineCharNum
-        {
+        private static int MaxLineCharNum {
             get {
                 if (s_MaxLineCharNum != Console.BufferWidth) {
                     s_MaxLineCharNum = Console.BufferWidth;
@@ -1308,8 +1326,7 @@ namespace BatchCommand
                 return s_MaxLineCharNum;
             }
         }
-        private static string EmptyLine
-        {
+        private static string EmptyLine {
             get {
                 int reserved = 1;
                 if (MaxLineCharNum - reserved != s_EmptyLine.Length) {
@@ -1332,13 +1349,11 @@ namespace BatchCommand
 
     public static class BatchScript
     {
-        public static bool TimeStatisticOn
-        {
+        public static bool TimeStatisticOn {
             get { return tls_TimeStatisticOn; }
             set { tls_TimeStatisticOn = value; }
         }
-        public static string ScriptDirectory
-        {
+        public static string ScriptDirectory {
             get {
                 if (null == tls_ScriptDirectory) {
                     tls_ScriptDirectory = string.Empty;
@@ -1346,12 +1361,10 @@ namespace BatchCommand
                 return tls_ScriptDirectory;
             }
         }
-        public static bool HasDslErrors
-        {
+        public static bool HasDslErrors {
             get { return DslErrorInfo.Length > 0; }
         }
-        public static DslCalculator Calculator
-        {
+        public static DslCalculator Calculator {
             get {
                 if (null == tls_Calculator) {
                     tls_Calculator = new DslCalculator();
@@ -1359,16 +1372,14 @@ namespace BatchCommand
                 return tls_Calculator;
             }
         }
-        public static Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> AsyncTasks
-        {
+        public static Dictionary<long, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> AsyncTasks {
             get {
                 if (tls_AsyncTasks == null)
-                    tls_AsyncTasks = new Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>>();
+                    tls_AsyncTasks = new Dictionary<long, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>>();
                 return tls_AsyncTasks;
             }
         }
-        public static List<string> EmptyStringList
-        {
+        public static List<string> EmptyStringList {
             get {
                 if (null == tls_EmptyStringList) {
                     tls_EmptyStringList = new List<string>();
@@ -1376,8 +1387,7 @@ namespace BatchCommand
                 return tls_EmptyStringList;
             }
         }
-        public static List<BoxedValue> EmptyBoxedValueList
-        {
+        public static List<BoxedValue> EmptyBoxedValueList {
             get {
                 if (null == tls_EmptyBoxedValueList) {
                     tls_EmptyBoxedValueList = new List<BoxedValue>();
@@ -1385,8 +1395,7 @@ namespace BatchCommand
                 return tls_EmptyBoxedValueList;
             }
         }
-        public static StringBuilder DslErrorInfo
-        {
+        public static StringBuilder DslErrorInfo {
             get {
                 if (null == tls_DslErrorInfo) {
                     tls_DslErrorInfo = new StringBuilder();
@@ -1394,8 +1403,7 @@ namespace BatchCommand
                 return tls_DslErrorInfo;
             }
         }
-        public static SortedList<string, string> UserApiDocs
-        {
+        public static SortedList<string, string> UserApiDocs {
             get {
                 if (null == tls_UserApiDocs) {
                     tls_UserApiDocs = new SortedList<string, string>();
@@ -1403,8 +1411,7 @@ namespace BatchCommand
                 return tls_UserApiDocs;
             }
         }
-        public static SortedList<string, string> ApiDocs
-        {
+        public static SortedList<string, string> ApiDocs {
             get { return Calculator.ApiDocs; }
         }
 
@@ -1497,6 +1504,7 @@ namespace BatchCommand
             Calculator.Register("encoding", "encoding() api, return typeof(Encoding)", new ExpressionFactoryHelper<EncodingExp>());
             Calculator.Register("runtimeinfo", "runtimeinfo() api, return typeof(RuntimeInformation)", new ExpressionFactoryHelper<RuntimeInformationExp>());
             Calculator.Register("env", "env() api, return typeof(Environment)", new ExpressionFactoryHelper<EnvironmentExp>());
+            Calculator.Register("exit_process", "exit_process([exit_code]) api, terminate the current process immediately with the code (default 0); hard exit: no graceful shutdown hook runs, use the host's exit_browser() first when a clean shutdown is possible", new ExpressionFactoryHelper<ExitProcessExp>());
             Calculator.Register("getclipboard", "getclipboard() api", new ExpressionFactoryHelper<BatchCommand.Api.GetClipboardExp>());
             Calculator.Register("setclipboard", "setclipboard(txt) api", new ExpressionFactoryHelper<BatchCommand.Api.SetClipboardExp>());
             Calculator.Register("regread", "regread(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegReadExp>());
@@ -1784,20 +1792,72 @@ namespace BatchCommand
                 return Encoding.UTF8;
             }
         }
+        private static void DisposeAsyncTaskEnumerators(Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext> task)
+        {
+            var stack = task.Item1;
+            if (stack.Count == 0)
+                return;
+            var busyStacks = tls_AsyncTaskBusyStacks ??= new HashSet<Stack<IEnumerator>>();
+            var calculator = Calculator;
+            var previousContext = new AsyncTaskRuntimeContext();
+            calculator.SaveAsyncContext(previousContext);
+            if (!busyStacks.Add(stack))
+                return;
+            Exception firstError = null;
+            try {
+                calculator.SetAsyncContext(task.Item3);
+                while (stack.Count > 0) {
+                    var enumerator = stack.Pop();
+                    try {
+                        (enumerator as IDisposable)?.Dispose();
+                    }
+                    catch (Exception ex) {
+                        if (firstError == null)
+                            firstError = ex;
+                    }
+                }
+            }
+            finally {
+                try {
+                    calculator.SaveAsyncContext(task.Item3);
+                }
+                finally {
+                    try {
+                        calculator.SetAsyncContext(previousContext);
+                    }
+                    finally {
+                        busyStacks.Remove(stack);
+                    }
+                }
+            }
+            if (firstError != null) {
+                OnDslError("Async task disposal failed: " + firstError);
+            }
+        }
+
         public static void ClearAllAsyncTaskInfo()
         {
-            AsyncTasks.Clear();
-            AsyncTaskTickKeys.Clear();
+            var tasks = AsyncTasks;
+            var pending = new List<Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>>(tasks.Values);
+            tasks.Clear();
+            if (!tls_AsyncTaskTicking)
+                AsyncTaskTickKeys.Clear();
+            foreach (var task in pending) {
+                DisposeAsyncTaskEnumerators(task);
+            }
         }
-        public static int StartAsyncTask(string func, List<BoxedValue> args)
+        public static long StartAsyncTask(string func, List<BoxedValue> args)
         {
+            long handle = NextAsyncTaskId();
+            if (handle < 0)
+                return -1;
             var asyncResult = new AsyncCalcResult();
-            var enumerator = Calculator.CalcAsync(func, args, asyncResult);
+            var taskArgs = args == null ? null : new List<BoxedValue>(args);
+            var enumerator = Calculator.CalcAsync(func, taskArgs, asyncResult);
             if (enumerator == null) {
                 return -1;
             }
             var tasks = AsyncTasks;
-            int handle = NextAsyncTaskId();
             var runtimeCtx = Calculator.CreateAsyncContext();
             var stack = new Stack<IEnumerator>();
             stack.Push(enumerator);
@@ -1807,37 +1867,73 @@ namespace BatchCommand
         public static int TickAsyncTasks()
         {
             var tasks = AsyncTasks;
-            if (tasks.Count == 0)
+            if (tls_AsyncTaskTicking || tasks.Count == 0)
                 return 0;
             var keys = AsyncTaskTickKeys;
             keys.Clear();
             foreach (var key in tasks.Keys) {
                 keys.Add(key);
             }
-            int activeCount = 0;
-            for (int i = 0; i < keys.Count; i++) {
-                int key = keys[i];
-                if (tasks.TryGetValue(key, out var task)) {
-                    if (task.Item2.IsCompleted) {
+            var calculator = Calculator;
+            var previousContext = new AsyncTaskRuntimeContext();
+            calculator.SaveAsyncContext(previousContext);
+            var busyStacks = tls_AsyncTaskBusyStacks ??= new HashSet<Stack<IEnumerator>>();
+            tls_AsyncTaskTicking = true;
+            try {
+                int activeCount = 0;
+                for (int i = 0; i < keys.Count; i++) {
+                    long key = keys[i];
+                    if (!tasks.TryGetValue(key, out var task) || task.Item2.IsCompleted)
                         continue;
-                    }
-                    Calculator.SetAsyncContext(task.Item3);
                     var stack = task.Item1;
-                    while (stack.Count > 0) {
-                        var top = stack.Peek();
-                        bool hasMore = top.MoveNext();
-                        if (hasMore) {
-                            if (top.Current is IEnumerator subEnum) {
-                                stack.Push(subEnum);
-                                continue;
+                    if (!busyStacks.Add(stack))
+                        continue;
+                    bool faulted = true;
+                    try {
+                        calculator.SetAsyncContext(task.Item3);
+                        while (stack.Count > 0 &&
+                            tasks.TryGetValue(key, out var currentTask) &&
+                            ReferenceEquals(currentTask, task)) {
+                            var top = stack.Peek();
+                            bool hasMore = top.MoveNext();
+                            if (hasMore) {
+                                if (top.Current is IEnumerator subEnum) {
+                                    stack.Push(subEnum);
+                                    continue;
+                                }
+                                break;
                             }
-                            break;
+                            else {
+                                stack.Pop();
+                                (top as IDisposable)?.Dispose();
+                            }
                         }
-                        else {
-                            stack.Pop();
+                        faulted = false;
+                    }
+                    finally {
+                        try {
+                            calculator.SaveAsyncContext(task.Item3);
+                        }
+                        finally {
+                            try {
+                                calculator.SetAsyncContext(previousContext);
+                            }
+                            finally {
+                                busyStacks.Remove(stack);
+                            }
+                            if (faulted && tasks.TryGetValue(key, out var failedTask) &&
+                                ReferenceEquals(failedTask, task)) {
+                                tasks.Remove(key);
+                            }
+                            if (!tasks.TryGetValue(key, out var remainingTask) ||
+                                !ReferenceEquals(remainingTask, task)) {
+                                DisposeAsyncTaskEnumerators(task);
+                            }
                         }
                     }
-                    Calculator.SaveAsyncContext(task.Item3);
+                    if (!tasks.TryGetValue(key, out var registeredTask) ||
+                        !ReferenceEquals(registeredTask, task))
+                        continue;
                     if (stack.Count == 0) {
                         task.Item2.IsCompleted = true;
                     }
@@ -1845,36 +1941,38 @@ namespace BatchCommand
                         activeCount++;
                     }
                 }
+                return activeCount;
             }
-            return activeCount;
+            finally {
+                tls_AsyncTaskTicking = false;
+            }
         }
-        public static bool StopAsyncTask(int handle)
+        public static bool StopAsyncTask(long handle)
         {
             var tasks = AsyncTasks;
-            bool removed = tasks.Remove(handle);
-            return removed;
+            if (!tasks.TryGetValue(handle, out var task))
+                return false;
+            tasks.Remove(handle);
+            DisposeAsyncTaskEnumerators(task);
+            return true;
         }
         public static int StopCompletedAsyncTasks()
         {
             var tasks = BatchScript.AsyncTasks;
-            var keys = BatchScript.AsyncTaskTickKeys;
-            keys.Clear();
-            foreach (var key in tasks.Keys) {
-                keys.Add(key);
-            }
+            var keys = new List<long>(tasks.Keys);
             int removedCount = 0;
             for (int i = 0; i < keys.Count; i++) {
-                int key = keys[i];
+                long key = keys[i];
                 if (tasks.TryGetValue(key, out var task)) {
                     if (task.Item2.IsCompleted) {
-                        tasks.Remove(key);
-                        removedCount++;
+                        if (StopAsyncTask(key))
+                            removedCount++;
                     }
                 }
             }
             return removedCount;
         }
-        public static bool TryGetAsyncTaskResult(int handle, out bool isCompleted, out BoxedValue result)
+        public static bool TryGetAsyncTaskResult(long handle, out bool isCompleted, out BoxedValue result)
         {
             var tasks = BatchScript.AsyncTasks;
             if (tasks.TryGetValue(handle, out var task)) {
@@ -1886,16 +1984,17 @@ namespace BatchCommand
             result = BoxedValue.NullObject;
             return false;
         }
-        internal static List<int> AsyncTaskTickKeys
-        {
+        internal static List<long> AsyncTaskTickKeys {
             get {
                 if (tls_AsyncTaskTickKeys == null)
-                    tls_AsyncTaskTickKeys = new List<int>();
+                    tls_AsyncTaskTickKeys = new List<long>();
                 return tls_AsyncTaskTickKeys;
             }
         }
-        internal static int NextAsyncTaskId()
+        internal static long NextAsyncTaskId()
         {
+            if (tls_AsyncTaskIdSeed == long.MaxValue)
+                return -1;
             return ++tls_AsyncTaskIdSeed;
         }
         private static void LoadDslHelper(string file)
@@ -1942,11 +2041,15 @@ namespace BatchCommand
         [ThreadStatic]
         private static SortedList<string, string> tls_UserApiDocs;
         [ThreadStatic]
-        private static Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> tls_AsyncTasks;
+        private static Dictionary<long, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> tls_AsyncTasks;
         [ThreadStatic]
-        private static int tls_AsyncTaskIdSeed;
+        private static long tls_AsyncTaskIdSeed;
         [ThreadStatic]
-        private static List<int> tls_AsyncTaskTickKeys;
+        private static List<long> tls_AsyncTaskTickKeys;
+        [ThreadStatic]
+        private static bool tls_AsyncTaskTicking;
+        [ThreadStatic]
+        private static HashSet<Stack<IEnumerator>> tls_AsyncTaskBusyStacks;
 
     }
 }

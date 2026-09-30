@@ -82,10 +82,18 @@ script(on_init)
     nativelog("[agent] httpproxy_start_server({0}) = {1}", httpproxyport, $ok);
     // Static web servers (Windows only, see Core/WebServer.cs):
     // 8080 -> AiFreebie/LocalAgent, 8082 -> AiFreebie/ChatRoom.
+    // Cache-Control: no-cache on every response: without it Chromium applies
+    // heuristic freshness to the Last-Modified-only responses, so a stale
+    // agent.html can come straight from the disk cache while a just-edited
+    // api-client.js must revalidate and hits ERR_CONNECTION_REFUSED before the
+    // listener exists. A subresource failure never reaches on_load_error (main
+    // frame only), so the local page retry (script.dsl) stays unarmed and the
+    // page is stuck half-loaded. no-cache makes the html revalidate too, so a
+    // cold start fails on the main frame and the retry takes over.
     if (!ismac) {
-        $ok = webserver_start_server(8080, combine_path(basepath, "../AiFreebie/LocalAgent/"));
+        $ok = webserver_start_server(8080, combine_path(basepath, "../AiFreebie/LocalAgent/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
         nativelog("[agent] webserver_start_server(8080, LocalAgent) = {0}", $ok);
-        $ok = webserver_start_server(8082, combine_path(basepath, "../AiFreebie/ChatRoom/"));
+        $ok = webserver_start_server(8082, combine_path(basepath, "../AiFreebie/ChatRoom/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
         nativelog("[agent] webserver_start_server(8082, ChatRoom) = {0}", $ok);
     };
     // Site ports retired: every page (main + single-page agents) reaches this
@@ -108,6 +116,33 @@ script(on_tick)
 {
     // Main flow entry, driven by the host loop (about 50ms). Keep it light;
     // slow work belongs on call_metadsl_task worker threads.
+
+    // Parent watchdog: this process is launched by the browser
+    // (start_agent_process in script.dsl). A browser that is killed instead of
+    // closing gracefully never runs on_browser_finalize, so nothing would stop
+    // us - watch the parent ourselves and exit when it is gone. The parent pid
+    // is captured at creation time and keeps pointing at the browser even after
+    // it died, so is_process_alive() is what decides (its name key keeps a
+    // recycled pid from looking like a live parent). Throttled: ~1s.
+    $tick = get_context_var("parentWatchTick");
+    if (isnull($tick)) {
+        $tick = 0;
+    };
+    $tick = $tick + 1;
+    if ($tick >= 20) {
+        $tick = 0;
+        $ppid = get_process_parent_id();
+        if ($ppid > 0 && !is_process_alive($ppid, "webagent")) {
+            nativelog("[agent] parent browser is gone (ppid={0}), exiting", $ppid);
+            exit_process(0);
+        };
+    };
+    set_context_var("parentWatchTick", $tick);
+    // The value of on_tick is the plugin tick return (MetaDslExecutor
+    // TickAgent -> CallOptionalFunc): anything non-zero ends the host loop and
+    // with it this process, and the browser would immediately launch us again.
+    // The last statement above returns bool, so end with an explicit 0.
+    return(0);
 };
 
 script(on_ws_client_connected)params($port)
@@ -130,7 +165,7 @@ script(on_ws_client_disconnected)params($port)
 
 script(cache_js_state)params($data, $agentId)
 {
-    $jsState = get_message_param($data, "jsState");
+    $jsState = get_dict_or_json_param($data, "jsState");
     if ($jsState == null) {
         return;
     };
@@ -150,7 +185,7 @@ script(js_queue_count)params($agentId, $kind)
         return(0);
     };
     $v = from_json($s);
-    $n = get_message_param($v, $kind);
+    $n = get_dict_or_json_param($v, $kind);
     // str_to_int only parses strings (a numeric BoxedValue yields 0), so
     // normalize through to_string first.
     return(str_to_int(to_string($n)));
@@ -166,7 +201,7 @@ script(js_llm_category)params($agentId)
         return("");
     };
     $v = from_json($s);
-    return(get_message_param($v, "llmCategory"));
+    return(get_dict_or_json_param($v, "llmCategory"));
 };
 
 // ----------------------------------------------------------------------------
@@ -185,9 +220,9 @@ script(handle_agent_command)params($jsonData)
         return("error");
     };
 
-    $id = get_message_param($cmd, "id");
-    $command = get_message_param($cmd, "command");
-    $params = get_message_param($cmd, "params");
+    $id = get_dict_or_json_param($cmd, "id");
+    $command = get_dict_or_json_param($cmd, "command");
+    $params = get_dict_or_json_param($cmd, "params");
 
     nativelog("[agent] Command: {0}, ID: {1}", $command, $id);
 
@@ -235,10 +270,10 @@ script(handle_llm_chat_command)params($id, $params)
 {
     nativelog("[agent] Handling llm_chat command, ID: {0}", $id);
 
-    $providerId = get_message_param($params, "providerId");
-    $tag = get_message_param($params, "tag");
-    $topic = get_message_param($params, "topic");
-    $text = get_message_param($params, "text");
+    $providerId = get_dict_or_json_param($params, "providerId");
+    $tag = get_dict_or_json_param($params, "tag");
+    $topic = get_dict_or_json_param($params, "topic");
+    $text = get_dict_or_json_param($params, "text");
 
     nativelog("[agent] llm_chat: provider={0} tag={1} topic={2} text_len={3}", $providerId, $tag, $topic, strlen($text));
 
@@ -262,10 +297,10 @@ script(handle_set_agent_environment_command)params($id, $params)
 {
     nativelog("[agent] Handling set_agent_environment command, ID: {0}", $id);
 
-    $category = get_message_param($params, "category");
-    $group = get_message_param($params, "group");
-    $key = get_message_param($params, "key");
-    $value = get_message_param($params, "value");
+    $category = get_dict_or_json_param($params, "category");
+    $group = get_dict_or_json_param($params, "group");
+    $key = get_dict_or_json_param($params, "key");
+    $value = get_dict_or_json_param($params, "value");
 
     nativelog("[agent] set_agent_environment: category={0} group={1} key={2}", $category, $group, $key);
 
@@ -342,8 +377,8 @@ script(handle_update_project_config_command)params($id, $params)
 {
     nativelog("[agent] Handling update_project_config command, ID: {0}", $id);
 
-    $projectDir = get_message_param($params, "projectDir");
-    $projectIdentity = get_message_param($params, "projectIdentity");
+    $projectDir = get_dict_or_json_param($params, "projectDir");
+    $projectIdentity = get_dict_or_json_param($params, "projectIdentity");
 
     nativelog("[agent] update_project_config: dir={0} identity={1}", $projectDir, $projectIdentity);
 
@@ -844,8 +879,8 @@ script(save_history)params()
 script(save_conversations_task)params($jsonData)
 {
     $notif = parse_agent_notification($jsonData);
-    $data = get_message_param($notif, "data");
-    $conversations = get_message_param($data, "conversations");
+    $data = get_dict_or_json_param($notif, "data");
+    $conversations = get_dict_or_json_param($data, "conversations");
     $count = size($conversations);
 
     nativelog("[agent] Saving {0} new conversation(s) to history (task)", $count);
@@ -853,8 +888,8 @@ script(save_conversations_task)params($jsonData)
     loop($count) {
         $i = $$;
         $conv = $conversations[$i];
-        $user = get_message_param($conv, "user");
-        $assistant = get_message_param($conv, "assistant");
+        $user = get_dict_or_json_param($conv, "user");
+        $assistant = get_dict_or_json_param($conv, "assistant");
         $content = format("User:\n{0}\n\nAssistant:\n{1}", $user, $assistant);
         semantic_add(@LegionnaireHistory, $content, to_json({source: "inject", index: $i, date: date_time_str()}));
         nativelog("[agent] Saved conversation {0}/{1}", $i + 1, $count);
@@ -1101,8 +1136,8 @@ script(freebie_get_pattern_prompt)params($agentId)
 script(save_freebie_conversations_task)params($agentId, $jsonData)
 {
     $notif = parse_agent_notification($jsonData);
-    $data = get_message_param($notif, "data");
-    $conversations = get_message_param($data, "conversations");
+    $data = get_dict_or_json_param($notif, "data");
+    $conversations = get_dict_or_json_param($data, "conversations");
     $count = size($conversations);
 
     $projectIdentity = agent_get_project_identity($agentId);
@@ -1113,8 +1148,8 @@ script(save_freebie_conversations_task)params($agentId, $jsonData)
     loop($count) {
         $i = $$;
         $conv = $conversations[$i];
-        $user = get_message_param($conv, "user");
-        $assistant = get_message_param($conv, "assistant");
+        $user = get_dict_or_json_param($conv, "user");
+        $assistant = get_dict_or_json_param($conv, "assistant");
         $content = format("User:\n{0}\n\nAssistant:\n{1}", $user, $assistant);
         semantic_add($legionnaireHistory, $content, to_json({source: "inject", index: $i, date: date_time_str()}));
         nativelog("[agent] Saved conversation {0}/{1}", $i + 1, $count);
@@ -1199,18 +1234,18 @@ script(handle_agent_notification)params($jsonData)
     nativelog("[agent] handle_agent_notification: {0}", get_string_in_length($jsonData, 100));
 
     $notif = parse_agent_notification($jsonData);
-    $type = get_message_param($notif, "type");
-    $data = get_message_param($notif, "data");
+    $type = get_dict_or_json_param($notif, "type");
+    $data = get_dict_or_json_param($notif, "data");
 
     nativelog("[agent] Notification type: {0}", $type);
 
     // P2: cache the js state block carried by every notification.
-    $agentIdForKey = get_message_param($data, "agentId");
+    $agentIdForKey = get_dict_or_json_param($data, "agentId");
     cache_js_state($data, $agentIdForKey);
 
     if ($type == "agent_ready") {
-        $pageType = get_message_param($data, "pageType");
-        $url = get_message_param($data, "url");
+        $pageType = get_dict_or_json_param($data, "pageType");
+        $url = get_dict_or_json_param($data, "url");
 
         nativelog("[agent] Agent initialized on page type: {0}, url: {1}", $pageType, $url);
 
@@ -1227,7 +1262,7 @@ script(handle_agent_notification)params($jsonData)
             return;
         };
 
-        $url = get_message_param($data, "url");
+        $url = get_dict_or_json_param($data, "url");
         nativelog("[agent] {0} initialized, url: {1}", $agentId, $url);
 
         agent_set_max_result_size($agentId, hashtableget(@SiteMaxSize, $agentId));
@@ -1249,8 +1284,8 @@ script(handle_agent_notification)params($jsonData)
     elif ($type == "freebie_context_count_down") {
         nativelog("[agent] freebie context count down notification received");
 
-        $agentId = get_message_param($data, "agentId");
-        $count = get_message_param($data, "count");
+        $agentId = get_dict_or_json_param($data, "agentId");
+        $count = get_dict_or_json_param($data, "count");
 
             $projectDirectory = agent_get_project_dir($agentId);
         $projectIdentity = agent_get_project_identity($agentId);
@@ -1272,8 +1307,8 @@ script(handle_agent_notification)params($jsonData)
     elif ($type == "freebie_save_conversation_history") {
         nativelog("[agent] freebie_save_conversation_history notification received");
 
-        $conversations = get_message_param($data, "conversations");
-        $agentId = get_message_param($data, "agentId");
+        $conversations = get_dict_or_json_param($data, "conversations");
+        $agentId = get_dict_or_json_param($data, "agentId");
         $count = size($conversations);
 
             $projectDirectory = agent_get_project_dir($agentId);
@@ -1340,7 +1375,7 @@ script(handle_agent_notification)params($jsonData)
     elif ($type == "llm_update_system_prompt") {
         nativelog("[agent] LLM update system prompt notification received");
 
-        $pageType = get_message_param($data, "pageType");
+        $pageType = get_dict_or_json_param($data, "pageType");
 
         nativelog("[agent] LLM update system prompt pageType: {0}", $pageType);
 
@@ -1349,8 +1384,8 @@ script(handle_agent_notification)params($jsonData)
     elif ($type == "llm_context_count_down") {
         nativelog("[agent] LLM context count down notification received");
 
-        $pageType = get_message_param($data, "pageType");
-        $count = get_message_param($data, "count");
+        $pageType = get_dict_or_json_param($data, "pageType");
+        $count = get_dict_or_json_param($data, "count");
 
         nativelog("[agent] llm_context_count_down pageType: {0}, count: {1}", $pageType, $count);
 
@@ -1369,22 +1404,26 @@ script(handle_agent_notification)params($jsonData)
     elif ($type == "llm_align_target") {
         nativelog("[agent] LLM align target notification received");
 
-        $pageType = get_message_param($data, "pageType");
-        $count = get_message_param($data, "count");
+        $pageType = get_dict_or_json_param($data, "pageType");
+        $count = get_dict_or_json_param($data, "count");
 
         nativelog("[agent] llm_align_target pageType: {0}, count: {1}", $pageType, $count);
 
-        induction_plan($count, $pageType);
-    }
-    elif ($type == "episodic_reflection") {
+        $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
+        $time1 = get_file_last_write_time($planFile);
+        $time2 = now();
+        $seconds = get_diff_time_seconds($time1, $time2);
+        if ($seconds > 60) {
+            induction_plan($count, $pageType);
+        };
         nativelog("[agent] episodic_reflection notification received");
         trigger_reflection();
     }
     elif ($type == "save_conversation_history") {
         nativelog("[agent] save_conversation_history notification received");
 
-        $conversations = get_message_param($data, "conversations");
-        $pageType = get_message_param($data, "pageType");
+        $conversations = get_dict_or_json_param($data, "conversations");
+        $pageType = get_dict_or_json_param($data, "pageType");
         $count = size($conversations);
 
         agent_set_backlog(@AgentId, read_file(combine_path(@ProjectDirectory, "docs/backlog.txt")));
@@ -1443,11 +1482,11 @@ script(handle_agent_notification)params($jsonData)
         // Lightweight PM reply channel for C-class semantic keywords
         nativelog("[agent] agent_need_to_decide notification received (trigger_decision)");
 
-        $lastScannedMessage = get_message_param($data, "lastScannedMessage");
-        $pageType = get_message_param($data, "pageType");
-        $count = get_message_param($data, "count");
-        $autoPlan = get_message_param($data, "autoPlan");
-        $lockAgent = get_message_param($data, "lockAgent");
+        $lastScannedMessage = get_dict_or_json_param($data, "lastScannedMessage");
+        $pageType = get_dict_or_json_param($data, "pageType");
+        $count = get_dict_or_json_param($data, "count");
+        $autoPlan = get_dict_or_json_param($data, "autoPlan");
+        $lockAgent = get_dict_or_json_param($data, "lockAgent");
         $soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
 
         agent_set_soul(@AgentId, read_file($soulPath));

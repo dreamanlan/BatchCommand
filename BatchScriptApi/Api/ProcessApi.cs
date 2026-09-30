@@ -694,10 +694,13 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("get_process_memory", "get_process_memory([name_or_pid]) - memory footprint in MB: the current process when called without arguments, a pid, or the largest process with that name (with or without .exe); returns 0 when no process matches. Private bytes on Windows, working set elsewhere.", new ExpressionFactoryHelper<GetProcessMemoryExp>());
             // OS-level process management (merged from CefDotnetApp; one set for
             // every host). launch_process spawns and returns the OS pid;
-            // count_process counts by name; kill_process kills by name or pid
-            // (vs stop_process, which stops a spawned child gracefully).
+            // search_process searches by name and / or command line and returns
+            // the matching pids; kill_process kills by name or pid (vs
+            // stop_process, which stops a spawned child gracefully).
             BatchCommand.BatchScript.Register("launch_process", "launch_process(exe[, args, working_dir]) - start an OS process, returns its pid (0 on error)", new ExpressionFactoryHelper<LaunchProcessExp>());
-            BatchCommand.BatchScript.Register("count_process", "count_process(name) - number of running processes by name (with or without .exe suffix)", new ExpressionFactoryHelper<CountProcessExp>());
+            BatchCommand.BatchScript.Register("get_process_parent_id", "get_process_parent_id([pid]) - parent process id of the given process (default: the current process), 0 when it cannot be determined; on Windows the value is captured at process creation and keeps pointing at the parent even after it died, which is what a parent watchdog needs (pair it with is_process_alive)", new ExpressionFactoryHelper<GetProcessParentIdExp>());
+            BatchCommand.BatchScript.Register("is_process_alive", "is_process_alive(pid[, name_key]) - whether the process exists and, when name_key is given, whether its name contains the key (name matching does not rule out pid reuse by a process with a matching name), returns bool", new ExpressionFactoryHelper<IsProcessAliveExp>());
+            BatchCommand.BatchScript.Register("search_process", "search_process([name_key[, cmd_line_key]]) - search running processes: name_key matches the process name and cmd_line_key the command line (both case insensitive substrings, AND-ed, an empty key skips that check, the .exe suffix of the name key is optional); returns the list of matching pids (empty list when nothing matches), use listsize() to count", new ExpressionFactoryHelper<SearchProcessExp>());
             BatchCommand.BatchScript.Register("kill_process", "kill_process(name_or_pid) - kill OS processes by name (with or without .exe) or by pid, returns the killed count", new ExpressionFactoryHelper<KillProcessExp>());
         }
     }
@@ -747,34 +750,491 @@ namespace BatchCommand.Api
         }
     }
 
-    // Count running processes by name (with or without the .exe suffix).
-    sealed class CountProcessExp : SimpleExpressionBase
+    // The parent pid of a process. There is no managed API for it, so this is
+    // per platform:
+    //   - Windows: NtQueryInformationProcess -> InheritedFromUniqueProcessId.
+    //     The value is captured when the process is created and is NOT updated
+    //     when the parent dies, which is exactly what a "is my parent still
+    //     alive" watchdog needs: it keeps pointing at the parent pid, and the
+    //     caller decides whether that pid is still a live process.
+    //   - Linux: the PPid: line of /proc/<pid>/status.
+    //   - macOS: ps (there is no /proc, and marshalling kinfo_proc costs more
+    //     than it is worth here).
+    // Returns false when it cannot be determined (parentPid is then 0).
+    static class ProcessParentId
+    {
+        public static bool TryGet(int pid, out int parentPid)
+        {
+            parentPid = 0;
+            try {
+                if (OperatingSystem.IsWindows()) {
+                    return TryGetWindows(pid, out parentPid);
+                }
+                if (OperatingSystem.IsLinux()) {
+                    return TryGetProcFs(pid, out parentPid);
+                }
+                if (OperatingSystem.IsMacOS()) {
+                    return TryGetMac(pid, out parentPid);
+                }
+            }
+            catch {
+                // fall through to the failure path below
+            }
+            parentPid = 0;
+            return false;
+        }
+
+        private const uint c_ProcessQueryLimitedInformation = 0x1000;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ProcessBasicInfo
+        {
+            public IntPtr ExitStatus;
+            public IntPtr PebBaseAddress;
+            public IntPtr AffinityMask;
+            public IntPtr BasePriority;
+            public IntPtr UniqueProcessId;
+            public IntPtr InheritedFromUniqueProcessId;
+        }
+
+        [DllImport("ntdll.dll")]
+        private static extern int NtQueryInformationProcess(IntPtr handle, int infoClass, ref ProcessBasicInfo info, int size, out int returned);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr handle);
+
+        private static bool TryGetWindows(int pid, out int parentPid)
+        {
+            parentPid = 0;
+            IntPtr handle = OpenProcess(c_ProcessQueryLimitedInformation, false, pid);
+            if (handle == IntPtr.Zero) {
+                return false;
+            }
+            try {
+                var pbi = new ProcessBasicInfo();
+                int returned;
+                if (NtQueryInformationProcess(handle, 0, ref pbi, Marshal.SizeOf<ProcessBasicInfo>(), out returned) != 0) {
+                    return false;
+                }
+                long id = pbi.InheritedFromUniqueProcessId.ToInt64();
+                if (id <= 0) {
+                    return false;
+                }
+                parentPid = (int)id;
+                return true;
+            }
+            finally {
+                CloseHandle(handle);
+            }
+        }
+
+        private static bool TryGetProcFs(int pid, out int parentPid)
+        {
+            parentPid = 0;
+            string path = "/proc/" + pid.ToString(System.Globalization.CultureInfo.InvariantCulture) + "/status";
+            if (!File.Exists(path)) {
+                return false;
+            }
+            foreach (var line in File.ReadLines(path)) {
+                if (line.StartsWith("PPid:", StringComparison.Ordinal)) {
+                    return int.TryParse(line.Substring(5).Trim(), System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture, out parentPid) && parentPid > 0;
+                }
+            }
+            return false;
+        }
+
+        private static bool TryGetMac(int pid, out int parentPid)
+        {
+            parentPid = 0;
+            var psi = new System.Diagnostics.ProcessStartInfo {
+                FileName = "/bin/ps",
+                Arguments = "-o ppid= -p " + pid.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+            };
+            using var proc = System.Diagnostics.Process.Start(psi);
+            if (null == proc) {
+                return false;
+            }
+            string output = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit();
+            return int.TryParse(output.Trim(), System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture, out parentPid) && parentPid > 0;
+        }
+    }
+
+    // Parent pid of a process (the current one when called without arguments).
+    sealed class GetProcessParentIdExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 1) {
-                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: count_process(name)");
+            if (operands.Count > 1) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: get_process_parent_id([pid])");
                 return BoxedValue.From(0);
             }
+            int pid;
+            if (operands.Count == 1) {
+                pid = operands[0].GetInt();
+            }
+            else {
+                pid = System.Diagnostics.Process.GetCurrentProcess().Id;
+            }
+            int parentPid;
+            if (pid <= 0 || !ProcessParentId.TryGet(pid, out parentPid)) {
+                return BoxedValue.From(0);
+            }
+            return BoxedValue.From(parentPid);
+        }
+    }
+
+    // Check whether a process with the given pid exists at query time.
+    // The optional name key requires a case-insensitive process-name substring.
+    // A matching name does not rule out pid reuse or establish process identity.
+    // The process may exit immediately after this check.
+    sealed class IsProcessAliveExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: is_process_alive(pid[, name_key])");
+                return BoxedValue.FromBool(false);
+            }
+            int pid = operands[0].GetInt();
+            if (pid <= 0) {
+                return BoxedValue.FromBool(false);
+            }
+            string nameKey = operands.Count >= 2 ? (operands[1].AsString ?? string.Empty) : string.Empty;
             try {
-                string name = operands[0].AsString ?? string.Empty;
-                if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) {
-                    name = name.Substring(0, name.Length - 4);
+                using var p = System.Diagnostics.Process.GetProcessById(pid);
+                if (string.IsNullOrEmpty(nameKey)) {
+                    return BoxedValue.FromBool(true);
                 }
-                if (string.IsNullOrEmpty(name)) {
-                    return BoxedValue.From(0);
+                string name;
+                try {
+                    name = p.ProcessName;
                 }
-                var procs = System.Diagnostics.Process.GetProcessesByName(name);
-                int count = procs.Length;
-                foreach (var p in procs) {
-                    p.Dispose();
+                catch {
+                    name = string.Empty;
                 }
-                return BoxedValue.From(count);
+                return BoxedValue.FromBool(!string.IsNullOrEmpty(name) && name.IndexOf(nameKey, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+            catch (ArgumentException) {
+                // The process is gone.
+                return BoxedValue.FromBool(false);
             }
             catch (Exception ex) {
-                BatchCommand.Utils.HostBridge.Log?.Invoke("count_process failed: " + ex.Message);
-                return BoxedValue.From(0);
+                BatchCommand.Utils.HostBridge.Log?.Invoke("is_process_alive failed: " + ex.Message);
+                return BoxedValue.FromBool(false);
             }
+        }
+    }
+
+    // Search running processes by name and / or command line. Both keys are
+    // case insensitive substrings and both are optional: an empty name key
+    // matches every name, an empty command line key skips the command line
+    // check (the two are AND-ed when both are given). Returns the list of the
+    // matching pids (empty list when nothing matches) - listsize() gives the
+    // old count semantics.
+    //
+    // Reading a command line is far more expensive than the name check, so
+    // leave the second key empty unless instances of the same executable have
+    // to be told apart by their arguments (two copies of the same host started
+    // with different switches). A process whose command line cannot be read
+    // never matches a non-empty command line key.
+    sealed class SearchProcessExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            var ids = new List<BoxedValue>();
+            if (operands.Count > 2) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: search_process([name_key[, cmd_line_key]])");
+                return BoxedValue.FromObject(ids);
+            }
+            string nameKey = operands.Count >= 1 ? (operands[0].AsString ?? string.Empty) : string.Empty;
+            string cmdLineKey = operands.Count >= 2 ? (operands[1].AsString ?? string.Empty) : string.Empty;
+            if (nameKey.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) {
+                nameKey = nameKey.Substring(0, nameKey.Length - 4);
+            }
+            bool matchName = !string.IsNullOrEmpty(nameKey);
+            bool matchCmdLine = !string.IsNullOrEmpty(cmdLineKey);
+            try {
+                var procs = System.Diagnostics.Process.GetProcesses();
+                foreach (var p in procs) {
+                    try {
+                        bool matched = true;
+                        if (matched && matchName) {
+                            string name;
+                            try {
+                                name = p.ProcessName;
+                            }
+                            catch {
+                                name = string.Empty;
+                            }
+                            matched = !string.IsNullOrEmpty(name) && name.IndexOf(nameKey, StringComparison.OrdinalIgnoreCase) >= 0;
+                        }
+                        if (matched && matchCmdLine) {
+                            string cmdLine;
+                            matched = ProcessCommandLine.TryGet(p.Id, out cmdLine)
+                                && cmdLine.IndexOf(cmdLineKey, StringComparison.OrdinalIgnoreCase) >= 0;
+                        }
+                        if (matched) {
+                            ids.Add(BoxedValue.From(p.Id));
+                        }
+                    }
+                    catch (Exception ex) {
+                        BatchCommand.Utils.HostBridge.Log?.Invoke("search_process: skip a process: " + ex.Message);
+                    }
+                    finally {
+                        p.Dispose();
+                    }
+                }
+            }
+            catch (Exception ex) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("search_process failed: " + ex.Message);
+            }
+            return BoxedValue.FromObject(ids);
+        }
+    }
+
+    // Read the command line of a running process, cross platform:
+    //   - Windows: PEB via NtQueryInformationProcess + ReadProcessMemory (the
+    //     same path the native host uses; a WOW64 target keeps 32-bit offsets).
+    //   - Linux: /proc/<pid>/cmdline.
+    //   - macOS: the KERN_PROCARGS2 sysctl (there is no /proc there).
+    // Returns false when the command line cannot be read (access denied,
+    // protected process, process gone, unsupported platform) - the caller falls
+    // back to the process name so a process is never silently dropped.
+    static class ProcessCommandLine
+    {
+        public static bool TryGet(int pid, out string cmdLine)
+        {
+            cmdLine = string.Empty;
+            try {
+                if (OperatingSystem.IsWindows()) {
+                    return TryGetWindows(pid, out cmdLine);
+                }
+                if (OperatingSystem.IsLinux()) {
+                    return TryGetProcFs(pid, out cmdLine);
+                }
+                if (OperatingSystem.IsMacOS()) {
+                    return TryGetMac(pid, out cmdLine);
+                }
+            }
+            catch {
+                // fall through to the failure path below
+            }
+            cmdLine = string.Empty;
+            return false;
+        }
+
+        private static bool TryGetProcFs(int pid, out string cmdLine)
+        {
+            cmdLine = string.Empty;
+            string path = "/proc/" + pid.ToString(System.Globalization.CultureInfo.InvariantCulture) + "/cmdline";
+            if (!File.Exists(path)) {
+                return false;
+            }
+            // The kernel separates the arguments with NUL bytes.
+            cmdLine = File.ReadAllText(path).Replace('\0', ' ').Trim();
+            return cmdLine.Length > 0;
+        }
+
+        private const int c_ProcessBasicInformation = 0;
+        private const int c_ProcessWow64Information = 26;
+        private const uint c_ProcessQueryLimitedInformation = 0x1000;
+        private const uint c_ProcessVmRead = 0x0010;
+        // PEB.ProcessParameters / RTL_USER_PROCESS_PARAMETERS.CommandLine offsets.
+        // A 32-bit target keeps the 32-bit layout even when we run as 64-bit.
+        private const int c_PebProcessParameters32 = 0x10;
+        private const int c_PebProcessParameters64 = 0x20;
+        private const int c_CommandLine32 = 0x40;
+        private const int c_CommandLine64 = 0x70;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ProcessBasicInfo
+        {
+            public IntPtr ExitStatus;
+            public IntPtr PebBaseAddress;
+            public IntPtr AffinityMask;
+            public IntPtr BasePriority;
+            public IntPtr UniqueProcessId;
+            public IntPtr InheritedFromUniqueProcessId;
+        }
+
+        [DllImport("ntdll.dll")]
+        private static extern int NtQueryInformationProcess(IntPtr handle, int infoClass, ref ProcessBasicInfo info, int size, out int returned);
+        [DllImport("ntdll.dll")]
+        private static extern int NtQueryInformationProcess(IntPtr handle, int infoClass, ref IntPtr info, int size, out int returned);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr handle);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool ReadProcessMemory(IntPtr handle, IntPtr address, byte[] buffer, UIntPtr size, out UIntPtr read);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool IsWow64Process(IntPtr handle, out bool wow64);
+
+        private static bool TryGetWindows(int pid, out string cmdLine)
+        {
+            cmdLine = string.Empty;
+            IntPtr handle = OpenProcess(c_ProcessQueryLimitedInformation | c_ProcessVmRead, false, pid);
+            if (handle == IntPtr.Zero) {
+                return false;
+            }
+            try {
+                bool wow64 = false;
+                if (!IsWow64Process(handle, out wow64)) {
+                    return false;
+                }
+                // A 32-bit reader cannot address a native 64-bit target.
+                if (IntPtr.Size == 4 && Environment.Is64BitOperatingSystem && !wow64) {
+                    return false;
+                }
+                bool target32 = wow64 || !Environment.Is64BitOperatingSystem;
+                int ptrSize = target32 ? 4 : 8;
+
+                int returned;
+                IntPtr peb = IntPtr.Zero;
+                if (IntPtr.Size == 8 && wow64) {
+                    if (NtQueryInformationProcess(handle, c_ProcessWow64Information, ref peb, IntPtr.Size, out returned) != 0) {
+                        return false;
+                    }
+                }
+                else {
+                    var pbi = new ProcessBasicInfo();
+                    if (NtQueryInformationProcess(handle, c_ProcessBasicInformation, ref pbi, Marshal.SizeOf<ProcessBasicInfo>(), out returned) != 0) {
+                        return false;
+                    }
+                    peb = pbi.PebBaseAddress;
+                }
+                if (peb == IntPtr.Zero) {
+                    return false;
+                }
+                IntPtr processParameters;
+                if (!TryReadPointer(handle, peb + (target32 ? c_PebProcessParameters32 : c_PebProcessParameters64), ptrSize, out processParameters)
+                    || processParameters == IntPtr.Zero) {
+                    return false;
+                }
+                // UNICODE_STRING: Length, MaximumLength, Buffer (8 bytes on x86,
+                // 16 on x64 where the buffer starts at offset 8).
+                int usSize = target32 ? 8 : 16;
+                var usBytes = new byte[usSize];
+                UIntPtr read;
+                if (!ReadProcessMemory(handle, processParameters + (target32 ? c_CommandLine32 : c_CommandLine64), usBytes, (UIntPtr)(uint)usSize, out read) || read.ToUInt64() != (ulong)usSize) {
+                    return false;
+                }
+                int length = BitConverter.ToUInt16(usBytes, 0);
+                IntPtr buffer = target32
+                    ? (IntPtr.Size == 8 ? new IntPtr((long)BitConverter.ToUInt32(usBytes, 4)) : new IntPtr(BitConverter.ToInt32(usBytes, 4)))
+                    : new IntPtr(BitConverter.ToInt64(usBytes, 8));
+                if (length <= 0 || buffer == IntPtr.Zero) {
+                    return false;
+                }
+                var data = new byte[length];
+                if (!ReadProcessMemory(handle, buffer, data, (UIntPtr)(uint)length, out read) || read.ToUInt64() != (ulong)length) {
+                    return false;
+                }
+                cmdLine = Encoding.Unicode.GetString(data);
+                return cmdLine.Length > 0;
+            }
+            finally {
+                CloseHandle(handle);
+            }
+        }
+
+        private static bool TryReadPointer(IntPtr handle, IntPtr address, int ptrSize, out IntPtr value)
+        {
+            value = IntPtr.Zero;
+            var buf = new byte[ptrSize];
+            UIntPtr read;
+            if (!ReadProcessMemory(handle, address, buf, (UIntPtr)(uint)ptrSize, out read) || read.ToUInt64() != (ulong)ptrSize) {
+                return false;
+            }
+            value = ptrSize == 4
+                ? (IntPtr.Size == 8 ? new IntPtr((long)BitConverter.ToUInt32(buf, 0)) : new IntPtr(BitConverter.ToInt32(buf, 0)))
+                : new IntPtr(BitConverter.ToInt64(buf, 0));
+            return true;
+        }
+
+        private const int c_CtlKern = 1;
+        private const int c_KernProcArgs2 = 49;
+
+        [DllImport("libc")]
+        private static extern int sysctl(int[] name, uint namelen, IntPtr oldp, ref IntPtr oldlenp, IntPtr newp, IntPtr newlen);
+
+        private static bool TryGetMac(int pid, out string cmdLine)
+        {
+            cmdLine = string.Empty;
+            var mib = new int[] { c_CtlKern, c_KernProcArgs2, pid };
+            IntPtr len = IntPtr.Zero;
+            // First call: query the buffer size.
+            if (sysctl(mib, 3, IntPtr.Zero, ref len, IntPtr.Zero, IntPtr.Zero) != 0 || len.ToInt64() <= 0) {
+                return false;
+            }
+            long capacity = len.ToInt64();
+            if (capacity < sizeof(int) || capacity > int.MaxValue) {
+                return false;
+            }
+            IntPtr buffer = Marshal.AllocHGlobal(len);
+            try {
+                if (sysctl(mib, 3, buffer, ref len, IntPtr.Zero, IntPtr.Zero) != 0) {
+                    return false;
+                }
+                long returnedSize = len.ToInt64();
+                if (returnedSize < sizeof(int) || returnedSize > capacity) {
+                    return false;
+                }
+                int size = (int)returnedSize;
+                var data = new byte[size];
+                Marshal.Copy(buffer, data, 0, size);
+                int argc = BitConverter.ToInt32(data, 0);
+                if (argc < 0) {
+                    return false;
+                }
+                // Layout: argc, exec path, padding, argv, then environment.
+                int pos = sizeof(int);
+                int pathStart = pos;
+                while (pos < size && data[pos] != 0) {
+                    ++pos;
+                }
+                if (pos == size) {
+                    return false;
+                }
+                string execPath = Encoding.UTF8.GetString(data, pathStart, pos - pathStart);
+                ++pos;
+                if (argc == 0) {
+                    cmdLine = execPath;
+                    return cmdLine.Length > 0;
+                }
+                // Skip padding only before argv[0], not between arguments.
+                // An empty argv[0] is indistinguishable from padding here.
+                while (pos < size && data[pos] == 0) {
+                    ++pos;
+                }
+                if (argc > size - pos) {
+                    return false;
+                }
+                var argv = new List<string>();
+                for (int i = 0; i < argc; ++i) {
+                    int start = pos;
+                    while (pos < size && data[pos] != 0) {
+                        ++pos;
+                    }
+                    if (pos == size) {
+                        return false;
+                    }
+                    argv.Add(Encoding.UTF8.GetString(data, start, pos - start));
+                    ++pos;
+                }
+                cmdLine = string.Join(" ", argv);
+                return cmdLine.Length > 0;
+            }
+            finally {
+                Marshal.FreeHGlobal(buffer);
+            }
+
         }
     }
 

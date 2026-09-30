@@ -698,6 +698,30 @@ namespace DotNetLib
             return BoxedValue.From(id);
         }
     }
+    // Graceful shutdown of every browser tracked by this process: one
+    // non-forced close per browser. The native side closes the emptied windows
+    // and MaybeCleanup() exits the app (root_window_manager.cc); the dsl hook
+    // on_browser_finalize runs first and stops the self-launched agent host.
+    // Returns the number of close requests issued (0 = nothing to close).
+    sealed class ExitBrowserExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            var ids = Lib.GetAllContextBrowserIds();
+            if (null == ids) {
+                NativeApi.AppendApiErrorInfoLine("exit_browser: this process tracks no browser");
+                return BoxedValue.From(0);
+            }
+            int ct = 0;
+            foreach (var id in ids) {
+                if (Lib.CloseBrowserById(id)) {
+                    ct++;
+                }
+            }
+            Lib.NativeLog($"[csharp] exit_browser: close requested for {ct} of {ids.Length} browser(s)");
+            return BoxedValue.From(ct);
+        }
+    }
     // Parse a UTF-8 JSON payload (byte[] or string) into a DSL value tree.
     // Uses System.Text.Json for efficient in-place UTF-8 parsing without extra string allocation.
     sealed class DevToolsParseBytesExp : SimpleExpressionBase
@@ -2517,7 +2541,9 @@ namespace DotNetLib
             if (s_NativeApi != null) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
                 if (browserId > 0) {
-                    s_BrowserBrowserIds.Add(browserId);
+                    lock (s_BrowserBrowserIds) {
+                        s_BrowserBrowserIds.Add(browserId);
+                    }
                     NativeLog($"[csharp] Browser tracked: id={browserId}");
                 }
             }
@@ -2576,7 +2602,7 @@ namespace DotNetLib
                 if (s_NativeApi != null) {
                     try {
                         var deadIds = new List<int>();
-                        foreach (int id in s_BrowserBrowserIds) {
+                        foreach (int id in SnapshotBrowserIds(s_BrowserBrowserIds)) {
                             IntPtr resolved = s_NativeApi.GetBrowserById(id);
                             if (resolved == IntPtr.Zero) {
                                 deadIds.Add(id);
@@ -2592,7 +2618,9 @@ namespace DotNetLib
                             }
                         }
                         foreach (int id in deadIds) {
-                            s_BrowserBrowserIds.Remove(id);
+                            lock (s_BrowserBrowserIds) {
+                                s_BrowserBrowserIds.Remove(id);
+                            }
                             NativeLog($"[csharp] Browser untracked (pruned): id={id}");
                         }
                     }
@@ -2959,7 +2987,9 @@ namespace DotNetLib
             if (s_NativeApi != null && s_NativeApi.FrameIsMain(frame)) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
                 if (browserId > 0) {
-                    s_RendererBrowserIds.Add(browserId);
+                    lock (s_RendererBrowserIds) {
+                        s_RendererBrowserIds.Add(browserId);
+                    }
                     NativeLog($"[csharp] Renderer browser tracked: id={browserId}");
                 }
             }
@@ -2972,7 +3002,7 @@ namespace DotNetLib
             if (s_NativeApi != null) {
                 try {
                     var deadIds = new List<int>();
-                    foreach (int id in s_RendererBrowserIds) {
+                    foreach (int id in SnapshotBrowserIds(s_RendererBrowserIds)) {
                         var pair = s_NativeApi.GetRendererBrowserFrameById(id);
                         if (pair.browser == IntPtr.Zero) {
                             deadIds.Add(id);
@@ -2984,7 +3014,9 @@ namespace DotNetLib
                         }
                     }
                     foreach (int id in deadIds) {
-                        s_RendererBrowserIds.Remove(id);
+                        lock (s_RendererBrowserIds) {
+                            s_RendererBrowserIds.Remove(id);
+                        }
                         NativeLog($"[csharp] Renderer browser untracked (pruned at init): id={id}");
                     }
                 }
@@ -3065,7 +3097,11 @@ namespace DotNetLib
                         browserId = s_NativeApi.BrowserGetId(frameBrowser);
                     }
                 }
-                if (browserId > 0 && s_RendererBrowserIds.Remove(browserId)) {
+                bool removed;
+                lock (s_RendererBrowserIds) {
+                    removed = browserId > 0 && s_RendererBrowserIds.Remove(browserId);
+                }
+                if (removed) {
                     NativeLog($"[csharp] Renderer browser untracked: id={browserId}");
                 }
             }
@@ -3080,7 +3116,7 @@ namespace DotNetLib
             if (s_NativeApi != null) {
                 try {
                     var deadIds = new List<int>();
-                    foreach (int id in s_RendererBrowserIds) {
+                    foreach (int id in SnapshotBrowserIds(s_RendererBrowserIds)) {
                         var pair = s_NativeApi.GetRendererBrowserFrameById(id);
                         if (pair.browser == IntPtr.Zero) {
                             deadIds.Add(id);
@@ -3092,7 +3128,9 @@ namespace DotNetLib
                         }
                     }
                     foreach (int id in deadIds) {
-                        s_RendererBrowserIds.Remove(id);
+                        lock (s_RendererBrowserIds) {
+                            s_RendererBrowserIds.Remove(id);
+                        }
                         NativeLog($"[csharp] Renderer browser untracked (pruned): id={id}");
                     }
                 }
@@ -4576,10 +4614,14 @@ namespace DotNetLib
             if (isMainThread && null != s_NativeApi) {
                 int ct = 0;
                 if ((int)CefProcessType.RendererProcess == s_ProcessType) {
-                    ct = s_BrowserBrowserIds.Count;
+                    lock (s_RendererBrowserIds) {
+                        ct = s_RendererBrowserIds.Count;
+                    }
                 }
                 else if ((int)CefProcessType.BrowserProcess == s_ProcessType) {
-                    ct = s_RendererBrowserIds.Count;
+                    lock (s_BrowserBrowserIds) {
+                        ct = s_BrowserBrowserIds.Count;
+                    }
                 }
                 if (ct > 0) {
                     s_NativeApi.HandleAllQueues(maxNativeCount, maxJsCount, maxCodeCount, maxFuncCount);
@@ -4694,7 +4736,7 @@ namespace DotNetLib
             if (s_NativeApi == null)
                 return IntPtr.Zero;
             if (s_ProcessType == (int)CefProcessType.RendererProcess) {
-                foreach (var id in s_RendererBrowserIds) {
+                foreach (var id in SnapshotBrowserIds(s_RendererBrowserIds)) {
                     var pair = s_NativeApi.GetRendererBrowserFrameById(id);
                     if (pair.browser != IntPtr.Zero) {
                         return pair.browser;
@@ -4702,7 +4744,7 @@ namespace DotNetLib
                 }
             }
             else if(s_ProcessType == (int)CefProcessType.BrowserProcess) {
-                foreach (var id in s_BrowserBrowserIds) {
+                foreach (var id in SnapshotBrowserIds(s_BrowserBrowserIds)) {
                     IntPtr browser = s_NativeApi.GetBrowserById(id);
                     if (browser != IntPtr.Zero) {
                         return browser;
@@ -4710,6 +4752,15 @@ namespace DotNetLib
                 }
             }
             return IntPtr.Zero;
+        }
+        private static int[] SnapshotBrowserIds(HashSet<int> browserIds)
+        {
+            lock (browserIds) {
+                // Avoid LINQ assembly loading in the sandboxed renderer.
+                var ids = new int[browserIds.Count];
+                browserIds.CopyTo(ids, 0);
+                return ids;
+            }
         }
         /// <summary>
         /// Get all tracked browser IDs for the current process.
@@ -4724,14 +4775,10 @@ namespace DotNetLib
                 // denied, and any lazy-load failure here breaks every
                 // find_browser_id_by_url_key heartbeat call.
                 if (s_ProcessType == (int)CefProcessType.RendererProcess) {
-                    var ids = new int[s_RendererBrowserIds.Count];
-                    s_RendererBrowserIds.CopyTo(ids, 0);
-                    return ids;
+                    return SnapshotBrowserIds(s_RendererBrowserIds);
                 }
                 else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
-                    var ids = new int[s_BrowserBrowserIds.Count];
-                    s_BrowserBrowserIds.CopyTo(ids, 0);
-                    return ids;
+                    return SnapshotBrowserIds(s_BrowserBrowserIds);
                 }
             }
             catch (Exception ex) {
@@ -4752,7 +4799,9 @@ namespace DotNetLib
                 var pair = s_NativeApi.GetRendererBrowserFrameById(browserId);
                 if (pair.browser == IntPtr.Zero) {
                     // Sync: remove stale entry from C# id set
-                    s_RendererBrowserIds.Remove(browserId);
+                    lock (s_RendererBrowserIds) {
+                        s_RendererBrowserIds.Remove(browserId);
+                    }
                     return false;
                 }
                 NativeApi.SetContext(pair.browser, pair.frame);
@@ -4763,7 +4812,9 @@ namespace DotNetLib
                 IntPtr browser = s_NativeApi.GetBrowserById(browserId);
                 if (browser == IntPtr.Zero) {
                     // Sync: remove stale entry from C# id set
-                    s_BrowserBrowserIds.Remove(browserId);
+                    lock (s_BrowserBrowserIds) {
+                        s_BrowserBrowserIds.Remove(browserId);
+                    }
                     return false;
                 }
                 IntPtr frame = s_NativeApi.BrowserGetMainFrame(browser);
@@ -4786,7 +4837,9 @@ namespace DotNetLib
                 var pair = s_NativeApi.GetRendererBrowserFrameById(browserId);
                 if (pair.browser == IntPtr.Zero) {
                     // Sync: remove stale entry from C# id set
-                    s_RendererBrowserIds.Remove(browserId);
+                    lock (s_RendererBrowserIds) {
+                        s_RendererBrowserIds.Remove(browserId);
+                    }
                     return pair.browser;
                 }
                 // Round-trip check: a recycled wrapper can resolve non-zero
@@ -4794,7 +4847,9 @@ namespace DotNetLib
                 // pointer when it reports the queried id back.
                 int roundTripId = s_NativeApi.BrowserGetId(pair.browser);
                 if (roundTripId != browserId) {
-                    s_RendererBrowserIds.Remove(browserId);
+                    lock (s_RendererBrowserIds) {
+                        s_RendererBrowserIds.Remove(browserId);
+                    }
                     return IntPtr.Zero;
                 }
                 return pair.browser;
@@ -4804,11 +4859,29 @@ namespace DotNetLib
                 IntPtr browser = s_NativeApi.GetBrowserById(browserId);
                 if (browser == IntPtr.Zero) {
                     // Sync: remove stale entry from C# id set
-                    s_BrowserBrowserIds.Remove(browserId);
+                    lock (s_BrowserBrowserIds) {
+                        s_BrowserBrowserIds.Remove(browserId);
+                    }
                 }
                 return browser;
             }
             return IntPtr.Zero;
+        }
+        /// <summary>
+        /// Request a graceful (non-forced) close of the browser with the given
+        /// id. A forced close skips CanClose and leaves the windows gone but
+        /// the process alive (see RootWindowManager::OnExit in
+        /// root_window_manager.cc), so it is never used here.
+        /// Browser process only. Returns false in other processes or when the
+        /// browser is already gone; true does not confirm that it has closed.
+        /// </summary>
+        internal static bool CloseBrowserById(int browserId)
+        {
+            if (s_ProcessType != (int)CefProcessType.BrowserProcess || s_NativeApi == null) return false;
+            IntPtr browser = GetBrowserById(browserId);
+            if (browser == IntPtr.Zero) return false;
+            s_NativeApi.BrowserClose(browser, false);
+            return true;
         }
         /// <summary>
         /// Find a browser ID whose URL contains the given key substring.
@@ -4848,7 +4921,9 @@ namespace DotNetLib
                     var pair = s_NativeApi!.GetRendererBrowserFrameById(id);
                     if (pair.browser == IntPtr.Zero || !s_NativeApi.BrowserIsValid(pair.browser)) {
                         // Sync: remove stale entry from C# id set
-                        s_RendererBrowserIds.Remove(id);
+                        lock (s_RendererBrowserIds) {
+                            s_RendererBrowserIds.Remove(id);
+                        }
                         continue;
                     }
                     // Round-trip check: BrowserIsValid passes for a recycled
@@ -4857,7 +4932,9 @@ namespace DotNetLib
                     // wrong tab. Only trust entries whose id round-trips.
                     int roundTripId = s_NativeApi.BrowserGetId(pair.browser);
                     if (roundTripId != id) {
-                        s_RendererBrowserIds.Remove(id);
+                        lock (s_RendererBrowserIds) {
+                            s_RendererBrowserIds.Remove(id);
+                        }
                         continue;
                     }
                     url = s_NativeApi.BrowserGetUrl(pair.browser);
@@ -4869,7 +4946,9 @@ namespace DotNetLib
                     }
                     else {
                         // Sync: remove stale entry from C# id set
-                        s_BrowserBrowserIds.Remove(id);
+                        lock (s_BrowserBrowserIds) {
+                            s_BrowserBrowserIds.Remove(id);
+                        }
                     }
                 }
                 if (!string.IsNullOrEmpty(url) && url.Contains(urlKey, StringComparison.OrdinalIgnoreCase)) {
@@ -5142,6 +5221,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("get_browser_ids", "get_browser_ids() - get all browser IDs in current process", false, new ExpressionFactoryHelper<GetBrowserIdsExp>());
             BatchCommand.BatchScript.Register("set_context_by_id", "set_context_by_id(browser_id) - set current context by browser ID, returns bool", false, new ExpressionFactoryHelper<SetContextByIdExp>());
             BatchCommand.BatchScript.Register("find_browser_id_by_url_key", "find_browser_id_by_url_key(url_key) - find browser ID by URL substring, returns -1 if not found", false, new ExpressionFactoryHelper<FindBrowserIdByUrlKeyExp>());
+            BatchCommand.BatchScript.Register("exit_browser", "exit_browser() - Browser process only; request a graceful (non-forced) close of every tracked browser, returns the number of close requests (0 in other processes); requests do not guarantee closure or process exit", false, new ExpressionFactoryHelper<ExitBrowserExp>());
             BatchCommand.BatchScript.Register("dev_tools_parse_bytes", "dev_tools_parse_bytes(bytes_or_string) - parse UTF-8 JSON to DSL value tree (dict/list/primitives)", new ExpressionFactoryHelper<DevToolsParseBytesExp>());
             BatchCommand.BatchScript.Register("watch_file", "watch_file(file_name[, relative_path, file_type]) - watch a file for changes, on change the DSL callback on_file_changed(file_path, file_type) is invoked, returns bool", false, new ExpressionFactoryHelper<WatchFileExp>());
             BatchCommand.BatchScript.Register("watch_dir", "watch_dir(dir_name[, relative_path, file_type]) - watch *.js files in a directory for changes, on change the DSL callback on_file_changed(file_path, file_type) is invoked, returns bool", false, new ExpressionFactoryHelper<WatchDirectoryExp>());

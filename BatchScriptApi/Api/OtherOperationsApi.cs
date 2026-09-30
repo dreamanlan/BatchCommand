@@ -57,6 +57,45 @@ namespace BatchCommand.Api
             return BoxedValue.From(false);
         }
     }
+
+    // Get parameter from dict/json params
+    sealed class GetDictOrJsonParamExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                ApiErrorInfo.AppendLine("Expected: get_dict_or_json_param(paramsObj, key)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                var paramsObj = operands[0].GetObject();
+                string key = operands[1].AsString;
+
+                if (null != key) {
+                    if (paramsObj is IDictionary<BoxedValue, BoxedValue> bvdict) {
+                        paramsObj = DslHelper.GetDictionaryFromBoxedValue(bvdict);
+                    }
+                    if (paramsObj is IDictionary<string, object?> dict && dict.ContainsKey(key)) {
+                        var value = dict[key];
+                        return DslHelper.GetBoxedValueFromValue(value);
+                    }
+                    else if (paramsObj is LitJson.JsonData jsonData) {
+                        if (jsonData.IsObject) {
+                            var value = jsonData[key];
+                            return DslHelper.GetBoxedValueFromJsonValue(value);
+                        }
+                    }
+                }
+                return BoxedValue.NullObject;
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"Error getting dict/json param: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
     // JSON Operations
     public sealed class ToJsonExp : SimpleExpressionBase
     {

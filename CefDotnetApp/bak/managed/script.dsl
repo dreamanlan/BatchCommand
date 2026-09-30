@@ -47,8 +47,20 @@ script(init_global_consts)
 // over the websocket server started by script_agent.dsl on_init.
 script(start_agent_process)
 {
-    $ct = count_process("BatchCmdDslHost.exe");
-    if ($ct <= 0) {
+    // Only the children of this browser are counted, and the key is a switch
+    // this script builds itself (see @AgentArgs), so a second
+    // BatchCmdDslHost.exe running as the process monitor never looks like an
+    // agent that is already up. The agent watches its parent and exits by
+    // itself when this browser dies (on_tick in script_agent.dsl), so an agent
+    // left behind by a killed browser is not a case to handle here.
+    $ct = nativeapi.CountProcess("--plugin=managed/AgentCore.dll");
+    // -1 is the error return of the native counter, not "none found": reading
+    // it as "start one" would launch an agent on every heartbeat.
+    if ($ct < 0) {
+        nativelog("[dsl] start_agent_process: native process count failed ({0}), skip", $ct);
+        return;
+    };
+    if ($ct == 0) {
         // Pass the project identity through so the agent process knows the
         // initial identity (initialprojectidentity global in script_agent.dsl).
         $args = @AgentArgs;

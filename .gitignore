@@ -83,3 +83,6 @@ x64/Debug/MonoBleedingEdge
 BatchCmdDslHost/x64/Debug/vc143.pdb
 /BatchCmdDslHost/build/build_osx
 /.vscode
+*.ipdb
+*.iobj
+*.recipe

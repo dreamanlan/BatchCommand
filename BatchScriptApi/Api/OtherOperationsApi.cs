@@ -58,13 +58,13 @@ namespace BatchCommand.Api
         }
     }
 
-    // Get parameter from dict/json params
-    sealed class GetDictOrJsonParamExp : SimpleExpressionBase
+    // Get from dict/json
+    sealed class DictOrJsonGetExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: get_dict_or_json_param(paramsObj, key)");
+                ApiErrorInfo.AppendLine("Expected: dict_or_json_get(paramsObj, key)");
                 return BoxedValue.NullObject;
             }
 
@@ -90,9 +90,147 @@ namespace BatchCommand.Api
                 return BoxedValue.NullObject;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error getting dict/json param: {ex.Message}");
+                ApiErrorInfo.AppendLine($"Error getting from dict/json: {ex.Message}");
                 return BoxedValue.NullObject;
             }
+        }
+    }
+
+    // Set into dict/json. Unlike the get above (which reads from a converted
+    // copy for the boxed dict case), this always writes the original object.
+    // Value conversion depends on the target type:
+    //   IDictionary<BoxedValue, BoxedValue>  -> store the raw BoxedValue (native element type)
+    //   IDictionary<string, object?>         -> DslHelper.GetValueFromBoxedValue
+    //   LitJson.JsonData (object)            -> DslHelper.GetJsonValueFromBoxedValue
+    sealed class DictOrJsonSetExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 3) {
+                ApiErrorInfo.AppendLine("Expected: dict_or_json_set(paramsObj, key, value)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                var paramsObj = operands[0].GetObject();
+                string key = operands[1].AsString;
+
+                if (null != key) {
+                    if (paramsObj is IDictionary<BoxedValue, BoxedValue> bvdict) {
+                        bvdict[BoxedValue.FromString(key)] = operands[2];
+                        return BoxedValue.From(true);
+                    }
+                    else if (paramsObj is IDictionary<string, object?> dict) {
+                        dict[key] = DslHelper.GetValueFromBoxedValue(operands[2]);
+                        return BoxedValue.From(true);
+                    }
+                    else if (paramsObj is LitJson.JsonData jsonData) {
+                        if (jsonData.IsObject) {
+                            var valObj = operands[2].GetObject();
+                            if (valObj is LitJson.JsonData jd) {
+                                jsonData[key] = jd;
+                            }
+                            else {
+                                jsonData[key] = DslHelper.GetJsonValueFromBoxedValue(operands[2]);
+                            }
+                            return BoxedValue.From(true);
+                        }
+                    }
+                }
+                ApiErrorInfo.AppendLine("dict_or_json_set: target is not a supported dict/json object");
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"Error setting into dict/json: {ex.Message}");
+            }
+            return BoxedValue.From(false);
+        }
+    }
+
+    // Get from list/json array by index
+    sealed class ListOrJsonGetExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                ApiErrorInfo.AppendLine("Expected: list_or_json_get(paramsObj, index)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                var paramsObj = operands[0].GetObject();
+                int index = operands[1].GetInt();
+
+                if (paramsObj is IList<BoxedValue> bvlist) {
+                    if (index >= 0 && index < bvlist.Count) {
+                        return bvlist[index];
+                    }
+                }
+                else if (paramsObj is IList<object?> list) {
+                    if (index >= 0 && index < list.Count) {
+                        return DslHelper.GetBoxedValueFromValue(list[index]);
+                    }
+                }
+                else if (paramsObj is LitJson.JsonData jsonData) {
+                    if (jsonData.IsArray && index >= 0 && index < jsonData.Count) {
+                        return DslHelper.GetBoxedValueFromJsonValue(jsonData[index]);
+                    }
+                }
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"Error getting from list/json: {ex.Message}");
+            }
+            return BoxedValue.NullObject;
+        }
+    }
+
+    // Set into list/json array by index. Index must be within range for all
+    // target types. Value conversion depends on the target type:
+    //   IList<BoxedValue>          -> store the raw BoxedValue (native element type)
+    //   IList<object?>             -> DslHelper.GetValueFromBoxedValue
+    //   LitJson.JsonData (array)   -> DslHelper.GetJsonValueFromBoxedValue
+    sealed class ListOrJsonSetExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 3) {
+                ApiErrorInfo.AppendLine("Expected: list_or_json_set(paramsObj, index, value)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                var paramsObj = operands[0].GetObject();
+                int index = operands[1].GetInt();
+
+                if (paramsObj is IList<BoxedValue> bvlist) {
+                    if (index >= 0 && index < bvlist.Count) {
+                        bvlist[index] = operands[2];
+                        return BoxedValue.From(true);
+                    }
+                }
+                else if (paramsObj is IList<object?> list) {
+                    if (index >= 0 && index < list.Count) {
+                        list[index] = DslHelper.GetValueFromBoxedValue(operands[2]);
+                        return BoxedValue.From(true);
+                    }
+                }
+                else if (paramsObj is LitJson.JsonData jsonData) {
+                    if (jsonData.IsArray && index >= 0 && index < jsonData.Count) {
+                        var valObj = operands[2].GetObject();
+                        if (valObj is LitJson.JsonData jd) {
+                            jsonData[index] = jd;
+                        }
+                        else {
+                            jsonData[index] = DslHelper.GetJsonValueFromBoxedValue(operands[2]);
+                        }
+                        return BoxedValue.From(true);
+                    }
+                }
+                ApiErrorInfo.AppendLine("list_or_json_set: target is not a supported list/json array or index out of range");
+            }
+            catch (Exception ex) {
+                ApiErrorInfo.AppendLine($"Error setting into list/json: {ex.Message}");
+            }
+            return BoxedValue.From(false);
         }
     }
 

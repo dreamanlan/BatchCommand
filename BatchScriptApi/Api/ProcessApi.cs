@@ -698,6 +698,8 @@ namespace BatchCommand.Api
             // the matching pids; kill_process kills by name or pid (vs
             // stop_process, which stops a spawned child gracefully).
             BatchCommand.BatchScript.Register("launch_process", "launch_process(exe[, args, working_dir]) - start an OS process, returns its pid (0 on error)", new ExpressionFactoryHelper<LaunchProcessExp>());
+            BatchCommand.BatchScript.Register("launch_process_detached", "launch_process_detached(exe[, args, working_dir]) - start an OS process detached from our console/session (Windows: its own new console, immune to our console closing and Ctrl events; Unix: new session via setsid, no controlling terminal, immune to SIGHUP), returns its pid (0 on error); the parent pid still points at us until we exit - detachment cuts console/session coupling, not lineage", new ExpressionFactoryHelper<LaunchProcessDetachedExp>());
+            BatchCommand.BatchScript.Register("launch_process_with_admin", "launch_process_with_admin(exe[, args, working_dir]) - launch a process elevated (UAC prompt, runas verb), Windows only, returns bool (launch status, not the exit code)", new ExpressionFactoryHelper<LaunchProcessWithAdminExp>());
             BatchCommand.BatchScript.Register("get_process_parent_id", "get_process_parent_id([pid]) - parent process id of the given process (default: the current process), 0 when it cannot be determined; on Windows the value is captured at process creation and keeps pointing at the parent even after it died, which is what a parent watchdog needs (pair it with is_process_alive)", new ExpressionFactoryHelper<GetProcessParentIdExp>());
             BatchCommand.BatchScript.Register("is_process_alive", "is_process_alive(pid[, name_key]) - whether the process exists and, when name_key is given, whether its name contains the key (name matching does not rule out pid reuse by a process with a matching name), returns bool", new ExpressionFactoryHelper<IsProcessAliveExp>());
             BatchCommand.BatchScript.Register("search_process", "search_process([name_key[, cmd_line_key]]) - search running processes: name_key matches the process name and cmd_line_key the command line (both case insensitive substrings, AND-ed, an empty key skips that check, the .exe suffix of the name key is optional); returns the list of matching pids (empty list when nothing matches), use listsize() to count", new ExpressionFactoryHelper<SearchProcessExp>());
@@ -746,6 +748,277 @@ namespace BatchCommand.Api
             catch (Exception ex) {
                 BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process failed: " + ex.Message);
                 return BoxedValue.From(0);
+            }
+        }
+    }
+
+    // Launch an OS process DETACHED from our console/session, returns its pid
+    // (0 on error). Same parameters as launch_process. See
+    // DetachedProcessLauncher below for what detachment means per platform.
+    sealed class LaunchProcessDetachedExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 3) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: launch_process_detached(exe[, args, working_dir])");
+                return BoxedValue.From(0);
+            }
+            try {
+                string exe = operands[0].AsString;
+                string args = operands.Count > 1 ? operands[1].AsString : string.Empty;
+                string workingDir = operands.Count > 2 ? operands[2].AsString : string.Empty;
+                if (string.IsNullOrEmpty(exe)) {
+                    BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached: empty exe path");
+                    return BoxedValue.From(0);
+                }
+                int pid = DetachedProcessLauncher.Launch(exe, args, workingDir);
+                if (pid <= 0) {
+                    return BoxedValue.From(0);
+                }
+                BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached: " + exe + " " + args + " -> pid " + pid);
+                return BoxedValue.From(pid);
+            }
+            catch (Exception ex) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached failed: " + ex.Message);
+                return BoxedValue.From(0);
+            }
+        }
+    }
+
+    // Interop layer of launch_process_detached:
+    //   - Windows: CreateProcessW with CREATE_NEW_CONSOLE (ProcessStartInfo
+    //     exposes no creation flags). The child gets a console of its own,
+    //     started hidden, so closing our console or sending Ctrl events does
+    //     not reach it. CREATE_NEW_CONSOLE rather than DETACHED_PROCESS
+    //     because a detached process has no console at all and console
+    //     dependent commands break (e.g. "timeout" in a bat exits
+    //     immediately with "Input redirection is not supported").
+    //   - Unix/macOS: posix_spawnp with POSIX_SPAWN_SETSID - the child runs
+    //     in a new session without a controlling terminal, immune to SIGHUP.
+    //     The "setsid" command line tool is not shipped by macOS and nohup
+    //     only masks SIGHUP without leaving the session, so the posix_spawn
+    //     attribute is the portable way.
+    // The spawn attribute and file action structures are opaque and tiny; a
+    // 128 byte buffer is far larger than any libc's real one, so init/setflag
+    // calls act on its head.
+    static class DetachedProcessLauncher
+    {
+        public static int Launch(string exe, string args, string workingDir)
+        {
+            if (OperatingSystem.IsWindows()) {
+                return LaunchWindows(exe, args, workingDir);
+            }
+            return LaunchUnix(exe, args, workingDir);
+        }
+
+        private const uint c_CreateNewConsole = 0x00000010;
+        private const uint c_StartfUseShowWindow = 0x00000001;
+        private const short c_SwHide = 0;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct StartupInfo
+        {
+            public uint cb;
+            public string lpReserved;
+            public string lpDesktop;
+            public string lpTitle;
+            public uint dwX;
+            public uint dwY;
+            public uint dwXSize;
+            public uint dwYSize;
+            public uint dwXCountChars;
+            public uint dwYCountChars;
+            public uint dwFillAttribute;
+            public uint dwFlags;
+            public short wShowWindow;
+            public short cbReserved2;
+            public IntPtr lpReserved2;
+            public IntPtr hStdInput;
+            public IntPtr hStdOutput;
+            public IntPtr hStdError;
+        }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ProcessInformation
+        {
+            public IntPtr hProcess;
+            public IntPtr hThread;
+            public uint dwProcessId;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool CreateProcessW(string lpApplicationName, string lpCommandLine, IntPtr lpProcessAttributes, IntPtr lpThreadAttributes, bool bInheritHandles, uint dwCreationFlags, IntPtr lpEnvironment, string? lpCurrentDirectory, ref StartupInfo lpStartupInfo, out ProcessInformation lpProcessInformation);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr handle);
+
+        private static int LaunchWindows(string exe, string args, string workingDir)
+        {
+            // lpApplicationName carries the exe unquoted; the command line
+            // repeats it quoted as argv[0] plus the raw args.
+            string cmdLine = "\"" + exe + "\"";
+            if (!string.IsNullOrEmpty(args)) {
+                cmdLine = cmdLine + " " + args;
+            }
+            var si = new StartupInfo();
+            si.cb = (uint)Marshal.SizeOf<StartupInfo>();
+            si.dwFlags = c_StartfUseShowWindow;
+            si.wShowWindow = c_SwHide;
+            bool ok = CreateProcessW(exe, cmdLine, IntPtr.Zero, IntPtr.Zero, false, c_CreateNewConsole, IntPtr.Zero,
+                string.IsNullOrEmpty(workingDir) ? null : workingDir, ref si, out var pi);
+            if (!ok) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached: CreateProcessW failed: " + Marshal.GetLastWin32Error());
+                return 0;
+            }
+            // Fire and forget: no handles are kept, the pid is all we return.
+            CloseHandle(pi.hProcess);
+            CloseHandle(pi.hThread);
+            return (int)pi.dwProcessId;
+        }
+
+        private const short c_PosixSpawnSetSid = 0x0400;
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int posix_spawnp(out int pid, string path, IntPtr fileActions, IntPtr attr, string[] argv, string[] envp);
+        [DllImport("libc", SetLastError = true)]
+        private static extern int posix_spawnattr_init(IntPtr attr);
+        [DllImport("libc", SetLastError = true)]
+        private static extern int posix_spawnattr_setflags(IntPtr attr, short flags);
+        [DllImport("libc", SetLastError = true)]
+        private static extern int posix_spawnattr_destroy(IntPtr attr);
+        [DllImport("libc", SetLastError = true)]
+        private static extern int posix_spawn_file_actions_init(IntPtr fileActions);
+        [DllImport("libc", SetLastError = true)]
+        private static extern int posix_spawn_file_actions_addchdir_np(IntPtr fileActions, string path);
+        [DllImport("libc", SetLastError = true)]
+        private static extern int posix_spawn_file_actions_destroy(IntPtr fileActions);
+
+        private static int LaunchUnix(string exe, string args, string workingDir)
+        {
+            IntPtr attr = Marshal.AllocHGlobal(128);
+            IntPtr actions = IntPtr.Zero;
+            try {
+                int r = posix_spawnattr_init(attr);
+                if (r != 0) {
+                    BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached: posix_spawnattr_init failed: " + r);
+                    return 0;
+                }
+                r = posix_spawnattr_setflags(attr, c_PosixSpawnSetSid);
+                if (r != 0) {
+                    BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached: POSIX_SPAWN_SETSID unsupported: " + r);
+                    return 0;
+                }
+                if (!string.IsNullOrEmpty(workingDir)) {
+                    actions = Marshal.AllocHGlobal(128);
+                    r = posix_spawn_file_actions_init(actions);
+                    if (r != 0) {
+                        BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached: posix_spawn_file_actions_init failed: " + r);
+                        return 0;
+                    }
+                    r = posix_spawn_file_actions_addchdir_np(actions, workingDir);
+                    if (r != 0) {
+                        BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached: addchdir failed (old libc without posix_spawn_file_actions_addchdir_np?): " + r);
+                        return 0;
+                    }
+                }
+                var env = Environment.GetEnvironmentVariables();
+                var envp = new List<string>(env.Count);
+                foreach (System.Collections.DictionaryEntry e in env) {
+                    envp.Add(e.Key.ToString() + "=" + e.Value);
+                }
+                int pid;
+                r = posix_spawnp(out pid, exe, actions, attr, BuildArgv(exe, args), envp.ToArray());
+                if (r != 0) {
+                    BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_detached: posix_spawnp failed: " + r);
+                    return 0;
+                }
+                return pid;
+            }
+            finally {
+                if (actions != IntPtr.Zero) {
+                    posix_spawn_file_actions_destroy(actions);
+                    Marshal.FreeHGlobal(actions);
+                }
+                posix_spawnattr_destroy(attr);
+                Marshal.FreeHGlobal(attr);
+            }
+        }
+
+        // argv[0] is the exe; the args string is split on blanks, a pair of
+        // double quotes keeps blanks inside a token. Nothing fancier.
+        private static string[] BuildArgv(string exe, string args)
+        {
+            var argv = new List<string> { exe };
+            int i = 0;
+            while (i < args.Length) {
+                while (i < args.Length && char.IsWhiteSpace(args[i])) {
+                    ++i;
+                }
+                if (i >= args.Length) {
+                    break;
+                }
+                var token = new StringBuilder();
+                bool quoted = false;
+                while (i < args.Length && (quoted || !char.IsWhiteSpace(args[i]))) {
+                    char c = args[i];
+                    if (c == '"') {
+                        quoted = !quoted;
+                    }
+                    else {
+                        token.Append(c);
+                    }
+                    ++i;
+                }
+                argv.Add(token.ToString());
+            }
+            return argv.ToArray();
+        }
+    }
+
+    // Launch a process elevated (UAC prompt, runas verb). Use for setup
+    // scripts that need admin rights (e.g. netsh http add sslcert for the
+    // webserver https listener). Moved here from AgentCore so every host can
+    // use it. Returns true if the process was launched (not whether it
+    // succeeded - it runs asynchronously), false when the UAC prompt was
+    // cancelled or the launch failed. Windows only.
+    sealed class LaunchProcessWithAdminExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 3) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: launch_process_with_admin(exe[, args, working_dir])");
+                return BoxedValue.FromBool(false);
+            }
+
+            try {
+                if (!OperatingSystem.IsWindows()) {
+                    BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_with_admin is Windows only (runas verb)");
+                    return BoxedValue.FromBool(false);
+                }
+                string exe = operands[0].AsString;
+                string args = operands.Count > 1 ? operands[1].AsString : string.Empty;
+                string workingDir = operands.Count > 2 ? operands[2].AsString : string.Empty;
+                if (string.IsNullOrEmpty(exe)) {
+                    BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_with_admin: empty exe path");
+                    return BoxedValue.FromBool(false);
+                }
+                var psi = new System.Diagnostics.ProcessStartInfo {
+                    FileName = exe,
+                    Arguments = args,
+                    UseShellExecute = true,
+                    Verb = "runas",
+                };
+                if (!string.IsNullOrEmpty(workingDir)) {
+                    psi.WorkingDirectory = workingDir;
+                }
+                using (System.Diagnostics.Process.Start(psi)) { }
+                return BoxedValue.FromBool(true);
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_with_admin: the UAC prompt was cancelled");
+                return BoxedValue.FromBool(false);
+            }
+            catch (Exception ex) {
+                BatchCommand.Utils.HostBridge.Log?.Invoke("launch_process_with_admin error: " + ex.Message);
+                return BoxedValue.FromBool(false);
             }
         }
     }

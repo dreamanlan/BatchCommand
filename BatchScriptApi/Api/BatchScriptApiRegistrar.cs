@@ -251,7 +251,10 @@ namespace BatchCommand.Api
         /// </summary>
         public static void RegisterOtherUtilApis()
         {
-            BatchScript.Register("get_dict_or_json_param", "get_dict_or_json_param(paramsObj, key)", new ExpressionFactoryHelper<GetDictOrJsonParamExp>());
+            BatchScript.Register("dict_or_json_get", "dict_or_json_get(paramsObj, key)", new ExpressionFactoryHelper<DictOrJsonGetExp>());
+            BatchScript.Register("dict_or_json_set", "dict_or_json_set(paramsObj, key, value)", new ExpressionFactoryHelper<DictOrJsonSetExp>());
+            BatchScript.Register("list_or_json_get", "list_or_json_get(paramsObj, index)", new ExpressionFactoryHelper<ListOrJsonGetExp>());
+            BatchScript.Register("list_or_json_set", "list_or_json_set(paramsObj, index, value)", new ExpressionFactoryHelper<ListOrJsonSetExp>());
 
             // JSON Operations
             BatchScript.Register("to_json", "to_json(obj, prettyPrint)", new ExpressionFactoryHelper<ToJsonExp>());

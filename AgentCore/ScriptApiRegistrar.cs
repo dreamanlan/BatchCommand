@@ -240,8 +240,9 @@ namespace AgentCore
             // web server dsl pages)
             WebApi.RegisterApis();
 
-            // Admin process launch (elevated, UAC)
-            AdminProcessApi.RegisterApis();
+            // Admin process launch (elevated, UAC): moved to BatchScriptApi
+            // (launch_process_with_admin in ProcessApi.cs), registered for
+            // every host there.
 
             // TreeSitter API Explorer
             TreeSitterExplorerApi.RegisterApis();

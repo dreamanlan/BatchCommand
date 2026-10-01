@@ -34,7 +34,11 @@ class UIController {
             agentIdInput: document.getElementById('agent-id'),
             agentIdGroup: document.getElementById('agent-id-group'),
             modelSelect: document.getElementById('model'),
-            modelTextInput: document.getElementById('model-text'),
+            configModelManage: document.getElementById('config-model-manage'),
+            configModelStatus: document.getElementById('config-model-status'),
+            configModelAddInput: document.getElementById('config-model-add-input'),
+            configModelAddBtn: document.getElementById('config-model-add-btn'),
+            configModelDetectBtn: document.getElementById('config-model-detect-btn'),
             streamCheckbox: document.getElementById('stream-enabled'),
             streamGroup: document.getElementById('stream-group'),
             enableWebSearchCheckbox: document.getElementById('enable-web-search'),
@@ -53,12 +57,29 @@ class UIController {
             errorMessage: document.getElementById('error-message'),
             imageUrlsList: document.getElementById('image-urls-list'),
             addImageUrlBtn: document.getElementById('add-image-url-btn'),
-            clearImageUrlsBtn: document.getElementById('clear-image-urls-btn')
+            clearImageUrlsBtn: document.getElementById('clear-image-urls-btn'),
+            modelQuickBar: document.getElementById('model-quick-bar'),
+            modelQuickBtn: document.getElementById('model-quick-btn'),
+            modelQuickPanel: document.getElementById('model-quick-panel'),
+            modelQuickListSection: document.getElementById('model-quick-list-section'),
+            modelQuickList: document.getElementById('model-quick-list'),
+            ollamaManageSection: document.getElementById('ollama-manage-section'),
+            ollamaStatus: document.getElementById('ollama-status'),
+            ollamaAddInput: document.getElementById('ollama-add-input'),
+            ollamaAddBtn: document.getElementById('ollama-add-btn'),
+            ollamaRefreshBtn: document.getElementById('ollama-refresh-btn'),
+            modelFlyout: document.getElementById('model-flyout')
         };
+
+        // Cached auto-detection state per local API type (ollama / local_openai)
+        this._localState = {};
+        this._flyoutHideTimer = null;
+        this._flyoutModelValue = null;
 
         this.initializeEventListeners();
         this.loadExistingMessages();
         this.updateSendButtonState();
+        this.updateModelQuickBar();
     }
 
     initializeMarkdown() {
@@ -255,11 +276,12 @@ class UIController {
             }
         });
 
-        // API type selector
+        // API type selector: only switch the type, the target type keeps
+        // its own saved settings (loaded by the effective view)
         this.elements.apiTypeSelect.addEventListener('change', (e) => {
-            const config = this.apiClient.getConfig();
-            config.apiType = e.target.value;
-            this.apiClient.saveConfig(config);
+            this.apiClient.saveConfig({ apiType: e.target.value });
+            this.closeModelQuickPanel();
+            this.updateModelQuickBar();
         });
 
         // Stop button
@@ -289,12 +311,25 @@ class UIController {
             this.hideConfigModal();
         });
 
-        // Config API type change
+        // Config API type change: reload the whole form from that type's
+        // saved settings so each API type has independent configuration
         this.elements.configApiType.addEventListener('change', (e) => {
-            this.updateModelOptions(e.target.value);
-            this.updateAutoMetaDSLFields(e.target.value);
-            this.updateModelDependentOptions(
-                this._modelInputMode === 'select' ? this.elements.modelSelect.value : '');
+            this.updateConfigFormForType(e.target.value);
+        });
+
+        // Config modal: add a model to the user-configured list
+        this.elements.configModelAddBtn.addEventListener('click', () => {
+            this.handleConfigAddModel();
+        });
+        this.elements.configModelAddInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.handleConfigAddModel();
+            }
+        });
+        // Config modal: auto-detect the model list of the selected type
+        this.elements.configModelDetectBtn.addEventListener('click', () => {
+            this.handleConfigAutoDetect();
         });
 
         // Model selection change (auto_metadsl model-dependent options)
@@ -326,6 +361,46 @@ class UIController {
                 this.clearImageUrls();
             });
         }
+
+        // Quick model settings panel (chat area)
+        this.elements.modelQuickBtn.addEventListener('click', () => {
+            this.toggleModelQuickPanel();
+        });
+
+        // Close the quick panel when clicking outside of it
+        document.addEventListener('click', (e) => {
+            if (!this.elements.modelQuickPanel.classList.contains('active')) return;
+            if (this.elements.modelQuickPanel.contains(e.target)) return;
+            if (this.elements.modelQuickBtn.contains(e.target)) return;
+            this.closeModelQuickPanel();
+        });
+
+        this.elements.ollamaAddBtn.addEventListener('click', () => {
+            this.handleAddLocalModel(this.apiClient.getConfig().apiType);
+        });
+
+        this.elements.ollamaAddInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.handleAddLocalModel(this.apiClient.getConfig().apiType);
+            }
+        });
+
+        this.elements.ollamaRefreshBtn.addEventListener('click', () => {
+            this.renderLocalModelList(this.apiClient.getConfig().apiType, true);
+        });
+
+        // Keep the hover flyout open while the pointer is inside it
+        this.elements.modelFlyout.addEventListener('mouseenter', () => {
+            clearTimeout(this._flyoutHideTimer);
+        });
+        this.elements.modelFlyout.addEventListener('mouseleave', () => {
+            this.scheduleHideModelFlyout();
+        });
+        // A click inside the flyout must never close it
+        this.elements.modelFlyout.addEventListener('click', () => {
+            clearTimeout(this._flyoutHideTimer);
+        });
 
         // Load current API type
         const config = this.apiClient.getConfig();
@@ -649,15 +724,9 @@ class UIController {
     showConfigModal() {
         const config = this.apiClient.getConfig();
         this.elements.configApiType.value = config.apiType;
-        this.elements.apiKeyInput.value = config.apiKey || '';
-        this.elements.authModeSelect.value = config.authMode || 'personal';
-        this.elements.usernameInput.value = config.username || '';
-        this.elements.streamCheckbox.checked = !!config.stream;
-        this.elements.enableWebSearchCheckbox.checked = !!config.enableWebSearch;
-        this.elements.enableThinkingCheckbox.checked = !!config.enableThinking;
-        this.elements.reasoningEffortSelect.value = config.reasoningEffort || '';
-        this.elements.apiEndpointInput.value = config.apiEndpoint || '';
-        this.elements.agentIdInput.value = config.agentId || '';
+
+        // Load the saved settings of the current API type into the form
+        this.updateConfigFormForType(config.apiType);
 
         // Load context configuration
         const contextConfig = this.messageHandler.getContextConfig();
@@ -665,21 +734,88 @@ class UIController {
         this.elements.maxContextCharsInput.value = contextConfig.maxContextChars;
         this.elements.maxHistoryMessagesInput.value = contextConfig.maxHistoryMessages;
 
-        this.updateModelOptions(config.apiType);
-        this.updateAutoMetaDSLFields(config.apiType);
-        this.updateUsernameFieldVisibility(config.authMode || 'personal');
-        // Apply saved model only when a select is active; for free-text the
-        // value was already set inside updateModelOptions.
-        if (this._modelInputMode !== 'text') {
-            this.elements.modelSelect.value = config.model || '';
-        }
-        // Populate model-dependent dropdowns after the model select is ready
-        // (also restores saved maxContextTokens / reasoningEffort when valid).
-        this.updateModelDependentOptions(
-            this._modelInputMode === 'select' ? this.elements.modelSelect.value : '');
-
         this.elements.configModal.classList.add('active');
         this.hideError();
+    }
+
+    /**
+     * Fill the config modal form with the saved settings of the given
+     * API type (each type stores its settings independently).
+     */
+    updateConfigFormForType(apiType) {
+        const t = this.apiClient.getTypeConfig(apiType);
+        this.elements.apiKeyInput.value = t.apiKey || '';
+        this.elements.authModeSelect.value = t.authMode || 'personal';
+        this.elements.usernameInput.value = t.username || '';
+        this.elements.streamCheckbox.checked = !!t.stream;
+        this.elements.enableWebSearchCheckbox.checked = !!t.enableWebSearch;
+        this.elements.apiEndpointInput.value = t.apiEndpoint || '';
+        this.elements.agentIdInput.value = t.agentId || '';
+        this.updateUsernameFieldVisibility(t.authMode || 'personal');
+        this.updateModelOptions(apiType);
+        // Model list manage area: only for types with runtime model lists
+        const isRuntimeList = (apiType !== 'auto_metadsl');
+        this.elements.configModelManage.style.display = isRuntimeList ? 'block' : 'none';
+        if (isRuntimeList) {
+            this.updateConfigModelStatus(apiType);
+        }
+        this.updateAutoMetaDSLFields(apiType);
+        // Restore the model-dependent options of the type's saved model
+        this.updateModelDependentOptions(this.elements.modelSelect.value);
+    }
+
+    /**
+     * Update the model manage status hint in the config modal.
+     */
+    updateConfigModelStatus(apiType) {
+        const state = this.ensureLocalState(apiType);
+        let text;
+        if (state.querying) {
+            text = 'Querying model list...';
+        } else if (state.error) {
+            text = 'Auto-detect failed: ' + state.error;
+        } else if (state.fetched) {
+            text = 'Auto-detected ' + (state.models || []).length + ' model(s).';
+        } else {
+            text = 'Model list not detected yet. Click Auto Detect or add model names.';
+        }
+        this.elements.configModelStatus.textContent = text;
+    }
+
+    /**
+     * Auto-detect the model list of the type selected in the config
+     * modal, using the (possibly unsaved) endpoint / key form values.
+     */
+    async handleConfigAutoDetect() {
+        const apiType = this.elements.configApiType.value;
+        if (apiType === 'auto_metadsl') return;
+        const endpoint = this.elements.apiEndpointInput.value.trim();
+        const apiKey = this.elements.apiKeyInput.value.trim();
+        this.elements.configModelStatus.textContent = 'Querying model list...';
+        await this.autoDetectModels(apiType, endpoint, apiKey);
+        // Keep the current dropdown selection when still available
+        this.updateModelOptions(apiType, true);
+        this.updateConfigModelStatus(apiType);
+    }
+
+    /**
+     * Add a model name to the user-configured list of the type selected
+     * in the config modal and select it in the dropdown.
+     */
+    handleConfigAddModel() {
+        const apiType = this.elements.configApiType.value;
+        if (apiType === 'auto_metadsl') return;
+        const name = (this.elements.configModelAddInput.value || '').trim();
+        if (!name) return;
+        const list = this.apiClient.getUserModelList(apiType);
+        if (!list.includes(name)) {
+            list.push(name);
+            this.apiClient.saveUserModelList(apiType, list);
+        }
+        this.elements.configModelAddInput.value = '';
+        this.updateModelOptions(apiType, true);
+        this.elements.modelSelect.value = name;
+        this.updateConfigModelStatus(apiType);
     }
 
     hideConfigModal() {
@@ -702,40 +838,506 @@ class UIController {
         }
     }
 
-    updateModelOptions(apiType) {
-        const models = this.apiClient.getAvailableModels(apiType);
+    /**
+     * Update the visibility and label of the quick model chip in the chat
+     * footer. The chip is only shown for API types backed by a selectable
+     * model list (openai / claude / auto_metadsl) or ollama (auto-detected
+     * or user-configured list).
+     */
+    updateModelQuickBar() {
         const config = this.apiClient.getConfig();
-        // Use a free-text input when no predefined model list is available
-        // (e.g. local_openai where users name models themselves).
-        const useFreeText = (models.length === 0);
-        // Track current mode on the controller so other methods (save/read)
-        // don't have to inspect DOM inline styles.
-        this._modelInputMode = useFreeText ? 'text' : 'select';
-
-        if (useFreeText) {
-            this.elements.modelSelect.style.display = 'none';
-            this.elements.modelTextInput.style.display = 'block';
-            this.elements.modelTextInput.value = config.model || '';
+        const supported = ['openai', 'claude', 'auto_metadsl', 'ollama', 'local_openai'].includes(config.apiType);
+        this.elements.modelQuickBar.classList.toggle('visible', supported);
+        if (!supported) {
+            this.closeModelQuickPanel();
             return;
         }
+        const models = this.apiClient.getAvailableModels(config.apiType);
+        const current = models.find(m => m.value === config.model);
+        let label = current ? current.label : (config.model || '(model not set)');
+        if (config.apiType === 'auto_metadsl') {
+            const parts = [];
+            if (current && current.thinking && config.enableThinking) parts.push('Thinking');
+            if (config.reasoningEffort) parts.push(config.reasoningEffort);
+            if (config.maxContextTokens && config.maxContextTokens > 0) {
+                parts.push(this.formatContextTokens(config.maxContextTokens));
+            }
+            if (parts.length > 0) label += ' \u00B7 ' + parts.join(' \u00B7 ');
+        }
+        this.elements.modelQuickBtn.textContent = label;
+    }
 
-        // Predefined list: use the select control
-        this.elements.modelSelect.style.display = 'block';
-        this.elements.modelTextInput.style.display = 'none';
-        this.elements.modelSelect.innerHTML = '';
+    toggleModelQuickPanel() {
+        const panel = this.elements.modelQuickPanel;
+        if (panel.classList.contains('active')) {
+            this.closeModelQuickPanel();
+        } else {
+            this.renderModelQuickPanel();
+            panel.classList.add('active');
+        }
+    }
 
+    closeModelQuickPanel() {
+        this.elements.modelQuickPanel.classList.remove('active');
+        this.hideModelFlyout();
+    }
+
+    renderModelQuickPanel() {
+        // Always start from the model list without a hover flyout
+        this.hideModelFlyout();
+        const config = this.apiClient.getConfig();
+        if (config.apiType === 'auto_metadsl') {
+            // auto_metadsl uses the builtin list from api-client.js
+            this.elements.ollamaManageSection.style.display = 'none';
+            this.renderPredefinedModelList(config.apiType);
+        } else {
+            // All other types: auto-detected / user-configured model list
+            this.renderLocalModelList(config.apiType);
+        }
+    }
+
+    /**
+     * Render the model list for auto_metadsl from the predefined list in
+     * api-client.js. Clicking a row selects the model and closes the panel;
+     * hovering a row (models with options) shows a flyout with that
+     * model's options, like a menu.
+     */
+    renderPredefinedModelList(apiType) {
+        const config = this.apiClient.getConfig();
+        const models = this.apiClient.getAvailableModels(apiType);
+        const title = this.elements.modelQuickListSection.querySelector('.model-quick-section-title');
+        title.textContent = 'Model';
+        const list = this.elements.modelQuickList;
+        list.innerHTML = '';
         models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model.value;
-            option.textContent = model.label;
-            this.elements.modelSelect.appendChild(option);
+            const row = document.createElement('div');
+            row.className = 'model-quick-item-row';
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'model-quick-item' + (model.value === config.model ? ' active' : '');
+            item.textContent = model.label;
+            item.addEventListener('click', () => {
+                // Clicking a model in the list selects it and closes the panel
+                this.apiClient.saveConfig({ model: model.value });
+                this.updateModelQuickBar();
+                this.closeModelQuickPanel();
+            });
+            row.appendChild(item);
+            if (this.modelHasQuickOptions(apiType, model.value)) {
+                row.addEventListener('mouseenter', () => {
+                    this.showModelFlyout(model.value, row);
+                });
+                row.addEventListener('mouseleave', () => {
+                    this.scheduleHideModelFlyout();
+                });
+            }
+            list.appendChild(row);
         });
+    }
 
-        // Set default model
-        if (config.model && models.find(m => m.value === config.model)) {
-            this.elements.modelSelect.value = config.model;
-        } else if (models.length > 0) {
-            this.elements.modelSelect.value = models[0].value;
+    /**
+     * Get (or create) the auto-detection state of a local API type.
+     */
+    ensureLocalState(apiType) {
+        if (!this._localState[apiType]) {
+            // models: null = never queried
+            this._localState[apiType] = { models: null, fetched: false, error: '', querying: false };
+        }
+        return this._localState[apiType];
+    }
+
+    /**
+     * Query the model list of an API type via its standard protocol
+     * (/api/tags for ollama, /v1/models for the others). Optional
+     * endpoint / apiKey let callers probe unsaved form values.
+     */
+    async fetchModelsForType(apiType, endpoint, apiKey) {
+        if (apiType === 'ollama') return await this.apiClient.fetchOllamaModels(endpoint);
+        if (apiType === 'local_openai') return await this.apiClient.fetchLocalOpenAIModels(endpoint);
+        if (apiType === 'openai') return await this.apiClient.fetchOpenAIModels(endpoint, apiKey);
+        if (apiType === 'claude') return await this.apiClient.fetchClaudeModels(endpoint, apiKey);
+        return [];
+    }
+
+    /**
+     * Shared auto-detection core: queries the model list of an API type
+     * and stores the result (or error) in the per-type state cache used
+     * by both the quick panel and the config modal.
+     *
+     * The detected list (plus the user-configured list) is the full model
+     * list: when the selected model is no longer in it (e.g. the vendor
+     * retired it), the selection automatically switches to the first
+     * available model.
+     */
+    async autoDetectModels(apiType, endpoint, apiKey) {
+        const state = this.ensureLocalState(apiType);
+        state.models = [];
+        state.error = '';
+        state.querying = true;
+        try {
+            state.models = await this.fetchModelsForType(apiType, endpoint, apiKey);
+            state.fetched = true;
+        } catch (e) {
+            if (uiLogger) uiLogger.warn('Model auto-detect failed:', e);
+            state.error = (e && e.message) ? e.message : String(e);
+        }
+        state.querying = false;
+        // Auto-switch when the selected model was retired
+        if (state.fetched && state.models.length > 0) {
+            const t = this.apiClient.getTypeConfig(apiType);
+            const custom = this.apiClient.getUserModelList(apiType);
+            const full = [];
+            state.models.concat(custom).forEach(name => {
+                if (name && !full.includes(name)) full.push(name);
+            });
+            if (t.model && full.length > 0 && !full.includes(t.model)) {
+                if (uiLogger) uiLogger.info('Selected model no longer available, switching:', { from: t.model, to: full[0] });
+                this.apiClient.setModelForType(apiType, full[0]);
+            }
+        }
+    }
+
+    /**
+     * Render the runtime model list of an API type (openai / claude /
+     * local_openai / ollama). Auto-detects models on first open (or when
+     * forceFetch is true); on failure falls back to the user-configured
+     * list (add / remove below the list).
+     */
+    async renderLocalModelList(apiType, forceFetch) {
+        const state = this.ensureLocalState(apiType);
+        if (forceFetch === true || !state.fetched) {
+            this.elements.ollamaManageSection.style.display = 'block';
+            this.elements.ollamaStatus.textContent = 'Querying model list...';
+            this.renderLocalModelItems(apiType);
+            await this.autoDetectModels(apiType);
+            this.renderLocalModelItems(apiType);
+            return;
+        }
+        this.renderLocalModelItems(apiType);
+    }
+
+    renderLocalModelItems(apiType) {
+        const config = this.apiClient.getConfig();
+        const state = this.ensureLocalState(apiType);
+        const fetched = state.models || [];
+        const custom = this.apiClient.getUserModelList(apiType);
+        const title = this.elements.modelQuickListSection.querySelector('.model-quick-section-title');
+        const titles = {
+            ollama: 'Ollama Models',
+            local_openai: 'Local Models',
+            openai: 'OpenAI Models',
+            claude: 'Claude Models'
+        };
+        title.textContent = titles[apiType] || 'Models';
+        const list = this.elements.modelQuickList;
+        list.innerHTML = '';
+
+        const seen = [];
+        const addItem = (name, removable) => {
+            if (seen.includes(name)) return;
+            seen.push(name);
+            const row = document.createElement('div');
+            row.className = 'model-quick-item-row';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'model-quick-item' + (name === config.model ? ' active' : '');
+            btn.textContent = name;
+            btn.title = 'Use this model';
+            btn.addEventListener('click', () => {
+                // Clicking a model selects it and closes the panel
+                this.apiClient.saveConfig({ model: name });
+                this.updateModelQuickBar();
+                this.closeModelQuickPanel();
+            });
+            row.appendChild(btn);
+            if (removable) {
+                const rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'model-item-remove';
+                rm.textContent = '\u00D7';
+                rm.title = 'Remove from custom list';
+                rm.addEventListener('click', () => {
+                    const updated = this.apiClient.getUserModelList(apiType).filter(m => m !== name);
+                    this.apiClient.saveUserModelList(apiType, updated);
+                    this.renderLocalModelItems(apiType);
+                });
+                row.appendChild(rm);
+            }
+            list.appendChild(row);
+        };
+
+        fetched.forEach(name => addItem(name, false));
+        custom.forEach(name => addItem(name, !fetched.includes(name)));
+
+        if (seen.length === 0) {
+            const hint = document.createElement('div');
+            hint.className = 'model-quick-hint';
+            hint.textContent = 'No models yet. Click Auto Detect or add model names below.';
+            list.appendChild(hint);
+        }
+
+        if (state.querying) {
+            this.elements.ollamaStatus.textContent = 'Querying model list...';
+        } else if (state.error) {
+            this.elements.ollamaStatus.textContent =
+                'Auto-detect failed: ' + state.error + ' Add model names manually below.';
+        } else {
+            this.elements.ollamaStatus.textContent =
+                'Auto-detected ' + fetched.length + ' model(s).';
+        }
+    }
+
+    /**
+     * Add a model name to the custom list of an API type and select it
+     * for use.
+     */
+    handleAddLocalModel(apiType) {
+        const name = (this.elements.ollamaAddInput.value || '').trim();
+        if (!name) return;
+        const list = this.apiClient.getUserModelList(apiType);
+        if (!list.includes(name)) {
+            list.push(name);
+            this.apiClient.saveUserModelList(apiType, list);
+        }
+        this.elements.ollamaAddInput.value = '';
+        this.apiClient.saveConfig({ model: name });
+        this.updateModelQuickBar();
+        this.closeModelQuickPanel();
+    }
+
+    /**
+     * Whether a model has quick options to configure (auto_metadsl models
+     * with thinking support, reasoning efforts or context windows).
+     */
+    modelHasQuickOptions(apiType, modelValue) {
+        if (apiType !== 'auto_metadsl') return false;
+        const models = this.apiClient.getAvailableModels('auto_metadsl');
+        const model = models.find(m => m.value === modelValue);
+        if (!model) return false;
+        return !!(model.thinking
+            || (Array.isArray(model.reasoningEfforts) && model.reasoningEfforts.length > 0)
+            || (Array.isArray(model.contextWindows) && model.contextWindows.length > 0));
+    }
+
+    /**
+     * Show the hover flyout with the given model's options, vertically
+     * aligned with the hovered row (fixed positioning relative to the
+     * viewport so the panel's scrolling does not clip it).
+     */
+    showModelFlyout(modelValue, row) {
+        clearTimeout(this._flyoutHideTimer);
+        this.renderFlyoutContent(modelValue);
+        const flyout = this.elements.modelFlyout;
+        flyout.classList.add('active');
+        const rowRect = row.getBoundingClientRect();
+        const panelRect = this.elements.modelQuickPanel.getBoundingClientRect();
+        const left = panelRect.right + 8;
+        let top = rowRect.top;
+        const maxTop = window.innerHeight - flyout.offsetHeight - 8;
+        if (maxTop > 0) top = Math.min(Math.max(top, 8), maxTop);
+        flyout.style.left = left + 'px';
+        flyout.style.top = top + 'px';
+    }
+
+    scheduleHideModelFlyout() {
+        clearTimeout(this._flyoutHideTimer);
+        // Small delay so moving the pointer from row to flyout keeps it open
+        this._flyoutHideTimer = setTimeout(() => this.hideModelFlyout(), 150);
+    }
+
+    hideModelFlyout() {
+        clearTimeout(this._flyoutHideTimer);
+        this.elements.modelFlyout.classList.remove('active');
+    }
+
+    /**
+     * Build the flyout content for a model: title, Thinking toggle (when
+     * supported), Context list and Effort list with check marks on the
+     * active entries. Reads/writes that model's own saved settings.
+     */
+    renderFlyoutContent(modelValue) {
+        // Remember which model the flyout currently shows (for in-place
+        // check mark updates that must not change the selected model)
+        this._flyoutModelValue = modelValue;
+        const config = this.apiClient.getConfig();
+        const ms = this.apiClient.getModelSettings(config.apiType, modelValue);
+        const models = this.apiClient.getAvailableModels('auto_metadsl');
+        const model = models.find(m => m.value === modelValue) || null;
+        const flyout = this.elements.modelFlyout;
+        flyout.innerHTML = '';
+
+        const title = document.createElement('div');
+        title.className = 'model-flyout-title';
+        title.textContent = (model && model.label) || modelValue;
+        flyout.appendChild(title);
+
+        const supportsThinking = !!(model && model.thinking);
+        const efforts = (model && Array.isArray(model.reasoningEfforts)) ? model.reasoningEfforts : [];
+        const windows = (model && Array.isArray(model.contextWindows)) ? model.contextWindows : [];
+
+        // Thinking toggle (only for models that support it)
+        if (supportsThinking) {
+            const label = document.createElement('label');
+            label.className = 'model-quick-toggle';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = !!ms.enableThinking;
+            cb.addEventListener('change', () => {
+                this.apiClient.setModelSettings(config.apiType, modelValue, { enableThinking: cb.checked });
+                this.updateModelQuickBar();
+            });
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode('Thinking'));
+            flyout.appendChild(label);
+        }
+
+        // Context window: Default (do not send) + model-specific options
+        if (windows.length > 0) {
+            flyout.appendChild(this.createFlyoutSectionTitle('Context'));
+            const list = document.createElement('div');
+            list.className = 'model-flyout-list';
+            const items = [{ value: '0', label: 'Default' }].concat(windows.map(w => ({
+                value: String(w),
+                label: this.formatContextTokens(w)
+            })));
+            const saved = String(ms.maxContextTokens || 0);
+            items.forEach(item => {
+                list.appendChild(this.createFlyoutItem(item.label, 'context', item.value, item.value === saved, () => {
+                    this.apiClient.setModelSettings(config.apiType, modelValue, { maxContextTokens: parseInt(item.value, 10) || 0 });
+                    this.updateModelQuickBar();
+                    this.refreshFlyoutActiveStates();
+                }));
+            });
+            flyout.appendChild(list);
+        }
+
+        // Reasoning effort: Default (not set) + model-specific options
+        if (efforts.length > 0) {
+            flyout.appendChild(this.createFlyoutSectionTitle('Effort'));
+            const list = document.createElement('div');
+            list.className = 'model-flyout-list';
+            const items = [{ value: '', label: 'Default' }].concat(efforts.map(level => ({
+                value: level,
+                label: level
+            })));
+            const saved = ms.reasoningEffort || '';
+            items.forEach(item => {
+                list.appendChild(this.createFlyoutItem(item.label, 'effort', item.value, item.value === saved, () => {
+                    this.apiClient.setModelSettings(config.apiType, modelValue, { reasoningEffort: item.value });
+                    this.updateModelQuickBar();
+                    this.refreshFlyoutActiveStates();
+                }));
+            });
+            flyout.appendChild(list);
+        }
+    }
+
+    /**
+     * Update the check marks in the flyout after an option click without
+     * rebuilding the DOM — rebuilding removes the element under the
+     * pointer, which can disturb the hover state and close the flyout.
+     */
+    refreshFlyoutActiveStates() {
+        if (!this._flyoutModelValue) return;
+        const config = this.apiClient.getConfig();
+        const ms = this.apiClient.getModelSettings(config.apiType, this._flyoutModelValue);
+        this.elements.modelFlyout.querySelectorAll('.model-flyout-item').forEach(btn => {
+            let active = false;
+            if (btn.dataset.group === 'context') {
+                active = btn.dataset.value === String(ms.maxContextTokens || 0);
+            } else if (btn.dataset.group === 'effort') {
+                active = btn.dataset.value === (ms.reasoningEffort || '');
+            }
+            btn.classList.toggle('active', active);
+        });
+    }
+
+    createFlyoutSectionTitle(text) {
+        const el = document.createElement('div');
+        el.className = 'model-quick-section-title model-flyout-section-title';
+        el.textContent = text;
+        return el;
+    }
+
+    createFlyoutItem(text, group, value, active, onClick) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'model-flyout-item' + (active ? ' active' : '');
+        btn.dataset.group = group;
+        btn.dataset.value = value;
+        const label = document.createElement('span');
+        label.textContent = text;
+        const check = document.createElement('span');
+        check.className = 'check';
+        check.textContent = '\u2713';
+        btn.appendChild(label);
+        btn.appendChild(check);
+        btn.addEventListener('click', onClick);
+        return btn;
+    }
+
+    formatContextTokens(tokens) {
+        if (tokens >= 1000000 && tokens % 1000000 === 0) return (tokens / 1000000) + 'M';
+        if (tokens >= 1000 && tokens % 1000 === 0) return (tokens / 1000) + 'K';
+        return String(tokens);
+    }
+
+    /**
+     * Populate the config modal model dropdown. auto_metadsl uses the
+     * builtin list; all other types use the merged list of auto-detected
+     * and user-configured models. When preferCurrent is true the current
+     * dropdown selection is kept if still present (e.g. after detecting
+     * or adding a model); otherwise the type's saved model is selected.
+     */
+    updateModelOptions(apiType, preferCurrent) {
+        const config = this.apiClient.getTypeConfig(apiType);
+        const select = this.elements.modelSelect;
+        const prevSelected = preferCurrent ? select.value : '';
+        select.innerHTML = '';
+        const values = [];
+
+        if (apiType === 'auto_metadsl') {
+            const models = this.apiClient.getAvailableModels('auto_metadsl');
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.value;
+                option.textContent = model.label;
+                select.appendChild(option);
+                values.push(model.value);
+            });
+        } else {
+            // Full model list: auto-detected models + user-configured
+            // models (nothing else - retired models disappear from here)
+            const state = this.ensureLocalState(apiType);
+            const detected = state.models || [];
+            const custom = this.apiClient.getUserModelList(apiType);
+            const merged = [];
+            detected.concat(custom).forEach(name => {
+                if (name && !merged.includes(name)) merged.push(name);
+            });
+            if (merged.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '(no models yet - detect or add below)';
+                select.appendChild(option);
+                return;
+            }
+            merged.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+                values.push(name);
+            });
+        }
+
+        // Selection priority: current selection > saved model > first
+        if (values.includes(prevSelected)) {
+            select.value = prevSelected;
+        } else if (values.includes(config.model)) {
+            select.value = config.model;
+        } else if (values.length > 0) {
+            select.value = values[0];
         }
     }
 
@@ -764,20 +1366,24 @@ class UIController {
 
     // Update model-dependent fields (thinking toggle, reasoning effort options,
     // context window options) based on the selected auto_metadsl model.
+    // Each model keeps its own saved settings.
     updateModelDependentOptions(modelValue) {
-        const config = this.apiClient.getConfig();
-        if (config.apiType !== 'auto_metadsl') return;
+        const apiType = this.elements.configApiType.value;
+        if (apiType !== 'auto_metadsl') return;
+        const ms = this.apiClient.getModelSettings(apiType, modelValue);
         const models = this.apiClient.getAvailableModels('auto_metadsl');
         const model = models.find(m => m.value === modelValue) || null;
 
         // Thinking toggle: only models with thinking=true
         const supportsThinking = !!(model && model.thinking);
         this.elements.thinkingGroup.style.display = supportsThinking ? 'block' : 'none';
+        if (supportsThinking) {
+            this.elements.enableThinkingCheckbox.checked = !!ms.enableThinking;
+        }
 
         // Reasoning effort dropdown: rebuild options from model.reasoningEfforts
         const efforts = (model && Array.isArray(model.reasoningEfforts)) ? model.reasoningEfforts : [];
         if (efforts.length > 0) {
-            const prev = this.elements.reasoningEffortSelect.value;
             this.elements.reasoningEffortSelect.innerHTML = '';
             efforts.forEach(level => {
                 const option = document.createElement('option');
@@ -785,8 +1391,9 @@ class UIController {
                 option.textContent = level;
                 this.elements.reasoningEffortSelect.appendChild(option);
             });
-            // Restore previous selection when still valid, otherwise pick first
-            this.elements.reasoningEffortSelect.value = efforts.includes(prev) ? prev : efforts[0];
+            // Restore this model's saved effort when valid, otherwise pick first
+            this.elements.reasoningEffortSelect.value =
+                efforts.includes(ms.reasoningEffort) ? ms.reasoningEffort : efforts[0];
             this.elements.reasoningEffortGroup.style.display = 'block';
         } else {
             this.elements.reasoningEffortGroup.style.display = 'none';
@@ -795,8 +1402,6 @@ class UIController {
         // Context window dropdown: rebuild options from model.contextWindows
         const windows = (model && Array.isArray(model.contextWindows)) ? model.contextWindows : [];
         if (windows.length > 0) {
-            const saved = (typeof config.maxContextTokens === 'number' && config.maxContextTokens > 0)
-                ? String(config.maxContextTokens) : '';
             this.elements.maxContextTokensSelect.innerHTML = '';
             const zeroOption = document.createElement('option');
             zeroOption.value = '0';
@@ -808,7 +1413,8 @@ class UIController {
                 option.textContent = String(w);
                 this.elements.maxContextTokensSelect.appendChild(option);
             });
-            // Restore saved value when present in the list, otherwise default 0
+            // Restore this model's saved value when present, otherwise default 0
+            const saved = ms.maxContextTokens > 0 ? String(ms.maxContextTokens) : '0';
             this.elements.maxContextTokensSelect.value =
                 windows.some(w => String(w) === saved) ? saved : '0';
             this.elements.maxContextTokensGroup.style.display = 'block';
@@ -838,10 +1444,8 @@ class UIController {
         const username = this.elements.usernameInput.value.trim();
         const apiEndpoint = this.elements.apiEndpointInput.value.trim();
         const agentId = this.elements.agentIdInput ? this.elements.agentIdInput.value.trim() : '';
-        // Read model from whichever control is currently active
-        const model = (this._modelInputMode === 'text')
-            ? this.elements.modelTextInput.value.trim()
-            : this.elements.modelSelect.value;
+        // Read model from the dropdown (merged list or builtin list)
+        const model = this.elements.modelSelect.value;
         const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);
         const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
         const maxHistoryMessages = parseInt(this.elements.maxHistoryMessagesInput.value, 10);
@@ -920,6 +1524,7 @@ class UIController {
         });
 
         this.hideConfigModal();
+        this.updateModelQuickBar();
         this.showSuccess('Configuration saved successfully');
     }
 

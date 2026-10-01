@@ -647,6 +647,246 @@
         .error-message.active {
             display: block;
         }
+
+        /* Quick model settings (chat area) */
+        .model-quick-bar {
+            position: relative;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .model-quick-bar.visible {
+            display: block;
+        }
+
+        .model-quick-btn {
+            padding: 4px 12px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: 1px solid #d5dbdb;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .model-quick-btn:hover {
+            background: #e5eaec;
+        }
+
+        .model-quick-panel {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 0;
+            width: 340px;
+            max-height: 420px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            z-index: 500;
+            padding: 12px;
+        }
+
+        .model-quick-panel.active {
+            display: block;
+        }
+
+        .model-quick-section {
+            margin-bottom: 12px;
+        }
+
+        .model-quick-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .model-quick-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .model-quick-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .model-quick-item-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .model-quick-item-row .model-quick-item {
+            flex: 1;
+        }
+
+        .model-quick-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border: none;
+            background: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #2c3e50;
+            text-align: left;
+            width: 100%;
+        }
+
+        .model-quick-item:hover {
+            background: #f5f6f7;
+        }
+
+        .model-quick-item.active {
+            background: #eaf4fc;
+            color: #2471a3;
+            font-weight: 600;
+        }
+
+        .model-item-remove {
+            border: none;
+            background: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .model-item-remove:hover {
+            background: #fdecea;
+        }
+
+        /* Hover flyout showing the hovered model's options */
+        .model-flyout {
+            display: none;
+            position: fixed;
+            width: 220px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            padding: 12px;
+            z-index: 600;
+        }
+
+        .model-flyout.active {
+            display: block;
+        }
+
+        .model-flyout-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .model-flyout-section-title {
+            margin-top: 10px;
+        }
+
+        .model-flyout-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .model-flyout-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 5px 8px;
+            border: none;
+            background: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #2c3e50;
+            text-align: left;
+            width: 100%;
+        }
+
+        .model-flyout-item:hover {
+            background: #f5f6f7;
+        }
+
+        .model-flyout-item .check {
+            visibility: hidden;
+            color: #2471a3;
+            font-weight: 600;
+        }
+
+        .model-flyout-item.active .check {
+            visibility: visible;
+        }
+
+        .model-quick-hint {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 6px;
+        }
+
+        .model-quick-add-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .model-quick-add-row input {
+            flex: 1;
+            min-width: 0;
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .model-quick-add-row input:focus {
+            border-color: #3498db;
+        }
+
+        .model-quick-add-row button {
+            padding: 5px 10px;
+            font-size: 12px;
+            border: 1px solid #3498db;
+            background: #fff;
+            color: #3498db;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .model-quick-add-row button:hover {
+            background: #3498db;
+            color: #fff;
+        }
+
+        .model-quick-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .model-quick-toggle input {
+            margin: 0;
+            width: auto;
+        }
     </style>
 </head>
 
@@ -699,6 +939,27 @@
                     <button class="vac-svg-button vac-send-disabled" id="send-btn">Send</button>
                 </div>
             </div>
+            <div class="model-quick-bar" id="model-quick-bar">
+                <button type="button" class="model-quick-btn" id="model-quick-btn">Model</button>
+                <div class="model-quick-panel" id="model-quick-panel">
+                    <div id="model-quick-list-view">
+                        <div class="model-quick-section" id="model-quick-list-section">
+                            <div class="model-quick-section-title">Model</div>
+                            <div class="model-quick-list" id="model-quick-list"></div>
+                        </div>
+                        <div class="model-quick-section" id="ollama-manage-section" style="display: none;">
+                            <div class="model-quick-section-title">Custom Models</div>
+                            <div class="model-quick-hint" id="ollama-status"></div>
+                            <div class="model-quick-add-row">
+                                <input type="text" id="ollama-add-input" placeholder="e.g. qwen3:8b">
+                                <button type="button" id="ollama-add-btn">Add</button>
+                                <button type="button" id="ollama-refresh-btn">Auto Detect</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="model-flyout" id="model-flyout"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -740,6 +1001,18 @@
                     token mode.</small>
             </div>
 
+            <div class="config-group">
+                <label for="api-endpoint">API Endpoint (Optional):</label>
+                <input type="text" id="api-endpoint" placeholder="Leave empty for default">
+            </div>
+
+            <div class="config-group" id="agent-id-group" style="display: none;">
+                <label for="agent-id">Agent ID:</label>
+                <input type="text" id="agent-id" placeholder="e.g. 114631ca85184f639f69572bbcfcbe7a">
+                <small style="color: #7f8c8d; font-size: 12px;">For auto_metadsl: either this or API Endpoint must be
+                    specified.</small>
+            </div>
+
             <div class="config-group" id="stream-group" style="display: none;">
                 <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                     <input type="checkbox" id="stream-enabled" style="margin: 0; width: auto;" checked>
@@ -756,25 +1029,19 @@
                 <small style="color: #7f8c8d; font-size: 12px;">AGUI input.enable_web_search (default: off)</small>
             </div>
 
-            <div class="config-group">
-                <label for="api-endpoint">API Endpoint (Optional):</label>
-                <input type="text" id="api-endpoint" placeholder="Leave empty for default">
-            </div>
-
-            <div class="config-group" id="agent-id-group" style="display: none;">
-                <label for="agent-id">Agent ID:</label>
-                <input type="text" id="agent-id" placeholder="e.g. 114631ca85184f639f69572bbcfcbe7a">
-                <small style="color: #7f8c8d; font-size: 12px;">For auto_metadsl: either this or API Endpoint must be
-                    specified.</small>
-            </div>
-
             <div class="config-group" id="model-group">
                 <label for="model">Model:</label>
                 <select id="model">
                     <!-- Options will be populated by JavaScript -->
                 </select>
-                <input type="text" id="model-text" placeholder="e.g. qwen3.8:27b (Ollama) or any (LM Studio)"
-                    style="display: none;">
+                <div id="config-model-manage" style="display: none; margin-top: 6px;">
+                    <small id="config-model-status" style="color: #7f8c8d; font-size: 12px;"></small>
+                    <div class="model-quick-add-row">
+                        <input type="text" id="config-model-add-input" placeholder="model name">
+                        <button type="button" id="config-model-add-btn">Add</button>
+                        <button type="button" id="config-model-detect-btn">Auto Detect</button>
+                    </div>
+                </div>
             </div>
 
             <div class="config-group" id="thinking-group" style="display: none;">

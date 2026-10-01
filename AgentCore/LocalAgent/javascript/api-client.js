@@ -8,7 +8,7 @@ const apiLogger = window.logger ? window.logger.createLogger('APIClient') : null
 
 class APIClient {
     constructor() {
-        this.config = this.loadConfig();
+        this.loadConfig();
         this.abortController = null;
         this.conversationId = ''; // For auto_metadsl conversation management
     }
@@ -18,39 +18,210 @@ class APIClient {
         if (apiLogger) apiLogger.info('Conversation reset');
     }
 
+    /**
+     * Config storage layout (localStorage 'llm_api_config'):
+     * {
+     *   apiType: 'auto_metadsl',            // currently selected API type
+     *   perType: {                          // per-API-type settings
+     *     openai:       { apiKey, apiEndpoint, model, ... },
+     *     claude:       { apiKey, apiEndpoint, model, ... },
+     *     auto_metadsl: { apiKey, authMode, username, stream, enableWebSearch,
+     *                     apiEndpoint, agentId, model,
+     *                     modelSettings: {                    // per-model settings
+     *                       'claude-opus-5': { enableThinking, reasoningEffort, maxContextTokens },
+     *                       ...
+     *                     } },
+     *     local_openai: { ... }, ollama: { ... }
+     *   }
+     * }
+     * this.config stays a flat "effective view" (current type + current
+     * model's settings) so senders/validators need no changes.
+     */
+    static get TYPE_LEVEL_KEYS() {
+        return ['apiKey', 'apiEndpoint', 'model', 'agentId', 'authMode', 'username', 'stream', 'enableWebSearch'];
+    }
+
+    static get MODEL_LEVEL_KEYS() {
+        return ['enableThinking', 'reasoningEffort', 'maxContextTokens'];
+    }
+
     loadConfig() {
         const stored = localStorage.getItem('llm_api_config');
+        let parsed = null;
         if (stored) {
             try {
-                return JSON.parse(stored);
+                parsed = JSON.parse(stored);
             } catch (e) {
                 if (apiLogger) apiLogger.error('Failed to parse stored config:', e);
             }
         }
 
-        return {
-            apiType: 'openai',
-            apiKey: '',
-            apiEndpoint: '',
-            agentId: '', // For auto_metadsl: agent id -> knot agui endpoint
-            model: 'gpt-4.1',
-            username: '', // For auto_metadsl auth
-            authMode: 'personal', // 'personal' or 'agent' for auto_metadsl
-            stream: true, // Use streaming for auto_metadsl
-            enableWebSearch: false, // AGUI: input.enable_web_search
-            enableThinking: false, // AGUI: input.chat_extra.enable_thinking
-            reasoningEffort: '', // AGUI: input.chat_extra.reasoning_effort ('' | low | medium | high | xhigh | max)
-            maxContextTokens: 0 // AGUI: input.chat_extra.max_context_tokens (0 = do not send)
-        };
+        if (parsed && parsed.perType) {
+            // New per-type layout
+            this.store = parsed;
+            this.store.apiType = this.store.apiType || 'openai';
+            this.ensureType(this.store.apiType);
+        } else if (parsed) {
+            // Legacy flat config: migrate into the per-type layout
+            this.store = { apiType: parsed.apiType || 'openai', perType: {} };
+            const t = this.ensureType(this.store.apiType);
+            t.apiKey = parsed.apiKey || '';
+            t.apiEndpoint = parsed.apiEndpoint || '';
+            t.model = parsed.model || '';
+            t.agentId = parsed.agentId || '';
+            t.authMode = parsed.authMode || 'personal';
+            t.username = parsed.username || '';
+            t.stream = parsed.stream !== undefined ? parsed.stream : true;
+            t.enableWebSearch = !!parsed.enableWebSearch;
+            if (t.model) {
+                t.modelSettings[t.model] = {
+                    enableThinking: !!parsed.enableThinking,
+                    reasoningEffort: parsed.reasoningEffort || '',
+                    maxContextTokens: parsed.maxContextTokens || 0
+                };
+            }
+            this.persist();
+        } else {
+            this.store = { apiType: 'openai', perType: {} };
+            this.ensureType(this.store.apiType);
+        }
+        this.rebuildView();
+    }
+
+    persist() {
+        localStorage.setItem('llm_api_config', JSON.stringify(this.store));
+    }
+
+    /**
+     * Get (or create) the settings object of an API type.
+     */
+    ensureType(apiType) {
+        this.store.perType = this.store.perType || {};
+        if (!this.store.perType[apiType]) {
+            this.store.perType[apiType] = {
+                apiKey: '',
+                apiEndpoint: '',
+                model: '',
+                agentId: '',
+                authMode: 'personal',
+                username: '',
+                stream: true,
+                enableWebSearch: false,
+                modelSettings: {}
+            };
+        }
+        if (!this.store.perType[apiType].modelSettings) {
+            this.store.perType[apiType].modelSettings = {};
+        }
+        return this.store.perType[apiType];
+    }
+
+    /**
+     * Rebuild this.config as the flat effective view for the currently
+     * selected API type and model (type-level fields merged with that
+     * model's settings).
+     */
+    rebuildView() {
+        const t = this.getTypeConfig(this.store.apiType);
+        const ms = this.getModelSettings(this.store.apiType, t.model);
+        this.config = { ...t, ...ms, apiType: this.store.apiType };
     }
 
     saveConfig(config) {
-        this.config = { ...this.config, ...config };
-        localStorage.setItem('llm_api_config', JSON.stringify(this.config));
+        const patch = { ...config };
+        // 1) API type switch: subsequent fields belong to the target type
+        if (patch.apiType !== undefined) {
+            this.store.apiType = patch.apiType;
+            delete patch.apiType;
+        }
+        const t = this.ensureType(this.store.apiType);
+        // 2) Type-level fields first (model must be known before model fields)
+        for (const key of Object.keys(patch)) {
+            if (APIClient.TYPE_LEVEL_KEYS.includes(key)) {
+                t[key] = patch[key];
+                delete patch[key];
+            }
+        }
+        // 3) Model-level fields go to the type's current model
+        for (const key of Object.keys(patch)) {
+            if (APIClient.MODEL_LEVEL_KEYS.includes(key)) {
+                if (t.model) {
+                    t.modelSettings[t.model] = t.modelSettings[t.model] || {};
+                    t.modelSettings[t.model][key] = patch[key];
+                } else {
+                    // No model selected (free-text empty): keep globally
+                    this.store[key] = patch[key];
+                }
+                delete patch[key];
+            }
+        }
+        // 4) Anything else stays global (forward compatibility)
+        for (const key of Object.keys(patch)) {
+            this.store[key] = patch[key];
+        }
+        this.persist();
+        this.rebuildView();
     }
 
     getConfig() {
         return { ...this.config };
+    }
+
+    /**
+     * Type-level settings of an API type (independent per type).
+     */
+    getTypeConfig(apiType) {
+        const t = (this.store.perType && this.store.perType[apiType]) || {};
+        return {
+            apiKey: t.apiKey || '',
+            apiEndpoint: t.apiEndpoint || '',
+            model: t.model || '',
+            agentId: t.agentId || '',
+            authMode: t.authMode || 'personal',
+            username: t.username || '',
+            stream: t.stream !== undefined ? t.stream : true,
+            enableWebSearch: !!t.enableWebSearch
+        };
+    }
+
+    /**
+     * Settings of a specific model within an API type (auto_metadsl
+     * thinking / reasoning effort / context window), with defaults.
+     */
+    getModelSettings(apiType, modelValue) {
+        const t = (this.store.perType && this.store.perType[apiType]) || {};
+        const ms = (modelValue && t.modelSettings && t.modelSettings[modelValue]) || {};
+        return {
+            enableThinking: !!ms.enableThinking,
+            reasoningEffort: ms.reasoningEffort || '',
+            maxContextTokens: ms.maxContextTokens || 0
+        };
+    }
+
+    /**
+     * Update settings of a specific model without changing the currently
+     * selected model (used by the quick-panel hover flyout).
+     */
+    setModelSettings(apiType, modelValue, patch) {
+        if (!modelValue) return;
+        const t = this.ensureType(apiType);
+        t.modelSettings[modelValue] = {
+            ...this.getModelSettings(apiType, modelValue),
+            ...patch
+        };
+        this.persist();
+        this.rebuildView();
+    }
+
+    /**
+     * Set the selected model of an API type without switching the current
+     * API type (used when auto-detection retires the selected model).
+     */
+    setModelForType(apiType, modelValue) {
+        const t = this.ensureType(apiType);
+        t.model = modelValue || '';
+        this.persist();
+        this.rebuildView();
     }
 
     validateConfig() {
@@ -871,23 +1042,166 @@ class APIClient {
         }
     }
 
+    /**
+     * Read the user-configured model list of a local API type
+     * (ollama / local_openai) from localStorage. Used as a fallback when
+     * auto-detection is unavailable. Storage key: '<apiType>_model_list'.
+     */
+    getUserModelList(apiType) {
+        try {
+            const raw = localStorage.getItem(apiType + '_model_list');
+            const arr = raw ? JSON.parse(raw) : [];
+            return Array.isArray(arr) ? arr.filter(m => typeof m === 'string' && m.trim()) : [];
+        } catch (e) {
+            if (apiLogger) apiLogger.error('Failed to parse model list:', e);
+            return [];
+        }
+    }
+
+    saveUserModelList(apiType, models) {
+        const list = Array.isArray(models)
+            ? models.filter(m => typeof m === 'string' && m.trim())
+            : [];
+        localStorage.setItem(apiType + '_model_list', JSON.stringify(list));
+    }
+
+    /**
+     * Resolve the Ollama base URL (e.g. http://localhost:11434) from the
+     * configured endpoint, stripping any known API path suffixes. The
+     * endpoint argument (optional) lets callers probe unsaved form values.
+     */
+    getOllamaBaseUrl(endpoint) {
+        let base = (endpoint || this.config.apiEndpoint || '').trim() || 'http://localhost:11434';
+        base = base.replace(/\/+$/, '');
+        base = base.replace(/\/api\/chat$/i, '');
+        base = base.replace(/\/api$/i, '');
+        base = base.replace(/\/v1\/chat\/completions$/i, '');
+        base = base.replace(/\/v1$/i, '');
+        return base;
+    }
+
+    /**
+     * Fetch helper with an optional timeout (AbortSignal.timeout when
+     * supported), shared by the model-list auto-detection calls.
+     */
+    async fetchJsonWithTimeout(url, init, timeoutMs) {
+        const options = { ...init };
+        if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+            options.signal = AbortSignal.timeout(timeoutMs);
+        }
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} from ${url}`);
+        }
+        return await response.json();
+    }
+
+    /**
+     * Query a local Ollama server for installed models via GET /api/tags.
+     * Returns an array of model names. Throws on network / HTTP errors so
+     * callers can fall back to the user-configured model list.
+     */
+    async fetchOllamaModels(endpoint) {
+        const base = this.getOllamaBaseUrl(endpoint);
+        const data = await this.fetchJsonWithTimeout(base + '/api/tags', undefined, 5000);
+        const models = (data.models || []).map(m => m.name).filter(Boolean);
+        if (apiLogger) apiLogger.info('Ollama models fetched:', { count: models.length });
+        return models;
+    }
+
+    /**
+     * Resolve the base URL of a local OpenAI-compatible server (e.g.
+     * http://localhost:11434) from the configured endpoint, stripping the
+     * '/v1/chat/completions' suffix if present.
+     */
+    getLocalOpenAIBaseUrl(endpoint) {
+        let base = (endpoint || this.config.apiEndpoint || '').trim() || 'http://localhost:11434';
+        base = base.replace(/\/+$/, '');
+        base = base.replace(/\/v1\/chat\/completions$/i, '');
+        base = base.replace(/\/v1$/i, '');
+        return base;
+    }
+
+    /**
+     * Query a local OpenAI-compatible server for available models via
+     * GET /v1/models (LM Studio, Ollama's OpenAI-compat endpoint, ...).
+     * Returns an array of model ids. Throws on network / HTTP errors so
+     * callers can fall back to the user-configured model list.
+     */
+    async fetchLocalOpenAIModels(endpoint) {
+        const base = this.getLocalOpenAIBaseUrl(endpoint);
+        const data = await this.fetchJsonWithTimeout(base + '/v1/models', undefined, 5000);
+        const models = (data.data || []).map(m => m.id).filter(Boolean);
+        if (apiLogger) apiLogger.info('Local OpenAI models fetched:', { count: models.length });
+        return models;
+    }
+
+    /**
+     * Resolve the OpenAI API base URL (e.g. https://api.openai.com/v1)
+     * from the configured endpoint, stripping '/chat/completions'.
+     */
+    getOpenAIBaseUrl(endpoint) {
+        let base = (endpoint || this.config.apiEndpoint || '').trim() || 'https://api.openai.com/v1/chat/completions';
+        base = base.replace(/\/+$/, '');
+        base = base.replace(/\/chat\/completions$/i, '');
+        return base;
+    }
+
+    /**
+     * Query the OpenAI API for available models via GET /v1/models
+     * (standard OpenAI protocol). Returns an array of model ids. Throws
+     * on errors so callers can fall back to the user-configured list.
+     */
+    async fetchOpenAIModels(endpoint, apiKey) {
+        const base = this.getOpenAIBaseUrl(endpoint);
+        const key = (apiKey !== undefined) ? apiKey : this.config.apiKey;
+        const init = {};
+        if (key) {
+            init.headers = { 'Authorization': `Bearer ${key}` };
+        }
+        const data = await this.fetchJsonWithTimeout(base + '/models', init, 10000);
+        const models = (data.data || []).map(m => m.id).filter(Boolean);
+        if (apiLogger) apiLogger.info('OpenAI models fetched:', { count: models.length });
+        return models;
+    }
+
+    /**
+     * Resolve the Claude (Anthropic) API base URL (e.g.
+     * https://api.anthropic.com/v1) from the configured endpoint,
+     * stripping '/messages'.
+     */
+    getClaudeBaseUrl(endpoint) {
+        let base = (endpoint || this.config.apiEndpoint || '').trim() || 'https://api.anthropic.com/v1/messages';
+        base = base.replace(/\/+$/, '');
+        base = base.replace(/\/messages$/i, '');
+        return base;
+    }
+
+    /**
+     * Query the Anthropic API for available models via GET /v1/models
+     * (standard Anthropic protocol, same auth headers as /v1/messages).
+     * Returns an array of model ids. Throws on errors so callers can
+     * fall back to the user-configured list.
+     */
+    async fetchClaudeModels(endpoint, apiKey) {
+        const base = this.getClaudeBaseUrl(endpoint);
+        const key = (apiKey !== undefined) ? apiKey : this.config.apiKey;
+        const headers = { 'anthropic-version': '2023-06-01' };
+        if (key) {
+            headers['x-api-key'] = key;
+        }
+        const data = await this.fetchJsonWithTimeout(base + '/models', { headers }, 10000);
+        const models = (data.data || []).map(m => m.id).filter(Boolean);
+        if (apiLogger) apiLogger.info('Claude models fetched:', { count: models.length });
+        return models;
+    }
+
     getAvailableModels(apiType) {
-        if (apiType === 'openai') {
-            return [
-                { value: 'gpt-5.6-sol', label: 'GPT-5.6-Sol' },
-                { value: 'gpt-5.6-terra', label: 'GPT-5.6-Terra' },
-                { value: 'gpt-5.6-luna', label: 'GPT-5.6-Luna' }
-            ];
-        } else if (apiType === 'claude') {
-            return [
-                { value: 'claude-opus-5', label: 'Claude-Opus-5' },
-                { value: 'claude-sonnet-5', label: 'Claude-Sonnet-5' },
-                { value: 'claude-opus-4-8', label: 'Claude-Opus-4.8' },
-                { value: 'claude-opus-4-7', label: 'Claude-Opus-4.7' },
-                { value: 'claude-sonnet-4-6', label: 'Claude-Sonnet-4.6' },
-                { value: 'claude-opus-4-6', label: 'Claude-Opus-4.6' }
-            ];
-        } else if (apiType === 'auto_metadsl') {
+        if (apiType === 'auto_metadsl') {
+            // auto_metadsl has no model-list query API, so its list (with
+            // per-model capability matrix) is maintained in code. All other
+            // API types query model lists at runtime (/v1/models or
+            // /api/tags) with a user-configured fallback list.
             // Model attributes (per capability matrix):
             //   thinking: whether the model supports the enable_thinking toggle
             //   reasoningEfforts: allowed chat_extra.reasoning_effort values ([] = unsupported)
@@ -922,15 +1236,9 @@ class APIClient {
                 { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1', thinking: false, reasoningEfforts: [], contextWindows: [] }
             ];
-        } else if (apiType === 'local_openai') {
-            // Empty list signals UI to switch to a free-text model input,
-            // because local model names are user-defined (e.g. Ollama tag).
-            return [];
-        } else if (apiType === 'ollama') {
-            // Empty list signals UI to switch to a free-text model input,
-            // because local model names are user-defined (e.g. 'llama3:8b').
-            return [];
         }
+        // Other API types: models come from runtime queries plus the
+        // user-configured list, so no predefined list is returned.
         return [];
     }
 }

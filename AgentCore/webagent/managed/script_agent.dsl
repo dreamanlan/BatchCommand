@@ -138,6 +138,49 @@ script(on_tick)
         };
     };
     set_context_var("parentWatchTick", $tick);
+    // Project directory watchdog: @ProjectDirectory is captured once in
+    // init_global_consts. If it is empty or removed later, every path built
+    // with combine_path breaks silently (read_file(null) degrades, write_file
+    // fails, plan reminders loop). Check every ~10s (200 ticks of ~50ms),
+    // log only on state change, deduped via projectDirCheckState; before the
+    // first update_project_config sync only an info line is logged.
+    $dirChecks = get_context_var("projectDirCheckTick");
+    if (isnull($dirChecks)) {
+        $dirChecks = 0;
+    };
+    $dirChecks = $dirChecks + 1;
+    if ($dirChecks >= 200) {
+        $dirChecks = 0;
+        $dirState = "";
+        // Gate on the page having synced its project config at least once
+        // (handle_update_project_config_command sets ProjectDirSynced).
+        // Before that the directory is empty because init has not run, not
+        // because of a fault, so log an info line instead of an error.
+        $dirSynced = get_context_var("ProjectDirSynced");
+        if (isnull($dirSynced) || !$dirSynced) {
+            $dirState = "waiting";
+        } elif (isnull(@ProjectDirectory) || "" == @ProjectDirectory) {
+            $dirState = "empty";
+        } elif (!dir_exists(@ProjectDirectory)) {
+            $dirState = "missing";
+        };
+        $lastDirState = get_context_var("projectDirCheckState");
+        if ($dirState == "waiting") {
+            if ($lastDirState != "waiting") {
+                log_info("[agent] project directory check: waiting for project initializing");
+                set_context_var("projectDirCheckState", "waiting");
+            };
+        } elif ("" != $dirState) {
+            if ($lastDirState != $dirState) {
+                nativelog("[agent] project directory invalid (state={0}, dir={1})", $dirState, @ProjectDirectory);
+                set_context_var("projectDirCheckState", $dirState);
+            };
+        } elif ("" != $lastDirState) {
+            set_context_var("projectDirCheckState", "");
+        };
+    };
+    set_context_var("projectDirCheckTick", $dirChecks);
+
     // The value of on_tick is the plugin tick return (MetaDslExecutor
     // TickAgent -> CallOptionalFunc): anything non-zero ends the host loop and
     // with it this process, and the browser would immediately launch us again.
@@ -391,6 +434,9 @@ script(handle_update_project_config_command)params($id, $params)
     agent_set_project_dir(@AgentId, $projectDir);
     agent_set_project_identity(@AgentId, $projectIdentity);
     set_context_var("InitialProjectIdentity", $projectIdentity);
+    // The page synced its project config at least once; the project dir
+    // watchdog gates its checks on this flag to avoid pre-init false alarms.
+    set_context_var("ProjectDirSynced", true);
 
     // Refresh the dsl globals (semantic history collection names etc.).
     init_global_consts();

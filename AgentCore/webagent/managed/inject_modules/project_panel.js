@@ -16,7 +16,16 @@ class ProjectPanel {
     // loaded data: { projects: [ {projectDir, projectIdentity, lastUsed} ], currentIndex: -1 }
     this.data = { projects: [], currentIndex: -1 };
     this.onVisibilityChange = null;
+    // Project config validity check state (timer starts immediately; the
+    // check reports a waiting state until initialization completes)
+    this._initialized = false;
+    this._dirCheckState = '';
+    this._dirCheckTimer = null;
+    this._warningDefaultText = null;
     this.createPanel();
+    // Start the periodic check now so the pre-init window is also reported
+    this._startDirCheck();
+
   }
 
   _inputStyle() {
@@ -265,6 +274,9 @@ class ProjectPanel {
 
     // Notify C# on initial load
     this._notifyDsl();
+    // Initialization finished: arm the 30s project config validity check
+    this._initialized = true;
+    this._startDirCheck();
   }
 
   // Query C# for initial project identity via bridge command
@@ -297,10 +309,76 @@ class ProjectPanel {
     } catch (_) { }
   }
 
-  _updateWarning() {
+  _updateWarning(message) {
     if (!this.warningBanner) return;
+    if (this._warningDefaultText === null) {
+      this._warningDefaultText = this.warningBanner.textContent;
+    }
+    if (message) {
+      this.warningBanner.textContent = message;
+      this.warningBanner.style.display = 'block';
+      return;
+    }
+    this.warningBanner.textContent = this._warningDefaultText;
     const hasActive = this.data.currentIndex >= 0 && this.data.currentIndex < this.data.projects.length;
     this.warningBanner.style.display = hasActive ? 'none' : 'block';
+  }
+
+  // Periodic project config validity check. An empty or invalid active
+  // project config breaks every DSL path built with combine_path on the C#
+  // side (read_file(null) degrades, write_file fails, plan reminders loop).
+  // Runs every 10s after initialization, reports only on state change.
+  _startDirCheck() {
+    if (this._dirCheckTimer) return;
+    this._dirCheckTimer = setInterval(() => this._checkProjectConfig(), 10000);
+  }
+
+  stopDirCheck() {
+    if (this._dirCheckTimer) {
+      clearInterval(this._dirCheckTimer);
+      this._dirCheckTimer = null;
+    }
+  }
+
+  _checkProjectConfig() {
+    if (!this._initialized) {
+      // Pre-init window: report a waiting state once, non-error (mirrors
+      // the DSL-side ProjectDirSynced gate)
+      if (this._dirCheckState === 'waiting_for_init') return;
+      this._dirCheckState = 'waiting_for_init';
+      this._updateWarning('waiting for project initializing');
+      const log = (typeof logger !== 'undefined') ? logger : null;
+      if (log) {
+        log.info('[ProjectPanel] waiting for project initializing');
+      }
+      return;
+    }
+    const log = (typeof logger !== 'undefined') ? logger : null;
+    const hasActive = this.data.currentIndex >= 0 && this.data.currentIndex < this.data.projects.length;
+    let state = '';
+    if (!hasActive) {
+      state = 'no_active_project';
+    } else {
+      const cur = this.data.projects[this.data.currentIndex];
+      if (!cur.projectDir) {
+        state = 'project_dir_empty';
+      } else if (!cur.projectIdentity) {
+        state = 'project_identity_empty';
+      }
+    }
+    if (state === this._dirCheckState) return;
+    this._dirCheckState = state;
+    if (state === 'no_active_project') {
+      // No active project only affects this panel, keep the default banner
+      this._updateWarning();
+      return;
+    }
+    const cur = this.data.projects[this.data.currentIndex];
+    const msg = 'project config invalid: ' + state + ' (projectDir: "' + (cur.projectDir || '') + '")';
+    this._updateWarning(msg);
+    if (log) {
+      log.error('[ProjectPanel] ' + msg);
+    }
   }
 
   _saveCurrentConfig() {

@@ -7,6 +7,7 @@ using BatchCommand;
 using BatchCommand.Utils;
 using BatchCmdDsl;
 using AgentCore.Core;
+using BatchCommand.Api;
 using System.Runtime.InteropServices;
 
 namespace AgentCore
@@ -62,10 +63,20 @@ namespace AgentCore
             if (isMac && System.IO.Path.GetFileName(rootPath).Equals("MacOS", StringComparison.OrdinalIgnoreCase)) {
                 rootPath = System.IO.Path.GetDirectoryName(rootPath) ?? rootPath;
             }
+            // The app instance dir (webagentdbg when debugging) is forwarded
+            // by the browser via --appdir (see start_agent_process in
+            // script.dsl): this exe lives in the shared webagent dir, so the
+            // instance it serves is only known to the launcher. Fall back to
+            // rootPath for hosts that do not pass it (monitor, standalone
+            // runs keep the old behavior).
+            string realAppDir = rootPath;
+            if (DslHost.TryGetSwitchValueFromRawCommandLine(cmdLine, "appdir", out var appDirSwitch) && !string.IsNullOrEmpty(appDirSwitch)) {
+                realAppDir = appDirSwitch;
+            }
             // Fill the executor's process info (also parses --agentscript=/
             // --agentport=) before any dsl execution on this main thread.
-            MetaDslExecutor.SetProcessInfo(cmdLine, rootPath, rootPath, isMac);
-            Initialize(rootPath, rootPath, isMac);
+            MetaDslExecutor.SetProcessInfo(cmdLine, rootPath, realAppDir, isMac);
+            Initialize(rootPath, realAppDir, isMac);
             // Load script_agent.dsl on this (host main) thread and run on_init.
             // The websocket server is started by the script itself
             // (ws_start_server(agentport)) so the port stays under dsl control.

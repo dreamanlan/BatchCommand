@@ -39,8 +39,8 @@ script(init_global_consts)
 
     @SiteIdentity = hashtable("webagent":"webagent","hyarena":"hyarena","venus":"venus","aichat":"aichat","gemini":"gemini","openai":"openai","imate":"imate","with":"with","google":"google");
     @SiteDir = hashtable("webagent":"", "hyarena":"../AiFreebie/AiArena", "venus":"../AiFreebie/AiVenus", "aichat":"../AiFreebie/AiChat", "gemini":"../AiFreebie/AiGemini", "openai":"../AiFreebie/AiOpenai", "imate":"../AiFreebie/AiImate", "with":"../AiFreebie/AiWith", "google":"../AiFreebie/AiGoogle");
-    @SiteMaxSize = hashtable("webagent":50*1024,"hyarena":50*1024,"venus":40*1024,"aichat":50*1024,"gemini":40*1024,"openai":40*1024,"imate":40*1024,"with":40*1024,"google":7*1024);
-    @SiteContextInjection = hashtable("webagent":false,"hyarena":false,"venus":true,"aichat":false,"gemini":false,"openai":false,"imate":false,"with":false,"google":false);
+    @SiteMaxSize = hashtable("webagent":50*1024,"hyarena":50*1024,"venus":8*1024,"aichat":50*1024,"gemini":40*1024,"openai":40*1024,"imate":40*1024,"with":40*1024,"google":7*1024);
+    @SiteContextInjection = hashtable("webagent":false,"hyarena":false,"venus":false,"aichat":false,"gemini":true,"openai":true,"imate":false,"with":false,"google":false);
 
     if (ismac) {
         @UserName = getenv("USER");
@@ -70,6 +70,27 @@ script(init_global_consts)
         @LegionnaireHistory = @ProjectIdentity + "_legionnaire_history";
         @EpisodicMemory = @ProjectIdentity + "_episodic_memory";
     };
+
+    // RSI (see d:/AiClaw/docs/webagent_recursive_self_improvement.md): the
+    // LLM asks for a restart by writing upgrade_request.json (webagent root;
+    // the browser/monitor side consume it); this side only reads and writes
+    // the code-owned upgrade state file it resumes from. And the doc path
+    // every RSI reminder must carry so the LLM knows where the flow reference
+    // lives.
+    @RsiDocPath = "d:/AiClaw/docs/webagent_recursive_self_improvement.md";
+    @UpgradeStateFile = combine_path(basepath, "upgrade_state.json");
+    // Monitor heartbeat: the monitor refreshes this file on every check (~3s).
+    // The whole RSI upgrade flow only exists under monitor supervision, so the
+    // self-check reminder is only sent while the heartbeat is fresh.
+    @MonitorAliveFile = combine_path(basepath, "monitor_alive.txt");
+    // Idle self-check: when everything has been quiet for a while, tell the
+    // LLM it MAY self-check - no preset inputs, what to look at and whether
+    // to improve anything at all is its own decision (the doc has the flow).
+    @EnableSelfCheck = true;
+    @SelfCheckIdleSeconds = 300;
+    // Weekly cadence. In-memory part below; the cross-restart part reads
+    // lastCompletedAt from the state file (written by resume_after_upgrade).
+    @SelfCheckMinIntervalSeconds = 7 * 24 * 3600;
 };
 
 script(on_init)
@@ -138,6 +159,23 @@ script(on_tick)
         };
     };
     set_context_var("parentWatchTick", $tick);
+
+    // RSI idle self-check (see the RSI doc): throttled to ~1s like the
+    // parent watchdog above, all in-memory gates first (file reads only
+    // after they all pass - rare by design). Sends at most one
+    // metacognition-style reminder per idle period.
+    $sc = get_context_var("selfCheckTick");
+    if (isnull($sc)) {
+        $sc = 0;
+    };
+    $sc = $sc + 1;
+    if ($sc >= 20) {
+        $sc = 0;
+        if (@EnableSelfCheck) {
+            idle_selfcheck_tick();
+        };
+    };
+    set_context_var("selfCheckTick", $sc);
     // Project directory watchdog: @ProjectDirectory is captured once in
     // init_global_consts. If it is empty or removed later, every path built
     // with combine_path breaks silently (read_file(null) degrades, write_file
@@ -186,6 +224,151 @@ script(on_tick)
     // with it this process, and the browser would immediately launch us again.
     // The last statement above returns bool, so end with an explicit 0.
     return(0);
+};
+
+// ----------------------------------------------------------------------------
+// RSI: recursive self-improvement (see d:/AiClaw/docs/webagent_recursive_self_improvement.md)
+// The agent only provides the reminder and the mechanical means; what to
+// improve and whether to improve at all is the LLM's own decision.
+// ----------------------------------------------------------------------------
+
+// Read the whole upgrade state object (null when there is none / invalid).
+script(read_upgrade_state)
+{
+    if (!file_exists(@UpgradeStateFile)) {
+        return(null);
+    };
+    $txt = read_file(@UpgradeStateFile);
+    if (isnullorempty($txt)) {
+        return(null);
+    };
+    return(from_json($txt));
+};
+
+// Write the whole upgrade state object back.
+script(write_upgrade_state)params($v)
+{
+    write_file(@UpgradeStateFile, to_json($v));
+};
+
+// RSI: after an upgrade restart the monitor relaunches webagent and leaves
+// stage=verify_pending in the code-owned state file. agent_ready itself is
+// the smoke proof (the relay round trip through the new build), so resume:
+// push the LLM's resumePrompt (the monitor merged it from the request) back
+// to the page, then close the cycle (stage=idle, attempt=0,
+// lastCompletedAt=now - the weekly reminder cap reads it).
+// attempt>=2 aborts instead: only tell the LLM, never loop (the increment
+// is monitor-owned: check_upgrade_stuck counts verify_pending / updating
+// deadlines that expired without reaching this resume).
+script(resume_after_upgrade)
+{
+    $v = read_upgrade_state();
+    if (isnull($v)) {
+        return;
+    };
+    if (to_string(dict_or_json_get($v, "stage")) != "verify_pending") {
+        return;
+    };
+    $attempt = str_to_int(to_string(dict_or_json_get($v, "attempt")));
+    if ($attempt >= 2) {
+        dict_or_json_set($v, "stage", "aborted");
+        dict_or_json_set($v, "lastError", "resume failed twice");
+        dict_or_json_set($v, "stageSince", now());
+        write_upgrade_state($v);
+        nativelog("[agent] upgrade resume aborted (attempt={0})", $attempt);
+        send_command_to_inject("send_message", to_json({text: format("【RSI 升级中止】本次升级目标连续失败 {0} 次，已停止自动重试。请先诊断失败原因，必要时请人工介入，不要强行继续。RSI 流程参考：{1}", $attempt, @RsiDocPath)}));
+        return;
+    };
+    $resumePrompt = to_string(dict_or_json_get($v, "resumePrompt"));
+    if (isnullorempty($resumePrompt)) {
+        $resumePrompt = format("浏览器因升级重启完成，请从中断处继续之前的任务。RSI 流程参考：{0}", @RsiDocPath);
+    };
+    dict_or_json_set($v, "stage", "idle");
+    dict_or_json_set($v, "attempt", 0);
+    dict_or_json_set($v, "lastCompletedAt", now());
+    dict_or_json_set($v, "stageSince", now());
+    write_upgrade_state($v);
+    nativelog("[agent] upgrade verified, stage -> idle, pushing the resume prompt");
+    send_command_to_inject("send_message", to_json({text: $resumePrompt}));
+};
+
+// Whether the monitor supervision heartbeat is fresh: it refreshes
+// monitor_alive.txt (webagent root) on every check (~3s), so a value within 10s
+// means the monitor is alive and the RSI upgrade flow exists (same logic as
+// script.dsl monitor_heartbeat_fresh on the browser side).
+script(monitor_heartbeat_fresh)
+{
+    if (!file_exists(@MonitorAliveFile)) {
+        return(false);
+    };
+    $txt = read_file(@MonitorAliveFile);
+    if (isnullorempty($txt)) {
+        return(false);
+    };
+    $t = parse_date_time(to_string($txt));
+    if (isnull($t)) {
+        return(false);
+    };
+    $age = get_diff_time_seconds($t, now());
+    return($age >= 0 && $age < 10);
+};
+
+// RSI idle self-check gate. Cheap in-memory checks first; file reads only
+// after they all pass (rare by design - at most once per idle period).
+// Sends ONE metacognition-style reminder: no preset inputs, no checklists,
+// the LLM decides what to look at and whether to improve anything at all.
+script(idle_selfcheck_tick)
+{
+    $last = get_context_var("lastActivityAt");
+    if (isnull($last)) {
+        return;
+    };
+    if (get_diff_time_seconds($last, now()) <= @SelfCheckIdleSeconds) {
+        return;
+    };
+    $lastSelfCheck = get_context_var("lastSelfCheckAt");
+    if (!isnull($lastSelfCheck) && get_diff_time_seconds($lastSelfCheck, now()) < @SelfCheckMinIntervalSeconds) {
+        return;
+    };
+    if (agent_get_active_workers(@AgentId) > 0) {
+        return;
+    };
+    if (llm_is_busy(@PmLlmProviderId)) {
+        return;
+    };
+    if (js_queue_count("", "operationQueueCount") > 0 || js_queue_count("", "sendQueueCount") > 0 || js_queue_count("", "receiveQueueCount") > 0) {
+        return;
+    };
+    // Everything in-memory says idle. File gates: only remind under monitor
+    // supervision (without it the upgrade flow does not exist and a
+    // self-check that leads to an upgrade request would dangle), never
+    // interrupt an upgrade cycle, and honor the cross-restart weekly cap
+    // (lastCompletedAt). lastSelfCheckAt is NOT set on these early returns,
+    // so the reminder still fires in the same idle window once the gate
+    // clears.
+    if (!monitor_heartbeat_fresh()) {
+        return;
+    };
+    $v = read_upgrade_state();
+    if (!isnull($v)) {
+        if (to_string(dict_or_json_get($v, "stage")) != "idle") {
+            return;
+        };
+        $lastCompletedAt = dict_or_json_get($v, "lastCompletedAt");
+        if (!isnull($lastCompletedAt)) {
+            $t = parse_date_time(to_string($lastCompletedAt));
+            if (!isnull($t) && get_diff_time_seconds($t, now()) < @SelfCheckMinIntervalSeconds) {
+                return;
+            };
+        };
+    };
+    set_context_var("lastSelfCheckAt", now());
+    nativelog("[agent] idle for over {0}s, sending the self-check reminder", @SelfCheckIdleSeconds);
+    // on_tick has no connection context, so this push broadcasts to every page.
+    // Use the dedicated rsi_selfcheck_reminder command so only the main page
+    // adapter (main.js) acts on it - the single-page agents just log an
+    // unknown-command warning and ignore it.
+    send_command_to_inject("rsi_selfcheck_reminder", to_json({text: format("现在空闲了，你可以自检一下当前系统是否有值得改进的地方——看什么、怎么判断、要不要改，都由你自己决定。RSI 流程参考：{0}", @RsiDocPath)}));
 };
 
 script(on_ws_client_connected)params($port)
@@ -806,7 +989,7 @@ script(trigger_plan)params($autoPlan,$lockAgent)
         nativelog("[agent] plan triggered");
 
         if ($lockAgent) {
-            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新需求库backlog.txt与计划plan.txt状态（清理backlog条目，更新plan条目状态），然后选取新工作更新plan.txt后继续";
+            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），阶段结论归档到md文件，更新需求库backlog.txt与计划plan.txt状态（清理backlog条目，更新plan条目状态），然后选取新工作更新plan.txt后继续";
         }
         else {
             $prompt = "没有识别到代码。请更新需求库backlog.txt与计划plan.txt状态（清理backlog条目，更新plan条目状态）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
@@ -1230,7 +1413,29 @@ script(get_arena_system_prompt)params()
 
 script(get_venus_system_prompt)params()
 {
-    return(read_file(combine_path(basepath, "docs/venus_prompt.txt")));
+    $prompt = read_file(combine_path(basepath, "docs/venus_prompt.txt"));
+
+    // Dynamic part: current plan + induction context from the venus project
+    // dir. Context injection is disabled for venus (page message size limit),
+    // so the page system prompt carries this state instead, refreshed on
+    // ready and every context count down (main agent rhythm).
+    $projectDirectory = agent_get_project_dir("venus");
+    if (!isnullorempty($projectDirectory)) {
+        $plan = read_file(combine_path($projectDirectory, "docs/plan.txt"));
+        $context = read_file(combine_path($projectDirectory, "docs/context.txt"));
+        $history = read_file(combine_path($projectDirectory, "docs/history.txt"));
+        if (!isnullorempty($plan)) {
+            $prompt = format("{0}\n\n【当前计划】:\n{1}", $prompt, $plan);
+        };
+        if (!isnullorempty($context)) {
+            $prompt = format("{0}\n\n【上下文信息】:\n{1}", $prompt, $context);
+        };
+        if (!isnullorempty($history)) {
+            $prompt = format("{0}\n\n【上下文信息】:\n{1}", $prompt, $history);
+        };
+    };
+
+    return($prompt);
 };
 
 script(get_google_prompt_1)params()
@@ -1279,6 +1484,10 @@ script(handle_agent_notification)params($jsonData)
 {
     nativelog("[agent] handle_agent_notification: {0}", get_string_in_length($jsonData, 100));
 
+    // RSI: any notification counts as activity - the idle self-check gate
+    // (idle_selfcheck_tick) measures silence from this timestamp.
+    set_context_var("lastActivityAt", now());
+
     $notif = parse_agent_notification($jsonData);
     $type = dict_or_json_get($notif, "type");
     $data = dict_or_json_get($notif, "data");
@@ -1297,7 +1506,11 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size(@AgentId, 50*1024);
         agent_enable_context_injection(@AgentId, false);
-
+        // RSI: resume after an upgrade restart (stage=verify_pending). This
+        // notification itself is the smoke proof - the relay round trip
+        // through the freshly deployed agent build - so the resume only has
+        // to push the LLM's resumePrompt. See resume_after_upgrade.
+        resume_after_upgrade();
     }
     elif (string_ends_with($type, "_ready")) {
         // Single-page agent ready (hyarena_ready, venus_ready, ...): data
@@ -1325,6 +1538,13 @@ script(handle_agent_notification)params($jsonData)
         // and ignores it.
         send_command_to_inject("ws_start_" + $agentId, to_json({port: agentport}));
 
+        // venus carries plan/context in its page system prompt (message-level
+        // context injection is off for page message size reasons): seed it
+        // right after ready.
+        if ($agentId == "venus") {
+            send_command_to_inject("update_system_prompt", to_json({prompt: get_venus_system_prompt()}));
+        };
+
         nativelog("[agent] {0} ready", $agentId);
     }
     elif ($type == "freebie_context_count_down") {
@@ -1340,6 +1560,12 @@ script(handle_agent_notification)params($jsonData)
 
         trigger_freebie_reflection($agentId);
         save_freebie_context($count, $agentId);
+
+        // venus: refresh the merged page system prompt after the context
+        // update (context injection is off, the prompt carries the state).
+        if ($agentId == "venus") {
+            send_command_to_inject("update_system_prompt", to_json({prompt: get_venus_system_prompt()}));
+        };
 
         $planFile = combine_path($projectDirectory, "docs/plan.txt");
         $time1 = get_file_last_write_time($planFile);
@@ -1414,8 +1640,15 @@ script(handle_agent_notification)params($jsonData)
             enable_freebie_button($agentId, "pattern");
         };
         if (agent_is_context_injection_enabled($agentId) && agent_add_cur_context_rounds($agentId) == 0) {
-            $prompt = format("【计划】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_plan($agentId), agent_get_context($agentId), agent_get_history($agentId));
-            send_command_to_inject("send_message", to_json({text: $prompt}));
+            // Pure-conversation injection goes through send_message (not the
+            // ws result path), so MaxResultSize does not clip it there:
+            // truncate here to keep the message inside the page send limit
+            // (reserve 500 for the page-side fence wrapper and queue notes).
+            $maxLen = agent_get_max_result_size($agentId) - 500;
+            if ($maxLen > 0) {
+                $prompt = format("【计划】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_plan($agentId), agent_get_context($agentId), agent_get_history($agentId));
+                send_command_to_inject("send_message", to_json({text: get_string_in_length($prompt, $maxLen, 1)}));
+            };
         };
     }
     elif ($type == "llm_update_system_prompt") {
@@ -1527,6 +1760,30 @@ script(handle_agent_notification)params($jsonData)
     elif ($type == "agent_need_to_decide") {
         // Lightweight PM reply channel for C-class semantic keywords
         nativelog("[agent] agent_need_to_decide notification received (trigger_decision)");
+
+        // Recovery backstop: if the page's init commands were lost in the
+        // restart race (relay not up within the js retry window),
+        // ProjectDirSynced stays unset and every path built from
+        // @ProjectDirectory below is broken (soul read fails, decisions
+        // silently die). This periodic notification is the heartbeat: ask
+        // the page to resync. The decision itself is only blocked when the
+        // project dir is really unusable - a dir seeded from the command
+        // line / persisted agent state keeps the old behavior. The 30s
+        // throttle keeps a force-notification burst from flooding the page
+        // with resync commands.
+        $dirSynced = get_context_var("ProjectDirSynced");
+        if (isnull($dirSynced) || !$dirSynced) {
+            $lastResyncAt = get_context_var("LastResyncAt");
+            if (isnull($lastResyncAt) || get_diff_time_seconds($lastResyncAt, now()) >= 30) {
+                set_context_var("LastResyncAt", now());
+                nativelog("[agent] project config not synced (init lost in restart race?), requesting resync from page");
+                send_command_to_inject("resync_project_config", to_json({}));
+            };
+            if (isnullorempty(@ProjectDirectory)) {
+                nativelog("[agent] project dir empty, decision skipped until resync completes");
+                return;
+            };
+        };
 
         $lastScannedMessage = dict_or_json_get($data, "lastScannedMessage");
         $pageType = dict_or_json_get($data, "pageType");

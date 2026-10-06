@@ -37,12 +37,18 @@ class ResponseDecider {
 
   // Main decision -----------------------------------------------------------
   // data: { state, lastFromLLM, lastScannedMessage, isLastResponse,
-  //         pageType, count, lockAgent }
+  //         pageType, count, autoPlan, lockAgent, force }
   decide(data, panel) {
     const d = data || {};
     const msg = typeof d.lastScannedMessage === 'string' ? d.lastScannedMessage : '';
     const msgLen = msg.length;
     const lastFromLLM = (d.lastFromLLM === true || d.lastFromLLM === 'True' || d.lastFromLLM === 'true');
+    // Auto plan disabled: the default trigger_decision paths would fire an LLM
+    // PM request from the DSL side on every state machine cycle (this tripped
+    // the company rate limit). Force (manual needToPlan button) still passes.
+    // Only an explicit false disables: a missing field keeps the old behavior.
+    const autoPlanDisabled = (d.autoPlan === false || d.autoPlan === 'false' || d.autoPlan === 'False');
+    const force = d.force === true;
     const queued = panel?.metadslMonitor?.operationQueue?.length || 0;
     const send = panel?.metadslWorker?.getSendQueueCount?.() || 0;
     const receive = panel?.metadslWorker?.getReceiveQueueCount?.() || 0;
@@ -118,7 +124,12 @@ class ResponseDecider {
         return { action: 'skip', reason: 'metadsl submitted' };
       }
 
-      // Default for lastFromLLM=true: trigger planning (DSL checks backlog.txt existence)
+      // Default for lastFromLLM=true: trigger planning (DSL checks backlog.txt existence).
+      // Auto plan disabled and not forced: planning would spam the PM LLM,
+      // hold the reply channel still instead.
+      if (autoPlanDisabled && !force) {
+        return { action: 'skip', reason: 'auto plan disabled' };
+      }
       return { action: 'trigger_decision' };
     }
 
@@ -127,7 +138,11 @@ class ResponseDecider {
       return { action: 'reply', text: '热更完成，继续' };
     }
 
-    // Default for lastFromLLM=false: trigger planning
+    // Default for lastFromLLM=false: trigger planning.
+    // Auto plan disabled and not forced: same PM spam guard as above.
+    if (autoPlanDisabled && !force) {
+      return { action: 'skip', reason: 'auto plan disabled' };
+    }
     return { action: 'trigger_decision' };
   }
 }

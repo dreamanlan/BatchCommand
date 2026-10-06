@@ -1,8 +1,8 @@
 @echo on
 rem One-shot webagent upgrade, the head of the supervision chain:
 rem     this script -> monitor (BatchCmdDslHost.exe, bare) -> webagent -> agent
-rem Launched detached by the monitor when managed/upgrade_state.json asks for
-rem an update. Nothing dsl hosted may run this flow: the agent process and the
+rem Launched detached by the monitor when upgrade_request.json (webagent root)
+rem asks for an update (the monitor consumes and deletes it before launching us). Nothing dsl hosted may run this flow: the agent process and the
 rem monitor both load managed\BatchCmdDsl.dll -> BatchScriptApi.dll, so while
 rem any of them is alive those dlls are locked and cannot be replaced.
 rem
@@ -15,12 +15,13 @@ rem the chain).
 
 setlocal EnableExtensions
 set BATDIR=%~dp0
-rem webagent root (this bat lives in <root>\managed)
-for %%i in ("%BATDIR%..") do set ROOT=%%~fi
+rem webagent root (this bat lives in <root> itself)
+for %%i in ("%BATDIR%.") do set ROOT=%%~fi
 cd /d "%ROOT%"
 
 set BUILDROOT=d:\GitHub\BatchCommand
-set LOG=%ROOT%\managed\upgrade_build.log
+rem generated file -> webagent root, NOT managed (no generated files there)
+set LOG=%ROOT%\upgrade_build.log
 
 echo [%date% %time%] upgrade start > "%LOG%"
 
@@ -56,6 +57,19 @@ echo [%date% %time%] building CefDotnetApp >> "%LOG%"
 dotnet build "%BUILDROOT%\CefDotnetApp\CefDotnetApp.csproj" -v q --nologo >> "%LOG%" 2>&1
 if errorlevel 1 goto build_failed
 
+rem ---- 2b) backup the live deployment before overwriting ----
+rem Fixed temp dir (project rule: temp artifacts go to e:\tmp). The dlls live
+rem in managed\, so backing up managed covers them. robocopy exit codes >= 8
+rem are failure: abort before any live file is touched.
+set BAKROOT=e:\tmp\webagentbak
+echo [%date% %time%] backing up to %BAKROOT% >> "%LOG%"
+robocopy "%ROOT%\managed" "%BAKROOT%\managed" /E >> "%LOG%"
+if errorlevel 8 goto build_failed
+robocopy "%ROOT%\docs" "%BAKROOT%\docs" /E >> "%LOG%"
+if errorlevel 8 goto build_failed
+robocopy "%ROOT%\skills" "%BAKROOT%\skills" /E >> "%LOG%"
+if errorlevel 8 goto build_failed
+
 rem ---- 3) deploy (runs all four copy.dsl; CefDotnetApp has no PostBuild) ----
 echo [%date% %time%] deploying >> "%LOG%"
 call "%BUILDROOT%\CefDotnetApp\dist_to_cefclient.bat" >> "%LOG%" 2>&1
@@ -66,11 +80,11 @@ rem The copy.dsl scripts above deploy dlls ONLY. js/dsl/docs/skills have
 rem their source of truth in AgentCore\webagent and are deployed ONLY here,
 rem so a plain build can never overwrite the live files with a stale copy.
 rem robocopy exit codes 0-7 are success, >= 8 is failure. The upgrade
-rem scripts themselves are excluded: cmd reads this bat line by line, so
-rem overwriting the running script mid-flight is not safe (a newer source
-rem version needs a one-time manual copy into managed\, or let a deploy
-rem that runs it from elsewhere pick it up).
-robocopy "%BUILDROOT%\AgentCore\webagent\managed" "%ROOT%\managed" /E /XF upgrade_and_restart.bat upgrade_and_restart.sh >> "%LOG%"
+rem scripts themselves (AgentCore\webagent\upgrade_and_restart.bat/.sh)
+rem are never auto-deployed: cmd reads this bat line by line, so
+rem overwriting the running script at <root> mid-flight is not safe (a newer
+rem source version needs a one-time manual copy into <root>).
+robocopy "%BUILDROOT%\AgentCore\webagent\managed" "%ROOT%\managed" /E >> "%LOG%"
 if errorlevel 8 goto build_failed
 robocopy "%BUILDROOT%\AgentCore\webagent\docs" "%ROOT%\docs" /E >> "%LOG%"
 if errorlevel 8 goto build_failed

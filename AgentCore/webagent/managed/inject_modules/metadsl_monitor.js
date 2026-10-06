@@ -67,6 +67,15 @@ class MetaDSLMonitor {
     // id can survive a re-render while the node is a different one.
     this.lastBlockContent = new WeakMap();
 
+    // Memory guard state: cached renderer pid (constant for the process
+    // lifetime) and the cefQuery in-flight flag (the query is async).
+    this._rendererPid = null;
+    this.memoryGuardInFlight = false;
+    // Pending auto-continue after a memory guard restart (see
+    // _maybeAutoContinueAfterRestart): a timeout re-armed on every page
+    // stable tick while initialization is still waiting for a user message.
+    this._autoContinueTimer = null;
+
     // Create user input monitor
     this.userInputMonitor = new UserInputMonitor(pageAdapter);
 
@@ -197,6 +206,10 @@ class MetaDSLMonitor {
     this.currentStateName = null;
     this.canExecuteNewCommands = false;
     this.stopMemoryGuard();
+    if (this._autoContinueTimer) {
+      clearTimeout(this._autoContinueTimer);
+      this._autoContinueTimer = null;
+    }
     this.processedMessages.clear();
     // Keep processedBlocks to prevent re-processing on restart
     // processedBlocks is also backed by DOM data-metadsl-status attribute
@@ -1007,11 +1020,15 @@ class MetaDSLMonitor {
   // auto-plan session pushes the renderer process into the GBs. Only a real
   // process restart reclaims it: location.reload() keeps the same renderer
   // process (and its allocator arenas) alive.
-  // The verdict comes from the dsl (callMetaDSL -> check_memory_guard in
-  // script_renderer.dsl), the only side that can read a process level figure -
-  // performance.memory covers the js heap alone, a small fraction of the real
-  // footprint. The schedule, the cooldown, the "is the agent idle" check and
-  // the restart itself stay here, in the side that knows them.
+  // The sandboxed renderer cannot read its own process handle, so the figure
+  // comes from the browser process through a cefQuery (the renderer_memory
+  // action in script.dsl). When the verdict is "over", the LLM is told to
+  // archive its conclusions and restart the browser itself with the
+  // reopen_browser() MetaDSL api: a restart dropped in the middle of a round
+  // loses that round, so the agent decides when to cut. Reminders repeat on
+  // every check (default every 60s) on purpose - the LLM may not act on the
+  // first one, and a cooldown here would leave an unattended session growing
+  // until it dies.
   startMemoryGuard() {
     if (this.memoryGuardTimer) return;
     const intervalSec = CONFIG.get('panel.memoryGuardIntervalSec') || 60;
@@ -1029,54 +1046,79 @@ class MetaDSLMonitor {
       clearInterval(this.memoryGuardTimer);
       this.memoryGuardTimer = null;
     }
+    this.memoryGuardInFlight = false;
   }
 
-  // Returns true when a restart has been requested.
+  // Queries the renderer footprint through the browser process and, when it is
+  // over the limit, queues the restart notice for the LLM.
   checkProcessMemory() {
-    if (typeof callMetaDSL !== 'function') return false;
-
-    let over = false;
-    try {
-      over = callMetaDSL('check_memory_guard') === true;
-    } catch (e) {
-      this.warn('callMetaDSL(check_memory_guard) failed: ' + e);
-      return false;
+    if (this.memoryGuardInFlight) return;
+    if (typeof window === 'undefined' || typeof window.cefQuery === 'undefined') {
+      this.warn('Memory guard: cefQuery is unavailable');
+      return;
     }
-    if (!over) return false;
-
-    // Cooldown: the restart rebuilds the process, so never ask twice in a row.
-    let lastRestart = 0;
-    try {
-      lastRestart = Number(sessionStorage.getItem('inject_last_restart') || 0);
-    } catch (e) { /* storage unavailable */ }
-    if (lastRestart && Date.now() - lastRestart < 10 * 60 * 1000) return false;
-
-    // A restart drops whatever round is in flight, so wait for a quiet moment.
-    if (!(this.currentStateName === 'USER_INPUT' && this.operationQueue.length === 0)) {
-      this.warn(`Renderer memory is over the limit, restart postponed (state=${this.currentStateName}, queue=${this.operationQueue.length})`);
-      return false;
+    // The pid() of this renderer process, cached for the process lifetime.
+    if (!this._rendererPid) {
+      if (typeof callMetaDSL !== 'function') {
+        this.warn('Memory guard: callMetaDSL is unavailable');
+        return;
+      }
+      try {
+        this._rendererPid = Number(callMetaDSL('get_self_pid')) || 0;
+      } catch (e) {
+        this.warn('callMetaDSL(get_self_pid) failed: ' + e);
+        return;
+      }
+      if (!this._rendererPid) {
+        this.warn('Memory guard: cannot resolve the renderer pid');
+        return;
+      }
     }
 
-    let usedMB = 0;
-    try {
-      usedMB = Number(callMetaDSL('get_renderer_memory')) || 0;
-    } catch (e) { /* the figure is only used for the log */ }
-    try {
-      sessionStorage.setItem('inject_last_restart', String(Date.now()));
-    } catch (e) { /* storage unavailable */ }
-
-    this.warn(`Renderer process at ${usedMB.toFixed(0)}MB is over the limit: restarting the browser window`);
-    // reopenBrowserWindow is the single implementation behind the hot_reload
-    // command (component agentcore / restart), so this is the same action the
-    // dsl api reopen_browser() and the C# side end up performing. It is called
-    // directly instead of pushing a command because window.onAgentCommand is
-    // re-assigned by the page adapters, which drop commands they do not know.
-    if (typeof reopenBrowserWindow === 'function') {
-      reopenBrowserWindow('Restart');
-      return true;
-    }
-    this.warn('reopenBrowserWindow is unavailable, cannot restart');
-    return false;
+    const self = this;
+    this.memoryGuardInFlight = true;
+    window.cefQuery({
+      request: JSON.stringify({ action: 'renderer_memory', pid: this._rendererPid }),
+      persistent: false,
+      onSuccess: function (response) {
+        self.memoryGuardInFlight = false;
+        let over = false;
+        let usedMB = 0;
+        const parts = String(response).split(',');
+        if (parts.length === 2) {
+          over = parts[0] === 'over';
+          usedMB = Number(parts[1]) || 0;
+          // Shown in the panel header next to the LLM type on every check
+          // (also when under the limit), logged when under it so the trend
+          // stays observable in the log between restarts.
+          if (self.panel && typeof self.panel.setRendererMemory === 'function') {
+            self.panel.setRendererMemory(usedMB, over);
+          }
+          if (!over) {
+            self.info(`Renderer process memory: ${usedMB.toFixed(0)}MB`);
+          }
+        } else {
+          self.info(`Renderer process memory: unexpected response "${response}"`);
+        }
+        if (!over) return;
+        self.warn(`Renderer process at ${usedMB.toFixed(0)}MB is over the limit: telling the LLM to restart`);
+        // No restart marker here: reopenBrowserWindow (main.js) writes it at
+        // the actual restart moment, so the freshness window cannot go stale
+        // while the LLM spends minutes archiving before it reopens.
+        if (self.metadslWorker && typeof self.metadslWorker.queueReply === 'function') {
+          self.metadslWorker.queueReply(
+            '【系统提示】浏览器渲染进程内存已达 ' + usedMB.toFixed(0) + 'MB，超过上限，需要重启浏览器释放。' +
+            '请先简要归档当前任务结论（保存关键进度与上下文），然后在 MetaDSL 代码块中执行 reopen_browser() 重启浏览器，重启后从归档结论处继续任务。'
+          );
+        } else {
+          self.warn('queueReply is unavailable, cannot notify the LLM');
+        }
+      },
+      onFailure: function (error_code, error_message) {
+        self.memoryGuardInFlight = false;
+        self.warn(`Memory guard query failed: ${error_code} ${error_message}`);
+      }
+    });
   }
 
   resetPageStableTimer() {
@@ -1261,6 +1303,48 @@ class MetaDSLMonitor {
 
     // Prune old conversation DOM nodes to prevent page slowdown
     this.pruneOldMessages();
+
+    // Memory guard restart recovery: while initialization still waits for a
+    // user message, keep re-arming the auto-continue timeout - the history
+    // load keeps mutating the DOM, so the wait restarts on every stable tick.
+    if (this.isInitializing) {
+      if (this._autoContinueTimer) {
+        clearTimeout(this._autoContinueTimer);
+      }
+      this._autoContinueTimer = setTimeout(() => {
+        this._autoContinueTimer = null;
+        try {
+          this._maybeAutoContinueAfterRestart();
+        } catch (e) {
+          this.warn('Auto-continue check failed: ' + e);
+        }
+      }, 10 * 1000);
+    }
+  }
+
+  // Window-recreation recovery: after ANY reopenBrowserWindow() (memory guard
+  // restart, reopen command, agentcore hot reload) no user is around to send
+  // the first message the initialization flow waits for - the agent would sit
+  // idle after the page reopened. Consume the restart marker (written by
+  // reopenBrowserWindow right before the window closed) and run the same
+  // first-message flow (markHistoryCodeBlocks, system prompt, AGENT_INITIALIZED
+  // dispatch) so the agent resumes by itself. The marker is one-shot; the 10
+  // minute window covers the reopen itself, not the archiving before it.
+  _maybeAutoContinueAfterRestart() {
+    if (!this.isInitializing) return false;
+    let requestedAt = 0;
+    try {
+      requestedAt = Number(localStorage.getItem('inject_restart_requested') || 0);
+      if (requestedAt) {
+        localStorage.removeItem('inject_restart_requested');
+      }
+    } catch (e) { /* storage unavailable */ }
+    if (!requestedAt || Date.now() - requestedAt >= 10 * 60 * 1000) {
+      return false;
+    }
+    this.info('Memory guard restart detected: auto-continuing without waiting for a user message');
+    this.onUserSendMessage();
+    return true;
   }
 
   scanForNewCodeBlocks() {

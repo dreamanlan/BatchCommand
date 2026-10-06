@@ -280,6 +280,17 @@ window.onAgentCallback = function (msg, args) {
 // cannot push a command of its own, because window.onAgentCommand is
 // re-assigned by the page adapters, which drop the commands they do not know.
 function reopenBrowserWindow(label) {
+  // Refresh the auto-continue marker HERE, right before the window closes:
+  // after the reopen no user is around to send the first message the page
+  // initialization waits for, so _maybeAutoContinueAfterRestart (metadsl_
+  // monitor.js) has to auto-continue. Writing the timestamp at the actual
+  // restart moment keeps the freshness window honest no matter how long the
+  // LLM spent archiving between the memory guard alarm and this call (the
+  // alarm-time marker it replaces went stale past 10 minutes of archiving).
+  try {
+    localStorage.setItem('inject_restart_requested', String(Date.now()));
+  } catch (e) { /* storage unavailable */ }
+
   const hotReloadRequest = {
     action: 'hot_reload',
     files: []
@@ -356,11 +367,41 @@ window.onAgentCommand = function (commandJson) {
       return;
     }
 
+    // RSI idle self-check reminder: broadcast from on_tick (no connection
+    // context), so only this main page adapter handles it - the single-page
+    // agents ignore the unknown command.
+    if (cmd.command === 'rsi_selfcheck_reminder') {
+      if (cmd.params && cmd.params.text) {
+        relayTransport.queueReply(cmd.params.text);
+      }
+      return;
+    }
+
     if (cmd.command === 'send_llm_callback') {
       if (cmd.params && cmd.params.text) {
         if (panel && panel.chatInputPanel) {
           panel.chatInputPanel.addMessage('llm', cmd.params.text);
         }
+      }
+      return;
+    }
+
+    if (cmd.command === 'resync_project_config') {
+      // The agent's init sequence (agent_ready / update_project_config /
+      // set_agent_environment) was lost in the restart race: the relay came
+      // up after the page-side retry window expired, so the agent never got
+      // its project identity / LLM environment. Re-send the whole init
+      // sequence on the agent's request.
+      logger.info('Resyncing agent init (init lost in restart race)');
+      bridge.sendNotification('agent_ready', {
+        pageType: pageAdapter ? pageAdapter.pageType : 'unknown',
+        url: window.location.href
+      });
+      if (panel && panel.projectPanel) {
+        panel.projectPanel._notifyDsl();
+      }
+      if (panel && panel.chatInputPanel) {
+        panel.chatInputPanel._loadAgentEnv();
       }
       return;
     }

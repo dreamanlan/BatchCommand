@@ -30,6 +30,7 @@ class RelayWs {
     this._onMessage = null;    // user callback: (data) => void
     this._onStatus = null;     // user callback: (status) => void  status: 'connected'|'disconnected'|'error'|'auth_ok'
     this._wsClientId = null;   // stable per-page client identity (R3)
+    this._hadRemoteInbound = false;  // any inbound 'message' push seen (bridge or relay)
   }
 
   _getUrl() {
@@ -87,8 +88,10 @@ class RelayWs {
       this.clientId = cid;
       this.connected = true;
       // Route our pushes through the generic dispatcher (pseudo-slot).
+      // _resyncIfNeeded hooks the shared 10s watchdog in relay_transport.js.
       relaySlotRegistry.set(cid, {
         _onPush: (message) => { this._handlePush(message); },
+        _resyncIfNeeded: () => { this._resyncIfNeeded(); },
         close: () => { this.disconnect(); }
       });
       this.logger.info('Connected');
@@ -98,6 +101,9 @@ class RelayWs {
       if (key) {
         this._send({ type: 'auth', token: key, clientId: this._getClientId() });
       }
+      // Register a routing name so /solo <name> can target this page
+      // (mirrors the relay_agent_lite.js handshake).
+      this._send({ type: 'register', name: CONFIG.get('relay.agentName') || 'webagent' });
       this._startHeartbeat();
     }, (code, msgText) => {
       this.logger.error('lite_open failed (' + code + '): ' + msgText);
@@ -118,6 +124,8 @@ class RelayWs {
     this._stopHeartbeat();
     this._release();
     this.connected = false;
+    // Notify listeners (e.g. the relay panel button) so the UI updates.
+    this._emitStatus('disconnected');
   }
 
   // Send a chat message, returns a Promise that resolves with the response
@@ -147,6 +155,12 @@ class RelayWs {
   // Push a message without waiting for response (fire-and-forget)
   pushMessage(text, opts) {
     opts = opts || {};
+    // No remote conversation ever started (pure local chat): nobody to
+    // deliver to - the bridge would drop it for missing channelId anyway.
+    if (!this._hadRemoteInbound) {
+      this.logger.warn('push dropped, no remote session yet');
+      return false;
+    }
     return this._send({
       type: 'message',
       content: text,
@@ -252,6 +266,18 @@ class RelayWs {
       return;
     }
 
+    // Track remote conversations: any inbound 'message' push marks that a
+    // remote session exists (the local bridge sends channelId, the remote
+    // relay sends sender/session instead - both count). pushMessage gates
+    // on this so purely local chats are not forwarded. Also remember the
+    // channel for bridge-side reply routing.
+    if (data.type === 'message') {
+      this._hadRemoteInbound = true;
+      if (data.channelId) {
+        this._lastChannelId = data.channelId;
+      }
+    }
+
     // Check if this is a response to a pending request
     if (data.requestId && this.callbacks[data.requestId]) {
       const cb = this.callbacks[data.requestId];
@@ -285,6 +311,32 @@ class RelayWs {
       this._reconnectTimer = null;
       this.connect({ autoReconnect: this.autoReconnect });
     }, delay);
+  }
+
+  // Pull-based link-state resync, called by the shared 10s watchdog in
+  // relay_transport.js. Heals the case where a relay_state push was lost:
+  // connected stays true locally while the underlying wsclient link is dead.
+  _resyncIfNeeded() {
+    if (!this.connected || !this.clientId) return;
+    const cid = this.clientId;
+    this._cefQuery({
+      action: 'agent_state',
+      clientId: cid
+    }, (state) => {
+      // Ignore stale answers (manual disconnect / reconnect raced the query).
+      if (!this.connected || this.clientId !== cid) return;
+      if (state === 'disconnected' || state === 'failed' || state === 'unknown') {
+        this.connected = false;
+        this._stopHeartbeat();
+        this.logger.info('Disconnected (resync, link state ' + state + ')');
+        this._emitStatus('disconnected');
+        if (this.autoReconnect) {
+          this._scheduleReconnect();
+        }
+      }
+      // connected: already fine; reconnecting / connecting: link layer
+      // is still healing itself, wait for the next tick.
+    }, () => { /* query failed: the next watchdog tick retries */ });
   }
 
   _startHeartbeat() {

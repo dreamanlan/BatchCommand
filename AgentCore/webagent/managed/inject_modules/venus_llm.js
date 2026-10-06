@@ -8,6 +8,7 @@
 
 (function () {
   'use strict';
+  window.__venus_llm_patch_20261005 = true;
 
   /* ===========================================
      Section 0  Config
@@ -22,6 +23,11 @@
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
     KEEP_ROUNDS: 6,
+    // Auto trim via venus backend delete API when rounds exceed KEEP_ROUNDS.
+    // Off by default: clearing history moves the window cursor off the last
+    // message position.
+    AUTO_TRIM_ON: false,
+    TRIM_COOLDOWN_MS: 30000,
     RESET_TIMEOUT_MS: 30000,
     // Fire freebie_context_count_down every N conversation rounds (0 disables).
     LLM_CONTEXT_COUNT_MODULO: 16,
@@ -108,6 +114,9 @@
     // Last text auto-written to chat input by flushResults; used to
     // distinguish our own residual input from genuine user typing.
     lastAutoSentText: '',
+    autoContinueOn: true,
+    continueRounds: 0,
+    continuedMsgs: new WeakSet(),
     deferTimer: null,
     deferLastLogTs: 0,
 
@@ -295,6 +304,14 @@
         ST.pendingResults.push(cmd.params.text);
         log(`[bridge] queued send_message (${cmd.params.text.length}B)`);
         scheduleFlush();
+        return;
+      }
+      if (cmd.command === 'update_system_prompt' && cmd.params && cmd.params.prompt) {
+        // Agent-side refresh of the merged system prompt (venus_prompt +
+        // plan + context; message-level context injection is off for this
+        // page). Same write path as the [prompt] panel button.
+        const ok = setSystemPrompt(String(cmd.params.prompt));
+        log('[bridge] update_system_prompt ' + (ok ? 'OK' : 'FAIL') + ' (' + cmd.params.prompt.length + ' chars)');
         return;
       }
       if (cmd.command === 'enable_freebie_button' && cmd.params && cmd.params.name) {
@@ -602,7 +619,7 @@
     // Button row 3: history settings
     const row3 = document.createElement('div');
     row3.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap; align-items:center;';
-    const btnTrim = mkBtn('trim', () => trimHistory(CFG.KEEP_ROUNDS));
+    const btnTrim = mkBtn('trim', () => trimHistoryBackend(CFG.KEEP_ROUNDS));
     const keepLabel = document.createElement('label');
     keepLabel.style.cssText = 'font-size:10px; display:inline-flex; align-items:center; gap:2px;';
     const keepInput = document.createElement('input');
@@ -619,6 +636,16 @@
     keepLabel.appendChild(keepInput);
     row3.appendChild(keepLabel);
     row3.appendChild(btnTrim);
+    const btnAutoTrim = mkBtn('auto', () => {
+      CFG.AUTO_TRIM_ON = !CFG.AUTO_TRIM_ON;
+      log('[trim] auto trim ' + (CFG.AUTO_TRIM_ON ? 'on' : 'off'));
+      btnAutoTrim.textContent = 'auto:' + (CFG.AUTO_TRIM_ON ? 'on' : 'off');
+      btnAutoTrim.style.background = CFG.AUTO_TRIM_ON ? '#2e7d32' : '#3a4a6b';
+    });
+    row3.appendChild(btnAutoTrim);
+    // Sync initial visual state with CFG.AUTO_TRIM_ON (venustrimautovisual20261006)
+    btnAutoTrim.textContent = 'auto:' + (CFG.AUTO_TRIM_ON ? 'on' : 'off');
+    btnAutoTrim.style.background = CFG.AUTO_TRIM_ON ? '#2e7d32' : '#3a4a6b';
     body.appendChild(row3);
 
     // Button row 4: prompt
@@ -827,30 +854,72 @@
   /* ===========================================
      Section 8  History Trimming
      =========================================== */
+  /* Lowest common ancestor of two elements (null when unreachable). */
+  function commonAncestor(a, b) {
+    const seen = new Set();
+    for (let n = a; n; n = n.parentElement) seen.add(n);
+    for (let n = b; n; n = n.parentElement) if (seen.has(n)) return n;
+    return null;
+  }
+
   function trimHistory(keepRounds) {
     const root = getChatRoot();
     if (!root) { warn('[trim] no chat root'); return; }
-    // Treat each AI message as one round; keep last N AI messages and their
-    // preceding siblings up to the previous AI message.
+    if (!Number.isFinite(keepRounds) || keepRounds < 1) keepRounds = 1;
+    // Treat each AI message as one round; keep last N AI messages.
     const aiMsgs = pickAllVisible(SEL.aiMsg, root);
     const total = aiMsgs.length;
     if (total <= keepRounds) {
       log(`[trim] nothing to do (${total} <= keep=${keepRounds})`);
       return;
     }
-    const cutoffAi = aiMsgs[total - keepRounds];
+    // Trim whole message units INSIDE the conversation list only. Never walk
+    // root siblings: getChatRoot() returns document.body and messages are
+    // nested deeper (message-wrapper < message-top-wrap < single-model <
+    // ... < vue-advanced-chat), so the old sibling loop deleted ALL direct
+    // body children (whole page wipe incl. injected panel). The conversation
+    // container is the lowest common ancestor of the first and last visible
+    // AI messages. Removing the whole unit (user + AI wrapper pair) also
+    // clears the paired user message - removing just the AI wrapper would
+    // orphan it on screen.
+    const listEl = commonAncestor(aiMsgs[0], aiMsgs[total - 1]);
+    if (!listEl || listEl === document.body || listEl === document.documentElement) {
+      warn('[trim] conversation container not found, skip');
+      return;
+    }
+    // The direct child of the container that holds the first kept AI message.
+    let keepUnit = aiMsgs[total - keepRounds];
+    while (keepUnit && keepUnit.parentElement !== listEl) keepUnit = keepUnit.parentElement;
+    if (!keepUnit) { warn('[trim] cutoff unit not found, skip'); return; }
     let removed = 0;
-    // Walk siblings of root: remove everything before cutoffAi.
-    let node = root.firstElementChild;
-    while (node && node !== cutoffAi) {
+    let node = listEl.firstElementChild;
+    while (node && node !== keepUnit) {
       const next = node.nextElementSibling;
-      // Skip removing the cutoff itself's prior user message - keep it as
-      // context. Heuristic: stop at the closest user msg before cutoff.
-      // For simplicity remove all earlier siblings.
-      try { node.remove(); removed++; } catch (_) { }
+      // Only remove message units - non-message siblings (image viewer,
+      // control bars, etc.) stay untouched.
+      if (node.querySelector('.message-top-wrap')) {
+        try { node.remove(); removed++; } catch (_) { }
+      }
       node = next;
     }
-    log(`[trim] removed ${removed} nodes, kept last ${keepRounds} rounds`);
+    log(`[trim] removed ${removed} units, kept last ${keepRounds} rounds`);
+  }
+
+  /* Frontend-only trim: clear page dialog display via trimHistory.
+   * Backend history records are kept untouched (requirement 20261006). */
+  function trimHistoryBackend(keepRounds) {
+    trimHistory(keepRounds);
+  }
+
+    
+    function maybeAutoTrim() {
+    try {
+      if (!CFG.AUTO_TRIM_ON) return;
+      const now = Date.now();
+      if (ST.lastAutoTrimTs && now - ST.lastAutoTrimTs < CFG.TRIM_COOLDOWN_MS) return;
+      ST.lastAutoTrimTs = now;
+      trimHistoryBackend(CFG.KEEP_ROUNDS);
+    } catch (_) { }
   }
 
   /* ===========================================
@@ -1026,6 +1095,33 @@
 
   /** Read code text robustly. */
   function readCodeText(el) {
+    // Prefer CodeBlock props.code (complete data-layer source); DOM text is
+    // the fallback only. Props is adopted when it extends the DOM text.
+    try {
+      let node = el;
+      while (node && node.nodeType === 1) {
+        const vm = node.__vue__;
+        if (vm) {
+          const pc = (vm.$props && typeof vm.$props.code === 'string') ? vm.$props.code : (typeof vm.code === 'string' ? vm.code : null);
+          if (pc && pc.trim()) {
+            const domText = readDomCodeText(el);
+            const na = pc.replace(/\s+/g, '');
+            const nb = domText.replace(/\s+/g, '');
+            if ((nb === '' || na.indexOf(nb) === 0) && pc.length >= domText.length) {
+              log('[readcode] props.code adopted: ' + domText.length + ' -> ' + pc.length);
+              return pc;
+            }
+          }
+          break;
+        }
+        node = node.parentElement;
+      }
+    } catch (_) { }
+    return readDomCodeText(el);
+  }
+
+  /** Read code text from the DOM only (line-span format or plain text). */
+  function readDomCodeText(el) {
     // Try line-span format (markdown renderers split per line).
     const lineSpans = el.querySelectorAll('.code-line');
     if (lineSpans && lineSpans.length > 0) {
@@ -1157,6 +1253,77 @@
    * into one script; several MetaDSL fences in one reply run as one command.
    * Returns array of { el, els, code, lang, id }.
    */
+  /* Vedas bridge: fetch full code from the vedas preview iframe when the
+     chat body code block is truncated (pending hold + prefix refill). */
+  function fencesOdd(s) {
+    const f = String.fromCharCode(96, 96, 96);
+    return (String(s).split(f).length - 1) % 2 === 1;
+  }
+
+  function requestVedasCode() {
+    try {
+      const reqId = 'req' + Date.now();
+      let sent = 0;
+      document.querySelectorAll('iframe').forEach(fr => {
+        try { fr.contentWindow.postMessage({ type: 'venusllmfetchcode', reqId: reqId }, '*'); sent += 1; } catch (_) { }
+      });
+      log('[vedas] fetch request sent to ' + sent + ' iframe(s)');
+    } catch (_) { }
+  }
+
+  /** Click the code block expand button so the vedas preview iframe loads
+   *  the full code from the server (file-click) channel. */
+  function clickExpandButton(blk) {
+    try {
+      const btns = blk.querySelectorAll('button');
+      for (let i = 0; i < btns.length; i++) {
+        if (btns[i].innerHTML && btns[i].innerHTML.indexOf('icon-unfold-more') >= 0) {
+          btns[i].click();
+          log('[vedas] expand button clicked');
+          return true;
+        }
+      }
+    } catch (_) { }
+    return false;
+  }
+
+  function maybeFixFromVedas(aiMsgEl, cmdBlocks, code) {
+    try {
+      if (!ST.vedasFull) ST.vedasFull = [];
+      for (let i = 0; i < ST.vedasFull.length; i++) {
+        const full = ST.vedasFull[i];
+        if (typeof full !== 'string') continue;
+        if (full.length > code.length && full.indexOf(code) === 0) {
+          log('[vedas] refill by prefix match: ' + code.length + ' -> ' + full.length);
+          return full;
+        }
+        if (full === code) {
+          log('[vedas] code confirmed complete by exact match');
+          return code;
+        }
+      }
+      // Fence parity is no longer a hard gate: internal truncation can keep
+      // fences balanced. Always try the vedas channel once per block.
+      // Skip the vedas roundtrip when no preview iframe exists at all.
+      if (document.querySelectorAll('iframe').length === 0) return code;
+      if (!ST.vedasPending) ST.vedasPending = new Map();
+      const key = cmdBlocks[0].blk;
+      const now = Date.now();
+      if (ST.vedasPending.has(key)) {
+        if (now - ST.vedasPending.get(key) > 8000) {
+          ST.vedasPending.delete(key);
+          log('[vedas] pending timeout, release truncated code');
+          return code;
+        }
+      } else {
+        ST.vedasPending.set(key, now);
+        if (cmdBlocks && cmdBlocks[0] && cmdBlocks[0].blk) clickExpandButton(cmdBlocks[0].blk);
+      }
+      requestVedasCode();
+      return null; // hold this scan until responder replies or timeout
+    } catch (_) { return code; }
+  }
+
   function extractBlocks(aiMsgEl) {
     const out = [];
     const items = [];
@@ -1186,7 +1353,10 @@
     }
 
     const codeEl = cmdBlocks[0].codeEl;
-    const code = cmdBlocks.map(it => it.code).join('\n');
+    let code = cmdBlocks.map(it => it.code).join('\n');
+    const fixed = maybeFixFromVedas(aiMsgEl, cmdBlocks, code);
+    if (fixed === null) return out; // hold until vedas reply or timeout
+    if (fixed !== code) code = fixed;
     const lang = getLang(codeEl);
     // Optional language filter from CFG.LANG_FILTER (empty = no filter).
     if (CFG.LANG_FILTER.length > 0 && CFG.LANG_FILTER.indexOf(lang) < 0) {
@@ -1229,6 +1399,53 @@
   /* ===========================================
      Section 13  processMessages  (main loop)
      =========================================== */
+      function detectTruncation(aiMsgEl) {
+        let truncated = false;
+        try {
+          const raw = aiMsgEl ? aiMsgEl.textContent : "";
+          if (raw) {
+            const fence = String.fromCharCode(96, 96, 96);
+            const fenceCount = raw.split(fence).length - 1;
+            if (fenceCount > 0 && fenceCount % 2 === 1) {
+              const tail = raw.replace(/\s+$/, "");
+              const cleanEnd = !tail.endsWith(fence) && /[.!?:;)"'\u201d\u3002\uff01\uff1f\uff1b]$/.test(tail);
+              if (!cleanEnd) {
+                truncated = true;
+                const warnDiv = document.createElement("div");
+                warnDiv.style.cssText = "margin:6px 0;padding:6px 10px;border:1px solid #e6a23c;background:#fdf6ec;color:#b88230;border-radius:4px;font-size:12px;";
+                warnDiv.textContent = "[warn] possible truncated reply: code fences unbalanced and no closing mark";
+                aiMsgEl.appendChild(warnDiv);
+                console.warn("[venus_llm] detectTruncation: fences=" + fenceCount + " tail=" + JSON.stringify(tail.slice(-48)));
+              }
+            }
+          }
+        } catch (_) { }
+        if (truncated) scheduleAutoContinue(aiMsgEl);
+        return truncated;
+      }
+
+      function scheduleAutoContinue(aiMsgEl) {
+        try {
+          if (!ST.armed || !ST.autoContinueOn) return;
+          if (!ST.continuedMsgs) ST.continuedMsgs = new WeakSet();
+          if (ST.continuedMsgs.has(aiMsgEl)) return;
+          if (ST.continueRounds >= 3) {
+            console.warn("[venus_llm] scheduleAutoContinue: max rounds " + ST.continueRounds + " reached, skip");
+            return;
+          }
+          ST.continuedMsgs.add(aiMsgEl);
+          ST.continueRounds += 1;
+          console.log("[venus_llm] scheduleAutoContinue: round " + ST.continueRounds + ", continue prompt in 1.5s");
+          setTimeout(() => {
+            try {
+              chatSend("Continue the previous reply from the exact truncation point. Do not repeat content already output. Output only the remaining part.");
+            } catch (e) {
+              console.warn("[venus_llm] scheduleAutoContinue: send failed: " + e);
+            }
+          }, 1500);
+        } catch (_) { }
+      }
+
   function processMessages() {
     if (ST.paused) return;
     // Try to cache the real chatList parent now that DOM may have AI msgs.
@@ -1269,7 +1486,9 @@
       if (!ST.notifiedMsgs) ST.notifiedMsgs = new WeakSet();
       if (!ST.notifiedMsgs.has(msg)) {
         ST.notifiedMsgs.add(msg);
+        if (!detectTruncation(msg)) ST.continueRounds = 0;
         notifyConversationHistory(msg);
+        maybeAutoTrim();
       }
 
       const blocks = extractBlocks(msg);
@@ -1331,7 +1550,22 @@
     // Polling fallback in case mutations are missed.
     if (ST.pollTimer) clearInterval(ST.pollTimer);
     ST.pollTimer = setInterval(processMessages, CFG.POLL_MS);
-  }
+    // Vedas responder bridge: receive full code from the preview iframe.
+    if (!ST.vedasListenerOn) {
+     ST.vedasListenerOn = true;
+     window.addEventListener('message', ev => {
+      try {
+       const d = ev.data;
+       if (!d || d.type !== 'venusllmfetchcode_result' || !d.codes) return;
+       if (!ST.vedasFull) ST.vedasFull = [];
+       d.codes.forEach(c => { if (c && c.trim() && ST.vedasFull.indexOf(c) < 0) ST.vedasFull.push(c); });
+       log('[vedas] received ' + d.codes.length + ' code(s) from responder');
+       clearTimeout(ST.debounceTimer);
+       ST.debounceTimer = setTimeout(processMessages, 200);
+      } catch (_) { }
+     });
+    }
+   }
 
   /* ===========================================
      Section 16  init
@@ -1362,6 +1596,7 @@
     process: processMessages,
     markHistory,
     sendChat: chatSend,
+    autoContinue: (on) => { ST.autoContinueOn = (on !== false); return ST.autoContinueOn; },
     setLangFilter: (arr) => { CFG.LANG_FILTER = arr || []; },
     breakNow: manualBreak,
     clearQueue: manualClear,

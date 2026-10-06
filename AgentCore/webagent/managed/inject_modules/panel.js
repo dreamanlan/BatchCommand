@@ -9,6 +9,11 @@ class AgentPanel {
   // not to remember it for the next session - otherwise yesterday's
   // "auto plan off" would silently apply to a page opened tomorrow.
   static RUNTIME_STATE_KEY = 'inject_runtime_state';
+  // The agent lock also survives a window recreation (the memory guard
+  // restart reopens the browser; sessionStorage does not survive that) via
+  // this localStorage backup, consumed by applyRuntimeState while the
+  // deadline is still unexpired. See _applyLockBackup.
+  static LOCK_STATE_KEY = 'inject_lock_state';
 
   constructor(bridge, metadslMonitor, pageAdapter, metadslWorker) {
     this.bridge = bridge;
@@ -21,6 +26,11 @@ class AgentPanel {
     this.metadslButton = null;
     this.llmTypeLabel = null;
     this.stateUpdateTimer = null;
+    // Renderer memory shown next to the LLM type (see setRendererMemory)
+    this._llmBaseText = null;
+    this._llmBaseColor = null;
+    this._memText = '';
+    this._memOver = false;
 
     this.createPanel();
     this.updateLLMType();
@@ -1128,8 +1138,6 @@ class AgentPanel {
         'unknown': 'Unknown'
       };
       const displayName = llmTypeMap[llmType] || llmType;
-      this.llmTypeLabel.textContent = `LLM: ${displayName}`;
-
       // Update color based on type
       const colorMap = {
         'local-agent': '#27ae60',
@@ -1137,8 +1145,31 @@ class AgentPanel {
         'test': '#9c27b0',
         'unknown': '#999'
       };
-      this.llmTypeLabel.style.color = colorMap[llmType] || '#999';
+      this._llmBaseText = `LLM: ${displayName}`;
+      this._llmBaseColor = colorMap[llmType] || '#999';
+      this._refreshLlmTypeLabel();
     }
+  }
+
+  // Memory guard display (see checkProcessMemory in metadsl_monitor.js): the
+  // latest renderer footprint is appended to the LLM type label in the header
+  // (the state bar is already crowded) and highlighted when over the limit.
+  setRendererMemory(usedMB, over) {
+    if (!Number.isFinite(usedMB) || usedMB <= 0) {
+      this._memText = '';
+      this._memOver = false;
+    } else {
+      this._memText = ` | Mem ${usedMB.toFixed(0)}MB`;
+      this._memOver = !!over;
+    }
+    this._refreshLlmTypeLabel();
+  }
+
+  _refreshLlmTypeLabel() {
+    if (!this.llmTypeLabel) return;
+    this.llmTypeLabel.textContent = (this._llmBaseText || 'LLM: unknown') + (this._memText || '');
+    this.llmTypeLabel.style.color = this._memOver ? '#ff5722' : (this._llmBaseColor || '#999');
+    this.llmTypeLabel.style.fontWeight = this._memOver ? 'bold' : 'normal';
   }
 
   makeDraggable(header, panel) {
@@ -1417,18 +1448,31 @@ class AgentPanel {
   // lock the user had set.
 
   saveRuntimeState() {
+    const state = {
+      autoPlan: this.bridge.autoPlanEnabled,
+      lockUntil: this.bridge.lockUntil || 0,
+      panelVisible: this.visible,
+      savedAt: Date.now()
+    };
     try {
-      const state = {
-        autoPlan: this.bridge.autoPlanEnabled,
-        lockUntil: this.bridge.lockUntil || 0,
-        panelVisible: this.visible,
-        savedAt: Date.now()
-      };
       sessionStorage.setItem(AgentPanel.RUNTIME_STATE_KEY, JSON.stringify(state));
     } catch (e) {
       // Storage unavailable (private mode, quota): a reload then falls back to
       // the defaults, which is the previous behaviour anyway.
     }
+    // The lock is the one runtime state whose silent loss on a recreated
+    // window would override a user decision (stop_auto_plan would no longer
+    // be rejected), so it also gets a localStorage backup. autoPlan and the
+    // panel visibility deliberately stay session-only (constructor defaults).
+    try {
+      if (state.lockUntil > Date.now()) {
+        localStorage.setItem(AgentPanel.LOCK_STATE_KEY, JSON.stringify({
+          lockUntil: state.lockUntil
+        }));
+      } else {
+        localStorage.removeItem(AgentPanel.LOCK_STATE_KEY);
+      }
+    } catch (e) { /* storage unavailable */ }
   }
 
   applyRuntimeState() {
@@ -1439,7 +1483,13 @@ class AgentPanel {
     } catch (e) {
       state = null;
     }
-    if (!state) return;
+    if (!state) {
+      // No session state: this is a recreated window (the memory guard
+      // restart reopens the browser). Only the agent lock is carried over
+      // from its localStorage backup, while its deadline is unexpired.
+      this._applyLockBackup();
+      return;
+    }
     if (typeof state.autoPlan === 'boolean' && state.autoPlan !== this.bridge.autoPlanEnabled) {
       // Set the flag directly: toggleAutoPlan() would flip it and log.
       this.bridge.autoPlanEnabled = state.autoPlan;
@@ -1456,6 +1506,35 @@ class AgentPanel {
     }
     if (state.panelVisible && !this.visible) {
       this.show();
+    }
+  }
+
+  // Restores the agent lock from the localStorage backup written by
+  // saveRuntimeState. Only the deadline decides: an unexpired lock is the
+  // user's still-standing decision (it may have been set hours ago with a
+  // long lockTimeMin - a savedAt freshness window would wrongly drop it after
+  // a restart), an expired one is yesterday's session and is dropped. The
+  // lockUntil setter drops an already expired value, and the button text
+  // catches up on the next state display refresh (updateLockAgentButtonState).
+  _applyLockBackup() {
+    let backup = null;
+    try {
+      const raw = localStorage.getItem(AgentPanel.LOCK_STATE_KEY);
+      if (raw) backup = JSON.parse(raw);
+    } catch (e) {
+      backup = null;
+    }
+    if (!backup) return;
+    if (!backup.lockUntil || backup.lockUntil <= Date.now()) {
+      try {
+        localStorage.removeItem(AgentPanel.LOCK_STATE_KEY);
+      } catch (e) { /* storage unavailable */ }
+      return;
+    }
+    this.bridge.lockUntil = backup.lockUntil;
+    if (this.bridge.lockAgentEnabled) {
+      const until = new Date(this.bridge.lockUntil).toLocaleTimeString();
+      this.log(`✓ Restored agent lock from backup (until ${until})`);
     }
   }
 

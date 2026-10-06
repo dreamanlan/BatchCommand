@@ -153,9 +153,13 @@ class AgentBridge {
       this._maybeStartRelay();
     }
 
-    // Relay still connecting: wait and retry instead of dropping (a fresh
-    // browser needs ~15s to boot the standalone AgentCore).
-    if (attempt < 60 && this._isRelayPending()) {
+    // Relay still connecting: wait and retry instead of dropping. A fresh
+    // browser needs up to ~30s to boot the standalone AgentCore (observed
+    // 29s after a reopen), so the window must exceed that: 200 x 300ms.
+    // The 30s timeout backstop above may fire first for late deliveries;
+    // that is fine - the agent-side effect still runs, only the callback
+    // is gone (update_project_config sends no meaningful callback anyway).
+    if (attempt < 200 && this._isRelayPending()) {
       const self = this;
       setTimeout(function () {
         self._dispatchCommand(commandId, message, attempt + 1);
@@ -218,7 +222,10 @@ class AgentBridge {
       this._maybeStartRelay();
     }
 
-    if (attempt < 60 && this._isRelayPending()) {
+    // Mirrors _dispatchCommand: the relay can take ~30s to come up after a
+    // reopen-triggered agent process restart, so notifications (notably
+    // agent_ready) must survive that window: 200 x 300ms = 60s.
+    if (attempt < 200 && this._isRelayPending()) {
       const self = this;
       setTimeout(function () {
         self._dispatchNotification(message, attempt + 1);
@@ -266,7 +273,8 @@ class AgentBridge {
       pageType: pageAdapter ? pageAdapter.pageType : 'unknown',
       count: CONFIG.llmContextCountModuloForAlign,
       autoPlan: this.autoPlanEnabled,
-      lockAgent: this.lockAgentEnabled
+      lockAgent: this.lockAgentEnabled,
+      force: force === true
     };
 
     // Lazy-init ResponseDecider

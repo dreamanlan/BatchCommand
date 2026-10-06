@@ -49,6 +49,17 @@ script(on_renderer_finalize)
 {
     nativelog("[dsl] on_renderer_finalize finish");
 };
+
+// The renderer process id for the inject side. The sandboxed renderer cannot
+// read its own process handle, so get_process_memory() returns 0 here and the
+// memory guard reading lives in script.dsl on the browser process (the
+// renderer_memory cefQuery action); this script only hands the pid over so
+// the js side can address it.
+script(get_self_pid)
+{
+    return(pid());
+};
+
 script(on_heartbeat)params($processType,$deltaTime)
 {
     // Renderer process: ensure context points to the correct browser/frame
@@ -131,6 +142,13 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         append_line($sb, inj_read("relay_agent_lite.js"));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+        return((true, $code));
+    };
+    if (string_contains_any($url, "https://vedas.woa.com/#/file-preview")) {
+        $sb = new_string_builder();
+        append_line($sb, inj_read("vedas_responder.js"));
+        $code = string_builder_to_string($sb);
+        nativelog("[dsl] on_renderer_load_end: injecting vedas responder {0} bytes", strlen($code));
         return((true, $code));
     };
     if (string_contains_any($url, "https://imate.woa.com/chat") && ($isMainFrame == "True" || $isMainFrame == true)) {

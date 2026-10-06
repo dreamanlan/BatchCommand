@@ -12,14 +12,14 @@
 # webagent again, closing the chain).
 #
 # The source repo location comes from (in order): the WEBAGENT_BUILD_ROOT
-# environment variable, managed/upgrade_build_root.txt, or the default below.
-# On a mac bundle layout the executables live in <Contents>/MacOS while this
-# script lives in <Contents>/managed - handled below.
+# environment variable, upgrade_build_root.txt (next to this script), or the
+# default below. On a mac bundle layout the executables live in <Contents>/MacOS
+# while this script lives in <Contents> itself - handled below.
 
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT="$SCRIPT_DIR"
 cd "$ROOT"
 
 BUILD_ROOT="${WEBAGENT_BUILD_ROOT:-}"
@@ -30,7 +30,7 @@ if [ -z "$BUILD_ROOT" ]; then
     BUILD_ROOT="$HOME/GitHub/BatchCommand"
 fi
 
-# Windows-like layout: exes next to managed/. Mac bundle: exes in MacOS/.
+# Windows-like layout: exes next to this script. Mac bundle: exes in MacOS/.
 EXE_DIR="$ROOT"
 if [ -d "$ROOT/MacOS" ]; then
     EXE_DIR="$ROOT/MacOS"

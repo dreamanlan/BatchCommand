@@ -639,6 +639,21 @@ namespace AgentCore.Core
                 var sb = new StringBuilder();
                 if (appendContext) {
                     if (inst != null) {
+                        // Dynamic prefix budget: keep the full message (prefix
+                        // + code + result + wrappers) within the page send
+                        // limit, approximated by MaxResultSize (per-site
+                        // SiteMaxSize). The actual result length is known at
+                        // this point, so small results leave plenty of room
+                        // for the context prefix while huge ones squeeze it
+                        // toward zero. MaxResultSize 0 = unlimited: keep the
+                        // original behavior (no truncation).
+                        int prefixBudget = 0;
+                        bool budgeted = inst.MaxResultSize > 0;
+                        if (budgeted) {
+                            int overhead = message.Length + (result?.Length ?? 0) + 700;
+                            prefixBudget = inst.MaxResultSize - overhead;
+                            if (prefixBudget < 0) prefixBudget = 0;
+                        }
                         if (!string.IsNullOrEmpty(inst.Emphasize)) {
                             sb.AppendLine(inst.Emphasize);
                             sb.AppendLine();
@@ -658,6 +673,14 @@ namespace AgentCore.Core
                         if (!string.IsNullOrEmpty(inst.History)) {
                             sb.AppendLine(inst.History);
                             sb.AppendLine();
+                        }
+                        // Keep the head (Emphasize/Soul/Plan first, History is
+                        // cut first at the tail): the induction in Context
+                        // already summarizes what History would lose.
+                        if (budgeted && sb.Length > prefixBudget) {
+                            sb.Length = prefixBudget;
+                            sb.AppendLine();
+                            sb.AppendLine("[context truncated]");
                         }
                     }
                 }

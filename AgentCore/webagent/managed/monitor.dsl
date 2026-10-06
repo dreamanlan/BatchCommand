@@ -7,14 +7,16 @@
 //
 // Responsibilities:
 //   - keep-alive: when webagent dies, start it again with the command line
-//     recorded in managed/webagent_cmdline.txt;
-//   - upgrade gate: when webagent is gone and managed/upgrade_state.json asks
-//     for an update, launch the one-shot upgrade script DETACHED and then STOP
+//     recorded in webagent_cmdline.txt (webagent root, NOT managed/ - no
+//     generated files there);
+//   - upgrade gate: when webagent is gone and upgrade_request.json
+//     exists (the LLM's restart request; the file existing IS the request),
+//     launch the one-shot upgrade script DETACHED and then STOP
 //     OURSELVES - this monitor holds managed/BatchScriptApi.dll, so it has to
 //     be gone before the script can deploy anything. The script waits for
 //     every webagent / BatchCmdDslHost process to disappear, builds, deploys,
 //     and then starts the monitor again: the chain closes by itself;
-//   - heartbeat: managed/monitor_alive.txt is refreshed on every check, so
+//   - heartbeat: monitor_alive.txt (webagent root) is refreshed on every check, so
 //     the agent side can tell whether it is supervised before it exits for an
 //     update (unsupervised, nobody would ever restart it).
 //
@@ -32,11 +34,11 @@ script(on_init)
 {
     nativelog("[monitor] on_init, monitor pid={0}, basepath={1}", pid(), basepath);
 
-    @DataDir = combine_path(basepath, "managed");
     @WebAgentExe = combine_path(basepath, "webagent.exe");
-    @StateFile = combine_path(@DataDir, "upgrade_state.json");
-    @CmdLineFile = combine_path(@DataDir, "webagent_cmdline.txt");
-    @AliveFile = combine_path(@DataDir, "monitor_alive.txt");
+    @RequestFile = combine_path(basepath, "upgrade_request.json");
+    @StateFile = combine_path(basepath, "upgrade_state.json");
+    @CmdLineFile = combine_path(basepath, "webagent_cmdline.txt");
+    @AliveFile = combine_path(basepath, "monitor_alive.txt");
     // Used when webagent_cmdline.txt does not exist yet (first run).
     @DefaultCmdLine = " --url=https://evaluation.woa.com/chat --projectidentity=aiclaw --metadsl=script.dsl,script_renderer.dsl --remote-debugging-port=9228 --remote-allow-origins=*";
 
@@ -45,6 +47,14 @@ script(on_init)
     // How many checks to wait for the agent host to exit by itself (it watches
     // its parent browser and exits on its own, see script_agent.dsl on_tick).
     @AgentExitChecks = 10;
+    // RSI attempt counting: how long stage=verify_pending (deployed, no
+    // agent_ready yet) may hang before the monitor counts a failed attempt
+    // (webagent takes ~30s to boot, then the page load).
+    @VerifyTimeoutSeconds = 120;
+    // How long stage=updating may hang after the request was consumed (the
+    // one-shot script builds 4 projects before restarting us - 900s covers
+    // a slow full build).
+    @UpdatingTimeoutSeconds = 900;
 
     set_context_var("monitorTick", 0);
     set_context_var("agentWaitChecks", 0);
@@ -68,6 +78,7 @@ script(on_tick)
     };
     set_context_var("monitorTick", 0);
     heartbeat();
+    check_upgrade_stuck();
 
     if (webagent_alive()) {
         set_context_var("agentWaitChecks", 0);
@@ -77,9 +88,9 @@ script(on_tick)
     nativelog("[monitor] webagent is not running");
 
     // ---- upgrade gate: hand over to the one-shot script and stop ourselves ----
-    $phase = upgrade_phase();
-    if ($phase == "build_pending" || $phase == "restart_pending") {
-        nativelog("[monitor] update requested (phase={0}), launching the upgrade script and stopping this monitor", $phase);
+    if (file_exists(@RequestFile)) {
+        nativelog("[monitor] update requested (upgrade_request.json), launching the upgrade script and stopping this monitor");
+        consume_upgrade_request();
         launch_upgrade_script();
         return(1);
     };
@@ -135,25 +146,41 @@ script(webagent_alive)
     return(false);
 };
 
-// The phase recorded in managed/upgrade_state.json ("" when there is none).
-script(upgrade_phase)
+// RSI: consume the LLM's restart request. Merge its level/goal/resumePrompt
+// into upgrade_state.json (webagent root, the code-owned progress file the
+// agent side resumes from), mark stage=updating, then DELETE the request - before
+// the upgrade script even starts, so a failed build/restart of this monitor
+// can never re-read the same request and loop the upgrade forever.
+script(consume_upgrade_request)
 {
-    if (!file_exists(@StateFile)) {
-        return("");
+    $req = from_json("{}");
+    if (file_exists(@RequestFile)) {
+        $txt = read_file(@RequestFile);
+        if (!isnullorempty($txt)) {
+            $parsed = from_json($txt);
+            if (!isnull($parsed)) {
+                $req = $parsed;
+            };
+        };
     };
-    $txt = read_file(@StateFile);
-    if (isnullorempty($txt)) {
-        return("");
+    $v = from_json("{}");
+    if (file_exists(@StateFile)) {
+        $s = read_file(@StateFile);
+        if (!isnullorempty($s)) {
+            $parsed = from_json($s);
+            if (!isnull($parsed)) {
+                $v = $parsed;
+            };
+        };
     };
-    $v = from_json($txt);
-    if (isnull($v)) {
-        return("");
-    };
-    $phase = dict_or_json_get($v, "phase");
-    if (isnull($phase)) {
-        return("");
-    };
-    return(to_string($phase));
+    dict_or_json_set($v, "level", dict_or_json_get($req, "level"));
+    dict_or_json_set($v, "goal", dict_or_json_get($req, "goal"));
+    dict_or_json_set($v, "resumePrompt", dict_or_json_get($req, "resumePrompt"));
+    dict_or_json_set($v, "stage", "updating");
+    dict_or_json_set($v, "stageSince", now());
+    write_file(@StateFile, to_json($v));
+    delete_file(@RequestFile);
+    nativelog("[monitor] upgrade request consumed (goal={0}), state stage -> updating", to_string(dict_or_json_get($req, "goal")));
 };
 
 // The webagent command line: the recorded one (so the project identity, and
@@ -171,11 +198,97 @@ script(read_cmdline)
 
 script(start_webagent)
 {
+    // RSI (see d:/AiClaw/docs/webagent_recursive_self_improvement.md): when
+    // the one-shot upgrade script deployed a new build and restarted us, the
+    // state file still says stage=updating (what we set when consuming the
+    // request). Advance it before relaunching webagent, so the agent_ready
+    // handler in script_agent.dsl recognizes the restart and pushes the
+    // resumePrompt back to the page.
+    advance_upgrade_stage_after_deploy();
     $cmdline = read_cmdline();
     $wpid = launch_process(@WebAgentExe, $cmdline, basepath);
     set_context_var("webagentPid", $wpid);
     write_file(@CmdLineFile, $cmdline);
     nativelog("[monitor] launched webagent pid={0} args={1}", $wpid, $cmdline);
+};
+
+// RSI: stage updating -> verify_pending (before relaunching webagent after a
+// deploy), preserving every other field (goal, resumePrompt, attempt, ...).
+script(advance_upgrade_stage_after_deploy)
+{
+    $txt = read_file(@StateFile);
+    if (isnullorempty($txt)) {
+        return;
+    };
+    $v = from_json($txt);
+    if (isnull($v)) {
+        return;
+    };
+    if (to_string(dict_or_json_get($v, "stage")) != "updating") {
+        return;
+    };
+    dict_or_json_set($v, "stage", "verify_pending");
+    dict_or_json_set($v, "stageSince", now());
+    write_file(@StateFile, to_json($v));
+    nativelog("[monitor] upgrade deployed, stage -> verify_pending");
+};
+
+// RSI attempt counting: the two non-terminal stages must not hang.
+// stage=verify_pending with no agent_ready for @VerifyTimeoutSeconds, or
+// stage=updating with the request already consumed for
+// @UpdatingTimeoutSeconds (the one-shot script died before restarting us -
+// while it works normally this monitor is not running, so the deadline
+// cannot misfire during a normal build), counts as one failed attempt.
+// Two strikes -> stage=aborted + lastError. The keep-alive in on_tick still
+// restarts webagent (service first - aborted only blocks the upgrade flow;
+// the agent-side resume_after_upgrade tells the LLM when it fires).
+// stageSince (written at every stage change) keeps the deadline alive
+// across a monitor restart.
+script(check_upgrade_stuck)
+{
+    $txt = read_file(@StateFile);
+    if (isnullorempty($txt)) {
+        return;
+    };
+    $v = from_json($txt);
+    if (isnull($v)) {
+        return;
+    };
+    $stage = to_string(dict_or_json_get($v, "stage"));
+    if ($stage != "updating" && $stage != "verify_pending") {
+        return;
+    };
+    $t = parse_date_time(to_string(dict_or_json_get($v, "stageSince")));
+    if (isnull($t)) {
+        return;
+    };
+    if ($stage == "verify_pending") {
+        if (get_diff_time_seconds($t, now()) < @VerifyTimeoutSeconds) {
+            return;
+        };
+    }
+    else {
+        // updating is legitimate while the request still waits for the
+        // webagent-dead check above to consume it.
+        if (file_exists(@RequestFile)) {
+            return;
+        };
+        if (get_diff_time_seconds($t, now()) < @UpdatingTimeoutSeconds) {
+            return;
+        };
+    };
+    $attempt = str_to_int(to_string(dict_or_json_get($v, "attempt"))) + 1;
+    dict_or_json_set($v, "attempt", $attempt);
+    dict_or_json_set($v, "stageSince", now());
+    if ($attempt >= 2) {
+        dict_or_json_set($v, "stage", "aborted");
+        dict_or_json_set($v, "lastError", format("upgrade stalled in {0}", $stage));
+        nativelog("[monitor] upgrade aborted (attempt={0}, stalled in {1})", $attempt, $stage);
+    }
+    else {
+        nativelog("[monitor] upgrade stalled in {0} (attempt={1}), new deadline started", $stage, $attempt);
+    };
+    write_file(@StateFile, to_json($v));
 };
 
 // Launch the one-shot upgrade script detached (own console/session, no
@@ -184,9 +297,9 @@ script(start_webagent)
 script(launch_upgrade_script)
 {
     if (ismac) {
-        launch_process_detached("/bin/bash", "managed/upgrade_and_restart.sh", basepath);
+        launch_process_detached("/bin/bash", "upgrade_and_restart.sh", basepath);
     }
     else {
-        launch_process_detached("cmd.exe", "/c managed/upgrade_and_restart.bat", basepath);
+        launch_process_detached("cmd.exe", "/c upgrade_and_restart.bat", basepath);
     };
 };

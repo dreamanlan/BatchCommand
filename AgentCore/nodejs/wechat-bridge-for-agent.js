@@ -43,16 +43,16 @@ const QR_MAX_REFRESH = 3;
 // Connected agent clients. Single-agent design, but keep a set for safety.
 const agentClients = new Set();
 
-    // Side table for R3: clientId -> ws (identity only, no routing yet).
-    const agentClientIds = new Map();
+// Side table for R3: clientId -> ws (identity only, no routing yet).
+const agentClientIds = new Map();
 
-    // Side tables for R5: ws -> registered name, name -> ws for routing.
-    const agentClientNames = new Map();
-    const nameToClient = new Map();
+// Side tables for R5: ws -> registered name, name -> ws for routing.
+const agentClientNames = new Map();
+const nameToClient = new Map();
 
-    // Route state for R4: 'broadcast' or 'solo', target is registered agent name.
-    let wxRouteMode = 'broadcast';
-    let wxRouteTarget = null;
+// Route state for R4: 'broadcast' or 'solo', target is registered agent name.
+let wxRouteMode = 'broadcast';
+let wxRouteTarget = null;
 
 // channelId -> wechat session info (filled by wechat layer in step 2).
 const channelSessions = new Map();
@@ -199,9 +199,22 @@ function loadCredentials() {
 function saveCredentials() {
   try {
     const data = Object.assign({}, credentials, { get_updates_buf: getUpdatesBuf });
-    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(data, null, 2), 'utf8');
+    const json = JSON.stringify(data, null, 2);
+    const tmpFile = CREDENTIALS_FILE + '.tmp';
+    fs.writeFileSync(tmpFile, json, 'utf8');
+    JSON.parse(fs.readFileSync(tmpFile, 'utf8'));
+    try { fs.copyFileSync(CREDENTIALS_FILE, CREDENTIALS_FILE + '.bak'); } catch (e2) {}
+    fs.renameSync(tmpFile, CREDENTIALS_FILE);
   } catch (e) {
     console.error('[WX] Failed to save credentials:', e.message);
+    try {
+      JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
+    } catch (e3) {
+      try {
+        fs.copyFileSync(CREDENTIALS_FILE + '.bak', CREDENTIALS_FILE);
+        console.log('[WX] Credentials restored from .bak');
+      } catch (e4) {}
+    }
   }
 }
 
@@ -469,6 +482,10 @@ async function sendTextMessage(toUserId, text, contextToken) {
   try {
     const res = await httpsRequest('POST', url, getAuthHeaders(), body, 15000, 'send');
     console.log('[WX] Send result: status=' + res.status + ' data=' + shortText(JSON.stringify(res.data), 200));
+    if (res.data && res.data.errcode !== 0) {
+      console.error('[WX] Send failed: errcode=' + res.data.errcode + (res.data.errmsg ? ' errmsg=' + res.data.errmsg : ''));
+      return { success: false, error: 'WX errcode ' + res.data.errcode, errcode: res.data.errcode };
+    }
     return { success: true, data: res.data };
   } catch (e) {
     console.error('[WX] Send error:', e.message);
@@ -639,6 +656,23 @@ wss.on('connection', (ws, req) => {
         break;
       case 'message':
         handleAgentMessage(ws, msg);
+        break;
+      case 'wx_reply':
+        // Send reply to WeChat user (mirrors wechat-bridge.js)
+        if (msg.data && msg.data.to_user && msg.data.text) {
+          sendTextMessage(
+            msg.data.to_user,
+            msg.data.text,
+            msg.data.context_token
+          ).then((result) => {
+            send(ws, {
+              type: 'wx_send_result',
+              data: result
+            });
+          }).catch((e) => {
+            console.error('[WX] wx_reply send failed:', e.message);
+          });
+        }
         break;
       default:
         if (msg.requestId) {

@@ -39,6 +39,23 @@ script(init_global_consts)
     // down (see maybe_swap_local_page_error). The "WaitingAgentCore" marker
     // word tells the swap logic apart from the native error page.
     @LocalPageWaitUrl = "data:text/html,%3Chtml%3E%3Cbody%20style=%22font-family:Arial;background:%231e1e2e;color:%23cdd6f4;display:flex;align-items:center;justify-content:center;height:100vh%22%3E%3Cdiv%20style=%22text-align:center%22%3E%3Cdiv%20style=%22font-size:22px;margin-bottom:14px%22%3EWaitingAgentCore%3C/div%3E%3Cdiv%20style=%22font-size:15px;color:%23a6adc8%22%3EAgent%20service%20is%20starting,%20the%20page%20will%20load%20automatically...%3C/div%3E%3C/div%3E%3C/body%3E%3C/html%3E";
+    // Renderer memory guard threshold (MB, see the renderer_memory action in
+    // on_browser_cef_query). The browser process reads the renderer footprint
+    // with get_process_memory: private bytes on Windows, the working set
+    // elsewhere; the working set includes shared pages and runs higher, hence
+    // the larger value off Windows.
+    if (ismac) {
+        @MemGuardThresholdMB = 3500;
+    }
+    else {
+        @MemGuardThresholdMB = 2500;
+    };
+    // RSI (see d:/AiClaw/docs/webagent_recursive_self_improvement.md): the
+    // upgrade request file the LLM writes when it asks for an upgrade
+    // restart (its PRESENCE is the request), and the monitor supervision
+    // heartbeat.
+    @UpgradeRequestFile = combine_path(basepath, "upgrade_request.json");
+    @MonitorAliveFile = combine_path(basepath, "monitor_alive.txt");
 };
 
 // Start the standalone agent host process when it is not running.
@@ -66,6 +83,14 @@ script(start_agent_process)
         $args = @AgentArgs;
         if (!isnullorempty(initialprojectidentity)) {
             $args = format("{0} --projectidentity={1}", $args, initialprojectidentity);
+        };
+        // Forward the browser's app instance dir (webagentdbg when
+        // debugging; equals basepath in a normal deployment). The agent exe
+        // lives in the shared webagent dir, so it cannot know the instance
+        // it serves by itself. Parsed in BatchCmdPluginImpl.Init as
+        // AgentCore's appDir (skill env appdir / dsl global appdir).
+        if (!isnullorempty(appdir)) {
+            $args = format("{0} --appdir={1}", $args, appdir);
         };
         $pid = launch_process(@AgentExe, $args, basepath);
         // Record the pid: on browser exit the agent host is stopped ONLY if
@@ -234,6 +259,10 @@ script(on_init)
 {
     nativelog("[dsl] on_init finish, pid:{0}, type:{1}", pid(), processtype);
     fileecho(true);
+    // RSI: record the command line the monitor should restart us with. The
+    // monitor writes this file itself when IT launches webagent; this covers
+    // a manually started browser supervised later by a monitor.
+    write_cmdline_file();
     start_agent_process();
     // Relay: a fast heartbeat drives wsclient event dispatch on the main
     // thread (~10-20ms relay latency); the heavy keep-alive work in
@@ -429,6 +458,73 @@ script(on_browser_finalize)params($remainingBrowsers)
     nativelog("[dsl] on_browser_finalize finish");
 };
 
+// ----------------------------------------------------------------------------
+// RSI helpers (see d:/AiClaw/docs/webagent_recursive_self_improvement.md)
+// ----------------------------------------------------------------------------
+
+// Record the command line the monitor should restart us with.
+// cmdlineargs() returns Environment.GetCommandLineArgs(): element 0 is the
+// exe path, the rest are the arguments - exactly what launch_process(exe,
+// args) on the monitor side takes (element 0 skipped). A value containing
+// spaces is re-quoted so the round trip survives.
+script(write_cmdline_file)
+{
+    $args = cmdlineargs();
+    if (listsize($args) <= 1) {
+        return;
+    };
+    $line = "";
+    $first = true;
+    $idx = 0;
+    looplist($args) {
+        $a = $$;
+        $idx = $idx + 1;
+        if ($idx > 1) {
+            if (string_contains($a, " ")) {
+                $a = "\"" + $a + "\"";
+            };
+            if ($first) {
+                $line = $a;
+                $first = false;
+            }
+            else {
+                $line = $line + " " + $a;
+            };
+        };
+    };
+    write_file(combine_path(basepath, "webagent_cmdline.txt"), $line);
+    nativelog("[dsl] command line recorded for the monitor");
+};
+
+// Whether the LLM asked for an upgrade restart: upgrade_request.json
+// (webagent root) existing IS the request (level/goal/resumePrompt live
+// inside it, no phase field; the monitor consumes and deletes it when it
+// launches the upgrade).
+script(upgrade_request_present)
+{
+    return(file_exists(@UpgradeRequestFile));
+};
+
+// Whether the monitor supervision heartbeat is fresh: it refreshes
+// monitor_alive.txt (webagent root) on every check (~3s), so a value within 10s
+// means the monitor is alive and would restart us after an upgrade exit.
+script(monitor_heartbeat_fresh)
+{
+    if (!file_exists(@MonitorAliveFile)) {
+        return(false);
+    };
+    $txt = read_file(@MonitorAliveFile);
+    if (isnullorempty($txt)) {
+        return(false);
+    };
+    $t = parse_date_time(to_string($txt));
+    if (isnull($t)) {
+        return(false);
+    };
+    $age = get_diff_time_seconds($t, now());
+    return($age >= 0 && $age < 10);
+};
+
 script(on_heartbeat)params($processType,$deltaTime)
 {
     // Do something every heart beat
@@ -452,6 +548,24 @@ script(on_heartbeat)params($processType,$deltaTime)
         if (($hbCount % 200) == 0) {
             // Keep the standalone agent host alive (restarts it if it died).
             start_agent_process();
+            // RSI upgrade restart (see d:/AiClaw/docs/webagent_recursive_self_improvement.md):
+            // the LLM asked for a restart by writing upgrade_request.json (webagent root)
+            // (the file existing is the request). The browser is the one that
+            // can exit, but only when supervised - unsupervised, nobody would
+            // ever restart it. One-shot per process lifetime: the flag keeps
+            // this from racing the heartbeat again while the windows close.
+            if (isnull(get_context_var("upgradeRestartRequested"))) {
+                if (upgrade_request_present()) {
+                    if (monitor_heartbeat_fresh()) {
+                        set_context_var("upgradeRestartRequested", true);
+                        nativelog("[dsl] upgrade restart requested and supervised, exiting the browser");
+                        exit_browser();
+                    }
+                    else {
+                        nativelog("[dsl] upgrade restart requested but unsupervised (no fresh monitor heartbeat), not exiting");
+                    };
+                };
+            };
             // Zombie relay reaper: close wsclient connections whose owning
             // browser no longer exists (page closed / renderer died without
             // unregistering; the graceful pagehide path is in relay_transport).
@@ -990,6 +1104,26 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
             // watchdog). Answered synchronously via a taken-over callback.
             $state = wsclient_state($msg["clientId"]);
             complete_native_callback($handle, true, $state);
+            return((true, 0));
+        }
+        elif ($action == "renderer_memory") {
+            // { action, pid } -> "over,usedMB" / "ok,usedMB" for the memory
+            // guard in metadsl_monitor.js. The sandboxed renderer cannot read
+            // its own process handle (get_process_memory returns 0 there), so
+            // the browser process (this side) reads the footprint and answers
+            // the verdict together with the figure - the js side never needs
+            // to know the threshold.
+            $pid = str_to_int(to_string(dict_or_json_get($msg, "pid")));
+            if ($pid <= 0) {
+                complete_native_callback($handle, false, "bad pid");
+                return((true, 0));
+            };
+            $usedMB = get_process_memory($pid);
+            $tag = "ok";
+            if ($usedMB >= @MemGuardThresholdMB) {
+                $tag = "over";
+            };
+            complete_native_callback($handle, true, format("{0},{1}", $tag, $usedMB));
             return((true, 0));
         }
         elif ($action == "lite_open") {

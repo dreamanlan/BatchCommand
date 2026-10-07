@@ -554,7 +554,7 @@ script(handle_update_agent_configs_command)params($id, $params)
     };
     // PM agent: %agent_id% / %person_token% resolve from the environment group
     // named after the provider id (llm/webagent_pm/agent_id, .../person_token).
-    llm_set_provider(@PmLlmProviderId, "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/%agent_id%", "%person_token%", $pmModel);
+    llm_set_provider(@PmLlmProviderId, "knot", "https://knot.woa.com/apigw/api/v1/agents/agui/%agent_id%", "%person_token%", $pmModel);
 
     // PM is on the critical path of every decision: fail fast instead of
     // waiting out the defaults (600s per request, 600s watchdog, up to 3

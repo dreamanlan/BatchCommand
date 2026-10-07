@@ -53,7 +53,7 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
 
             getHistory: function (count) {
                 // Always return full history for external API consumers
-                // Pass 'openai' as apiType to ensure full history (not optimized for auto_metadsl)
+                // Pass 'openai' as apiType to ensure full history (not optimized for knot)
                 const messages = messageHandler.getConversationContext(count || 10, 'openai');
                 return messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
             },
@@ -83,7 +83,7 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
             // System prompt management methods
             setDialogPrompt: function (prompt) {
                 messageHandler.setDialogPrompt(prompt);
-                apiClient.autoMetaDSLRoundCount = 0; // Reset so next message injects system context
+                apiClient.knotRoundCount = 0; // Reset so next message injects system context
                 if (mainLogger) mainLogger.info('Set dialog prompt via window API');
             },
 
@@ -100,7 +100,7 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
         // Also expose setDialogPrompt directly on window for inject.js compatibility
         window.setDialogPrompt = function (prompt) {
             messageHandler.setDialogPrompt(prompt);
-            apiClient.autoMetaDSLRoundCount = 0; // Reset so next message injects system context
+            apiClient.knotRoundCount = 0; // Reset so next message injects system context
             if (mainLogger) mainLogger.info('Set dialog prompt via window.setDialogPrompt');
         };
 

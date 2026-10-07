@@ -104,7 +104,7 @@ Core/
  NativeLibraryLoader.cs
  ProcessOperations.cs
  Providers/
-  AutoMetaDslProvider.cs
+  KnotProvider.cs
   ClaudeProvider.cs
   OllamaProvider.cs
   OpenAiProvider.cs

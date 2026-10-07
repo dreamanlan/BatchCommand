@@ -80,7 +80,7 @@ namespace AgentCore.Core
         }
 
         /// <summary>
-        /// Registers a provider. type: "ollama", "openai", "claude", "auto_metadsl"
+        /// Registers a provider. type: "ollama", "openai", "claude", "knot"
         /// Unified params: url, apiKey, model (same semantics for all types)
         /// url/apiKey may contain %var% templates; actual values are resolved at HTTP request time
         /// via the environResolver callback.
@@ -104,11 +104,11 @@ namespace AgentCore.Core
                 case "claude":
                     provider = new ClaudeProvider(url, apiKey, model, keyEnvResolver);
                     break;
-                case "auto_metadsl":
-                    provider = new AutoMetaDslProvider(url, apiKey, model, keyEnvResolver);
+                case "knot":
+                    provider = new KnotProvider(url, apiKey, model, keyEnvResolver);
                     break;
                 default:
-                    return $"error: unknown provider type '{type}', use 'ollama', 'openai', 'claude', or 'auto_metadsl'";
+                    return $"error: unknown provider type '{type}', use 'ollama', 'openai', 'claude', or 'knot'";
             }
             _providers[providerId] = provider;
             _providerMeta[providerId] = (type, url, model);
@@ -232,7 +232,7 @@ namespace AgentCore.Core
         /// Sends a chat message with attached image URLs asynchronously.
         /// Queued per session like ChatCallback. Returns "ok"/"busy"; result
         /// arrives via llm_callback.
-        /// Only auto_metadsl actually sends images; other providers ignore them.
+        /// Only knot actually sends images; other providers ignore them.
         /// </summary>
         public string ChatWithImagesCallback(string providerId, string tag, string topic, string message, string[] imageUrls)
         {

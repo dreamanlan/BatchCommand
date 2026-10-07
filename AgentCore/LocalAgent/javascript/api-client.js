@@ -10,7 +10,7 @@ class APIClient {
     constructor() {
         this.loadConfig();
         this.abortController = null;
-        this.conversationId = ''; // For auto_metadsl conversation management
+        this.conversationId = ''; // For knot conversation management
     }
 
     resetConversation() {
@@ -21,11 +21,11 @@ class APIClient {
     /**
      * Config storage layout (localStorage 'llm_api_config'):
      * {
-     *   apiType: 'auto_metadsl',            // currently selected API type
+     *   apiType: 'knot',            // currently selected API type
      *   perType: {                          // per-API-type settings
      *     openai:       { apiKey, apiEndpoint, model, ... },
      *     claude:       { apiKey, apiEndpoint, model, ... },
-     *     auto_metadsl: { apiKey, authMode, username, stream, enableWebSearch,
+     *     knot: { apiKey, authMode, username, stream, enableWebSearch,
      *                     apiEndpoint, agentId, model,
      *                     modelSettings: {                    // per-model settings
      *                       'claude-opus-5': { enableThinking, reasoningEffort, maxContextTokens },
@@ -185,7 +185,7 @@ class APIClient {
     }
 
     /**
-     * Settings of a specific model within an API type (auto_metadsl
+     * Settings of a specific model within an API type (knot
      * thinking / reasoning effort / context window), with defaults.
      */
     getModelSettings(apiType, modelValue) {
@@ -225,8 +225,8 @@ class APIClient {
     }
 
     validateConfig() {
-        // auto_metadsl, local_openai and ollama may not require API key
-        if (this.config.apiType !== 'auto_metadsl' &&
+        // knot, local_openai and ollama may not require API key
+        if (this.config.apiType !== 'knot' &&
             this.config.apiType !== 'local_openai' &&
             this.config.apiType !== 'ollama' &&
             !this.config.apiKey) {
@@ -234,11 +234,11 @@ class APIClient {
         }
         // local_openai/ollama endpoints are optional: when empty we fall back to
         // http://localhost:11434 and append the proper suffix automatically.
-        // auto_metadsl requires either an explicit endpoint or an agent id
+        // knot requires either an explicit endpoint or an agent id
         // (checked in validateConfig).
-        if (this.config.apiType === 'auto_metadsl' &&
+        if (this.config.apiType === 'knot' &&
             !this.config.apiEndpoint && !this.config.agentId) {
-            throw new Error('For auto_metadsl, either API endpoint or agent id must be specified');
+            throw new Error('For knot, either API endpoint or agent id must be specified');
         }
         return true;
     }
@@ -248,7 +248,7 @@ class APIClient {
             return 'https://api.openai.com/v1/chat/completions';
         } else if (this.config.apiType === 'claude') {
             return 'https://api.anthropic.com/v1/messages';
-        } else if (this.config.apiType === 'auto_metadsl') {
+        } else if (this.config.apiType === 'knot') {
             // Either an explicit endpoint or an agent id must be configured
             // (checked in validateConfig).
             return this.config.agentId
@@ -443,8 +443,8 @@ class APIClient {
             return await this.sendOpenAIMessage(messages, onChunk, imageUrls);
         } else if (this.config.apiType === 'claude') {
             return await this.sendClaudeMessage(messages, onChunk, imageUrls);
-        } else if (this.config.apiType === 'auto_metadsl') {
-            return await this.sendAutoMetaDSLMessage(messages, onChunk, imageUrls);
+        } else if (this.config.apiType === 'knot') {
+            return await this.sendKnotMessage(messages, onChunk, imageUrls);
         } else if (this.config.apiType === 'ollama') {
             return await this.sendOllamaMessage(messages, onChunk, imageUrls);
         } else {
@@ -751,10 +751,10 @@ class APIClient {
         return await this.handleStreamResponse(response, onChunk, 'claude');
     }
 
-    async sendAutoMetaDSLMessage(messages, onChunk, imageUrls) {
+    async sendKnotMessage(messages, onChunk, imageUrls) {
         const endpoint = this.getEndpoint();
 
-        // Build full context message in the same format as C# AutoMetaDslProvider
+        // Build full context message in the same format as C# KnotProvider
         // Format: [role]: content\n for each message
         let messageContent = '';
 
@@ -791,7 +791,7 @@ class APIClient {
             chatExtra.max_context_tokens = this.config.maxContextTokens;
         }
 
-        // Build request body in auto_metadsl format
+        // Build request body in knot format
         // Note: conversation_id is intentionally not used to avoid server-side context accumulation
         // Frontend manages all conversation context to prevent MetaDSL execution result bloat
         const requestBody = {
@@ -878,7 +878,7 @@ class APIClient {
                     errorMessage = errorText;
                 }
             }
-            throw new Error(`Auto MetaDSL API error: ${errorMessage}`);
+            throw new Error(`Knot API error: ${errorMessage}`);
         }
 
         // Check if response is a stream or an error JSON
@@ -901,7 +901,7 @@ class APIClient {
                         if (apiLogger) apiLogger.debug('Parsed JSON:', errorJson);
 
                         if (errorJson.code && errorJson.msg) {
-                            throw new Error(`Auto MetaDSL API error: ${errorJson.msg} (code: ${errorJson.code})`);
+                            throw new Error(`Knot API error: ${errorJson.msg} (code: ${errorJson.code})`);
                         }
                     } catch (parseError) {
                         if (apiLogger) apiLogger.debug('Not a JSON error, continue with stream processing');
@@ -913,7 +913,7 @@ class APIClient {
                 // Continue with stream processing
             }
         }
-        return await this.handleStreamResponse(response, onChunk, 'auto_metadsl');
+        return await this.handleStreamResponse(response, onChunk, 'knot');
     }
 
     convertToClaudeFormat(messages) {
@@ -1003,8 +1003,8 @@ class APIClient {
                                         content = dt.text || '';
                                     }
                                 }
-                            } else if (apiType === 'auto_metadsl') {
-                                // Handle auto_metadsl response format
+                            } else if (apiType === 'knot') {
+                                // Handle knot response format
                                 if (apiLogger) apiLogger.debug('Received data:', data);
 
                                 if (data.type === 'TEXT_MESSAGE_CONTENT') {
@@ -1197,8 +1197,8 @@ class APIClient {
     }
 
     getAvailableModels(apiType) {
-        if (apiType === 'auto_metadsl') {
-            // auto_metadsl has no model-list query API, so its list (with
+        if (apiType === 'knot') {
+            // knot has no model-list query API, so its list (with
             // per-model capability matrix) is maintained in code. All other
             // API types query model lists at runtime (/v1/models or
             // /api/tags) with a user-configured fallback list.

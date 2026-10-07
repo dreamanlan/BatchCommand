@@ -255,7 +255,7 @@ namespace AgentCore
             // Segment / Tokenize API
             SegmentApi.RegisterApis();
 
-            // LLM Client API (OpenAI / Claude / AutoMetaDSL / Ollama)
+            // LLM Client API (OpenAI / Claude / Knot / Ollama)
             LlmApi.RegisterApis();
 
             // MCP Client API

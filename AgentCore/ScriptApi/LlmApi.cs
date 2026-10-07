@@ -14,7 +14,7 @@ namespace AgentCore.ScriptApi
     /// Configures an LLM provider. Unified params for all types:
     /// type="openai": url=baseUrl, api_key=Bearer token, model=model name
     /// type="claude": url=API endpoint (empty=default Anthropic), api_key=x-api-key, model=model name
-    /// type="auto_metadsl": url=baseUrl, api_key=token (optional), model=ignored
+    /// type="knot": url=baseUrl, api_key=token (optional), model=ignored
     /// Returns "ok" or an error string.
     /// </summary>
     sealed class LlmSetProviderExp : SimpleExpressionBase
@@ -249,7 +249,7 @@ namespace AgentCore.ScriptApi
     /// llm_set_system_prompt(provider_id, tag, prompt)
     /// Sets a system prompt for the given provider+session.
     /// For openai/claude/ollama: prepended to every request as a system message.
-    /// For auto_metadsl: prepended to the message every context_rounds sends (default 12).
+    /// For knot: prepended to the message every context_rounds sends (default 12).
     /// Returns "ok" or an error string.
     /// </summary>
     sealed class LlmSetSystemPromptExp : SimpleExpressionBase
@@ -411,7 +411,7 @@ namespace AgentCore.ScriptApi
         public static void RegisterApis()
         {
             BatchCommand.BatchScript.Register("llm_set_provider",
-                "llm_set_provider(provider_id, type, url, api_key, model) - configure LLM provider (type: openai/claude/auto_metadsl)",
+                "llm_set_provider(provider_id, type, url, api_key, model) - configure LLM provider (type: openai/claude/knot)",
                 new ExpressionFactoryHelper<LlmSetProviderExp>());
             BatchCommand.BatchScript.Register("llm_set_provider_option",
                 "llm_set_provider_option(provider_id, key, value) - set provider option (e.g. max_tokens for claude, max_queue_len for chat queue depth)",
@@ -444,7 +444,7 @@ namespace AgentCore.ScriptApi
                 "llm_get_providers_config() - return all configured providers config (excludes sensitive fields)",
                 new ExpressionFactoryHelper<LlmGetProvidersConfigExp>());
             BatchCommand.BatchScript.Register("llm_set_system_prompt",
-                "llm_set_system_prompt(provider_id, tag, prompt) - set system prompt for session (auto_metadsl: injected every context_rounds sends)",
+                "llm_set_system_prompt(provider_id, tag, prompt) - set system prompt for session (knot: injected every context_rounds sends)",
                 new ExpressionFactoryHelper<LlmSetSystemPromptExp>());
             BatchCommand.BatchScript.Register("llm_chat_async",
                 "llm_chat_async(provider_id, tag, topic, message) - async chat, returns LLM reply directly (use inside startasync/tickasync)",

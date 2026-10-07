@@ -4,7 +4,7 @@ webagent的managed目录下还有一个monitor.dsl脚本，这个是配合webage
 也就是说，整体架构上
 1、webagent启动嵌入浏览器，注入inject.js执行(或inject_modules/*.js)
 2、inject.js负责模拟页面操作，典型是模仿用户使用LLM模型会话，读取页面上LLM的回复，或模拟用户输入与点击
-3、inject.js通过cefclient扩展的浏览器与c#通信api与c# dll通信
+3、inject.js通过CEF扩展的浏览器与c#通信api与c# dll通信
 4、c# dll调用script.dsl与script_renderer.dsl脚本来实现主体逻辑
 5、dsl脚本的语法采用MetaDSL语法
 6、monitor.dsl提供了另外一层的保障，确保webagent进程持续存在，这部分不需要进行修改，功能相对单一

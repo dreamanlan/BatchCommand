@@ -99,7 +99,7 @@ class MessageHandler {
             });
         }
 
-        // For auto_metadsl, manage full conversation context locally (no conversation_id on server)
+        // For knot, manage full conversation context locally (no conversation_id on server)
         // Frontend controls all context to avoid MetaDSL execution result accumulation
         const limit = maxMessages || this.config.contextRounds * 2;
 

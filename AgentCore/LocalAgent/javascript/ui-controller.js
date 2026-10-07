@@ -332,7 +332,7 @@ class UIController {
             this.handleConfigAutoDetect();
         });
 
-        // Model selection change (auto_metadsl model-dependent options)
+        // Model selection change (knot model-dependent options)
         this.elements.modelSelect.addEventListener('change', (e) => {
             this.updateModelDependentOptions(e.target.value);
         });
@@ -479,7 +479,7 @@ class UIController {
 
         // Check if API is configured
         const config = this.apiClient.getConfig();
-        const requiresKey = config.apiType !== 'auto_metadsl'
+        const requiresKey = config.apiType !== 'knot'
             && config.apiType !== 'local_openai'
             && config.apiType !== 'ollama';
         if (requiresKey && !config.apiKey) {
@@ -510,7 +510,7 @@ class UIController {
             // Get API type for context optimization
             const config = this.apiClient.getConfig();
 
-            // Get conversation context (optimized for auto_metadsl)
+            // Get conversation context (optimized for knot)
             const messages = this.messageHandler.getConversationContext(undefined, config.apiType);
 
             // Create assistant message placeholder
@@ -754,12 +754,12 @@ class UIController {
         this.updateUsernameFieldVisibility(t.authMode || 'personal');
         this.updateModelOptions(apiType);
         // Model list manage area: only for types with runtime model lists
-        const isRuntimeList = (apiType !== 'auto_metadsl');
+        const isRuntimeList = (apiType !== 'knot');
         this.elements.configModelManage.style.display = isRuntimeList ? 'block' : 'none';
         if (isRuntimeList) {
             this.updateConfigModelStatus(apiType);
         }
-        this.updateAutoMetaDSLFields(apiType);
+        this.updateKnotFields(apiType);
         // Restore the model-dependent options of the type's saved model
         this.updateModelDependentOptions(this.elements.modelSelect.value);
     }
@@ -788,7 +788,7 @@ class UIController {
      */
     async handleConfigAutoDetect() {
         const apiType = this.elements.configApiType.value;
-        if (apiType === 'auto_metadsl') return;
+        if (apiType === 'knot') return;
         const endpoint = this.elements.apiEndpointInput.value.trim();
         const apiKey = this.elements.apiKeyInput.value.trim();
         this.elements.configModelStatus.textContent = 'Querying model list...';
@@ -804,7 +804,7 @@ class UIController {
      */
     handleConfigAddModel() {
         const apiType = this.elements.configApiType.value;
-        if (apiType === 'auto_metadsl') return;
+        if (apiType === 'knot') return;
         const name = (this.elements.configModelAddInput.value || '').trim();
         if (!name) return;
         const list = this.apiClient.getUserModelList(apiType);
@@ -841,12 +841,12 @@ class UIController {
     /**
      * Update the visibility and label of the quick model chip in the chat
      * footer. The chip is only shown for API types backed by a selectable
-     * model list (openai / claude / auto_metadsl) or ollama (auto-detected
+     * model list (openai / claude / knot) or ollama (auto-detected
      * or user-configured list).
      */
     updateModelQuickBar() {
         const config = this.apiClient.getConfig();
-        const supported = ['openai', 'claude', 'auto_metadsl', 'ollama', 'local_openai'].includes(config.apiType);
+        const supported = ['openai', 'claude', 'knot', 'ollama', 'local_openai'].includes(config.apiType);
         this.elements.modelQuickBar.classList.toggle('visible', supported);
         if (!supported) {
             this.closeModelQuickPanel();
@@ -855,7 +855,7 @@ class UIController {
         const models = this.apiClient.getAvailableModels(config.apiType);
         const current = models.find(m => m.value === config.model);
         let label = current ? current.label : (config.model || '(model not set)');
-        if (config.apiType === 'auto_metadsl') {
+        if (config.apiType === 'knot') {
             const parts = [];
             if (current && current.thinking && config.enableThinking) parts.push('Thinking');
             if (config.reasoningEffort) parts.push(config.reasoningEffort);
@@ -886,8 +886,8 @@ class UIController {
         // Always start from the model list without a hover flyout
         this.hideModelFlyout();
         const config = this.apiClient.getConfig();
-        if (config.apiType === 'auto_metadsl') {
-            // auto_metadsl uses the builtin list from api-client.js
+        if (config.apiType === 'knot') {
+            // knot uses the builtin list from api-client.js
             this.elements.ollamaManageSection.style.display = 'none';
             this.renderPredefinedModelList(config.apiType);
         } else {
@@ -897,7 +897,7 @@ class UIController {
     }
 
     /**
-     * Render the model list for auto_metadsl from the predefined list in
+     * Render the model list for knot from the predefined list in
      * api-client.js. Clicking a row selects the model and closes the panel;
      * hovering a row (models with options) shows a flyout with that
      * model's options, like a menu.
@@ -1106,12 +1106,12 @@ class UIController {
     }
 
     /**
-     * Whether a model has quick options to configure (auto_metadsl models
+     * Whether a model has quick options to configure (knot models
      * with thinking support, reasoning efforts or context windows).
      */
     modelHasQuickOptions(apiType, modelValue) {
-        if (apiType !== 'auto_metadsl') return false;
-        const models = this.apiClient.getAvailableModels('auto_metadsl');
+        if (apiType !== 'knot') return false;
+        const models = this.apiClient.getAvailableModels('knot');
         const model = models.find(m => m.value === modelValue);
         if (!model) return false;
         return !!(model.thinking
@@ -1161,7 +1161,7 @@ class UIController {
         this._flyoutModelValue = modelValue;
         const config = this.apiClient.getConfig();
         const ms = this.apiClient.getModelSettings(config.apiType, modelValue);
-        const models = this.apiClient.getAvailableModels('auto_metadsl');
+        const models = this.apiClient.getAvailableModels('knot');
         const model = models.find(m => m.value === modelValue) || null;
         const flyout = this.elements.modelFlyout;
         flyout.innerHTML = '';
@@ -1283,7 +1283,7 @@ class UIController {
     }
 
     /**
-     * Populate the config modal model dropdown. auto_metadsl uses the
+     * Populate the config modal model dropdown. knot uses the
      * builtin list; all other types use the merged list of auto-detected
      * and user-configured models. When preferCurrent is true the current
      * dropdown selection is kept if still present (e.g. after detecting
@@ -1296,8 +1296,8 @@ class UIController {
         select.innerHTML = '';
         const values = [];
 
-        if (apiType === 'auto_metadsl') {
-            const models = this.apiClient.getAvailableModels('auto_metadsl');
+        if (apiType === 'knot') {
+            const models = this.apiClient.getAvailableModels('knot');
             models.forEach(model => {
                 const option = document.createElement('option');
                 option.value = model.value;
@@ -1341,9 +1341,9 @@ class UIController {
         }
     }
 
-    updateAutoMetaDSLFields(apiType) {
-        // Show auth mode and username fields only for auto_metadsl
-        if (apiType === 'auto_metadsl') {
+    updateKnotFields(apiType) {
+        // Show auth mode and username fields only for knot
+        if (apiType === 'knot') {
             this.elements.authModeGroup.style.display = 'block';
             this.elements.usernameGroup.style.display = 'block';
             this.elements.agentIdGroup.style.display = 'block';
@@ -1365,13 +1365,13 @@ class UIController {
     }
 
     // Update model-dependent fields (thinking toggle, reasoning effort options,
-    // context window options) based on the selected auto_metadsl model.
+    // context window options) based on the selected knot model.
     // Each model keeps its own saved settings.
     updateModelDependentOptions(modelValue) {
         const apiType = this.elements.configApiType.value;
-        if (apiType !== 'auto_metadsl') return;
+        if (apiType !== 'knot') return;
         const ms = this.apiClient.getModelSettings(apiType, modelValue);
-        const models = this.apiClient.getAvailableModels('auto_metadsl');
+        const models = this.apiClient.getAvailableModels('knot');
         const model = models.find(m => m.value === modelValue) || null;
 
         // Thinking toggle: only models with thinking=true
@@ -1450,8 +1450,8 @@ class UIController {
         const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
         const maxHistoryMessages = parseInt(this.elements.maxHistoryMessagesInput.value, 10);
 
-        // API key is optional for auto_metadsl, local_openai and ollama
-        if (apiType !== 'auto_metadsl' && apiType !== 'local_openai' && apiType !== 'ollama' && !apiKey) {
+        // API key is optional for knot, local_openai and ollama
+        if (apiType !== 'knot' && apiType !== 'local_openai' && apiType !== 'ollama' && !apiKey) {
             this.showError('API key is required');
             return;
         }
@@ -1460,14 +1460,14 @@ class UIController {
         // and the proper suffix is appended automatically when missing.
 
         // Username is required for agent token mode
-        if (apiType === 'auto_metadsl' && authMode === 'agent' && !username) {
+        if (apiType === 'knot' && authMode === 'agent' && !username) {
             this.showError('Username is required for agent token mode');
             return;
         }
 
-        // auto_metadsl requires either an endpoint or an agent id
-        if (apiType === 'auto_metadsl' && !apiEndpoint && !agentId) {
-            this.showError('For auto_metadsl, either API endpoint or agent id must be specified');
+        // knot requires either an endpoint or an agent id
+        if (apiType === 'knot' && !apiEndpoint && !agentId) {
+            this.showError('For knot, either API endpoint or agent id must be specified');
             return;
         }
 

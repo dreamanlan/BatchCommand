@@ -10,9 +10,9 @@ using BatchCommand.Utils;
 namespace AgentCore.Core
 {
     /// <summary>
-    /// AutoMetaDSL provider (AGUI protocol: http://knot.woa.com/apigw/api/v1/agents/agui/{agent_id})
+    /// Knot provider (AGUI protocol: http://knot.woa.com/apigw/api/v1/agents/agui/{agent_id})
     /// </summary>
-    internal class AutoMetaDslProvider : ILlmProvider
+    internal class KnotProvider : ILlmProvider
     {
         private readonly string _baseUrl;
         private readonly string _apiKeyTemplate;
@@ -45,7 +45,7 @@ namespace AgentCore.Core
         private int _timeoutSeconds = 600;
         private static readonly HttpClient s_http = CreateHttpClient();
 
-        public AutoMetaDslProvider(string baseUrl, string apiKeyTemplate, string model, Func<string, string> keyEnvResolver, int maxRetries = 3)
+        public KnotProvider(string baseUrl, string apiKeyTemplate, string model, Func<string, string> keyEnvResolver, int maxRetries = 3)
         {
             _baseUrl = baseUrl.TrimEnd('/');
             _apiKeyTemplate = apiKeyTemplate;
@@ -188,7 +188,7 @@ namespace AgentCore.Core
             // Explicit POCO instead of anonymous type: lets System.Text.Json
             // cache the serialization metadata and avoids anonymous-type
             // reflection cost on every request.
-            var body = new AutoMetaDslRequest { Input = input };
+            var body = new KnotRequest { Input = input };
             string json = System.Text.Json.JsonSerializer.Serialize(body);
 
             string reply = "";
@@ -220,7 +220,7 @@ namespace AgentCore.Core
                     if (completed == readTask)
                         delayCts.Cancel(); // cancel unused delay to avoid Task leak
                     else
-                        throw new TimeoutException("AutoMetaDslProvider: SSE read timed out (120s per line)");
+                        throw new TimeoutException("KnotProvider: SSE read timed out (120s per line)");
                     string? line = await readTask;
                     if (string.IsNullOrEmpty(line)) continue;
                     // strip "data:" prefix
@@ -255,7 +255,7 @@ namespace AgentCore.Core
                 // out-of-band reasoning events; this catches anything the
                 // upstream agent embedded directly in the text payload.
                 return ThinkingFilter.StripThink(sb.ToString());
-            }, _maxRetries, "AutoMetaDslProvider", cancellationToken);
+            }, _maxRetries, "KnotProvider", cancellationToken);
 
             // persist updated conversation_id for history continuation
             if (_keepSession)
@@ -346,7 +346,7 @@ namespace AgentCore.Core
         // its fields are dynamic (optional keys omitted per AGUI protocol).
         // -----------------------------------------------------------------
 
-        private sealed class AutoMetaDslRequest
+        private sealed class KnotRequest
         {
             [System.Text.Json.Serialization.JsonPropertyName("input")]
             public Dictionary<string, object> Input { get; set; } = new();

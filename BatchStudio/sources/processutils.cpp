@@ -47,8 +47,7 @@ QString ProcessUtils::dslScript()
     if (!dsl.isEmpty() && QFile::exists(dsl)) {
         return dsl;
     }
-    QString name("Script.dsl");
-    return findInPath(name);
+    return QString();
 }
 
 QString ProcessUtils::adbExe()

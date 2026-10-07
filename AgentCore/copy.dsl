@@ -5,7 +5,6 @@ script(main)
 	fileecho(true);
 
 	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","AgentCore.*");
-	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","BatchScriptApi.*");
 	// Lucene codecs (separate nuget package since 4.8-beta) and the WinRT
 	// projections TextCopy probes at runtime (deps references).
 	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Lucene.Net.Codecs.*");

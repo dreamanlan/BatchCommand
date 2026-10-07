@@ -20,13 +20,13 @@ script(loadschememenu)
     nativeapi.LoadSchemeMenu();
 };
 
-script(loadscheme)args($path)
+script(loadscheme)params($path)
 {
     nativeapi.LoadScheme($path);
 };
 
 // -1 -- failed 0 -- nothing was done 1 -- finished
-script(executecommand)args($cmdType, $cmdArgs)
+script(executecommand)params($cmdType, $cmdArgs)
 {
     $javaExe = nativeapi.GetJavaExe();
     $adbExe = nativeapi.GetAdbExe();

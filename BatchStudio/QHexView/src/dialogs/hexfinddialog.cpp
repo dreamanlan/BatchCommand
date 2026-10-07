@@ -340,7 +340,7 @@ bool HexFindDialog::prepareOptions(QString& q, QHexFindMode& mode,
 void HexFindDialog::prepareTextMode(QLayout* l) {
     auto* cbcasesensitive = new QCheckBox("Case sensitive");
 
-    connect(cbcasesensitive, &QCheckBox::stateChanged, this, [this](int state) {
+    connect(cbcasesensitive, &QCheckBox::checkStateChanged, this, [this](int state) {
         if(state == Qt::Checked)
             m_findoptions |= QHexFindOptions::CaseSensitive;
         else

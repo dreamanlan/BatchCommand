@@ -5,6 +5,7 @@ script(main)
 	fileecho(true);
 
 	copyfiles("bin/Debug/net9.0", "../managed","DotnetApp.*");
+	copyfiles("bin/Debug/net9.0", "../managed","BatchScriptApi.*");
 	copyfiles("bin/Debug/net9.0", "../managed","Common.*");
 	copyfiles("bin/Debug/net9.0", "../managed","DotnetStoryScript.*");
 	copyfiles("bin/Debug/net9.0", "../managed","Dsl.*");

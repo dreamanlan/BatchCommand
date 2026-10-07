@@ -10,6 +10,8 @@
 #if defined(Q_OS_WIN)
 void qtMessageToStdout(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
+    (void)type;
+    (void)context;
     QByteArray localMsg = msg.toLocal8Bit();
     fprintf(stdout, "%s\n", localMsg.constData());
     fflush(stdout);

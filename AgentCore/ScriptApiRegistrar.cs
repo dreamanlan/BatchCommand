@@ -270,6 +270,9 @@ namespace AgentCore
             // Agent State API
             AgentStateApi.RegisterApis();
 
+            // PlanTrack API
+            PlanTrackApi.RegisterApis();
+
             // Web Search API (Brave + SearXNG)
             WebSearchApi.RegisterApis();
 

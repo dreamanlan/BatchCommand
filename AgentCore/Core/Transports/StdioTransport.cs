@@ -14,7 +14,7 @@ namespace AgentCore.Core
     /// stdio transport: launches a local process and communicates via stdin/stdout.
     /// target = full command line, e.g. "npx -y @modelcontextprotocol/server-filesystem /path"
     /// </summary>
-    internal class StdioTransport : IMcpTransport
+    internal class StdioTransport : IMcpOldTransport
     {
         private readonly string _command;
         private readonly string _arguments;
@@ -27,6 +27,23 @@ namespace AgentCore.Core
         private readonly TimeSpan _lockTimeout;
 
         public bool IsConnected => _process != null && !_process.HasExited;
+
+        /// <summary>
+        /// Set by the service layer after parsing the initialize response
+        /// (initialize is sent by McpClientService for stdio).
+        /// </summary>
+        public string? NegotiatedVersion { get; set; }
+
+        /// <summary>Effective version: the negotiated value once known, else the handshake-era default.</summary>
+        public string ProtocolVersion => NegotiatedVersion ?? McpProtocol.Default;
+
+#pragma warning disable CS0067 // never raised: stdout is drained per-request
+        /// <summary>
+        /// Never raised: stdout is read one message per request, so interleaved
+        /// server notifications cannot be delivered reliably by this transport.
+        /// </summary>
+        public event Action<string>? ServerNotification;
+#pragma warning restore CS0067
 
         private readonly bool _useLspFraming;
 

@@ -15,7 +15,7 @@ namespace AgentCore.Core
     /// Unlike SseTransport, uses the URL directly (no /message suffix),
     /// supports custom headers, configurable timeout, and Mcp-Session-Id management.
     /// </summary>
-    internal class StreamableHttpTransport : IMcpTransport
+    internal class StreamableHttpTransport : IMcpOldTransport
     {
         private readonly string _url;
         private readonly HttpClient _httpClient;
@@ -26,38 +26,45 @@ namespace AgentCore.Core
         private string? _sessionId;
         private CancellationTokenSource? _getStreamCts;
         private Task? _getStreamTask;
+        private readonly string _protocolVersion;
 
         public bool IsConnected => _connected;
 
-        public StreamableHttpTransport(string url, Dictionary<string, string>? headers = null, int timeoutMs = 300000)
+        public string? NegotiatedVersion { get; set; }
+
+        public string ProtocolVersion => NegotiatedVersion ?? _protocolVersion;
+
+        /// <summary>
+        /// Fired for server-initiated notifications received on the GET stream
+        /// (method, no id). Server requests (method+id) are answered in-place;
+        /// plain responses (id, no method) are ignored.
+        /// </summary>
+        public event Action<string>? ServerNotification;
+
+        public StreamableHttpTransport(string url, Dictionary<string, string>? headers = null, int timeoutMs = 300000, string? protocolVersion = null)
         {
+            _protocolVersion = protocolVersion ?? McpProtocol.Default;
             _lockTimeout = TimeSpan.FromMilliseconds(timeoutMs + 5000);
             _url = url.TrimEnd('/');
-            var socketHandler = new SocketsHttpHandler
-            {
+            var socketHandler = new SocketsHttpHandler {
                 PooledConnectionLifetime = TimeSpan.FromMinutes(2),
                 PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
                 ConnectTimeout = TimeSpan.FromSeconds(10)
             };
-            _httpClient = new HttpClient(RedirectHandler.Create(socketHandler))
-            {
+            _httpClient = new HttpClient(RedirectHandler.Create(socketHandler)) {
                 Timeout = TimeSpan.FromMilliseconds(timeoutMs)
             };
             // Dedicated client for GET SSE long-poll: no HTTP-level timeout
-            var streamSocketHandler = new SocketsHttpHandler
-            {
+            var streamSocketHandler = new SocketsHttpHandler {
                 PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
                 PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
                 ConnectTimeout = TimeSpan.FromSeconds(10)
             };
-            _streamClient = new HttpClient(RedirectHandler.Create(streamSocketHandler))
-            {
+            _streamClient = new HttpClient(RedirectHandler.Create(streamSocketHandler)) {
                 Timeout = Timeout.InfiniteTimeSpan
             };
-            if (headers != null)
-            {
-                foreach (var kv in headers)
-                {
+            if (headers != null) {
+                foreach (var kv in headers) {
                     _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(kv.Key, kv.Value);
                     _streamClient.DefaultRequestHeaders.TryAddWithoutValidation(kv.Key, kv.Value);
                 }
@@ -67,20 +74,15 @@ namespace AgentCore.Core
         public async Task ConnectAsync()
         {
             // Verify server is reachable by sending an initialize request
-            string initReq = JsonRpcHelper.BuildRequest("initialize", new
-            {
-                protocolVersion = "2024-11-05",
-                capabilities = new { },
-                clientInfo = new { name = "AgentCore", version = "1.0" }
-            }, 0);
+            string initReq = McpProtocol.BuildInitializeRequest(0, _protocolVersion);
             string resp = await PostAsync(initReq);
-            if (!string.IsNullOrEmpty(resp))
-                _connected = true;
-            else
+            if (string.IsNullOrEmpty(resp))
                 throw new InvalidOperationException($"MCP server at {_url} did not respond to initialize");
-            // Start GET SSE long-poll to receive server-initiated messages (ping, notifications, etc.)
-            if (!string.IsNullOrEmpty(_sessionId))
-                StartGetStream();
+            string? rpcError = JsonRpcHelper.ParseError(resp);
+            if (rpcError != null)
+                throw new InvalidOperationException($"MCP server at {_url} rejected initialize (protocol {_protocolVersion}): {rpcError}. Hint: try mcp_set_option with key 'protocol_version' and an older value such as '2024-11-05'");
+            NegotiatedVersion = McpProtocol.ParseNegotiatedVersion(resp);
+            _connected = true;
         }
 
         private void StartGetStream()
@@ -95,28 +97,23 @@ namespace AgentCore.Core
         private async Task GetStreamLoopAsync(CancellationToken token)
         {
             int backoffMs = 500;
-            while (!token.IsCancellationRequested && _connected)
-            {
-                try
-                {
+            while (!token.IsCancellationRequested && _connected) {
+                try {
                     using var request = new HttpRequestMessage(HttpMethod.Get, _url);
                     request.Headers.TryAddWithoutValidation("Accept", "text/event-stream");
                     if (_sessionId != null)
                         request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
                     using var response = await _streamClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
-                    if ((int)response.StatusCode == 405)
-                    {
+                    if ((int)response.StatusCode == 405) {
                         AgentCore.Instance.Logger.Info($"[StreamableHttp] server at {_url} does not support GET SSE (405); long-poll disabled");
                         return;
                     }
-                    if ((int)response.StatusCode == 404)
-                    {
+                    if ((int)response.StatusCode == 404) {
                         AgentCore.Instance.Logger.Info($"[StreamableHttp] GET stream got 404 (session expired), stopping long-poll");
                         _connected = false;
                         return;
                     }
-                    if (!response.IsSuccessStatusCode)
-                    {
+                    if (!response.IsSuccessStatusCode) {
                         AgentCore.Instance.Logger.Info($"[StreamableHttp] GET stream returned {(int)response.StatusCode}, retrying in {backoffMs}ms");
                         await Task.Delay(backoffMs, token);
                         backoffMs = Math.Min(backoffMs * 2, 5000);
@@ -127,19 +124,15 @@ namespace AgentCore.Core
                     using var reader = new StreamReader(stream, Encoding.UTF8);
                     var eventData = new StringBuilder();
                     string? line;
-                    while (!token.IsCancellationRequested && (line = await reader.ReadLineAsync()) != null)
-                    {
-                        if (line.Length == 0)
-                        {
-                            if (eventData.Length > 0)
-                            {
+                    while (!token.IsCancellationRequested && (line = await reader.ReadLineAsync()) != null) {
+                        if (line.Length == 0) {
+                            if (eventData.Length > 0) {
                                 string payload = eventData.ToString();
                                 eventData.Clear();
                                 _ = HandleServerMessageAsync(payload);
                             }
                         }
-                        else if (line.StartsWith("data:", StringComparison.Ordinal))
-                        {
+                        else if (line.StartsWith("data:", StringComparison.Ordinal)) {
                             string val = line.Substring(5);
                             if (val.StartsWith(" ", StringComparison.Ordinal))
                                 val = val.Substring(1);
@@ -149,14 +142,12 @@ namespace AgentCore.Core
                         // other SSE fields (event:, id:, retry:) and comments (:) ignored
                     }
                     // stream closed by server; flush any pending event and retry
-                    if (eventData.Length > 0)
-                    {
+                    if (eventData.Length > 0) {
                         _ = HandleServerMessageAsync(eventData.ToString());
                     }
                 }
                 catch (OperationCanceledException) { break; }
-                catch (Exception ex)
-                {
+                catch (Exception ex) {
                     AgentCore.Instance.Logger.Info($"[StreamableHttp] GET stream error: {ex.Message}, retrying in {backoffMs}ms");
                     try { await Task.Delay(backoffMs, token); }
                     catch { break; }
@@ -167,41 +158,39 @@ namespace AgentCore.Core
 
         private async Task HandleServerMessageAsync(string json)
         {
-            try
-            {
+            try {
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
                 bool hasMethod = root.TryGetProperty("method", out var methodEl);
                 bool hasId = root.TryGetProperty("id", out var idEl);
-                if (hasMethod && hasId)
-                {
+                if (hasMethod && hasId) {
                     // Server-initiated request: respond
                     string method = methodEl.GetString() ?? string.Empty;
                     string idRaw = idEl.GetRawText();
                     string responseJson;
-                    if (method == "ping")
-                    {
+                    if (method == "ping") {
                         responseJson = "{\"jsonrpc\":\"2.0\",\"id\":" + idRaw + ",\"result\":{}}";
                     }
-                    else
-                    {
+                    else {
                         responseJson = "{\"jsonrpc\":\"2.0\",\"id\":" + idRaw +
                             ",\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}";
                     }
                     await PostFireAndForgetAsync(responseJson);
                 }
-                // notification (method, no id) and response (id, no method) ignored for now
+                else if (hasMethod) {
+                    // server-initiated notification: forward to subscribers
+                    ServerNotification?.Invoke(json);
+                }
+                // responses (id, no method) are ignored
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 AgentCore.Instance.Logger.Info($"[StreamableHttp] failed to handle server message: {ex.Message}");
             }
         }
 
         private async Task PostFireAndForgetAsync(string jsonBody)
         {
-            try
-            {
+            try {
                 using var request = new HttpRequestMessage(HttpMethod.Post, _url);
                 request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
@@ -211,8 +200,7 @@ namespace AgentCore.Core
                 if (response.Content != null)
                     await response.Content.ReadAsStringAsync();
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 AgentCore.Instance.Logger.Info($"[StreamableHttp] fire-and-forget POST failed: {ex.Message}");
             }
         }
@@ -230,67 +218,96 @@ namespace AgentCore.Core
                 throw new InvalidOperationException("StreamableHttpTransport not connected");
             // POST is required by HTTP semantics; discard the response body (typically 202 Accepted)
             await PostAsync(jsonRpcNotification);
+            // Start the GET stream only after the initialized notification succeeds.
+            if (!string.IsNullOrEmpty(_sessionId)) {
+                using var notification = JsonDocument.Parse(jsonRpcNotification);
+                if (notification.RootElement.TryGetProperty("method", out var method) &&
+                    method.GetString() == "notifications/initialized")
+                    StartGetStream();
+            }
         }
 
         private async Task<string> PostAsync(string jsonBody)
         {
             if (!await _lock.WaitAsync(_lockTimeout))
                 throw new TimeoutException("StreamableHttpTransport: timed out waiting for send lock");
-            try
-            {
+            string? requestId = ReadDiagnosticId(jsonBody, out var method);
+            string context = $"method={method} requestId={requestId ?? "<missing-or-unavailable>"}";
+            string stage = "prepare-request";
+            try {
                 using var request = new HttpRequestMessage(HttpMethod.Post, _url);
                 request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
                 if (_sessionId != null)
                     request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
+                stage = "send-and-buffer-response";
+                LogPostDiagnostic($"{context} stage={stage} completion=ResponseContentRead");
                 using var response = await _httpClient.SendAsync(request);
+                stage = "validate-status";
+                LogPostDiagnostic($"{context} stage=response-buffered status={(int)response.StatusCode} httpVersion={response.Version} contentType={response.Content.Headers.ContentType} contentLength={response.Content.Headers.ContentLength} transferEncoding={response.Headers.TransferEncoding} connection={response.Headers.Connection}");
                 await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
+                stage = "capture-session";
                 // Capture session id from response headers
-                if (response.Headers.TryGetValues("Mcp-Session-Id", out var vals))
-                {
+                if (response.Headers.TryGetValues("Mcp-Session-Id", out var vals)) {
                     foreach (var v in vals) { _sessionId = v; break; }
                 }
+                stage = "read-buffered-body";
                 string body = await response.Content.ReadAsStringAsync();
-                return ExtractJsonFromResponse(response, body);
+                LogPostDiagnostic($"{context} stage=body-read bodyChars={body.Length}");
+                stage = "extract-json";
+                string result = McpHttpHelpers.ExtractSseJson(response, body);
+                string? responseId = ReadDiagnosticId(result, out _);
+                string idMatch = requestId == null || responseId == null
+                    ? "unavailable"
+                    : (string.Equals(requestId, responseId, StringComparison.Ordinal) ? "true" : "false");
+                LogPostDiagnostic($"{context} stage=complete responseId={responseId ?? "<missing-or-unavailable>"} rawIdMatch={idMatch}");
+                return result;
             }
-            catch (Exception) when (!_connected)
-            {
+            catch (Exception ex) when (!_connected) {
+                LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
                 throw;
             }
-            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException || ex is InvalidOperationException)
-            {
+            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException || ex is InvalidOperationException) {
                 _connected = false;
+                LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
                 throw;
             }
-            finally
-            {
+            catch (Exception ex) {
+                LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
+                throw;
+            }
+            finally {
                 _lock.Release();
             }
         }
 
-        private static string ExtractJsonFromResponse(HttpResponseMessage response, string body)
+        private static string? ReadDiagnosticId(string json, out string method)
         {
-            var mediaType = response.Content.Headers.ContentType?.MediaType;
-            if (!string.Equals(mediaType, "text/event-stream", StringComparison.OrdinalIgnoreCase))
-                return body;
-            // Parse SSE frames: aggregate all lines starting with "data:" (strip prefix, join by newline)
-            var sb = new StringBuilder();
-            using var reader = new System.IO.StringReader(body);
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                if (line.StartsWith("data:", StringComparison.Ordinal))
-                {
-                    string payload = line.Substring(5);
-                    if (payload.StartsWith(" ", StringComparison.Ordinal))
-                        payload = payload.Substring(1);
-                    if (sb.Length > 0) sb.Append('\n');
-                    sb.Append(payload);
-                }
+            method = "<missing-or-unavailable>";
+            try {
+                using var document = JsonDocument.Parse(json);
+                var root = document.RootElement;
+                if (root.ValueKind != JsonValueKind.Object)
+                    return null;
+                if (root.TryGetProperty("method", out var methodValue))
+                    method = methodValue.GetRawText();
+                return root.TryGetProperty("id", out var id) ? id.GetRawText() : null;
             }
-            return sb.Length > 0 ? sb.ToString() : body;
+            catch (Exception) {
+                // Diagnostic parsing must not change transport behavior.
+                return null;
+            }
         }
 
+        private static void LogPostDiagnostic(string message)
+        {
+            try {
+                AgentCore.Instance.Logger.Info($"[StreamableHttp] POST utc={DateTime.UtcNow:O} {message}");
+            }
+            catch (Exception) {
+                // Diagnostic logging must not mask the transport result.
+            }
+        }
 
         public void Disconnect()
         {

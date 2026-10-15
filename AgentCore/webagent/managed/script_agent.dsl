@@ -666,13 +666,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
         return;
     };
 
-    if ($tag == "llm_pm_align") {
-        $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
-        write_file($planFile, $reply);
-        agent_set_plan(@AgentId, $reply);
-        llm_clear_history($providerId, $tag);
-    }
-    elif ($tag == "reflection") {
+    if ($tag == "reflection") {
         if (strlen($reply) > 1500) {
             llm_chat_callback($providerId, "reflection", "reflection", "超长了，请控制到300字左右");
             nativelog("[agent] Episodic memory too long: {0}", get_string_in_length($reply, 500));
@@ -809,6 +803,7 @@ script(update_system_prompt)params($pageType,$isFirst)
     $projectPrompt = read_file($projectPromptFile);
     $backlog = read_file($backlogFile);
     $plan = read_file($planFile);
+    restore_plan_state(@AgentId, $plan);
     $context = read_file($contextFile);
     $history = read_file($historyFile);
 
@@ -949,33 +944,6 @@ script(induction_decision)params($lastMsg,$autoPlan,$lockAgent)
     };
 };
 
-script(induction_plan)params($count,$pageType)
-{
-    $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
-    // Load recent conversation history from semantic index
-    $conversationHistory = to_pretty_string(semantic_get_recent(@LegionnaireHistory, $count));
-
-    $planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
-    $contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
-
-    $prompt = format("【以下是当前计划】：\n{0}\n" +
-        "【以下是最近上下文信息】：\n{1}\n" +
-        "【以下是最近对话历史】：\n{2}", $planHistory, $contextHistory, $conversationHistory);
-    $prompt = format("{0}\n\n根据以上信息，复述当前计划工作，只以事实为准更新完成状态，缺少相关信息默认未完成，" +
-        "已完成内容使用简要描述条目并标记完成状态，当前工作保留详细信息（工作介绍与进展细节），未完成工作保留条目信息" +
-        "（一次回复输出完成,字数控制到300~500字左右）。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $prompt);
-
-    if (@EnableLlmPM) {
-        $prompt = format("{0}\n直接回复，不要使用metadsl代码（PM会话不执行）", $prompt);
-        llm_chat_callback(@PmLlmProviderId, "llm_pm_align", "align_target", $prompt);
-    }
-    else {
-        $prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
-            "记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $planFile);
-        send_command_to_inject("send_message", to_json({text: $prompt}));
-    };
-};
-
 script(trigger_plan)params($autoPlan,$lockAgent)
 {
     $backlogPath = combine_path(@ProjectDirectory, "docs/backlog.txt");
@@ -989,10 +957,10 @@ script(trigger_plan)params($autoPlan,$lockAgent)
         nativelog("[agent] plan triggered");
 
         if ($lockAgent) {
-            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），阶段结论归档到md文件，更新需求库backlog.txt与计划plan.txt状态（清理backlog条目，更新plan条目状态），然后选取新工作更新plan.txt后继续";
+            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），更新需求库backlog.txt与计划状态（清理backlog条目，change_plan_item_state或append_plan_item_note或append_plan_note）。如当前计划完成但仍有可继续工作，先alian_plan获取当前plan信息并将笔记归档到md文件，然后create_plan后start_plan";
         }
         else {
-            $prompt = "没有识别到代码。请更新需求库backlog.txt与计划plan.txt状态（清理backlog条目，更新plan条目状态）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
+            $prompt = "没有识别到代码。请更新需求库backlog.txt与计划状态（清理backlog条目、change_plan_item_state或append_plan_item_note或append_plan_note）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
         };
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }
@@ -1572,7 +1540,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = format("可以将最新进展使用MetaDSL更新到{0}（页面浏览器本地，非远端工作空间）后再继续工作，同时清理已完成plan条目", $planFile);
+            $prompt = "记得使用change_plan_item_state更新状态或用append_plan_item_note/append_plan_note添加笔记";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -1676,7 +1644,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展更新到plan.txt后再继续工作，同时清理已完成plan条目（不要停自动计划!）";
+            $prompt = "记得使用change_plan_item_state更新状态或用append_plan_item_note/append_plan_note添加笔记（不要停自动计划!）";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -1693,7 +1661,11 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 60) {
-            induction_plan($count, $pageType);
+            $planText = align_plan(@AgentId);
+            if ($planText != "error: no plan") {
+                write_file($planFile, $planText);
+                update_system_prompt($pageType, false);
+            };
         };
         nativelog("[agent] episodic_reflection notification received");
         trigger_reflection();

@@ -38,6 +38,19 @@ class MetaDSLMonitor {
     // after the limit to avoid a permanent deadlock (no self-heal).
     this.unrenderedFenceRetryCount = 0;
     this.unrenderedFenceRetryLimit = 3;
+    // Per-wrapper fallback for the scan-side fence check: a newly arrived
+    // wrapper whose fences are still unrendered must not be marked seen.
+    // Give up after this long so a malformed fence or a ``` mention in
+    // prose cannot hold the wrapper pending forever.
+    this.fencePendingSince = new WeakMap();
+    this.fencePendingTimeoutMs = 30000;
+    // Same bounded grace period for empty RENDERED code blocks: an empty
+    // <code> element in a superseded message is usually a fence whose
+    // content the renderer has not filled in yet. The block defers its
+    // message while it may still fill in, and stops deferring after this
+    // long (a malformed fence that will never fill).
+    this.emptyPendingSince = new WeakMap();
+    this.emptyPendingTimeoutMs = 30000;
     // Same fallback for onPageStable's "still generating" wait: a stuck loading
     // indicator would reschedule the scan forever. Timestamp of the first
     // "still generating" observation in the current round; 0 = not armed.
@@ -137,6 +150,17 @@ class MetaDSLMonitor {
         div:has(> code[data-metadsl-status="history"]) {
           border-left: 3px solid #9E9E9E !important;
           background-color: rgba(158, 158, 158, 0.05) !important;
+        }
+
+        /* Failed commands stay visible: full red frame so they read as
+           "executed but errored", not "never recognized". The attribute
+           selector covers every path that sets the status, including the
+           send-retry-exhaustion branch in the state machine. */
+        .metadsl-failed,
+        pre:has(> code[data-metadsl-status="failed"]),
+        div:has(> code[data-metadsl-status="failed"]) {
+          border: 2px solid #f44336 !important;
+          background-color: rgba(244, 67, 54, 0.08) !important;
         }
       `;
 
@@ -278,6 +302,9 @@ class MetaDSLMonitor {
       if (!block || !block.dataset) return;
       block.dataset.metadslStatus = status;
       this.addVisualIndicator(block, status);
+      // Failed blocks stay visible with a red frame: the error result is
+      // delivered to the LLM, but the human needs to tell an executed-and-
+      // failed command apart from one that was never recognized at all.
       if (!failed) {
         this.scheduleHideContainer(block);
       }
@@ -867,11 +894,15 @@ class MetaDSLMonitor {
   }
 
   // Remember the messages handled by this scan as known, so the next scan
-  // aligns them instead of treating them as new.
-  markMessagesAsSeen(align, pendingWrappers = new Set()) {
+  // aligns them instead of treating them as new. fencePendingWrappers holds
+  // new LLM wrappers whose fences are still unrendered: they stay unseen so
+  // a late-rendering block can still be picked up (bounded by
+  // fencePendingTimeoutMs in scanForNewCodeBlocks).
+  markMessagesAsSeen(align, pendingWrappers = new Set(), fencePendingWrappers = new Set()) {
    if (!align || !align.newIdx.length) return;
    for (const k of align.newIdx) {
     if (pendingWrappers.has(align.wrappers[k])) continue;
+    if (fencePendingWrappers.has(align.wrappers[k])) continue;
     align.records[k].seen = true;
     }
     this.seenFingerprints = this.messageSequence
@@ -910,6 +941,98 @@ class MetaDSLMonitor {
       this._newWrappers = new Set(align.newIdx.map(k => align.wrappers[k]));
     }
     return this._newWrappers;
+  }
+
+  // User-message test covering both page types: local-agent flags user
+  // messages with a 'user' class on the wrapper, the custom-LLM page flags
+  // them on the message box (vac-offset-current).
+  isUserWrapper(wrapper) {
+    if (!wrapper) return true;
+    if (wrapper.classList && wrapper.classList.contains('user')) return true;
+    const box = wrapper.querySelector
+      ? wrapper.querySelector('.vac-message-box')
+      : null;
+    return !!(box && box.classList.contains('vac-offset-current'));
+  }
+
+  // The last LLM (non-user) message wrapper on the page. Only the last reply
+  // may still be streaming; see deferEmptyWrapper and scanForNewCodeBlocks.
+  findLastLlmWrapper(wrappers) {
+    for (let k = wrappers.length - 1; k >= 0; k--) {
+      const w = wrappers[k];
+      if (!w || !w.querySelector) continue;
+      if (this.isUserWrapper(w)) continue;
+      if (!w.querySelector('.vac-message-box')) continue;
+      return w;
+    }
+    return null;
+  }
+
+  // Whether an empty block (or a marker-stripped-empty unit) in this wrapper
+  // must keep deferring its message. The last LLM reply may still be
+  // streaming, so it defers without a clock; a superseded message gets a
+  // bounded grace period instead. Consuming the empty block as terminal (an
+  // earlier approach) lost commands: the renderer can fill or replace an
+  // empty block even after the message was superseded, and a filled block
+  // in an already-seen wrapper is never executed.
+  deferEmptyWrapper(wrapper, lastLlmWrapper) {
+    if (!wrapper) return false;
+    if (wrapper === lastLlmWrapper) return true;
+    let since = this.emptyPendingSince.get(wrapper);
+    if (!since) {
+      since = Date.now();
+      this.emptyPendingSince.set(wrapper, since);
+    }
+    return Date.now() - since < this.emptyPendingTimeoutMs;
+  }
+
+  // Whether a message box still carries raw ``` fence markers outside its
+  // rendered code blocks, i.e. its markdown rendering is not complete.
+  // Shared by hasUnrenderedCodeFences (the onPageStable wait) and the
+  // fence-pending check in scanForNewCodeBlocks (the mark-seen gate).
+  boxHasRawFence(box) {
+    if (!box) return false;
+    // Rendered code blocks are the source of truth: any ``` inside them is code
+    // content, not a fence. Strip the rendered blocks out, then only the leftover
+    // text can carry raw (unrendered) fence markers. This avoids miscounting a
+    // ``` that sits in the middle of rendered code content as a real fence.
+    const sel = 'code.code-block-body, code[class*="language-"], pre code';
+    const codeElements = box.querySelectorAll(sel);
+    const clone = box.cloneNode(true);
+    clone.querySelectorAll(sel).forEach((el) => {
+      const host = el.closest('pre') || el;
+      if (host && host.parentNode) host.parentNode.removeChild(host);
+    });
+    const outsideText = clone.textContent || '';
+    // Match a run of 3+ backticks (covers variable-length fences too).
+    //
+    // Intentionally BACKTICK-ONLY: we do NOT extend this to tilde (`~~~`)
+    // fences, even though CommonMark allows them and other MetaDSL cleanup
+    // paths (message-handler.js A-path, freebie FENCE_*_RE) do accept tilde.
+    // Rationale:
+    //   * This predicate only delays work (onPageStable's wait, the
+    //     fence-pending hold in scanForNewCodeBlocks). It is NOT part of the
+    //     correctness path -- the actual MetaDSL scan looks at rendered
+    //     <code> elements via MutationObserver and is fence-character
+    //     agnostic.
+    //   * If we matched `~~~` here and the host chat UI's markdown renderer
+    //     does not treat tilde as a fence (renderer support varies), any
+    //     stray `~~~` in prose (decorative separators, ASCII art, quoted
+    //     code, etc.) would linger in `outsideText` forever -> callers that
+    //     wait on this would never proceed, and the fence-pending hold
+    //     would degenerate into its timeout -> risk of deadlock or long
+    //     stalls with no self-heal.
+    //   * The worst case of leaving tilde out is a few extra empty scan
+    //     passes when the LLM streams a `~~~` fence mid-flight; the next
+    //     mutation self-heals. No correctness impact.
+    // If we ever confirm the renderer supports tilde fences AND add a
+    // timeout fallback for `onPageStable`, revisit this decision.
+    const fenceMatches = outsideText.match(/`{3,}/g);
+    if (fenceMatches && fenceMatches.length > 0) {
+      this.info(`Detected ${fenceMatches.length} unrendered fence marker(s) outside rendered code blocks (rendered=${codeElements.length})`);
+      return true;
+    }
+    return false;
   }
 
   // ========================================================================
@@ -968,49 +1091,29 @@ class MetaDSLMonitor {
   // ========================================================================
 
   hasUnrenderedCodeFences() {
-    // Check if the last LLM message still has raw ``` fences that haven't been
-    // rendered into <code> elements yet (markdown rendering not complete).
-    const msgBoxes = document.querySelectorAll('.vac-message-box:not(.vac-offset-current)');
-    if (msgBoxes.length === 0) return false;
-    const lastMsg = msgBoxes[msgBoxes.length - 1];
-    if (!lastMsg) return false;
-    // Rendered code blocks are the source of truth: any ``` inside them is code
-    // content, not a fence. Strip the rendered blocks out, then only the leftover
-    // text can carry raw (unrendered) fence markers. This avoids miscounting a
-    // ``` that sits in the middle of rendered code content as a real fence.
-    const sel = 'code.code-block-body, code[class*="language-"], pre code';
-    const codeElements = lastMsg.querySelectorAll(sel);
-    const clone = lastMsg.cloneNode(true);
-    clone.querySelectorAll(sel).forEach((el) => {
-      const host = el.closest('pre') || el;
-      if (host && host.parentNode) host.parentNode.removeChild(host);
-    });
-    const outsideText = clone.textContent || '';
-    // Match a run of 3+ backticks (covers variable-length fences too).
+    // Check whether any newly arrived LLM message still has raw ``` fences
+    // that haven't been rendered into <code> elements yet (markdown
+    // rendering not complete).
     //
-    // Intentionally BACKTICK-ONLY: we do NOT extend this to tilde (`~~~`)
-    // fences, even though CommonMark allows them and other MetaDSL cleanup
-    // paths (message-handler.js A-path, freebie FENCE_*_RE) do accept tilde.
-    // Rationale:
-    //   * This function is only a heuristic that DELAYS `onPageStable` until
-    //     markdown rendering settles. It is NOT part of the correctness
-    //     path -- the actual MetaDSL scan looks at rendered <code> elements
-    //     via MutationObserver and is fence-character agnostic.
-    //   * If we matched `~~~` here and the host chat UI's markdown renderer
-    //     does not treat tilde as a fence (renderer support varies), any
-    //     stray `~~~` in prose (decorative separators, ASCII art, quoted
-    //     code, etc.) would linger in `outsideText` forever -> this method
-    //     would return true forever -> `onPageStable` would never fire ->
-    //     hard deadlock with no self-heal.
-    //   * The worst case of leaving tilde out is a few extra empty scan
-    //     passes when the LLM streams a `~~~` fence mid-flight; the next
-    //     mutation self-heals. No correctness impact.
-    // If we ever confirm the renderer supports tilde fences AND add a
-    // timeout fallback for `onPageStable`, revisit this decision.
-    const fenceMatches = outsideText.match(/`{3,}/g);
-    if (fenceMatches && fenceMatches.length > 0) {
-      this.info(`Detected ${fenceMatches.length} unrendered fence marker(s) outside rendered code blocks (rendered=${codeElements.length})`);
-      return true;
+    // Not just the last message: an older new reply whose fence renders late
+    // would otherwise be marked seen (markMessagesAsSeen) before its <code>
+    // element exists, and a block inside an already-seen wrapper is only
+    // markBlockAsScanned'd - never executed.
+    const targets = new Set();
+    this.newMessageWrappers().forEach((wrapper) => {
+      if (this.isUserWrapper(wrapper)) return;
+      const box = wrapper.querySelector
+        ? wrapper.querySelector('.vac-message-box:not(.vac-offset-current)')
+        : null;
+      if (box) targets.add(box);
+    });
+    // Keep the previous behaviour: the last LLM message is always checked.
+    const msgBoxes = document.querySelectorAll('.vac-message-box:not(.vac-offset-current)');
+    if (msgBoxes.length > 0) {
+      targets.add(msgBoxes[msgBoxes.length - 1]);
+    }
+    for (const msg of targets) {
+      if (this.boxHasRawFence(msg)) return true;
     }
     return false;
   }
@@ -1372,6 +1475,12 @@ class MetaDSLMonitor {
     // never queued, which is what keeps a history reload from re-running code.
     const newWrappers = this.newMessageWrappers();
     const align = this._roundAlign || this.alignMessages();
+    // The last LLM reply may still be streaming, so an empty block there
+    // defers without a clock. In a superseded message an empty block is
+    // usually a fence the renderer has not filled in yet, so it defers
+    // within a bounded grace period (deferEmptyWrapper) instead of being
+    // consumed as terminal.
+    const lastLlmWrapper = this.findLastLlmWrapper(align.wrappers);
     if (align.reseeded) {
       this.info('Message sequence was reseeded, no block will be executed this round');
     } else if (align.newIdx.length > 0) {
@@ -1385,6 +1494,9 @@ class MetaDSLMonitor {
     // Phase 1: collect every unprocessed block that has content.
     const items = [];
     const pendingWrappers = new Set();
+    // Wrappers that still hold an empty code block this round; used at the
+    // tail to keep their grace clock (emptyPendingSince) running.
+    const emptyBlockWrappers = new Set();
 
     codeBlocks.forEach((block) => {
       // A block whose message is not part of the newly arrived ones is history
@@ -1412,8 +1524,14 @@ class MetaDSLMonitor {
       }
       this.lastBlockContent.set(block, rawCode);
       if (!rawCode.trim()) {
-       pendingWrappers.add(msgWrapper);
-       return;
+        emptyBlockWrappers.add(msgWrapper);
+        if (this.deferEmptyWrapper(msgWrapper, lastLlmWrapper)) {
+          pendingWrappers.add(msgWrapper);
+        }
+        // Timed out (superseded and grace period over): stop deferring. The
+        // block stays unprocessed; once the message is marked seen, later
+        // rounds only markBlockAsScanned it.
+        return;
       }
 
       // A MetaDSL marker opens a command unit; a marker-less block continues
@@ -1453,7 +1571,9 @@ class MetaDSLMonitor {
        return stripped !== null ? stripped : it.rawCode;
       }).join('\n').trim();
       if (!code) {
-       unit.forEach(it => pendingWrappers.add(it.msgWrapper));
+        if (unit.some(it => this.deferEmptyWrapper(it.msgWrapper, lastLlmWrapper))) {
+          unit.forEach(it => pendingWrappers.add(it.msgWrapper));
+        }
       }
      });
     });
@@ -1545,13 +1665,59 @@ class MetaDSLMonitor {
       this.info(`Scan complete: ${newBlocksCount} new blocks, ${metadslBlocksCount} MetaDSL, ${unstableBlocksCount} unstable`);
     }
 
+    // Reset the empty-block grace clock for new wrappers whose blocks all
+    // have content this round (a fence that filled in), so a later empty
+    // block in the same wrapper starts a fresh clock.
+    for (const k of align.newIdx) {
+      const w = align.wrappers[k];
+      if (w && !emptyBlockWrappers.has(w)) this.emptyPendingSince.delete(w);
+    }
+
+    // Fence-pending: a new LLM wrapper whose fences are still unrendered must
+    // not be marked seen, no matter which caller ran this scan - onPageStable
+    // waits for fences, but the state machine's scan timeout calls this
+    // method directly and onPageStable's own retry limit force-continues.
+    // Staying unseen preserves the late block's chance to be picked up by a
+    // later round. Bounded by fencePendingTimeoutMs so a malformed fence or
+    // a ``` mention in prose cannot hold the wrapper forever. Deliberately
+    // separate from pendingWrappers: an unrendered fence must not delay the
+    // enqueue of blocks that already rendered.
+    const fencePendingWrappers = new Set();
+    for (const k of align.newIdx) {
+      const w = align.wrappers[k];
+      if (!w || this.isUserWrapper(w)) continue;
+      const box = w.querySelector
+        ? w.querySelector('.vac-message-box:not(.vac-offset-current)')
+        : null;
+      if (!box) continue;
+      if (!this.boxHasRawFence(box)) {
+        this.fencePendingSince.delete(w);
+        continue;
+      }
+      let since = this.fencePendingSince.get(w);
+      if (!since) {
+        since = Date.now();
+        this.fencePendingSince.set(w, since);
+      }
+      if (Date.now() - since < this.fencePendingTimeoutMs) {
+        fencePendingWrappers.add(w);
+      }
+    }
+
     // Remember the messages handled now, so the next scan aligns them instead
     // of running their blocks again. Skipped while a block is still changing:
     // that message is not finished and has to be scanned once more.
     if (unstableBlocksCount === 0) {
-     this.markMessagesAsSeen(align, pendingWrappers);
+     this.markMessagesAsSeen(align, pendingWrappers, fencePendingWrappers);
     }
-    this._deferredWrappers = pendingWrappers;
+    // Keep only wrappers still in the document: the page rebuilds its DOM on
+    // scroll/history reload, and a detached wrapper would hold its subtree
+    // alive and block pruneOldMessages until the next scan round replaces
+    // the set. Semantics do not depend on the set - deferral is carried by
+    // the wrapper staying unseen, which survives a rebuild via the
+    // fingerprint alignment.
+    this._deferredWrappers = new Set(
+      Array.from(pendingWrappers).filter(w => w.isConnected));
 
     // Drop the per-round alignment. This method is also called directly from
     // the state machine, and the page may have moved on since it was computed,
@@ -1731,6 +1897,13 @@ class MetaDSLMonitor {
         if (!container.classList.contains('metadsl-history')) {
           container.style.borderLeft = '3px solid #9E9E9E';
           container.style.backgroundColor = 'rgba(158, 158, 158, 0.05)';
+        }
+      } else if (status === 'failed') {
+        container.classList.add('metadsl-failed');
+        // Fallback to inline styles if CSS class doesn't work
+        if (!container.classList.contains('metadsl-failed')) {
+          container.style.border = '2px solid #f44336';
+          container.style.backgroundColor = 'rgba(244, 67, 54, 0.08)';
         }
       }
     } catch (error) {

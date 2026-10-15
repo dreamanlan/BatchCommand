@@ -30,6 +30,7 @@ namespace AgentCore.Core
         public string History { get; set; } = string.Empty;
         public string InjectJsCode { get; set; } = string.Empty;
         public int MaxResultSize { get; set; } = 0;
+        public PlanTrackState? PlanTrack { get; set; }
 
         // Per-instance DSL context variables (key/value store), independent from the global one
         public DslContextManagement DslContextManager { get; }

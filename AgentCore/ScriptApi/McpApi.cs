@@ -77,6 +77,136 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// mcp_list_resources(serverId)
+    /// Lists resources exposed by the server (cursor-paginated).
+    /// Format: "uri: name - description (mimeType)" per line.
+    /// </summary>
+    sealed class McpListResourcesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_resources requires (serverId)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ListResources(operands[0].AsString));
+        }
+    }
+
+    /// <summary>
+    /// mcp_read_resource(serverId, uri)
+    /// Synchronously reads an MCP resource and blocks until the result is received.
+    /// Returns the resource text (or "[error] ..." / "[binary N base64 chars]").
+    /// </summary>
+    sealed class McpReadResourceExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_resource requires (serverId, uri)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string serverId = operands[0].AsString;
+            string uri = operands[1].AsString;
+            try {
+                string result = AgentCore.Core.McpClientService.Instance.ReadResource(serverId, uri).GetAwaiter().GetResult();
+                return BoxedValue.FromString(result);
+            }
+            catch (System.Exception ex) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"mcp_read_resource error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// mcp_read_resource_callback(serverId, uri, tag)
+    /// Reads an MCP resource asynchronously.
+    /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
+    /// Returns "ok" or an error string.
+    /// </summary>
+    sealed class McpReadResourceCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_resource_callback requires (serverId, uri, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string serverId = operands[0].AsString;
+            string uri = operands[1].AsString;
+            string tag = operands[2].AsString;
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ReadResourceCallback(serverId, uri, tag));
+        }
+    }
+
+    /// <summary>
+    /// mcp_list_prompts(serverId)
+    /// Lists prompt templates defined on the server (cursor-paginated).
+    /// Format: "name: description" plus an optional "  args: arg1(required) arg2" line.
+    /// </summary>
+    sealed class McpListPromptsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_prompts requires (serverId)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ListPrompts(operands[0].AsString));
+        }
+    }
+
+    /// <summary>
+    /// mcp_read_prompt(serverId, promptName, argsJson?)
+    /// Synchronously renders a prompt template and blocks until the result is received.
+    /// Returns "[role] text" lines; resource_link contents are inlined when possible.
+    /// </summary>
+    sealed class McpReadPromptExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_prompt requires (serverId, promptName[, argsJson])");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string serverId = operands[0].AsString;
+            string promptName = operands[1].AsString;
+            string argsJson = operands.Count >= 3 ? operands[2].AsString : "{}";
+            try {
+                string result = AgentCore.Core.McpClientService.Instance.ReadPrompt(serverId, promptName, argsJson).GetAwaiter().GetResult();
+                return BoxedValue.FromString(result);
+            }
+            catch (System.Exception ex) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"mcp_read_prompt error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// mcp_read_prompt_callback(serverId, promptName, argsJson?, tag)
+    /// Renders a prompt template asynchronously.
+    /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
+    /// Returns "ok" or an error string.
+    /// </summary>
+    sealed class McpReadPromptCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 4) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_prompt_callback requires (serverId, promptName, argsJson, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string serverId = operands[0].AsString;
+            string promptName = operands[1].AsString;
+            string argsJson = operands[2].AsString;
+            string tag = operands[3].AsString;
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ReadPromptCallback(serverId, promptName, argsJson, tag));
+        }
+    }
+
+    /// <summary>
     /// mcp_call_tool_callback(serverId, toolName, argsJson, tag)
     /// Calls an MCP tool asynchronously.
     /// argsJson: JSON object of tool arguments, e.g. {"path":"/tmp/foo.txt"}
@@ -103,7 +233,8 @@ namespace AgentCore.ScriptApi
     /// mcp_set_option(serverId, key, value)
     /// Sets a connection option. Can be called before or after mcp_connect.
     /// key="timeout" (ms) or key="header" (Name:Value) or key="max_busy_seconds" (watchdog threshold)
-    /// or key="max_queue_len" (per-session async call waiting-queue depth, default 10).
+    /// or key="max_queue_len" (per-session async call waiting-queue depth, default 10)
+    /// or key="protocol_version" (MCP protocol sent in initialize, default 2025-11-25).
     /// Can be called multiple times for headers.
     /// Returns true.
     /// </summary>
@@ -224,11 +355,29 @@ namespace AgentCore.ScriptApi
             BatchCommand.BatchScript.Register("mcp_list_tools",
                 "mcp_list_tools(serverId) - list available tools on MCP server (LLM-friendly format)",
                 new ExpressionFactoryHelper<McpListToolsExp>());
+            BatchCommand.BatchScript.Register("mcp_list_resources",
+                "mcp_list_resources(serverId) - list resources exposed by MCP server (uri: name - description (mimeType))",
+                new ExpressionFactoryHelper<McpListResourcesExp>());
+            BatchCommand.BatchScript.Register("mcp_read_resource",
+                "mcp_read_resource(serverId, uri) - read an MCP resource by uri, blocks until the result is received and returns it directly",
+                new ExpressionFactoryHelper<McpReadResourceExp>());
+            BatchCommand.BatchScript.Register("mcp_read_resource_callback",
+                "mcp_read_resource_callback(serverId, uri, tag) - read an MCP resource async, result via mcp_callback CEF message",
+                new ExpressionFactoryHelper<McpReadResourceCallbackExp>());
+            BatchCommand.BatchScript.Register("mcp_list_prompts",
+                "mcp_list_prompts(serverId) - list prompt templates on MCP server (name: description / args)",
+                new ExpressionFactoryHelper<McpListPromptsExp>());
+            BatchCommand.BatchScript.Register("mcp_read_prompt",
+                "mcp_read_prompt(serverId, promptName, argsJson?) - render a prompt template, blocks and returns '[role] text' lines",
+                new ExpressionFactoryHelper<McpReadPromptExp>());
+            BatchCommand.BatchScript.Register("mcp_read_prompt_callback",
+                "mcp_read_prompt_callback(serverId, promptName, argsJson, tag) - render a prompt template async, result via mcp_callback CEF message",
+                new ExpressionFactoryHelper<McpReadPromptCallbackExp>());
             BatchCommand.BatchScript.Register("mcp_call_tool_callback",
                 "mcp_call_tool_callback(serverId, toolName, argsJson, tag) - call MCP tool async, result via mcp_callback CEF message",
                 new ExpressionFactoryHelper<McpCallToolCallbackExp>());
             BatchCommand.BatchScript.Register("mcp_set_option",
-                "mcp_set_option(serverId, key, value) - set connection option, key='timeout'(ms)/'header'(Name:Value)/'max_busy_seconds'(watchdog threshold)/'max_queue_len'(async call queue depth)",
+                "mcp_set_option(serverId, key, value) - set connection option, key='timeout'(ms)/'header'(Name:Value)/'max_busy_seconds'(watchdog threshold)/'max_queue_len'(async call queue depth)/'protocol_version'('2026-07-28' forces the stateless era, older values force the handshake era; default auto-detects the server era)",
                 new ExpressionFactoryHelper<McpSetOptionExp>());
             BatchCommand.BatchScript.Register("mcp_clear_options",
                 "mcp_clear_options(serverId) - clear all pending connection options for a server",

@@ -12,7 +12,7 @@ namespace AgentCore.Core
     /// HTTP+SSE transport: communicates with a remote MCP server via HTTP POST.
     /// target = base URL, e.g. "http://localhost:3000"
     /// </summary>
-    internal class SseTransport : IMcpTransport
+    internal class SseTransport : IMcpOldTransport
     {
         private readonly string _baseUrl;
         private readonly HttpClient _httpClient;
@@ -20,11 +20,25 @@ namespace AgentCore.Core
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
         private readonly TimeSpan _lockTimeout;
         private string? _sessionId;
+        private readonly string _protocolVersion;
 
         public bool IsConnected => _connected;
 
-        public SseTransport(string target, Dictionary<string, string>? headers = null, int timeoutMs = 300000)
+        public string? NegotiatedVersion { get; set; }
+
+        public string ProtocolVersion => NegotiatedVersion ?? _protocolVersion;
+
+#pragma warning disable CS0067 // never raised: this transport has no server-to-client notification channel
+        /// <summary>
+        /// Never raised: each POST returns only the matching response, so
+        /// server-initiated notifications cannot be received here.
+        /// </summary>
+        public event Action<string>? ServerNotification;
+#pragma warning restore CS0067
+
+        public SseTransport(string target, Dictionary<string, string>? headers = null, int timeoutMs = 300000, string? protocolVersion = null)
         {
+            _protocolVersion = protocolVersion ?? McpProtocol.Default;
             _lockTimeout = TimeSpan.FromMilliseconds(timeoutMs + 5000);
             _baseUrl = target.TrimEnd('/');
             var socketHandler = new SocketsHttpHandler
@@ -47,17 +61,15 @@ namespace AgentCore.Core
         public async Task ConnectAsync()
         {
             // Verify server is reachable by sending an initialize request
-            string initReq = JsonRpcHelper.BuildRequest("initialize", new
-            {
-                protocolVersion = "2024-11-05",
-                capabilities = new { },
-                clientInfo = new { name = "AgentCore", version = "1.0" }
-            }, 0);
+            string initReq = McpProtocol.BuildInitializeRequest(0, _protocolVersion);
             string resp = await PostAsync(initReq);
-            if (!string.IsNullOrEmpty(resp))
-                _connected = true;
-            else
+            if (string.IsNullOrEmpty(resp))
                 throw new InvalidOperationException($"MCP server at {_baseUrl} did not respond to initialize");
+            string? rpcError = JsonRpcHelper.ParseError(resp);
+            if (rpcError != null)
+                throw new InvalidOperationException($"MCP server at {_baseUrl} rejected initialize (protocol {_protocolVersion}): {rpcError}. Hint: try mcp_set_option with key 'protocol_version' and an older value such as '2024-11-05'");
+            NegotiatedVersion = McpProtocol.ParseNegotiatedVersion(resp);
+            _connected = true;
         }
 
         public async Task<string> SendRequestAsync(string jsonRpcRequest)
@@ -93,7 +105,7 @@ namespace AgentCore.Core
                     foreach (var v in vals) { _sessionId = v; break; }
                 }
                 string body = await response.Content.ReadAsStringAsync();
-                return ExtractJsonFromResponse(response, body);
+                return McpHttpHelpers.ExtractSseJson(response, body);
             }
             catch (Exception) when (!_connected)
             {
@@ -108,29 +120,6 @@ namespace AgentCore.Core
             {
                 _lock.Release();
             }
-        }
-
-        private static string ExtractJsonFromResponse(HttpResponseMessage response, string body)
-        {
-            var mediaType = response.Content.Headers.ContentType?.MediaType;
-            if (!string.Equals(mediaType, "text/event-stream", StringComparison.OrdinalIgnoreCase))
-                return body;
-            // Parse SSE frames: aggregate all lines starting with "data:" (strip prefix, join by newline)
-            var sb = new StringBuilder();
-            using var reader = new System.IO.StringReader(body);
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                if (line.StartsWith("data:", StringComparison.Ordinal))
-                {
-                    string payload = line.Substring(5);
-                    if (payload.StartsWith(" ", StringComparison.Ordinal))
-                        payload = payload.Substring(1);
-                    if (sb.Length > 0) sb.Append('\n');
-                    sb.Append(payload);
-                }
-            }
-            return sb.Length > 0 ? sb.ToString() : body;
         }
 
         public void Disconnect()

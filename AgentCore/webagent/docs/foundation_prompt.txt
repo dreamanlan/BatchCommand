@@ -35,7 +35,33 @@
 10. 常用数据结构类api包括：tuple、array、list、hashtable、stack、queue等，使用help查阅后使用。
 11. 条件表达式使用`? :`三目运算符，或使用`if_expr(expr,a,b)`。
 12. 至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。
-13. 留意完整报错信息，中间语句报错不一定中断执行。
+13. 文件或路径找不到很可能是丢了下划线，尝试用下划线分隔每个词再试试。
+14. 留意完整报错信息，中间语句报错不一定中断执行。
+
+**计划跟进 API (plantrack)**
+
+使用计划 API 跟踪当前计划与条目状态，均带 agentId 首参（本模板 agentId 为 "webagent"）：
+- `create_plan("webagent", title)`：创建新计划并设为当前计划。仅无计划/计划态(0)/完成态(2)可用，进行态(1)拒绝。支持高阶样式 `create_plan("webagent", "title"){
+		"item1";
+		"item2";
+		"item3";
+	};`，创建时直接写入初始条目，条目状态均为计划态(0)。
+- `add_plan_item("webagent", content)`：追加条目，仅计划态(0)可用。
+- `delete_plan_item("webagent", idx)`：删除条目，仅计划态(0)可用；idx 为 0 基序号，删除后重排。
+- `modify_plan_item("webagent", idx, content)`：修改条目内容，仅计划态(0)可用。
+- `clear_plan("webagent")`：清空条目记录，仅计划态(0)可用；条目状态全回 0，内容保留。
+- `start_plan("webagent")`：启动当前计划（计划态 0 -> 1），此后条目冻结。
+- `change_plan_item_state("webagent", idx, state[, note])`：变更条目状态并附加增量笔记（自动带时间戳），note 可选、缺省时不附加，任意计划态可用。
+- `align_plan("webagent")`：由条目状态推导计划状态，生成新版 plan.txt 文本写入计划槽并返回文本。
+- `restore_plan_state("webagent", plan_text)`：从 plan.txt 文本恢复内存计划态，仅内存态为空时生效。
+- `append_plan_note("webagent", note)`：往计划级 Notes 追加带时间戳笔记，任意计划态可用，不提供删除修改。
+- `append_plan_item_note("webagent", idx, note)`：往指定条目（0 基序号）Notes 追加带时间戳笔记，不改条目状态，任意计划态可用。
+
+状态机（整型）：计划状态 0=计划、1=进行、2=完成；条目状态 0=计划、1=进行、2=废弃、3=完成。
+冻结规则：start_plan 后 delete_plan_item/modify_plan_item/clear_plan 返回 error: items frozen。
+align_plan 推导：任一条目=1 -> 计划=1；全部条目为 2 或 3 -> 计划=2；全部条目=0 -> 计划=0；混合 -> 计划=1。
+典型链路：create_plan -> add_plan_item -> append_plan_note -> start_plan -> change_plan_item_state -> append_plan_item_note-> align_plan -> 落盘 plan.txt；重启后先读 plan.txt 再 restore_plan_state。
+提醒：要用好计划笔记与条目笔记，计划内容会注入系统提示词，需要反复使用的信息可以放到笔记里避免重复查找
 
 **代码修改步骤**
 

@@ -1208,13 +1208,18 @@ class APIClient {
             //   contextWindows: allowed chat_extra.max_context_tokens values ([] = unsupported)
             return [
                 { value: 'claude-opus-5.5', label: 'Claude-Opus-5.5', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'claude-sonnet-5.5', label: 'Claude-Sonnet-5.5', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'claude-haiku-5.5', label: 'Claude-Haiku-5.5', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [100000, 1000000] },
                 { value: 'claude-opus-5', label: 'Claude-Opus-5', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-5-sonnet', label: 'Claude-5-Sonnet', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-4.8-opus', label: 'Claude-4.8-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'gpt-6.1-sol', label: 'GPT-6.1-Sol', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
                 { value: 'gpt-6-astra', label: 'GPT-6-Astra', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
+                { value: 'gpt-6-sol', label: 'GPT-6-Sol', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
+                { value: 'gpt-6-luna', label: 'GPT-6-Luna', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
                 { value: 'gpt-5.6-sol', label: 'GPT-5.6-Sol', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
                 { value: 'gpt-5.6-terra', label: 'GPT-5.6-Terra', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
                 { value: 'gpt-5.6-luna', label: 'GPT-5.6-Luna', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
@@ -1229,8 +1234,9 @@ class APIClient {
                 { value: 'gemini-3.5-flash', label: 'Gemini-3.5-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'hy4-preview', label: 'HY-4', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
                 { value: 'hy3', label: 'HY-3', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
-                { value: 'glm-5.3', label: 'GLM-5.3', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'glm-5.3-flash', label: 'GLM-5.3-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'glm-5.3', label: 'GLM-5.3', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'deepseek-v4-pro', label: 'DeepSeek-V4-Pro', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] }
             ];

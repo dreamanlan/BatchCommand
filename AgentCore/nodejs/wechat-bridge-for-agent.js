@@ -419,6 +419,11 @@ function processIncomingMessage(msg) {
 
   if (!text) return;
 
+  // channelId for agent routing is the wechat userId itself. Registered on
+  // every text message (commands included) so the forwardToWechat fallback
+  // has a target even when the first inbound message is a / command.
+  channelSessions.set(fromUser, { userId: fromUser, lastSeen: Date.now() });
+
   console.log('[WX] Message from', fromUser, ':', text.substring(0, 50));
 
   // R4: parse leading / commands for route control (wechat -> ws only).
@@ -443,11 +448,24 @@ function processIncomingMessage(msg) {
       forwardToWechat(feedback, fromUser);
       return;
     }
+    if (cmd === '/status') {
+      const names = [];
+      for (const ws of agentClients) {
+        names.push(agentClientNames.get(ws) || 'unnamed');
+      }
+      const feedback = [
+        'wechat: ' + (credentials ? 'logged_in' : 'not_logged_in') + (polling ? ', polling' : ''),
+        'route: ' + ((wxRouteMode === 'solo' && wxRouteTarget) ? 'solo ' + wxRouteTarget : 'broadcast'),
+        'agents: ' + (names.length > 0 ? names.join(', ') : 'none') + ' (' + agentClients.size + ' connection(s))',
+        'wechat users: ' + channelSessions.size
+      ].join('\n');
+      console.log('[WX] /status requested by', fromUser);
+      forwardToWechat(feedback, fromUser);
+      return;
+    }
     console.log('[WX] unknown command forwarded:', cmd);
   }
 
-  // channelId for agent routing is the wechat userId itself.
-  channelSessions.set(fromUser, { userId: fromUser, lastSeen: Date.now() });
   pushToAgent(text, fromUser);
 }
 
@@ -511,12 +529,27 @@ function forwardToWechat(content, channelId) {
     console.error('[wechat] Cannot forward: wechat not logged in');
     return;
   }
-  if (!channelId) {
-    console.error('[wechat] Cannot forward: no channelId');
-    return;
+  let target = channelId;
+  if (!target) {
+    // No channelId (agent-local reply with no prior inbound): fall back to
+    // the most recent wechat session so agent messages still reach wechat.
+    let bestSeen = -1;
+    for (const [cid, session] of channelSessions) {
+      const user = (session && session.userId) || cid;
+      const seen = (session && session.lastSeen) || 0;
+      if (user && seen > bestSeen) {
+        bestSeen = seen;
+        target = user;
+      }
+    }
+    if (!target) {
+      console.error('[wechat] Cannot forward: no channelId and no known wechat session');
+      return;
+    }
+    console.log('[wechat] No channelId, falling back to most recent session:', target);
   }
-  const session = channelSessions.get(channelId);
-  const toUser = (session && session.userId) || channelId;
+  const session = channelSessions.get(target);
+  const toUser = (session && session.userId) || target;
   sendTextMessage(toUser, String(content)).then(result => {
     if (!result.success) {
       console.error('[wechat] Forward failed:', result.error);

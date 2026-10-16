@@ -30,7 +30,14 @@ class RelayWs {
     this._onMessage = null;    // user callback: (data) => void
     this._onStatus = null;     // user callback: (status) => void  status: 'connected'|'disconnected'|'error'|'auth_ok'
     this._wsClientId = null;   // stable per-page client identity (R3)
-    this._hadRemoteInbound = false;  // any inbound 'message' push seen (bridge or relay)
+    this._hadRemoteInbound = false;  // any inbound 'message' push seen (diagnostic only)
+    // Outbound pushes queued while the relay connection is down; flushed on
+    // reconnect (after auth) so replies finished during a disconnect window
+    // are delivered instead of silently dropped.
+    this._pendingPushes = [];
+    this.maxPendingPushes = 50;
+    this.authenticated = false;
+    this._loadSessionState();
   }
 
   _getUrl() {
@@ -52,6 +59,32 @@ class RelayWs {
       this._wsClientId = s || ('agent_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10));
     }
     return this._wsClientId;
+  }
+
+  // ---- session-state persistence ----
+  // _hadRemoteInbound / _lastChannelId survive a page reload (browser
+  // restart, renderer memory-guard reopen): without this, replies generated
+  // right after the reload are dropped by the "no remote session yet" gate
+  // until the next inbound message arrives.
+  _loadSessionState() {
+    try {
+      const raw = localStorage.getItem('relay_ws_session_state');
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (s && s.hadRemoteInbound) this._hadRemoteInbound = true;
+      if (s && s.lastChannelId) this._lastChannelId = s.lastChannelId;
+    } catch (e) {
+      this.logger.warn('Failed to load relay session state: ' + e.message);
+    }
+  }
+
+  _saveSessionState() {
+    try {
+      localStorage.setItem('relay_ws_session_state', JSON.stringify({
+        hadRemoteInbound: this._hadRemoteInbound,
+        lastChannelId: this._lastChannelId
+      }));
+    } catch (e) { /* storage unavailable: keep in-memory state */ }
   }
 
   // ---- public API ----
@@ -96,6 +129,7 @@ class RelayWs {
       });
       this.logger.info('Connected');
       this._emitStatus('connected');
+      this.authenticated = false;
       // Auto-authenticate if apiKey is set (same envelope as before)
       const key = this._getApiKey();
       if (key) {
@@ -105,6 +139,9 @@ class RelayWs {
       // (mirrors the relay_agent_lite.js handshake).
       this._send({ type: 'register', name: CONFIG.get('relay.agentName') || 'webagent' });
       this._startHeartbeat();
+      // With no api key there is no auth_ok to wait for: flush right away.
+      // With a key the flush is gated on auth_ok inside _flushPendingPushes.
+      this._flushPendingPushes();
     }, (code, msgText) => {
       this.logger.error('lite_open failed (' + code + '): ' + msgText);
       this._emitStatus('error');
@@ -124,6 +161,7 @@ class RelayWs {
     this._stopHeartbeat();
     this._release();
     this.connected = false;
+    this.authenticated = false;
     // Notify listeners (e.g. the relay panel button) so the UI updates.
     this._emitStatus('disconnected');
   }
@@ -152,14 +190,26 @@ class RelayWs {
     });
   }
 
-  // Push a message without waiting for response (fire-and-forget)
+  // Push a message without waiting for response (fire-and-forget).
+  // When the relay connection is down the push is queued (bounded) and
+  // flushed after reconnect + auth instead of being silently dropped.
+  // No inbound gate: LLM replies are always forwarded. With no channelId
+  // the relay server path is routed by the chatroom (contact_claw_<sender>),
+  // and the wechat bridges fall back to the most recent wechat session.
   pushMessage(text, opts) {
     opts = opts || {};
-    // No remote conversation ever started (pure local chat): nobody to
-    // deliver to - the bridge would drop it for missing channelId anyway.
-    if (!this._hadRemoteInbound) {
-      this.logger.warn('push dropped, no remote session yet');
-      return false;
+    if (!this.connected || !this.clientId) {
+      if (this._pendingPushes.length >= this.maxPendingPushes) {
+        const dropped = this._pendingPushes.shift();
+        this.logger.warn('pending push queue full (' + this.maxPendingPushes
+          + '), dropped oldest (len ' + String(dropped && dropped.text || '').length + ')');
+      }
+      // Snapshot the channelId at enqueue time: a newer inbound message may
+      // update _lastChannelId before the flush, but this reply belongs to
+      // the channel it was produced for.
+      this._pendingPushes.push({ text: text, opts: opts, channelId: this._lastChannelId });
+      this.logger.info('relay not connected, push queued (pending: ' + this._pendingPushes.length + ')');
+      return true;
     }
     return this._send({
       type: 'message',
@@ -249,8 +299,14 @@ class RelayWs {
 
     // Browser-side connection state for our wsp connection.
     if (data.type === 'relay_state') {
-      if (data.state === 'connected') return;  // already emitted at open
+      if (data.state === 'connected') {
+        // Link-layer recovery on the same client id: the connection may be
+        // usable again (auth gate is enforced inside the flush).
+        this._flushPendingPushes();
+        return;  // already emitted at open
+      }
       this.connected = false;
+      this.authenticated = false;
       this._stopHeartbeat();
       this.logger.info('Disconnected');
       this._emitStatus('disconnected');
@@ -262,20 +318,23 @@ class RelayWs {
 
     // Check auth response
     if (data.type === 'auth_response' || data.type === 'auth_ok') {
+      this.authenticated = true;
       this._emitStatus('auth_ok');
+      this._flushPendingPushes();
       return;
     }
 
     // Track remote conversations: any inbound 'message' push marks that a
     // remote session exists (the local bridge sends channelId, the remote
-    // relay sends sender/session instead - both count). pushMessage gates
-    // on this so purely local chats are not forwarded. Also remember the
-    // channel for bridge-side reply routing.
+    // relay sends sender/session instead - both count) and remembers the
+    // channel for bridge-side reply routing. Diagnostic only - pushMessage
+    // no longer gates on this.
     if (data.type === 'message') {
       this._hadRemoteInbound = true;
       if (data.channelId) {
         this._lastChannelId = data.channelId;
       }
+      this._saveSessionState();
     }
 
     // Check if this is a response to a pending request
@@ -293,6 +352,34 @@ class RelayWs {
         this._onMessage(data);
       } catch (e) {
         this.logger.error('onMessage callback error: ' + e.message);
+      }
+    }
+  }
+
+  // Send everything queued while the connection was down. Order-preserving;
+  // a send failure mid-flush re-queues the remainder.
+  _flushPendingPushes() {
+    if (this._pendingPushes.length === 0) return;
+    if (!this.connected || !this.clientId) return;
+    // The relay server rejects messages from unauthenticated clients, so
+    // with an api key configured the flush must wait for auth_ok.
+    if (this._getApiKey() && !this.authenticated) return;
+    const queue = this._pendingPushes;
+    this._pendingPushes = [];
+    this.logger.info('Flushing ' + queue.length + ' pending push(es)');
+    for (const item of queue) {
+      const sent = this._send({
+        type: 'message',
+        content: item.text,
+        session: (item.opts && item.opts.session) || this._getSession(),
+        channelId: item.channelId != null ? item.channelId : this._lastChannelId
+      });
+      if (!sent) {
+        // Connection dropped mid-flush: re-queue the remainder in order.
+        const idx = queue.indexOf(item);
+        this._pendingPushes = queue.slice(idx).concat(this._pendingPushes);
+        this.logger.warn('Flush interrupted, ' + this._pendingPushes.length + ' push(es) re-queued');
+        return;
       }
     }
   }

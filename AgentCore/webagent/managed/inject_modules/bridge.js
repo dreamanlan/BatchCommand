@@ -189,13 +189,13 @@ class AgentBridge {
       try {
         const api = (typeof window !== 'undefined') ? window.AgentAPI : null;
         data.jsState = {
-          operationQueueCount: (api && api.getOperationQueueCount) ? api.getOperationQueueCount() : 0,
+          metaDslOperationCount: (api && api.getMetaDslOperationCount) ? api.getMetaDslOperationCount() : 0,
           sendQueueCount: (api && api.getSendQueueCount) ? api.getSendQueueCount() : 0,
           receiveQueueCount: (api && api.getReceiveQueueCount) ? api.getReceiveQueueCount() : 0,
           llmCategory: (api && api.getLLMCategory) ? api.getLLMCategory() : ''
         };
       } catch (e) {
-        data.jsState = { operationQueueCount: 0, sendQueueCount: 0, receiveQueueCount: 0, llmCategory: '' };
+        data.jsState = { metaDslOperationCount: 0, sendQueueCount: 0, receiveQueueCount: 0, llmCategory: '' };
       }
     }
 

@@ -336,7 +336,7 @@ script(idle_selfcheck_tick)
     if (llm_is_busy(@PmLlmProviderId)) {
         return;
     };
-    if (js_queue_count("", "operationQueueCount") > 0 || js_queue_count("", "sendQueueCount") > 0 || js_queue_count("", "receiveQueueCount") > 0) {
+    if (js_queue_count("", "metaDslOperationCount") > 0 || js_queue_count("", "sendQueueCount") > 0 || js_queue_count("", "receiveQueueCount") > 0) {
         return;
     };
     // Everything in-memory says idle. File gates: only remind under monitor
@@ -383,7 +383,7 @@ script(on_ws_client_disconnected)params($port)
 
 // ----------------------------------------------------------------------------
 // js state cache (P2): every notification from the js side carries a jsState
-// block { operationQueueCount, sendQueueCount, receiveQueueCount, llmCategory }
+// block { metaDslOperationCount, sendQueueCount, receiveQueueCount, llmCategory }
 // (main page: from window.AgentAPI, site pages: from window.MetaDSLBridge).
 // The last value per agent is cached here; async flows (e.g. llm callbacks)
 // read the cache — the flows the state used to be queried for synchronously.
@@ -651,11 +651,11 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 {
     // P2: queue counts come from the js state cache (the js side attaches
     // jsState to every notification; values may lag by one notification).
-    $operationQueueCount = js_queue_count("", "operationQueueCount");
+    $metaDslOperationCount = js_queue_count("", "metaDslOperationCount");
     $sendQueueCount = js_queue_count("", "sendQueueCount");
     $receiveQueueCount = js_queue_count("", "receiveQueueCount");
     $activeWorkers = agent_get_active_workers(@AgentId);
-    nativelog("[agent] llm_callback: provider={0} tag={1} topic={2} reply_len={3} operation={4} send={5} receive={6} active_workers={7}", $providerId, $tag, $topic, strlen($reply), $operationQueueCount, $sendQueueCount, $receiveQueueCount, $activeWorkers);
+    nativelog("[agent] llm_callback: provider={0} tag={1} topic={2} reply_len={3} operation={4} send={5} receive={6} active_workers={7}", $providerId, $tag, $topic, strlen($reply), $metaDslOperationCount, $sendQueueCount, $receiveQueueCount, $activeWorkers);
 
     // A failed or cancelled request still delivers its result, as "[error] ...".
     // Never treat that as a PM reply: the branches below would write it into
@@ -740,10 +740,10 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
     }
     else {
         $workers = agent_get_active_workers(@AgentId);
-        if ($operationQueueCount > 0 || $workers > 0 || $sendQueueCount > 0 || $receiveQueueCount > 0) {
-            $reply = format("{0}\n\n**还有{1}个代码在排队执行，{2}个请求在排队发送，{3}个结果在排队接收，当前有{4}个代码正在执行中**", $reply, $operationQueueCount, $sendQueueCount, $receiveQueueCount, $workers);
+        if ($metaDslOperationCount > 0 || $workers > 0 || $sendQueueCount > 0 || $receiveQueueCount > 0) {
+            $reply = format("{0}\n\n**还有{1}个代码在排队执行，{2}个请求在排队发送，{3}个结果在排队接收，当前有{4}个代码正在执行中**", $reply, $metaDslOperationCount, $sendQueueCount, $receiveQueueCount, $workers);
         };
-        if ($operationQueueCount > 0) {
+        if ($metaDslOperationCount > 0) {
             $reply = format("{0}\n**不要再发新代码，回复继续即可**", $reply);
         };
         send_command_to_inject("send_message", to_json({text: $reply}));
@@ -876,9 +876,9 @@ script(induction_info)params($batch, $infos, $session)
     }
     else {
         // P2: queue counts from the js state cache.
-        $operationQueueCount = js_queue_count("", "operationQueueCount");
+        $metaDslOperationCount = js_queue_count("", "metaDslOperationCount");
         $receiveQueueCount = js_queue_count("", "receiveQueueCount");
-        $ct = $operationQueueCount + $receiveQueueCount;
+        $ct = $metaDslOperationCount + $receiveQueueCount;
 
         $histId = "_decurion_history";
         if ($session == "llm_pm_marquis") {
@@ -1112,9 +1112,9 @@ script(induction_freebie_info)params($batch, $infos, $session, $agentId)
     nativelog("[agent] induction_freebie_info, batch: {0}, infos: {1}, session: {2}, agent: {3}", $batch, count($infos), $session, $agentId);
 
     // P2: queue counts from the js state cache for this agent.
-    $operationQueueCount = js_queue_count($agentId, "operationQueueCount");
+    $metaDslOperationCount = js_queue_count($agentId, "metaDslOperationCount");
     $receiveQueueCount = js_queue_count($agentId, "receiveQueueCount");
-    $ct = $operationQueueCount + $receiveQueueCount;
+    $ct = $metaDslOperationCount + $receiveQueueCount;
 
     $histId = "_decurion_history";
     if ($session == "llm_pm_marquis") {

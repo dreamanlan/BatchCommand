@@ -305,7 +305,7 @@
     if (data.jsState === undefined && window.MetaDSLBridge) {
       try {
         data.jsState = {
-          operationQueueCount: window.MetaDSLBridge.getOperationQueueCount ? window.MetaDSLBridge.getOperationQueueCount() : 0,
+          metaDslOperationCount: window.MetaDSLBridge.getMetaDslOperationCount ? window.MetaDSLBridge.getMetaDslOperationCount() : 0,
           sendQueueCount: window.MetaDSLBridge.getSendQueueCount ? window.MetaDSLBridge.getSendQueueCount() : 0,
           receiveQueueCount: window.MetaDSLBridge.getReceiveQueueCount ? window.MetaDSLBridge.getReceiveQueueCount() : 0,
           llmCategory: ''
@@ -1399,7 +1399,7 @@
     // pending-operation layer nor a to-send queue: both counters are always 0.
     // Exec requests still in flight (sent, result not yet back) are tracked in
     // ST.execInflight and exposed via status().execQueue instead.
-    getOperationQueueCount: () => 0,
+    getMetaDslOperationCount: () => 0,
     getSendQueueCount: () => 0,
     getReceiveQueueCount: () => ST.pendingResults.length,
     status: () => ({

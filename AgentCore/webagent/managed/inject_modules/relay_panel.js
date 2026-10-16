@@ -553,13 +553,15 @@ class RelayPanel {
     if (this.visible) this.hide(); else this.show();
   }
 
-  // Forward LLM response to Relay via WebSocket
+  // Forward LLM response to Relay via WebSocket.
+  // Not connected is not a reason to drop: RelayWs.pushMessage queues the
+  // text and flushes it after reconnect + auth.
   forwardToRelay(text) {
     if (!this.remoteEnabled) return;
     const ws = window.Relay && window.Relay.ws;
-    if (ws && ws.connected) {
-      ws.pushMessage(text);
-      if (this.echoEnabled) {
+    if (ws) {
+      const delivered = ws.pushMessage(text);
+      if (this.echoEnabled && delivered) {
         this._chatLog('[LLM->remote] ' + text.substring(0, 200) + (text.length > 200 ? '...' : ''));
       }
     }

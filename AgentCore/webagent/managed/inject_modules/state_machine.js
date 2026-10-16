@@ -406,8 +406,18 @@ class ScanningCodeBlocksState extends State {
     if (this.monitor.onLLMResponse) {
       const resp = this.monitor.pageAdapter.getLastScannedResponse();
       if (resp) {
-        this.info('Triggering onLLMResponse callback');
-        this.monitor.onLLMResponse(resp);
+        // Skip a reply that was already forwarded in an earlier round: a
+        // timeout stop / no-output round leaves the previous round's reply
+        // as the newest scanned response, and pushing it again duplicates it
+        // on the remote side while this round's real reply (if any) is lost.
+        const respHash = this.monitor.pageAdapter.hashString(resp);
+        if (respHash === this.monitor.lastForwardedResponseHash) {
+          this.info('Skip onLLMResponse: scanned response already forwarded (hash match)');
+        } else {
+          this.monitor.lastForwardedResponseHash = respHash;
+          this.info('Triggering onLLMResponse callback');
+          this.monitor.onLLMResponse(resp);
+        }
       }
     }
   }
@@ -430,6 +440,21 @@ class ScanningCodeBlocksState extends State {
       if (Date.now() > maxWait) {
         this.info('[ScanningCodeBlocksState] Scan timeout, forcing scan before transitioning');
         this.monitor.scanForNewCodeBlocks();
+        // Unstable blocks left lastScannedResponse untouched. Generation has
+        // already stopped (that is how this state was entered), so capture
+        // the latest response directly: a stale value would make exit()
+        // forward the previous round's reply (or nothing), losing this
+        // round's reply on the remote side.
+        if (!this.monitor.scanComplete) {
+          const latest = this.monitor.pageAdapter.extractLatestResponse();
+          const allBoxes = document.querySelectorAll('.vac-message-box:not(.vac-offset-current)');
+          const lastBox = allBoxes.length > 0 ? allBoxes[allBoxes.length - 1] : null;
+          if (latest && lastBox) {
+            this.monitor.pageAdapter.setLastScannedResponse(latest, lastBox);
+            this.monitor.scanComplete = true;
+            this.warn('[ScanningCodeBlocksState] Blocks still unstable at timeout, captured latest response directly');
+          }
+        }
         this.monitor.transitionTo('AGENT_EXECUTING', 'Code block scan timeout');
         break;
       }

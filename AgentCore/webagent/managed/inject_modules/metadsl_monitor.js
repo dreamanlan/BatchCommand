@@ -117,6 +117,10 @@ class MetaDSLMonitor {
 
     // Callback for LLM response forwarding (set by main.js)
     this.onLLMResponse = null;
+    // Hash of the last LLM response forwarded via onLLMResponse: the
+    // SCANNING_CODE_BLOCKS exit uses it to avoid re-forwarding the previous
+    // round's reply when a round produced no new output.
+    this.lastForwardedResponseHash = null;
   }
 
   // Safely extract className as a string, compatible with SVG elements
@@ -1794,6 +1798,12 @@ class MetaDSLMonitor {
     return true;
   }
 
+  getMetaDslOperationCount() {
+    // Only count queued MetaDSL code operations ('execute' / 'mark_history'),
+    // excluding 'send_notification' operations.
+    return this.operationQueue.filter(op => op.type !== 'send_notification').length;
+  }
+
   async processOperationQueue() {
     // This method is now deprecated in favor of state machine
     // Kept for backward compatibility, redirects to state machine
@@ -2282,7 +2292,7 @@ class MetaDSLMonitor {
       messageStr += String(message).trim();
     }
 
-    let operationCount = this.operationQueue.length;
+    let operationCount = this.getMetaDslOperationCount();
     let sendCount = this.metadslWorker.getSendQueueCount();
     let receiveCount = this.metadslWorker.getReceiveQueueCount();
     if (operationCount > 0 || sendCount > 0 || receiveCount > 0) {

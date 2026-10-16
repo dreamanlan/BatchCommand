@@ -1007,10 +1007,20 @@ class APIClient {
                                 // Handle knot response format
                                 if (apiLogger) apiLogger.debug('Received data:', data);
 
-                                if (data.type === 'TEXT_MESSAGE_CONTENT') {
+                                // AGUI event enum values arrive as upper-case
+                                // (TEXT_MESSAGE_CONTENT / THINKING_TEXT_MESSAGE_CONTENT);
+                                // normalize case for defensive matching.
+                                const eventType = String(data.type || '').toUpperCase();
+                                if (eventType === 'TEXT_MESSAGE_CONTENT') {
                                     content = data.rawEvent?.content || '';
                                     if (apiLogger) apiLogger.debug('Text content:', { content });
                                     // conversation_id not saved - frontend manages context independently
+                                } else if (eventType === 'THINKING_TEXT_MESSAGE_CONTENT') {
+                                    // Thinking stream: same rawEvent.content field,
+                                    // emitted as reasoning so it never mixes into
+                                    // the visible answer or saved history.
+                                    reasoning = data.rawEvent?.content || '';
+                                    if (apiLogger) apiLogger.debug('Thinking content:', { reasoning });
                                 } else {
                                     if (apiLogger) apiLogger.debug('Non-text message type:', { type: data.type });
                                 }

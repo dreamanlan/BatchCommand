@@ -183,6 +183,10 @@ class UIController {
     updateAssistantReasoning(messageId, reasoningText) {
         const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
         if (!wrapper) return;
+        // Reasoning display was already finalized (answer started or stream
+        // ended): ignore late reasoning chunks so they cannot reopen or
+        // re-create the collapsed block.
+        if (wrapper.dataset.reasoningFinalized === '1') return;
         let block = wrapper.querySelector('.reasoning-block');
         if (!block) {
             block = document.createElement('details');
@@ -212,12 +216,15 @@ class UIController {
 
     /**
      * Called once the assistant starts producing its real answer (or when
-     * streaming finishes). Collapses the reasoning block and switches the
-     * label from "thinking…" to a final "thought" caption.
+     * streaming finishes). Collapses the reasoning block into an expandable
+     * "thought" summary that stays with the message until the display limit
+     * removes the whole wrapper. The wrapper is marked so late reasoning
+     * chunks cannot reopen or re-create the block.
      */
     finalizeAssistantReasoning(messageId) {
         const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
         if (!wrapper) return;
+        wrapper.dataset.reasoningFinalized = '1';
         const block = wrapper.querySelector('.reasoning-block');
         if (!block) return;
         if (block.dataset.finalized === '1') return;

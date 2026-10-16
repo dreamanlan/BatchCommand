@@ -30,6 +30,13 @@ namespace AgentCore.Core
         /// Sends a JSON-RPC request and returns the raw JSON-RPC response string.
         /// </summary>
         Task<string> SendRequestAsync(string jsonRpcRequest);
+        /// <summary>
+        /// Raised when the server sends a notification the transport does not
+        /// handle itself (e.g. notifications/prompts/list_changed, delivered via
+        /// the legacy GET stream or the 2026-07-28 subscriptions/listen stream).
+        /// May never fire on transports without a server-to-client channel.
+        /// </summary>
+        event Action<string>? ServerNotification;
         void Disconnect();
     }
 
@@ -38,7 +45,7 @@ namespace AgentCore.Core
     /// MCP era. Adds handshake-era members on top of the shared IMcpTransport
     /// runtime contract. Frozen: new protocol features must not be added here.
     /// </summary>
-    internal interface IMcpOldTransport : IMcpTransport
+    internal interface IMcpBefore2026Transport : IMcpTransport
     {
         /// <summary>
         /// Protocol version the server answered with in the initialize
@@ -50,12 +57,6 @@ namespace AgentCore.Core
         /// Implementations MUST NOT wait for any response.
         /// </summary>
         Task SendNotificationAsync(string jsonRpcNotification);
-        /// <summary>
-        /// Raised when the server sends a notification the transport does not
-        /// handle itself (e.g. notifications/prompts/list_changed). May never
-        /// fire on transports without a server-to-client notification channel.
-        /// </summary>
-        event Action<string>? ServerNotification;
     }
 
     /// <summary>
@@ -261,6 +262,15 @@ namespace AgentCore.Core
         public string Target { get; }
         private int _requestId;
 
+        /// <summary>
+        /// Freshness deadline for the cached Tools list (2026-07-28 ttlMs hint).
+        /// Null = no ttlMs reported (legacy servers): keep the connect-time cache
+        /// until reconnect.
+        /// </summary>
+        public DateTime? ToolsExpiresAt;
+        private readonly Dictionary<string, (string Value, DateTime ExpiresAt)> _responseCache = new();
+        private readonly object _cacheLock = new();
+
         public McpServerConnection(IMcpTransport transport, string type, string target)
         {
             Transport = transport;
@@ -269,6 +279,45 @@ namespace AgentCore.Core
         }
 
         public int NextId() => Interlocked.Increment(ref _requestId);
+
+        /// <summary>Returns a fresh cached response for the key, if any (ttlMs not expired).</summary>
+        public bool TryGetCached(string key, out string value)
+        {
+            lock (_cacheLock) {
+                if (_responseCache.TryGetValue(key, out var entry) && DateTime.UtcNow < entry.ExpiresAt) {
+                    value = entry.Value;
+                    return true;
+                }
+            }
+            value = string.Empty;
+            return false;
+        }
+
+        /// <summary>Caches a response for the given ttl (2026-07-28 CacheableResult; zero ttl is not cached).</summary>
+        public void SetCached(string key, string value, TimeSpan ttl)
+        {
+            if (ttl <= TimeSpan.Zero)
+                return;
+            lock (_cacheLock) {
+                _responseCache[key] = (value, DateTime.UtcNow + ttl);
+            }
+        }
+
+        /// <summary>Invalidates a cached response (list_changed notifications invalidate immediately).</summary>
+        public void InvalidateCache(string key)
+        {
+            lock (_cacheLock) {
+                _responseCache.Remove(key);
+            }
+        }
+
+        /// <summary>Invalidates all cached responses (list_changed notifications invalidate immediately).</summary>
+        public void InvalidateAllCache()
+        {
+            lock (_cacheLock) {
+                _responseCache.Clear();
+            }
+        }
 
         public void Dispose()
         {
@@ -420,9 +469,10 @@ namespace AgentCore.Core
                 return $"error: unknown transport type '{type}', use 'stdio', 'sse' or 'streamable-http'";
             }
 
-            // Route server-initiated notifications (e.g. prompts/list_changed) to the service (legacy-era transports only)
-            if (transport is IMcpOldTransport notifTransport)
-                notifTransport.ServerNotification += json => HandleServerNotification(serverId, json);
+            // Route server-initiated notifications (e.g. list_changed, via the
+            // legacy GET stream or the 2026-07-28 subscriptions/listen stream)
+            // to the service
+            transport.ServerNotification += json => HandleServerNotification(serverId, json);
 
             try {
                 transport.ConnectAsync().GetAwaiter().GetResult();
@@ -450,13 +500,13 @@ namespace AgentCore.Core
                 _modernEraCache[serverId] = modern;
 
                 if (modern) {
-                    var modernStdio = (IMcpOldTransport)transport;
+                    var modernStdio = (IMcpBefore2026Transport)transport;
                     if (modernStdio.NegotiatedVersion == null)
                         modernStdio.NegotiatedVersion = forceModern ? opts.ProtocolVersion : McpProtocol.V2026_07_28;
                     AgentCore.Instance.Logger.Info($"[McpClientService] server '{serverId}' (stdio) uses stateless protocol {transport.ProtocolVersion}");
                 }
                 else {
-                    var oldTransport = (IMcpOldTransport)transport;
+                    var oldTransport = (IMcpBefore2026Transport)transport;
                     try {
                         Thread.Sleep(opts.StartupDelayMs);
                         string requestedVersion = opts.ProtocolVersion ?? McpProtocol.Default;
@@ -484,10 +534,9 @@ namespace AgentCore.Core
                     }
                 }
             }
-            else if (transport is IMcpOldTransport legacyHttpTransport) {
+            else if (transport is IMcpBefore2026Transport legacyHttpTransport) {
                 // Legacy sse / streamable-http: Transport.ConnectAsync already sent initialize; complete handshake with notifications/initialized
                 try {
-                    Thread.Sleep(opts.StartupDelayMs);
                     string notif = System.Text.Json.JsonSerializer.Serialize(new { jsonrpc = "2.0", method = "notifications/initialized" });
                     legacyHttpTransport.SendNotificationAsync(notif).GetAwaiter().GetResult();
                     AgentCore.Instance.Logger.Info($"[McpClientService] initialize for '{serverId}' (transport '{type}'): requested {opts.ProtocolVersion ?? McpProtocol.Default}, negotiated {legacyHttpTransport.NegotiatedVersion ?? "<unreported>"}");
@@ -512,9 +561,17 @@ namespace AgentCore.Core
             }
             catch (Exception ex) {
                 AgentCore.Instance.Logger.Info($"[McpClientService] failed to list tools for server '{serverId}' (transport '{type}'): {ex}");
+                if (!transport.IsConnected) {
+                    conn.Dispose();
+                    return $"error: tools/list failed and transport disconnected - {ex.Message}";
+                }
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] Warning: failed to list tools for '{serverId}': {ex.Message}");
             }
 
+            if (!transport.IsConnected) {
+                conn.Dispose();
+                return "error: transport disconnected before connection registration";
+            }
             _servers[serverId] = conn;
             return "ok";
         }
@@ -580,20 +637,54 @@ namespace AgentCore.Core
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"error: server '{serverId}' not connected";
 
+            RefreshToolsIfStale(serverId, conn);
+
             if (conn.Tools.Count == 0)
                 return "(no tools available)";
 
             var sb = new StringBuilder();
-            foreach (var tool in conn.Tools) {
-                string namePart = string.IsNullOrEmpty(tool.Title) ? tool.Name : $"{tool.Name} ({tool.Title})";
-                sb.AppendLine($"{namePart}: {tool.Description}");
-                if (!string.IsNullOrEmpty(tool.InputSchemaJson)) {
-                    string paramDesc = FormatParams(tool.InputSchemaJson);
-                    if (!string.IsNullOrEmpty(paramDesc))
-                        sb.AppendLine($"  params: {paramDesc}");
+            lock (conn.Tools) {
+                foreach (var tool in conn.Tools) {
+                    string namePart = string.IsNullOrEmpty(tool.Title) ? tool.Name : $"{tool.Name} ({tool.Title})";
+                    sb.AppendLine($"{namePart}: {tool.Description}");
+                    if (!string.IsNullOrEmpty(tool.InputSchemaJson)) {
+                        string paramDesc = FormatParams(tool.InputSchemaJson);
+                        if (!string.IsNullOrEmpty(paramDesc))
+                            sb.AppendLine($"  params: {paramDesc}");
+                    }
                 }
             }
             return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// Lazily refreshes the cached tool list when stale. 2026-07-28 servers
+        /// return a ttlMs freshness hint (list_changed notifications invalidate
+        /// early); on legacy servers without ttlMs the connect-time cache is
+        /// kept until reconnect.
+        /// </summary>
+        private McpServerConnection RefreshToolsIfStale(string serverId, McpServerConnection conn)
+        {
+            if (conn.Tools.Count > 0 && (conn.ToolsExpiresAt == null || DateTime.UtcNow < conn.ToolsExpiresAt.Value))
+                return conn;
+            try {
+                var fresh = EnsureConnectedAsync(serverId, conn).GetAwaiter().GetResult();
+                string listReq = BuildRpcRequest(fresh, "tools/list", null, fresh.NextId());
+                string listResp = fresh.Transport.SendRequestAsync(listReq).GetAwaiter().GetResult();
+                if (JsonRpcHelper.ParseError(listResp) == null && JsonRpcHelper.ParseResult(listResp) != null) {
+                    lock (fresh.Tools) {
+                        fresh.Tools.Clear();
+                        ParseAndCacheTools(fresh, listResp);
+                    }
+                    long? ttl = ParseTtlMs(listResp);
+                    fresh.ToolsExpiresAt = ttl == null ? null : DateTime.UtcNow + TimeSpan.FromMilliseconds(ttl.Value);
+                }
+                return fresh;
+            }
+            catch (Exception ex) {
+                AgentCore.Instance.Logger.Info($"[McpClientService] failed to refresh tools for '{serverId}': {ex.Message}");
+                return conn;
+            }
         }
 
         /// <summary>
@@ -604,9 +695,13 @@ namespace AgentCore.Core
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"error: server '{serverId}' not connected";
+            if (conn.TryGetCached("resources/list", out string cachedList))
+                return cachedList;
             try {
                 var lines = new List<string>();
                 string? cursor = null;
+                long? minTtl = null;
+                bool allPagesHaveTtl = true;
                 for (int page = 0; page < 100; page++) {
                     object? prm = cursor == null ? null : new { cursor };
                     string req = BuildRpcRequest(conn, "resources/list", prm, conn.NextId());
@@ -617,6 +712,11 @@ namespace AgentCore.Core
                     var result = JsonRpcHelper.ParseResult(resp);
                     if (result == null)
                         break;
+                    long? pageTtl = ParseTtlMs(resp);
+                    if (pageTtl == null)
+                        allPagesHaveTtl = false;
+                    else if (allPagesHaveTtl)
+                        minTtl = Math.Min(minTtl ?? long.MaxValue, pageTtl.Value);
                     if (result.Value.TryGetProperty("resources", out var resEl)) {
                         foreach (var r in resEl.EnumerateArray()) {
                             string uri = r.TryGetProperty("uri", out var u) ? u.GetString() ?? string.Empty : string.Empty;
@@ -635,7 +735,12 @@ namespace AgentCore.Core
                         break;
                     cursor = ncEl.GetString();
                 }
-                return lines.Count == 0 ? "(no resources available)" : string.Join("\n", lines);
+                string listResult = lines.Count == 0 ? "(no resources available)" : string.Join("\n", lines);
+                // Cache under the ttlMs freshness hint (2026-07-28); without a
+                // hint on any page the list is fetched fresh every call.
+                if (allPagesHaveTtl)
+                    conn.SetCached("resources/list", listResult, TimeSpan.FromMilliseconds(minTtl ?? 0));
+                return listResult;
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ListResources error for '{serverId}': {ex.Message}");
@@ -646,14 +751,21 @@ namespace AgentCore.Core
         /// <summary>
         /// Reads a resource by uri and returns its content as text.
         /// Blob contents are summarized as "[binary N base64 chars]".
+        /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to
+        /// answer an "[input required]" result (2026-07-28 MRTR).
+        /// Results are cached under the ttlMs freshness hint when present.
         /// </summary>
-        public Task<string> ReadResource(string serverId, string uri)
+        public Task<string> ReadResource(string serverId, string uri, string? mrtrJson = null)
         {
             return Task.Run(async () => {
                 if (!_servers.TryGetValue(serverId, out var conn))
                     return $"error: server '{serverId}' not connected";
+                string cacheKey = $"resources/read:{uri}";
+                if (mrtrJson == null && conn.TryGetCached(cacheKey, out string cachedContent))
+                    return cachedContent;
                 try {
-                    string req = BuildRpcRequest(conn, "resources/read", new { uri }, conn.NextId());
+                    var (inputResponses, requestState) = ParseMrtrJson(mrtrJson);
+                    string req = BuildRpcRequest(conn, "resources/read", BuildResourceReadParams(uri, inputResponses, requestState), conn.NextId());
 
                     // Auto-reconnect if transport is no longer connected
                     if (!conn.Transport.IsConnected) {
@@ -670,7 +782,7 @@ namespace AgentCore.Core
                                 if (!_servers.TryGetValue(serverId, out conn!))
                                     return "[error] server not found after reconnect";
                             }
-                            req = BuildRpcRequest(conn, "resources/read", new { uri }, conn.NextId());
+                            req = BuildRpcRequest(conn, "resources/read", BuildResourceReadParams(uri, inputResponses, requestState), conn.NextId());
                         }
                         finally {
                             reconnectLock.Release();
@@ -678,7 +790,7 @@ namespace AgentCore.Core
                     }
 
                     string resp = await conn.Transport.SendRequestAsync(req);
-                    return ExtractResourceContent(resp);
+                    return CacheResourceContent(conn, cacheKey, resp, mrtrJson != null);
                 }
                 catch (Exception ex) {
                     MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ReadResource error for '{serverId}' uri '{uri}': {ex.Message}");
@@ -690,10 +802,12 @@ namespace AgentCore.Core
         /// <summary>
         /// Reads an MCP resource asynchronously.
         /// tag: identifier forwarded to the mcp_callback CEF message.
+        /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to
+        /// answer an "[input required]" result (2026-07-28 MRTR).
         /// Returns "ok" immediately; result arrives via mcp_callback(serverId, tag, resultText).
         /// Shares the per-session queue with tool calls (key "serverId:tag").
         /// </summary>
-        public string ReadResourceCallback(string serverId, string uri, string tag)
+        public string ReadResourceCallback(string serverId, string uri, string tag, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"error: server '{serverId}' not connected";
@@ -706,7 +820,7 @@ namespace AgentCore.Core
             var item = new WorkItem {
                 ServerId = serverId,
                 Tag = tag,
-                Run = ct => ExecuteResourceRead(serverId, uri, tag, ct),
+                Run = ct => ExecuteResourceRead(serverId, uri, tag, ct, mrtrJson),
                 Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "mcp_callback", new BoxedValue[] { serverId, tag, result })
             };
             return Submit(session, item) ? "ok" : "busy";
@@ -717,12 +831,16 @@ namespace AgentCore.Core
         /// returns the result text (or "[error] ..."). Used by the per-session
         /// queue worker.
         /// </summary>
-        private async Task<string> ExecuteResourceRead(string serverId, string uri, string tag, CancellationToken token)
+        private async Task<string> ExecuteResourceRead(string serverId, string uri, string tag, CancellationToken token, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"[error] server '{serverId}' not connected";
+            string cacheKey = $"resources/read:{uri}";
+            if (mrtrJson == null && conn.TryGetCached(cacheKey, out string cachedContent))
+                return cachedContent;
             try {
-                string req = BuildRpcRequest(conn, "resources/read", new { uri }, conn.NextId());
+                var (inputResponses, requestState) = ParseMrtrJson(mrtrJson);
+                string req = BuildRpcRequest(conn, "resources/read", BuildResourceReadParams(uri, inputResponses, requestState), conn.NextId());
 
                 // Auto-reconnect if transport is no longer connected (with lock to prevent concurrent reconnects)
                 if (!conn.Transport.IsConnected) {
@@ -740,7 +858,7 @@ namespace AgentCore.Core
                             if (!_servers.TryGetValue(serverId, out conn!))
                                 return "[error] server not found after reconnect";
                         }
-                        req = BuildRpcRequest(conn, "resources/read", new { uri }, conn.NextId());
+                        req = BuildRpcRequest(conn, "resources/read", BuildResourceReadParams(uri, inputResponses, requestState), conn.NextId());
                     }
                     finally {
                         reconnectLock.Release();
@@ -754,12 +872,30 @@ namespace AgentCore.Core
                 if (completed == cancelTask)
                     throw new OperationCanceledException("MCP resource read cancelled");
                 string resp = await sendTask;
-                return ExtractResourceContent(resp);
+                return CacheResourceContent(conn, cacheKey, resp, mrtrJson != null);
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ReadResource error for '{serverId}' uri '{uri}': {ex.Message}");
                 return $"[error] {ex.Message}";
             }
+        }
+
+        /// <summary>
+        /// Extracts a resources/read result and caches it under the ttlMs
+        /// freshness hint (2026-07-28) when the content is cacheable.
+        /// </summary>
+        private static string CacheResourceContent(McpServerConnection conn, string cacheKey, string response, bool isMrtrRetry)
+        {
+            string content = ExtractResourceContent(response);
+            if (!isMrtrRetry &&
+                content.Length > 0 &&
+                !content.StartsWith("[error]") &&
+                !content.StartsWith("[input required]")) {
+                long? ttl = ParseTtlMs(response);
+                if (ttl != null)
+                    conn.SetCached(cacheKey, content, TimeSpan.FromMilliseconds(ttl.Value));
+            }
+            return content;
         }
 
         private static string ExtractResourceContent(string response)
@@ -771,6 +907,10 @@ namespace AgentCore.Core
             var result = JsonRpcHelper.ParseResult(response);
             if (result == null)
                 return response; // fallback: return raw
+
+            string? inputRequired = TryExtractInputRequired(result.Value);
+            if (inputRequired != null)
+                return inputRequired;
 
             // MCP resources/read result: { contents: [ { uri, mimeType?, text? | blob? }, ... ] }
             if (!result.Value.TryGetProperty("contents", out var contentsEl))
@@ -799,9 +939,13 @@ namespace AgentCore.Core
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"error: server '{serverId}' not connected";
+            if (conn.TryGetCached("prompts/list", out string cachedPrompts))
+                return cachedPrompts;
             try {
                 var lines = new List<string>();
                 string? cursor = null;
+                long? minTtl = null;
+                bool allPagesHaveTtl = true;
                 for (int page = 0; page < 100; page++) {
                     string? c = cursor;
                     conn = EnsureConnectedAsync(serverId, conn).GetAwaiter().GetResult();
@@ -814,6 +958,11 @@ namespace AgentCore.Core
                     var result = JsonRpcHelper.ParseResult(resp);
                     if (result == null)
                         break;
+                    long? pageTtl = ParseTtlMs(resp);
+                    if (pageTtl == null)
+                        allPagesHaveTtl = false;
+                    else if (allPagesHaveTtl)
+                        minTtl = Math.Min(minTtl ?? long.MaxValue, pageTtl.Value);
                     if (result.Value.TryGetProperty("prompts", out var promptsEl)) {
                         foreach (var p in promptsEl.EnumerateArray()) {
                             string name = p.TryGetProperty("name", out var n) ? n.GetString() ?? string.Empty : string.Empty;
@@ -837,7 +986,10 @@ namespace AgentCore.Core
                         break;
                     cursor = ncEl.GetString();
                 }
-                return lines.Count == 0 ? "(no prompts available)" : string.Join("\n", lines);
+                string promptsResult = lines.Count == 0 ? "(no prompts available)" : string.Join("\n", lines);
+                if (allPagesHaveTtl)
+                    conn.SetCached("prompts/list", promptsResult, TimeSpan.FromMilliseconds(minTtl ?? 0));
+                return promptsResult;
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ListPrompts error for '{serverId}': {ex.Message}");
@@ -850,14 +1002,14 @@ namespace AgentCore.Core
         /// auto-reconnect) and returns the message texts joined as "[role] text"
         /// lines. resource_link contents are inlined via resources/read when possible.
         /// </summary>
-        public Task<string> ReadPrompt(string serverId, string promptName, string argsJson)
+        public Task<string> ReadPrompt(string serverId, string promptName, string argsJson, string? mrtrJson = null)
         {
             return Task.Run(async () => {
                 if (!_servers.TryGetValue(serverId, out var conn))
                     return $"error: server '{serverId}' not connected";
                 try {
                     conn = await EnsureConnectedAsync(serverId, conn);
-                    string req = BuildPromptGetRequest(conn, promptName, argsJson);
+                    string req = BuildPromptGetRequest(conn, promptName, argsJson, mrtrJson);
                     string resp = await conn.Transport.SendRequestAsync(req);
                     return ExtractPromptContent(resp, conn);
                 }
@@ -874,7 +1026,7 @@ namespace AgentCore.Core
         /// Returns "ok" immediately; result arrives via mcp_callback(serverId, tag, resultText).
         /// Shares the per-session queue with tool/resource calls (key "serverId:tag").
         /// </summary>
-        public string ReadPromptCallback(string serverId, string promptName, string argsJson, string tag)
+        public string ReadPromptCallback(string serverId, string promptName, string argsJson, string tag, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"error: server '{serverId}' not connected";
@@ -887,7 +1039,7 @@ namespace AgentCore.Core
             var item = new WorkItem {
                 ServerId = serverId,
                 Tag = tag,
-                Run = ct => ExecutePromptGet(serverId, promptName, argsJson, tag, ct),
+                Run = ct => ExecutePromptGet(serverId, promptName, argsJson, tag, ct, mrtrJson),
                 Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "mcp_callback", new BoxedValue[] { serverId, tag, result })
             };
             return Submit(session, item) ? "ok" : "busy";
@@ -898,13 +1050,13 @@ namespace AgentCore.Core
         /// returns the result text (or "[error] ..."). Used by the per-session
         /// queue worker.
         /// </summary>
-        private async Task<string> ExecutePromptGet(string serverId, string promptName, string argsJson, string tag, CancellationToken token)
+        private async Task<string> ExecutePromptGet(string serverId, string promptName, string argsJson, string tag, CancellationToken token, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"[error] server '{serverId}' not connected";
             try {
                 conn = await EnsureConnectedAsync(serverId, conn);
-                string req = BuildPromptGetRequest(conn, promptName, argsJson);
+                string req = BuildPromptGetRequest(conn, promptName, argsJson, mrtrJson);
                 token.ThrowIfCancellationRequested();
                 var sendTask = conn.Transport.SendRequestAsync(req);
                 var cancelTask = Task.Delay(Timeout.Infinite, token);
@@ -920,17 +1072,33 @@ namespace AgentCore.Core
             }
         }
 
-        private static string BuildPromptGetRequest(McpServerConnection conn, string promptName, string argsJson)
+        private static string BuildPromptGetRequest(McpServerConnection conn, string promptName, string argsJson, string? mrtrJson = null)
         {
             object? arguments = null;
             if (!string.IsNullOrWhiteSpace(argsJson) && argsJson != "{}") {
                 using var doc = System.Text.Json.JsonDocument.Parse(argsJson);
                 arguments = doc.RootElement.Clone();
             }
-            return BuildRpcRequest(conn, "prompts/get", new {
-                name = promptName,
-                arguments = arguments ?? new { }
-            }, conn.NextId());
+            var (inputResponses, requestState) = ParseMrtrJson(mrtrJson);
+            if (inputResponses == null && requestState == null) {
+                return BuildRpcRequest(conn, "prompts/get", new {
+                    name = promptName,
+                    arguments = arguments ?? new { }
+                }, conn.NextId());
+            }
+            // MRTR retry (2026-07-28): inputResponses / requestState ride at
+            // params level and MUST be omitted when absent
+            var prm = new System.Text.Json.Nodes.JsonObject {
+                ["name"] = promptName,
+                ["arguments"] = arguments == null
+                    ? new System.Text.Json.Nodes.JsonObject()
+                    : System.Text.Json.JsonSerializer.SerializeToNode(arguments)
+            };
+            if (inputResponses != null)
+                prm["inputResponses"] = System.Text.Json.JsonSerializer.SerializeToNode(inputResponses);
+            if (requestState != null)
+                prm["requestState"] = requestState;
+            return BuildRpcRequest(conn, "prompts/get", prm, conn.NextId());
         }
 
         private static string ExtractPromptContent(string response, McpServerConnection conn)
@@ -942,6 +1110,10 @@ namespace AgentCore.Core
             var result = JsonRpcHelper.ParseResult(response);
             if (result == null)
                 return response; // fallback: return raw
+
+            string? inputRequired = TryExtractInputRequired(result.Value);
+            if (inputRequired != null)
+                return inputRequired;
 
             // MCP prompts/get result: { messages: [ { role, content }, ... ] }
             if (!result.Value.TryGetProperty("messages", out var msgsEl))
@@ -990,10 +1162,13 @@ namespace AgentCore.Core
         private static string ReadResourceLinkText(McpServerConnection conn, string uri)
         {
             try {
+                string cacheKey = $"resources/read:{uri}";
+                if (conn.TryGetCached(cacheKey, out string cachedContent))
+                    return cachedContent;
                 string req = BuildRpcRequest(conn, "resources/read", new { uri }, conn.NextId());
                 string resp = conn.Transport.SendRequestAsync(req).GetAwaiter().GetResult();
-                string content = ExtractResourceContent(resp);
-                if (content.StartsWith("[error]"))
+                string content = CacheResourceContent(conn, cacheKey, resp, false);
+                if (content.StartsWith("[error]") || content.StartsWith("[input required]"))
                     return $"[resource link: {uri}] ({content})";
                 return content;
             }
@@ -1008,7 +1183,7 @@ namespace AgentCore.Core
         /// tag: identifier forwarded to the mcp_callback CEF message
         /// Returns "ok" immediately; result arrives via mcp_callback(serverId, tag, resultText)
         /// </summary>
-        public string CallToolCallback(string serverId, string toolName, string argsJson, string tag)
+        public string CallToolCallback(string serverId, string toolName, string argsJson, string tag, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"error: server '{serverId}' not connected";
@@ -1021,7 +1196,7 @@ namespace AgentCore.Core
             var item = new WorkItem {
                 ServerId = serverId,
                 Tag = tag,
-                Run = ct => ExecuteToolCall(serverId, toolName, argsJson, tag, ct),
+                Run = ct => ExecuteToolCall(serverId, toolName, argsJson, tag, ct, mrtrJson),
                 Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "mcp_callback", new BoxedValue[] { serverId, tag, result })
             };
             return Submit(session, item) ? "ok" : "busy";
@@ -1031,7 +1206,7 @@ namespace AgentCore.Core
         /// Performs a single MCP tool call (with auto-reconnect) and returns the
         /// result text (or "[error] ...") . Used by the per-session queue worker.
         /// </summary>
-        private async Task<string> ExecuteToolCall(string serverId, string toolName, string argsJson, string tag, CancellationToken token)
+        private async Task<string> ExecuteToolCall(string serverId, string toolName, string argsJson, string tag, CancellationToken token, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"[error] server '{serverId}' not connected";
@@ -1041,11 +1216,9 @@ namespace AgentCore.Core
                     using var doc = System.Text.Json.JsonDocument.Parse(argsJson);
                     args = doc.RootElement.Clone();
                 }
+                var (inputResponses, requestState) = ParseMrtrJson(mrtrJson);
 
-                string req = BuildRpcRequest(conn, "tools/call", new {
-                    name = toolName,
-                    arguments = args ?? new { }
-                }, conn.NextId());
+                string req = BuildRpcRequest(conn, "tools/call", BuildToolCallParams(toolName, args, inputResponses, requestState), conn.NextId());
 
                 // Auto-reconnect if transport is no longer connected (with lock to prevent concurrent reconnects)
                 if (!conn.Transport.IsConnected) {
@@ -1063,10 +1236,7 @@ namespace AgentCore.Core
                             if (!_servers.TryGetValue(serverId, out conn!))
                                 return "[error] server not found after reconnect";
                         }
-                        req = JsonRpcHelper.BuildRequest("tools/call", new {
-                            name = toolName,
-                            arguments = args ?? new { }
-                        }, conn.NextId());
+                        req = BuildRpcRequest(conn, "tools/call", BuildToolCallParams(toolName, args, inputResponses, requestState), conn.NextId());
                     }
                     finally {
                         reconnectLock.Release();
@@ -1092,7 +1262,7 @@ namespace AgentCore.Core
         /// Calls an MCP tool and returns the result directly via Task.
         /// Used by synchronous script expressions (mcp_call_tool).
         /// </summary>
-        public Task<string> CallTool(string serverId, string toolName, string argsJson)
+        public Task<string> CallTool(string serverId, string toolName, string argsJson, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return Task.FromResult($"error: server '{serverId}' not connected");
@@ -1110,11 +1280,9 @@ namespace AgentCore.Core
                         using var doc = System.Text.Json.JsonDocument.Parse(argsJson);
                         args = doc.RootElement.Clone();
                     }
+                    var (inputResponses, requestState) = ParseMrtrJson(mrtrJson);
 
-                    string req = JsonRpcHelper.BuildRequest("tools/call", new {
-                        name = toolName,
-                        arguments = args ?? new { }
-                    }, conn.NextId());
+                    string req = BuildRpcRequest(conn, "tools/call", BuildToolCallParams(toolName, args, inputResponses, requestState), conn.NextId());
 
                     // Auto-reconnect if transport is no longer connected
                     if (!conn.Transport.IsConnected) {
@@ -1131,10 +1299,7 @@ namespace AgentCore.Core
                                 if (!_servers.TryGetValue(serverId, out conn!))
                                     return "[error] server not found after reconnect";
                             }
-                            req = BuildRpcRequest(conn, "tools/call", new {
-                                name = toolName,
-                                arguments = args ?? new { }
-                            }, conn.NextId());
+                            req = BuildRpcRequest(conn, "tools/call", BuildToolCallParams(toolName, args, inputResponses, requestState), conn.NextId());
                         }
                         finally {
                             reconnectLock.Release();
@@ -1349,18 +1514,132 @@ namespace AgentCore.Core
                     return;
                 string method = methodEl.GetString() ?? string.Empty;
                 if (method == "notifications/prompts/list_changed") {
-                    // Prompt lists are fetched on demand (not cached), nothing to invalidate.
+                    if (_servers.TryGetValue(serverId, out var pc))
+                        pc.InvalidateCache("prompts/list");
                     AgentCore.Instance.Logger.Info($"[McpClientService] server '{serverId}' reported prompts/list_changed");
                     MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] Info: server '{serverId}' prompt list changed, mcp_list_prompts returns the fresh list");
                 }
                 else if (method == "notifications/tools/list_changed") {
+                    // invalidate immediately regardless of remaining ttlMs
+                    if (_servers.TryGetValue(serverId, out var tc))
+                        tc.ToolsExpiresAt = DateTime.UtcNow;
                     AgentCore.Instance.Logger.Info($"[McpClientService] server '{serverId}' reported tools/list_changed");
-                    MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] Info: server '{serverId}' tool list changed (cached list is refreshed on reconnect)");
+                    MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] Info: server '{serverId}' tool list changed, mcp_list_tools returns the fresh list");
+                }
+                else if (method == "notifications/resources/list_changed") {
+                    if (_servers.TryGetValue(serverId, out var rc))
+                        rc.InvalidateCache("resources/list");
+                    AgentCore.Instance.Logger.Info($"[McpClientService] server '{serverId}' reported resources/list_changed");
+                    MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] Info: server '{serverId}' resource list changed, mcp_list_resources returns the fresh list");
+                }
+                else if (method == "notifications/subscriptions/acknowledged") {
+                    AgentCore.Instance.Logger.Info($"[McpClientService] server '{serverId}' acknowledged the subscriptions/listen stream");
                 }
             }
             catch (Exception ex) {
                 AgentCore.Instance.Logger.Info($"[McpClientService] failed to handle server notification for '{serverId}': {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Extracts the ttlMs freshness hint from a CacheableResult
+        /// (2026-07-28). Returns null when absent (legacy servers), which
+        /// callers treat as "keep previous caching behavior".
+        /// </summary>
+        private static long? ParseTtlMs(string response)
+        {
+            try {
+                var result = JsonRpcHelper.ParseResult(response);
+                if (result != null &&
+                    result.Value.TryGetProperty("ttlMs", out var ttlEl) &&
+                    ttlEl.ValueKind == System.Text.Json.JsonValueKind.Number &&
+                    ttlEl.TryGetInt64(out long ttl))
+                    return ttl;
+            }
+            catch { }
+            return null;
+        }
+
+        /// <summary>
+        /// Parses an mrtrJson argument for retrying an input_required result
+        /// (2026-07-28 MRTR): {"inputResponses": {...}, "requestState": "..."}.
+        /// </summary>
+        private static (System.Text.Json.JsonElement? InputResponses, string? RequestState) ParseMrtrJson(string? mrtrJson)
+        {
+            if (string.IsNullOrWhiteSpace(mrtrJson) || mrtrJson == "{}")
+                return (null, null);
+            try {
+                using var doc = System.Text.Json.JsonDocument.Parse(mrtrJson);
+                var root = doc.RootElement;
+                System.Text.Json.JsonElement? inputResponses = null;
+                if (root.TryGetProperty("inputResponses", out var irEl) && irEl.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    inputResponses = irEl.Clone();
+                string? requestState = null;
+                if (root.TryGetProperty("requestState", out var rsEl) && rsEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                    requestState = rsEl.GetString();
+                return (inputResponses, requestState);
+            }
+            catch { }
+            return (null, null);
+        }
+
+        /// <summary>
+        /// Returns the MRTR retry payload ("[input required] {json}") when a
+        /// result is an InputRequiredResult (resultType "input_required"),
+        /// else null. The payload carries the inputRequests map and the opaque
+        /// requestState that must be echoed back on retry.
+        /// </summary>
+        private static string? TryExtractInputRequired(System.Text.Json.JsonElement result)
+        {
+            if (!result.TryGetProperty("resultType", out var rtEl) ||
+                rtEl.ValueKind != System.Text.Json.JsonValueKind.String ||
+                rtEl.GetString() != "input_required")
+                return null;
+            var mrtr = new System.Text.Json.Nodes.JsonObject();
+            if (result.TryGetProperty("requestState", out var rsEl) && rsEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                mrtr["requestState"] = rsEl.GetString();
+            if (result.TryGetProperty("inputRequests", out var irEl))
+                mrtr["inputRequests"] = System.Text.Json.Nodes.JsonNode.Parse(irEl.GetRawText());
+            return $"[input required] {mrtr.ToJsonString()}";
+        }
+
+        /// <summary>
+        /// Builds tools/call params; MRTR retries (2026-07-28) add
+        /// inputResponses / requestState at params level, omitted when absent.
+        /// </summary>
+        private static object BuildToolCallParams(string toolName, object? args, System.Text.Json.JsonElement? inputResponses, string? requestState)
+        {
+            if (inputResponses == null && requestState == null)
+                return new { name = toolName, arguments = args ?? new { } };
+            var prm = new System.Text.Json.Nodes.JsonObject {
+                ["name"] = toolName,
+                ["arguments"] = args == null
+                    ? new System.Text.Json.Nodes.JsonObject()
+                    : System.Text.Json.JsonSerializer.SerializeToNode(args)
+            };
+            if (inputResponses != null)
+                prm["inputResponses"] = System.Text.Json.JsonSerializer.SerializeToNode(inputResponses);
+            if (requestState != null)
+                prm["requestState"] = requestState;
+            return prm;
+        }
+
+        /// <summary>
+        /// Builds resources/read params; MRTR retries add inputResponses /
+        /// requestState at params level, omitted when absent.
+        /// </summary>
+        private static object BuildResourceReadParams(string uri, System.Text.Json.JsonElement? inputResponses, string? requestState)
+        {
+            if (inputResponses == null && requestState == null)
+                return new { uri };
+            var prm = new System.Text.Json.Nodes.JsonObject {
+                ["uri"] = uri
+            };
+            if (inputResponses != null)
+                prm["inputResponses"] = System.Text.Json.JsonSerializer.SerializeToNode(inputResponses);
+            if (requestState != null)
+                prm["requestState"] = requestState;
+            return prm;
         }
 
         /// <summary>
@@ -1390,7 +1669,7 @@ namespace AgentCore.Core
                     string resp = transport.SendRequestAsync(req).GetAwaiter().GetResult();
                     var cls = McpProtocol.ClassifyEra(resp, out var supported);
                     if (cls == McpEraClassification.ModernResult) {
-                        if (transport is IMcpOldTransport old)
+                        if (transport is IMcpBefore2026Transport old)
                             old.NegotiatedVersion = version;
                         return true;
                     }
@@ -1523,15 +1802,12 @@ namespace AgentCore.Core
             if (result == null)
                 return response; // fallback: return raw
 
-            // 2026-07-28 MRTR (resultType "input_required"): the server needs
-            // additional input; the call must be retried with inputResponses.
-            // Surfaced to the caller instead of auto-answering.
-            if (result.Value.TryGetProperty("resultType", out var rtEl) &&
-                rtEl.ValueKind == System.Text.Json.JsonValueKind.String &&
-                rtEl.GetString() == "input_required") {
-                string inputRequests = result.Value.TryGetProperty("inputRequests", out var irEl) ? irEl.GetRawText() : "[]";
-                return $"[input required] server needs additional input, retry with inputResponses; inputRequests: {inputRequests}";
-            }
+            // 2026-07-28 MRTR (resultType "input_required"): surface the
+            // inputRequests map and requestState so the caller can retry with
+            // inputResponses (see TryExtractInputRequired)
+            string? inputRequired = TryExtractInputRequired(result.Value);
+            if (inputRequired != null)
+                return inputRequired;
 
             // MCP tools/call result: { content: [...], structuredContent: {...}, isError: bool }
             string text = result.Value.TryGetProperty("content", out var contentEl)

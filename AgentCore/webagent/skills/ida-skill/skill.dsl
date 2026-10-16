@@ -5,7 +5,7 @@ skill("ida-skill")
         metadsl()
         {:
             $sid = "ida-pro-mcp";
-            $url = "http://localhost:13337/mcp";
+            $url = "http://127.0.0.1:13337/mcp";
             mcp_clear_options($sid);
             mcp_set_option($sid, "timeout", "60000");
             mcp_connect($sid, "streamable-http", $url);

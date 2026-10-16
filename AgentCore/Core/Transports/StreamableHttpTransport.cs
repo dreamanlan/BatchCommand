@@ -15,7 +15,7 @@ namespace AgentCore.Core
     /// Unlike SseTransport, uses the URL directly (no /message suffix),
     /// supports custom headers, configurable timeout, and Mcp-Session-Id management.
     /// </summary>
-    internal class StreamableHttpTransport : IMcpOldTransport
+    internal class StreamableHttpTransport : IMcpBefore2026Transport
     {
         private readonly string _url;
         private readonly HttpClient _httpClient;
@@ -101,6 +101,8 @@ namespace AgentCore.Core
                 try {
                     using var request = new HttpRequestMessage(HttpMethod.Get, _url);
                     request.Headers.TryAddWithoutValidation("Accept", "text/event-stream");
+                    if (NegotiatedVersion != null)
+                        request.Headers.TryAddWithoutValidation("MCP-Protocol-Version", NegotiatedVersion);
                     if (_sessionId != null)
                         request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
                     using var response = await _streamClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
@@ -194,6 +196,8 @@ namespace AgentCore.Core
                 using var request = new HttpRequestMessage(HttpMethod.Post, _url);
                 request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
+                if (NegotiatedVersion != null)
+                    request.Headers.TryAddWithoutValidation("MCP-Protocol-Version", NegotiatedVersion);
                 if (_sessionId != null)
                     request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
                 using var response = await _httpClient.SendAsync(request);
@@ -233,48 +237,74 @@ namespace AgentCore.Core
                 throw new TimeoutException("StreamableHttpTransport: timed out waiting for send lock");
             string? requestId = ReadDiagnosticId(jsonBody, out var method);
             string context = $"method={method} requestId={requestId ?? "<missing-or-unavailable>"}";
-            string stage = "prepare-request";
             try {
-                using var request = new HttpRequestMessage(HttpMethod.Post, _url);
-                request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
-                if (_sessionId != null)
-                    request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
-                stage = "send-and-buffer-response";
-                LogPostDiagnostic($"{context} stage={stage} completion=ResponseContentRead");
-                using var response = await _httpClient.SendAsync(request);
-                stage = "validate-status";
-                LogPostDiagnostic($"{context} stage=response-buffered status={(int)response.StatusCode} httpVersion={response.Version} contentType={response.Content.Headers.ContentType} contentLength={response.Content.Headers.ContentLength} transferEncoding={response.Headers.TransferEncoding} connection={response.Headers.Connection}");
-                await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
-                stage = "capture-session";
-                // Capture session id from response headers
-                if (response.Headers.TryGetValues("Mcp-Session-Id", out var vals)) {
-                    foreach (var v in vals) { _sessionId = v; break; }
+                // The connection pool may hand back a connection the server already
+                // closed: HTTP/1.0 servers close after each response and omit the
+                // Connection header, so the pool still marks them reusable. Such a
+                // request fails before any response headers arrive (ResponseEnded).
+                // Retry once; the failed attempt evicts the dead connection from
+                // the pool and the retry goes out on a fresh connection.
+                const int maxAttempts = 2;
+                for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                    string stage = "prepare-request";
+                    try {
+                        using var request = new HttpRequestMessage(HttpMethod.Post, _url);
+                        request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                        request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
+                        if (NegotiatedVersion != null)
+                            request.Headers.TryAddWithoutValidation("MCP-Protocol-Version", NegotiatedVersion);
+                        if (_sessionId != null)
+                            request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
+                        using var requestCts = new CancellationTokenSource();
+                        requestCts.CancelAfter(_httpClient.Timeout);
+                        stage = "send-and-read-headers";
+                        LogPostDiagnostic($"{context} stage={stage} completion=ResponseHeadersRead");
+                        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, requestCts.Token);
+                        LogPostDiagnostic($"{context} stage=response-headers status={(int)response.StatusCode} httpVersion={response.Version} contentType={response.Content.Headers.ContentType} contentLength={response.Content.Headers.ContentLength} transferEncoding={response.Headers.TransferEncoding} connection={response.Headers.Connection}");
+                        stage = "read-body";
+                        string body = await response.Content.ReadAsStringAsync(requestCts.Token);
+                        LogPostDiagnostic($"{context} stage=body-read bodyChars={body.Length}");
+                        stage = "validate-status";
+                        await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
+                        stage = "capture-session";
+                        // Capture session id from response headers
+                        if (response.Headers.TryGetValues("Mcp-Session-Id", out var vals)) {
+                            foreach (var v in vals) { _sessionId = v; break; }
+                        }
+                        stage = "extract-json";
+                        string result = McpHttpHelpers.ExtractSseJson(response, body);
+                        string? responseId = ReadDiagnosticId(result, out _);
+                        string idMatch = requestId == null || responseId == null
+                            ? "unavailable"
+                            : (string.Equals(requestId, responseId, StringComparison.Ordinal) ? "true" : "false");
+                        LogPostDiagnostic($"{context} stage=complete responseId={responseId ?? "<missing-or-unavailable>"} rawIdMatch={idMatch}");
+                        return result;
+                    }
+                    catch (Exception ex) when (attempt < maxAttempts && stage == "send-and-read-headers" &&
+                                               ex is HttpRequestException { HttpRequestError: HttpRequestError.ResponseEnded }) {
+                        // No response headers arrived: the request died on a stale
+                        // pooled connection (or the server dropped it before
+                        // reacting), so resending is safe. Do not flip _connected:
+                        // this is not a transport-level failure yet.
+                        LogPostDiagnostic($"{context} stage={stage} attempt={attempt} response ended prematurely, retrying on a fresh connection: {ex.Message}");
+                        continue;
+                    }
+                    catch (Exception ex) when (!_connected) {
+                        LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
+                        throw;
+                    }
+                    catch (Exception ex) when (ex is HttpRequestException || ex is IOException || ex is OperationCanceledException || ex is InvalidOperationException) {
+                        _connected = false;
+                        LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
+                        throw;
+                    }
+                    catch (Exception ex) {
+                        LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
+                        throw;
+                    }
                 }
-                stage = "read-buffered-body";
-                string body = await response.Content.ReadAsStringAsync();
-                LogPostDiagnostic($"{context} stage=body-read bodyChars={body.Length}");
-                stage = "extract-json";
-                string result = McpHttpHelpers.ExtractSseJson(response, body);
-                string? responseId = ReadDiagnosticId(result, out _);
-                string idMatch = requestId == null || responseId == null
-                    ? "unavailable"
-                    : (string.Equals(requestId, responseId, StringComparison.Ordinal) ? "true" : "false");
-                LogPostDiagnostic($"{context} stage=complete responseId={responseId ?? "<missing-or-unavailable>"} rawIdMatch={idMatch}");
-                return result;
-            }
-            catch (Exception ex) when (!_connected) {
-                LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
-                throw;
-            }
-            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException || ex is InvalidOperationException) {
-                _connected = false;
-                LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
-                throw;
-            }
-            catch (Exception ex) {
-                LogPostDiagnostic($"{context} stage={stage} failed: {ex}");
-                throw;
+                // Unreachable: every loop iteration returns or throws.
+                throw new InvalidOperationException("StreamableHttpTransport: POST retry loop exited unexpectedly");
             }
             finally {
                 _lock.Release();

@@ -14,7 +14,7 @@ namespace AgentCore.Core
     /// stdio transport: launches a local process and communicates via stdin/stdout.
     /// target = full command line, e.g. "npx -y @modelcontextprotocol/server-filesystem /path"
     /// </summary>
-    internal class StdioTransport : IMcpOldTransport
+    internal class StdioTransport : IMcpBefore2026Transport
     {
         private readonly string _command;
         private readonly string _arguments;
@@ -55,13 +55,11 @@ namespace AgentCore.Core
             // Expand environment variables before splitting command and arguments
             string expanded = Environment.ExpandEnvironmentVariables(target);
             int spaceIdx = expanded.IndexOf(' ');
-            if (spaceIdx > 0)
-            {
+            if (spaceIdx > 0) {
                 _command = expanded.Substring(0, spaceIdx);
                 _arguments = expanded.Substring(spaceIdx + 1);
             }
-            else
-            {
+            else {
                 _command = expanded;
                 _arguments = string.Empty;
             }
@@ -70,8 +68,7 @@ namespace AgentCore.Core
         public Task ConnectAsync()
         {
             // Note: StandardInputEncoding = Encoding.UTF8 (which has emitBOM=true)
-            var psi = new ProcessStartInfo
-            {
+            var psi = new ProcessStartInfo {
                 FileName = _command,
                 Arguments = _arguments,
                 WorkingDirectory = Directory.GetCurrentDirectory(),
@@ -88,14 +85,12 @@ namespace AgentCore.Core
             _stdin = _process.StandardInput;
             _stdout = _process.StandardOutput;
             // Drain stderr to prevent pipe buffer deadlock when child process writes to stderr
-            _process.ErrorDataReceived += (s, e) =>
-            {
+            _process.ErrorDataReceived += (s, e) => {
                 if (!string.IsNullOrEmpty(e.Data))
                     MetaDslExecutor.AppendApiErrorInfoLine($"[MCP:stderr] {e.Data}");
             };
             _process.BeginErrorReadLine();
-            try
-            {
+            try {
                 AgentCore.Instance.Logger.Info($"[MCP:stdio] process started: pid={_process.Id}, cmd={_command}, args={_arguments}, lspFraming={_useLspFraming}");
             }
             catch { }
@@ -109,14 +104,12 @@ namespace AgentCore.Core
 
             if (!await _lock.WaitAsync(_lockTimeout))
                 throw new TimeoutException("StdioTransport: timed out waiting for send lock");
-            try
-            {
+            try {
                 await WriteFramedAsync(jsonRpcRequest);
                 string? msg = await ReadOneMessageAsync(_sendTimeout);
                 return msg ?? string.Empty;
             }
-            finally
-            {
+            finally {
                 _lock.Release();
             }
         }
@@ -128,13 +121,11 @@ namespace AgentCore.Core
 
             if (!await _lock.WaitAsync(_lockTimeout))
                 throw new TimeoutException("StdioTransport: timed out waiting for send lock");
-            try
-            {
+            try {
                 // Notification: write only, do NOT read stdout (no response expected)
                 await WriteFramedAsync(jsonRpcNotification);
             }
-            finally
-            {
+            finally {
                 _lock.Release();
             }
         }
@@ -144,27 +135,23 @@ namespace AgentCore.Core
             // Write raw bytes directly to BaseStream to avoid:
             // 1) Newline normalization by StreamWriter
             var stream = _stdin!.BaseStream;
-            if (_useLspFraming)
-            {
+            if (_useLspFraming) {
                 var bodyBytes = Encoding.UTF8.GetBytes(payload);
                 var headerBytes = Encoding.ASCII.GetBytes($"Content-Length: {bodyBytes.Length}\r\n\r\n");
                 await stream.WriteAsync(headerBytes, 0, headerBytes.Length);
                 await stream.WriteAsync(bodyBytes, 0, bodyBytes.Length);
             }
-            else
-            {
+            else {
                 // MCP stdio spec requires single LF (\n) as message delimiter, not CRLF.
                 var bytes = Encoding.UTF8.GetBytes(payload + "\n");
                 await stream.WriteAsync(bytes, 0, bytes.Length);
             }
             await stream.FlushAsync();
-            try
-            {
+            try {
                 var rawBytes = Encoding.UTF8.GetBytes(payload);
                 int hexLen = Math.Min(16, rawBytes.Length);
                 var sb = new StringBuilder(hexLen * 3);
-                for (int i = 0; i < hexLen; i++)
-                {
+                for (int i = 0; i < hexLen; i++) {
                     if (i > 0) sb.Append(' ');
                     sb.Append(rawBytes[i].ToString("X2"));
                 }
@@ -186,8 +173,7 @@ namespace AgentCore.Core
             else
                 throw new TimeoutException($"StdioTransport: no response within {_sendTimeout.TotalSeconds}s");
             string? firstLine = await readTask;
-            try
-            {
+            try {
                 string preview = firstLine == null
                     ? "<null>"
                     : (firstLine.Length > 2048 ? firstLine.Substring(0, 2048) + "...(truncated)" : firstLine);
@@ -197,12 +183,10 @@ namespace AgentCore.Core
             if (firstLine == null)
                 return null;
             // Auto-detect: if starts with Content-Length, parse LSP framing
-            if (firstLine.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase))
-            {
+            if (firstLine.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase)) {
                 int contentLength = int.Parse(firstLine.Substring("Content-Length:".Length).Trim());
                 // Read until empty line (end of headers)
-                while (true)
-                {
+                while (true) {
                     var headerLine = await _stdout.ReadLineAsync();
                     if (string.IsNullOrEmpty(headerLine))
                         break;
@@ -210,16 +194,14 @@ namespace AgentCore.Core
                 // Read exact content length
                 var buffer = new char[contentLength];
                 int totalRead = 0;
-                while (totalRead < contentLength)
-                {
+                while (totalRead < contentLength) {
                     int read = await _stdout.ReadAsync(buffer, totalRead, contentLength - totalRead);
                     if (read == 0)
                         throw new IOException("StdioTransport: unexpected end of stream while reading LSP body");
                     totalRead += read;
                 }
                 string body = new string(buffer, 0, totalRead);
-                try
-                {
+                try {
                     string preview = body.Length > 2048 ? body.Substring(0, 2048) + "...(truncated)" : body;
                     AgentCore.Instance.Logger.Info($"[MCP:stdio] READ body ({totalRead} chars): {preview}");
                 }

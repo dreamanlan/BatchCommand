@@ -790,7 +790,7 @@ script(update_system_prompt)params($pageType,$isFirst)
     $toplevelRulesFile = combine_path(basepath, "docs/rules_toplevel.txt");
     $emphasizeFile = combine_path(basepath, "docs/emphasize.txt");
     $soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
-    $projectPromptFile = combine_path(@ProjectDirectory, "docs/project_prompt.txt");
+    $projectMemoryFile = combine_path(@ProjectDirectory, "docs/project_memory.txt");
     $backlogFile = combine_path(@ProjectDirectory, "docs/backlog.txt");
     $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
     $contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
@@ -800,20 +800,20 @@ script(update_system_prompt)params($pageType,$isFirst)
     $toplevelRules = read_file($toplevelRulesFile);
     $emphasize = read_file($emphasizeFile);
     $soul = read_file($soulFile);
-    $projectPrompt = read_file($projectPromptFile);
+    $projectMemory = read_file($projectMemoryFile);
     $backlog = read_file($backlogFile);
     $plan = read_file($planFile);
     restore_plan_state(@AgentId, $plan);
     $context = read_file($contextFile);
     $history = read_file($historyFile);
 
-    nativelog("[agent] prompt lengths: foundation={0} rules={1} emphasize={2} soul={3} project={4} backlog={5} plan={6} context={7} history={8}", strlen($foundationPrompt), strlen($toplevelRules), strlen($emphasize), strlen($soul), strlen($projectPrompt), strlen($backlog), strlen($plan), strlen($context), strlen($history));
+    nativelog("[agent] prompt lengths: foundation={0} rules={1} emphasize={2} soul={3} project={4} backlog={5} plan={6} context={7} history={8}", strlen($foundationPrompt), strlen($toplevelRules), strlen($emphasize), strlen($soul), strlen($projectMemory), strlen($backlog), strlen($plan), strlen($context), strlen($history));
 
     // P2: llm category from the js state cache instead of CallJavascriptFuncInRenderer.
     $llmCategory = js_llm_category("");
     //now we use dynamic system prompts
     if ($pageType == "local-agent") {
-        $prompt = $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $plan + "\n\n" + $context;
+        $prompt = $emphasize + "\n\n" + $soul + "\n\n" + $projectMemory + "\n\n" + $plan + "\n\n" + $context;
         if ($isFirst) {
             $prompt = $prompt + "\n\n" + $history;
         };
@@ -821,10 +821,10 @@ script(update_system_prompt)params($pageType,$isFirst)
             $prompt = $foundationPrompt + "\n\n" + $toplevelRules + "\n\n" + $prompt;
         };
     } else {
-        $prompt = $foundationPrompt + "\n\n" + $toplevelRules + "\n\n" + $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $plan + "\n\n" + $context + "\n\n" + $history;
+        $prompt = $foundationPrompt + "\n\n" + $toplevelRules + "\n\n" + $emphasize + "\n\n" + $soul + "\n\n" + $projectMemory + "\n\n" + $plan + "\n\n" + $context + "\n\n" + $history;
     };
     agent_set_foundation_prompt(@AgentId, $foundationPrompt);
-    agent_set_project_prompt(@AgentId, $projectPrompt);
+    agent_set_project_memory(@AgentId, $projectMemory);
 
     if ($isFirst) {
         agent_set_emphasize(@AgentId, $emphasize);
@@ -839,7 +839,7 @@ script(update_system_prompt)params($pageType,$isFirst)
 
     if (@EnableLlmPM) {
         $note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
-        $llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
+        $llm_sys_prompt = format("{0}\n\n{1}", $note, $projectMemory);
         llm_set_system_prompt(@PmLlmProviderId, "llm_pm_decision", "");
         llm_set_system_prompt(@PmLlmProviderId, "llm_pm_align", $llm_sys_prompt);
     };

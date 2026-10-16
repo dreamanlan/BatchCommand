@@ -12,7 +12,7 @@ namespace AgentCore.Core
     /// HTTP+SSE transport: communicates with a remote MCP server via HTTP POST.
     /// target = base URL, e.g. "http://localhost:3000"
     /// </summary>
-    internal class SseTransport : IMcpOldTransport
+    internal class SseTransport : IMcpBefore2026Transport
     {
         private readonly string _baseUrl;
         private readonly HttpClient _httpClient;
@@ -41,18 +41,15 @@ namespace AgentCore.Core
             _protocolVersion = protocolVersion ?? McpProtocol.Default;
             _lockTimeout = TimeSpan.FromMilliseconds(timeoutMs + 5000);
             _baseUrl = target.TrimEnd('/');
-            var socketHandler = new SocketsHttpHandler
-            {
+            var socketHandler = new SocketsHttpHandler {
                 PooledConnectionLifetime = TimeSpan.FromMinutes(2),
                 PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
                 ConnectTimeout = TimeSpan.FromSeconds(10)
             };
-            _httpClient = new HttpClient(RedirectHandler.Create(socketHandler))
-            {
+            _httpClient = new HttpClient(RedirectHandler.Create(socketHandler)) {
                 Timeout = TimeSpan.FromMilliseconds(timeoutMs)
             };
-            if (headers != null)
-            {
+            if (headers != null) {
                 foreach (var kv in headers)
                     _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(kv.Key, kv.Value);
             }
@@ -91,33 +88,51 @@ namespace AgentCore.Core
         {
             if (!await _lock.WaitAsync(_lockTimeout))
                 throw new TimeoutException("SseTransport: timed out waiting for send lock");
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl);
-                request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
-                if (_sessionId != null)
-                    request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
-                using var response = await _httpClient.SendAsync(request);
-                await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
-                if (response.Headers.TryGetValues("Mcp-Session-Id", out var vals))
-                {
-                    foreach (var v in vals) { _sessionId = v; break; }
+            try {
+                // The connection pool may hand back a connection the server already
+                // closed (HTTP/1.0 servers close after each response and omit the
+                // Connection header, so the pool still marks them reusable). Such a
+                // request fails before any response headers arrive (ResponseEnded).
+                // Retry once; the failed attempt evicts the dead connection from
+                // the pool and the retry goes out on a fresh connection.
+                const int maxAttempts = 2;
+                for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                    bool responseHeadersReceived = false;
+                    try {
+                        using var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl);
+                        request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                        request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
+                        if (_sessionId != null)
+                            request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
+                        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                        responseHeadersReceived = true;
+                        await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
+                        if (response.Headers.TryGetValues("Mcp-Session-Id", out var vals)) {
+                            foreach (var v in vals) { _sessionId = v; break; }
+                        }
+                        string body = await response.Content.ReadAsStringAsync();
+                        return McpHttpHelpers.ExtractSseJson(response, body);
+                    }
+                    catch (Exception ex) when (attempt < maxAttempts && !responseHeadersReceived &&
+                                               ex is HttpRequestException { HttpRequestError: HttpRequestError.ResponseEnded }) {
+                        // No response headers arrived, so the request died on a stale
+                        // pooled connection (or the server dropped it before reacting)
+                        // and resending is safe. Do not flip _connected.
+                        AgentCore.Instance.Logger.Info($"[Sse] response ended prematurely before headers (attempt {attempt}), retrying on a fresh connection: {ex.Message}");
+                        continue;
+                    }
+                    catch (Exception) when (!_connected) {
+                        throw; // already marked disconnected, just rethrow
+                    }
+                    catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException || ex is InvalidOperationException) {
+                        _connected = false;
+                        throw;
+                    }
                 }
-                string body = await response.Content.ReadAsStringAsync();
-                return McpHttpHelpers.ExtractSseJson(response, body);
+                // Unreachable: every loop iteration returns or throws.
+                throw new InvalidOperationException("SseTransport: POST retry loop exited unexpectedly");
             }
-            catch (Exception) when (!_connected)
-            {
-                throw; // already marked disconnected, just rethrow
-            }
-            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException || ex is InvalidOperationException)
-            {
-                _connected = false;
-                throw;
-            }
-            finally
-            {
+            finally {
                 _lock.Release();
             }
         }

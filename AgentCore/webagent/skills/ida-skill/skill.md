@@ -10,7 +10,7 @@ IDA Pro MCP integration. Wraps MCP streamable-http connection so metadsl can dri
 
 ## Functions
 
-connect     - Establish MCP session (serverId="ida-pro-mcp", transport="streamable-http", target="http://localhost:13337/mcp")
+connect     - Establish MCP session (serverId="ida-pro-mcp", transport="streamable-http", target="http://127.0.0.1:13337/mcp")
 list        - mcp_list_tools on the session
 tool        - Generic mcp_call_tool_callback wrapper; result via 'ida_pro_mcp_callback'
 disconnect  - Close the session

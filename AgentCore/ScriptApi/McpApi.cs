@@ -94,9 +94,11 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// mcp_read_resource(serverId, uri)
+    /// mcp_read_resource(serverId, uri, mrtrJson?)
     /// Synchronously reads an MCP resource and blocks until the result is received.
     /// Returns the resource text (or "[error] ..." / "[binary N base64 chars]").
+    /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
+    /// "[input required]" result (2026-07-28 MRTR retry).
     /// </summary>
     sealed class McpReadResourceExp : SimpleExpressionBase
     {
@@ -108,8 +110,9 @@ namespace AgentCore.ScriptApi
             }
             string serverId = operands[0].AsString;
             string uri = operands[1].AsString;
+            string? mrtrJson = operands.Count >= 3 ? operands[2].AsString : null;
             try {
-                string result = AgentCore.Core.McpClientService.Instance.ReadResource(serverId, uri).GetAwaiter().GetResult();
+                string result = AgentCore.Core.McpClientService.Instance.ReadResource(serverId, uri, mrtrJson).GetAwaiter().GetResult();
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
@@ -120,8 +123,10 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// mcp_read_resource_callback(serverId, uri, tag)
+    /// mcp_read_resource_callback(serverId, uri, tag, mrtrJson?)
     /// Reads an MCP resource asynchronously.
+    /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
+    /// "[input required]" result (2026-07-28 MRTR retry).
     /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
     /// Returns "ok" or an error string.
     /// </summary>
@@ -136,7 +141,8 @@ namespace AgentCore.ScriptApi
             string serverId = operands[0].AsString;
             string uri = operands[1].AsString;
             string tag = operands[2].AsString;
-            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ReadResourceCallback(serverId, uri, tag));
+            string? mrtrJson = operands.Count >= 4 ? operands[3].AsString : null;
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ReadResourceCallback(serverId, uri, tag, mrtrJson));
         }
     }
 
@@ -158,9 +164,11 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// mcp_read_prompt(serverId, promptName, argsJson?)
+    /// mcp_read_prompt(serverId, promptName, argsJson?, mrtrJson?)
     /// Synchronously renders a prompt template and blocks until the result is received.
     /// Returns "[role] text" lines; resource_link contents are inlined when possible.
+    /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
+    /// "[input required]" result (2026-07-28 MRTR retry).
     /// </summary>
     sealed class McpReadPromptExp : SimpleExpressionBase
     {
@@ -173,8 +181,9 @@ namespace AgentCore.ScriptApi
             string serverId = operands[0].AsString;
             string promptName = operands[1].AsString;
             string argsJson = operands.Count >= 3 ? operands[2].AsString : "{}";
+            string? mrtrJson = operands.Count >= 4 ? operands[3].AsString : null;
             try {
-                string result = AgentCore.Core.McpClientService.Instance.ReadPrompt(serverId, promptName, argsJson).GetAwaiter().GetResult();
+                string result = AgentCore.Core.McpClientService.Instance.ReadPrompt(serverId, promptName, argsJson, mrtrJson).GetAwaiter().GetResult();
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {
@@ -185,8 +194,10 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// mcp_read_prompt_callback(serverId, promptName, argsJson?, tag)
+    /// mcp_read_prompt_callback(serverId, promptName, argsJson, tag, mrtrJson?)
     /// Renders a prompt template asynchronously.
+    /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
+    /// "[input required]" result (2026-07-28 MRTR retry).
     /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
     /// Returns "ok" or an error string.
     /// </summary>
@@ -202,14 +213,17 @@ namespace AgentCore.ScriptApi
             string promptName = operands[1].AsString;
             string argsJson = operands[2].AsString;
             string tag = operands[3].AsString;
-            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ReadPromptCallback(serverId, promptName, argsJson, tag));
+            string? mrtrJson = operands.Count >= 5 ? operands[4].AsString : null;
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ReadPromptCallback(serverId, promptName, argsJson, tag, mrtrJson));
         }
     }
 
     /// <summary>
-    /// mcp_call_tool_callback(serverId, toolName, argsJson, tag)
+    /// mcp_call_tool_callback(serverId, toolName, argsJson, tag, mrtrJson?)
     /// Calls an MCP tool asynchronously.
     /// argsJson: JSON object of tool arguments, e.g. {"path":"/tmp/foo.txt"}
+    /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
+    /// "[input required]" result (2026-07-28 MRTR retry).
     /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
     /// Returns "ok" or an error string.
     /// </summary>
@@ -225,7 +239,8 @@ namespace AgentCore.ScriptApi
             string toolName = operands[1].AsString;
             string argsJson = operands[2].AsString;
             string tag = operands[3].AsString;
-            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.CallToolCallback(serverId, toolName, argsJson, tag));
+            string? mrtrJson = operands.Count >= 5 ? operands[4].AsString : null;
+            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.CallToolCallback(serverId, toolName, argsJson, tag, mrtrJson));
         }
     }
 
@@ -273,9 +288,11 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// mcp_call_tool(serverId, toolName, argsJson)
+    /// mcp_call_tool(serverId, toolName, argsJson, mrtrJson?)
     /// Synchronously calls an MCP tool and blocks until the result is received.
     /// Returns the result string directly.
+    /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
+    /// "[input required]" result (2026-07-28 MRTR retry).
     /// </summary>
     sealed class McpCallToolExp : SimpleExpressionBase
     {
@@ -288,8 +305,9 @@ namespace AgentCore.ScriptApi
             string serverId = operands[0].AsString;
             string toolName = operands[1].AsString;
             string argsJson = operands[2].AsString;
+            string? mrtrJson = operands.Count >= 4 ? operands[3].AsString : null;
             try {
-                string result = AgentCore.Core.McpClientService.Instance.CallTool(serverId, toolName, argsJson).GetAwaiter().GetResult();
+                string result = AgentCore.Core.McpClientService.Instance.CallTool(serverId, toolName, argsJson, mrtrJson).GetAwaiter().GetResult();
                 return BoxedValue.FromString(result);
             }
             catch (System.Exception ex) {

@@ -42,10 +42,11 @@ namespace AgentCore.Core
     /// State derivation and plan.txt text generation/parsing for PlanTrack.
     /// Format (parsed line by line with regexes):
     /// # [PLAN] state=1 title
-    /// +[0] plan-level note text
+    ///     [0] plan-level note text
     /// -[0] state=0 item content
     ///     [0] 2026-10-13 12:00 record text
-    /// =continuation text (one leading '=' is added on save and removed on read)
+    /// +    continuation text (plus followed by the first line's indentation)
+    /// Notes before the first item belong to the plan; later notes belong to the current item.
     /// </summary>
     internal static class PlanTrackHelper
     {
@@ -54,9 +55,7 @@ namespace AgentCore.Core
         private static readonly Regex ItemLineRegex = new Regex(
             @"^-\[(\d+)\]\s*state=(\d+)\s+(.*)$", RegexOptions.Compiled);
         private static readonly Regex NoteLineRegex = new Regex(
-            @"^\+\[(\d+)\]\s+(.*)$", RegexOptions.Compiled);
-        private static readonly Regex RecordLineRegex = new Regex(
-            @"^\s+\[(\d+)\]\s+(.*)$", RegexOptions.Compiled);
+            @"^([ \t]+)\[(\d+)\]\s+(.*)$", RegexOptions.Compiled);
 
         internal static int DerivePlanState(int current, List<PlanTrackState.PlanItem> items)
         {
@@ -82,10 +81,10 @@ namespace AgentCore.Core
             return (int)PlanStateEnum.InProgress;
         }
 
-        private static string EncodeContinuationLines(string text)
+        private static string EncodeContinuationLines(string text, int indentation = 0)
         {
             return text.Replace("\r\n", "\n").Replace("\r", "\n")
-                .Replace("\n", Environment.NewLine + "=");
+                .Replace("\n", Environment.NewLine + "+" + new string(' ', indentation));
         }
 
         internal static string GeneratePlanText(PlanTrackState st)
@@ -94,13 +93,13 @@ namespace AgentCore.Core
             sb.Append("# [PLAN] state=").Append(st.PlanState).Append(' ');
             sb.AppendLine(EncodeContinuationLines(st.Title.Length > 0 ? st.Title : "(untitled)"));
             for (int n = 0; n < st.Notes.Count; n++)
-                sb.Append("+[").Append(n).Append("] ").AppendLine(EncodeContinuationLines(st.Notes[n]));
+                sb.Append("    [").Append(n).Append("] ").AppendLine(EncodeContinuationLines(st.Notes[n], 4));
             for (int i = 0; i < st.Items.Count; i++) {
                 var it = st.Items[i];
                 sb.Append("-[").Append(i).Append("] state=").Append(it.State).Append(' ');
                 sb.AppendLine(EncodeContinuationLines(it.Content));
                 for (int r = 0; r < it.Notes.Count; r++)
-                    sb.Append("    [").Append(r).Append("] ").AppendLine(EncodeContinuationLines(it.Notes[r]));
+                    sb.Append("    [").Append(r).Append("] ").AppendLine(EncodeContinuationLines(it.Notes[r], 4));
             }
             return sb.ToString();
         }
@@ -142,14 +141,19 @@ namespace AgentCore.Core
             PlanTrackState? st = null;
             PlanTrackState.PlanItem? currentItem = null;
             List<string>? currentNotes = null;
+            int currentIndentation = 0;
             string? line;
             using (var sr = new System.IO.StringReader(text)) {
                 while ((line = sr.ReadLine()) != null) {
                     // Decode explicit continuations before matching any structure.
-                    if (line.StartsWith("=", StringComparison.Ordinal)) {
+                    if (line.StartsWith("+", StringComparison.Ordinal)) {
                         if (st == null)
                             continue;
-                        line = line.Substring(1);
+                        int offset = 1;
+                        while (offset < line.Length && offset <= currentIndentation
+                            && (line[offset] == ' ' || line[offset] == '\t'))
+                            offset++;
+                        line = line.Substring(offset);
                         if (currentNotes != null)
                             currentNotes[currentNotes.Count - 1] += Environment.NewLine + line;
                         else if (currentItem != null)
@@ -163,6 +167,7 @@ namespace AgentCore.Core
                         st = new PlanTrackState();
                         currentItem = null;
                         currentNotes = null;
+                        currentIndentation = 0;
                         int ps;
                         if (!int.TryParse(m.Groups[1].Value, out ps))
                             ps = (int)PlanStateEnum.Planned;
@@ -174,9 +179,9 @@ namespace AgentCore.Core
                         continue;
                     var nm = NoteLineRegex.Match(line);
                     if (nm.Success) {
-                        st.Notes.Add(nm.Groups[2].Value.Trim());
-                        currentItem = null;
-                        currentNotes = st.Notes;
+                        currentNotes = currentItem != null ? currentItem.Notes : st.Notes;
+                        currentNotes.Add(nm.Groups[3].Value.Trim());
+                        currentIndentation = nm.Groups[1].Value.Length;
                         continue;
                     }
                     var im = ItemLineRegex.Match(line);
@@ -190,22 +195,10 @@ namespace AgentCore.Core
                         };
                         st.Items.Add(currentItem);
                         currentNotes = null;
+                        currentIndentation = 0;
                         continue;
                     }
-                    var rm = RecordLineRegex.Match(line);
-                    if (rm.Success && st.Items.Count > 0) {
-                        currentItem = st.Items[st.Items.Count - 1];
-                        currentNotes = currentItem.Notes;
-                        currentNotes.Add(rm.Groups[2].Value.Trim());
-                        continue;
-                    }
-                    // Unmarked lines continue the last recognized record verbatim.
-                    if (currentNotes != null)
-                        currentNotes[currentNotes.Count - 1] += Environment.NewLine + line;
-                    else if (currentItem != null)
-                        currentItem.Content += Environment.NewLine + line;
-                    else
-                        st.Title += Environment.NewLine + line;
+                    // Ignore unmarked lines; only '+' introduces a continuation.
                 }
             }
             return st;

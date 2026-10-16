@@ -171,35 +171,35 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// agent_set_project_prompt(agentId, value) - set the project prompt text
+    /// agent_set_project_memory(agentId, value) - set the project memory text
     /// </summary>
-    sealed class AgentSetProjectPromptExp : SimpleExpressionBase
+    sealed class AgentSetProjectMemoryExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_project_prompt requires (agentId, value)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_project_memory requires (agentId, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
-            inst.ProjectPrompt = operands[1].AsString;
+            inst.ProjectMemory = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
     }
 
     /// <summary>
-    /// agent_get_project_prompt(agentId) - get the project prompt text
+    /// agent_get_project_memory(agentId) - get the project memory text
     /// </summary>
-    sealed class AgentGetProjectPromptExp : SimpleExpressionBase
+    sealed class AgentGetProjectMemoryExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_project_prompt requires (agentId)");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_project_memory requires (agentId)");
                 return BoxedValue.FromString(string.Empty);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
-            return BoxedValue.FromString(inst.ProjectPrompt);
+            return BoxedValue.FromString(inst.ProjectMemory);
         }
     }
 
@@ -777,13 +777,13 @@ namespace AgentCore.ScriptApi
             BatchCommand.BatchScript.Register("agent_get_foundation_prompt",
                 "agent_get_foundation_prompt(agentId) - get the system prompt text",
                 new ExpressionFactoryHelper<AgentGetFoundationPromptExp>());
-            BatchCommand.BatchScript.Register("agent_set_project_prompt",
-                "agent_set_project_prompt(agentId, value) - set the project prompt text",
+            BatchCommand.BatchScript.Register("agent_set_project_memory",
+                "agent_set_project_memory(agentId, value) - set the project memory text",
                 false,
-                new ExpressionFactoryHelper<AgentSetProjectPromptExp>());
-            BatchCommand.BatchScript.Register("agent_get_project_prompt",
-                "agent_get_project_prompt(agentId) - get the project prompt text",
-                new ExpressionFactoryHelper<AgentGetProjectPromptExp>());
+                new ExpressionFactoryHelper<AgentSetProjectMemoryExp>());
+            BatchCommand.BatchScript.Register("agent_get_project_memory",
+                "agent_get_project_memory(agentId) - get the project memory text",
+                new ExpressionFactoryHelper<AgentGetProjectMemoryExp>());
             BatchCommand.BatchScript.Register("agent_set_emphasize",
                 "agent_set_emphasize(agentId, value) - set the emphasize text",
                 false,

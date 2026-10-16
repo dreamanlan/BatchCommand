@@ -21,7 +21,7 @@ namespace AgentCore.Core
         public string ProjectDir { get; set; } = string.Empty;
         public string ProjectIdentity { get; set; } = string.Empty;
         public string FoundationPrompt { get; set; } = string.Empty;
-        public string ProjectPrompt { get; set; } = string.Empty;
+        public string ProjectMemory { get; set; } = string.Empty;
         public string Emphasize { get; set; } = string.Empty;
         public string Soul { get; set; } = string.Empty;
         public string Backlog { get; set; } = string.Empty;
@@ -41,8 +41,7 @@ namespace AgentCore.Core
         public int MaxContextRounds { get; set; } = 6;
         // Current context round counter (atomic via Interlocked)
         private int _curContextRounds = 0;
-        public int CurContextRounds
-        {
+        public int CurContextRounds {
             get => System.Threading.Interlocked.CompareExchange(ref _curContextRounds, 0, 0);
             set => System.Threading.Interlocked.Exchange(ref _curContextRounds, value);
         }

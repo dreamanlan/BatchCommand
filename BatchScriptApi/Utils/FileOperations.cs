@@ -576,14 +576,17 @@ namespace BatchCommand.Utils
 
             string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
-            if (startLine > endLine) {
-                throw new IOException($"startLine:{startLine} > endLine:{endLine}");
-            }
             if (startLine < 1) {
                 startLine = 1;
             }
             if (endLine > lines.Length) {
                 endLine = lines.Length;
+            }
+            if (startLine > lines.Length) {
+                throw new IOException($"startLine:{startLine} > total file lines:{lines.Length}");
+            }
+            if (startLine > endLine) {
+                throw new IOException($"startLine:{startLine} > endLine:{endLine}");
             }
 
             string[] result = new string[endLine - startLine + 1];

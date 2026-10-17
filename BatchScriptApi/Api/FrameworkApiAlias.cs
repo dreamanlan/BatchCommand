@@ -24,6 +24,99 @@ namespace BatchCommand.Api
     using TupleValue7 = Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue>;
     using TupleValue8 = Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, Tuple<BoxedValue>>;
 
+    // Fills omitted trailing arguments with parameter default values so DSL
+    // calls can leave out parameters that have defaults (C# optional params).
+    // Only reflection APIs available on .NET 4.7 and netstandard are used.
+    internal static class OptionalArgsHelper
+    {
+        private static readonly object s_NoDefault = new object();
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<MethodInfo, object[]> s_Cache =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<MethodInfo, object[]>();
+
+        // Pads args for a delegate invoke using the delegate's method defaults.
+        internal static object[] PadDefaultArgs(Delegate d, object[] args)
+        {
+            if (null == d)
+                return args;
+            var defaults = s_Cache.GetValue(d.Method, BuildDefaults);
+            return Pad(defaults, args);
+        }
+        // Pads args for a Type.InvokeMember call: picks the overload with the
+        // fewest parameters whose missing tail all have default values.
+        internal static object[] PadInvokeMemberArgs(Type t, string method, BindingFlags flags, object[] args)
+        {
+            var mis = t.GetMember(method, flags);
+            MethodInfo best = null;
+            int bestLen = int.MaxValue;
+            foreach (var mi in mis) {
+                var info = mi as MethodInfo;
+                if (null == info)
+                    continue;
+                var pis = info.GetParameters();
+                if (pis.Length <= args.Length)
+                    continue;
+                bool canPad = true;
+                for (int i = args.Length; i < pis.Length; ++i) {
+                    if (!pis[i].HasDefaultValue) {
+                        canPad = false;
+                        break;
+                    }
+                }
+                if (canPad && pis.Length < bestLen) {
+                    best = info;
+                    bestLen = pis.Length;
+                }
+            }
+            if (null != best) {
+                var defaults = s_Cache.GetValue(best, BuildDefaults);
+                return Pad(defaults, args);
+            }
+            return args;
+        }
+        private static object[] Pad(object[] defaults, object[] args)
+        {
+            if (null == defaults || defaults.Length == 0 || args.Length >= defaults.Length)
+                return args;
+            for (int i = args.Length; i < defaults.Length; ++i) {
+                if (object.ReferenceEquals(defaults[i], s_NoDefault))
+                    return args; // a missing tail parameter has no default value
+            }
+            var padded = new object[defaults.Length];
+            Array.Copy(args, padded, args.Length);
+            for (int i = args.Length; i < defaults.Length; ++i) {
+                padded[i] = defaults[i];
+            }
+            return padded;
+        }
+        private static object[] BuildDefaults(MethodInfo mi)
+        {
+            var pis = mi.GetParameters();
+            var defaults = new object[pis.Length];
+            for (int i = 0; i < pis.Length; ++i) {
+                var pi = pis[i];
+                object v = s_NoDefault;
+                if (pi.HasDefaultValue) {
+                    var dv = pi.DefaultValue;
+                    if (dv is System.Reflection.Missing) {
+                        // [Optional] without a value, not usable for a direct invoke.
+                    }
+                    else if (null == dv || pi.ParameterType.IsInstanceOfType(dv)) {
+                        v = dv;
+                    }
+                    else {
+                        // Raw metadata constants can carry a different type
+                        // (e.g. int for a decimal default), convert once here.
+                        var cv = Converter.CastTo(pi.ParameterType, dv);
+                        if (null != cv && pi.ParameterType.IsInstanceOfType(cv)) {
+                            v = cv;
+                        }
+                    }
+                }
+                defaults[i] = v;
+            }
+            return defaults;
+        }
+    }
     /// <summary>
     /// Error-info-supporting implementations of the DotnetStoryScript.dll built-in
     /// framework apis (clone/copy/add/string/path/file/time utilities, ...): the
@@ -2017,8 +2110,13 @@ namespace BatchCommand.Api
                         BoxedValue condVal;
                         if (clause.Condition.IsAsync) {
                             var _ei1 = clause.Condition.Calc(result);
-                            while (_ei1.MoveNext()) { yield return _ei1.Current; }
-                            condVal = result.Value;
+                            try {
+                                while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                                condVal = result.Value;
+                            }
+                            finally {
+                                (_ei1 as System.IDisposable)?.Dispose();
+                            }
                         }
                         else {
                             condVal = clause.Condition.Calc();
@@ -2029,8 +2127,13 @@ namespace BatchCommand.Api
                                 BoxedValue tv;
                                 if (exp.IsAsync) {
                                     var _ei2 = exp.Calc(result);
-                                    while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                                    tv = result.Value;
+                                    try {
+                                        while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                                        tv = result.Value;
+                                    }
+                                    finally {
+                                        (_ei2 as System.IDisposable)?.Dispose();
+                                    }
                                 }
                                 else {
                                     tv = exp.Calc();
@@ -2055,8 +2158,13 @@ namespace BatchCommand.Api
                             BoxedValue tv;
                             if (exp.IsAsync) {
                                 var _ei3 = exp.Calc(result);
-                                while (_ei3.MoveNext()) { yield return _ei3.Current; }
-                                tv = result.Value;
+                                try {
+                                    while (_ei3.MoveNext()) { yield return _ei3.Current; }
+                                    tv = result.Value;
+                                }
+                                finally {
+                                    (_ei3 as System.IDisposable)?.Dispose();
+                                }
                             }
                             else {
                                 tv = exp.Calc();
@@ -2227,8 +2335,13 @@ namespace BatchCommand.Api
                     BoxedValue condVal;
                     if (m_Condition.IsAsync) {
                         var _ei1 = m_Condition.Calc(result);
-                        while (_ei1.MoveNext()) { yield return _ei1.Current; }
-                        condVal = result.Value;
+                        try {
+                            while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                            condVal = result.Value;
+                        }
+                        finally {
+                            (_ei1 as System.IDisposable)?.Dispose();
+                        }
                     }
                     else {
                         condVal = m_Condition.Calc();
@@ -2239,8 +2352,13 @@ namespace BatchCommand.Api
                             BoxedValue tv;
                             if (exp.IsAsync) {
                                 var _ei2 = exp.Calc(result);
-                                while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                                tv = result.Value;
+                                try {
+                                    while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                                    tv = result.Value;
+                                }
+                                finally {
+                                    (_ei2 as System.IDisposable)?.Dispose();
+                                }
                             }
                             else {
                                 tv = exp.Calc();
@@ -2370,8 +2488,13 @@ namespace BatchCommand.Api
                 BoxedValue countVal;
                 if (m_Count.IsAsync) {
                     var _ei1 = m_Count.Calc(result);
-                    while (_ei1.MoveNext()) { yield return _ei1.Current; }
-                    countVal = result.Value;
+                    try {
+                        while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                        countVal = result.Value;
+                    }
+                    finally {
+                        (_ei1 as System.IDisposable)?.Dispose();
+                    }
                 }
                 else {
                     countVal = m_Count.Calc();
@@ -2384,8 +2507,13 @@ namespace BatchCommand.Api
                         BoxedValue tv;
                         if (exp.IsAsync) {
                             var _ei2 = exp.Calc(result);
-                            while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                            tv = result.Value;
+                            try {
+                                while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                                tv = result.Value;
+                            }
+                            finally {
+                                (_ei2 as System.IDisposable)?.Dispose();
+                            }
                         }
                         else {
                             tv = exp.Calc();
@@ -2484,18 +2612,28 @@ namespace BatchCommand.Api
                 IEnumerable obj = list.As<IEnumerable>();
                 if (null != obj && obj is IEnumerable<BoxedValue> bvEnumer) {
                     var enumer = bvEnumer.GetEnumerator();
-                    while (enumer.MoveNext()) {
-                        var val = enumer.Current;
-                        if (LoopOnce(val, ref v))
-                            return v;
+                    try {
+                        while (enumer.MoveNext()) {
+                            var val = enumer.Current;
+                            if (LoopOnce(val, ref v))
+                                return v;
+                        }
+                    }
+                    finally {
+                        enumer.Dispose();
                     }
                 }
                 else if (null != obj) {
                     var enumer = obj.GetEnumerator();
-                    while (enumer.MoveNext()) {
-                        var val = BoxedValue.FromObject(enumer.Current);
-                        if (LoopOnce(val, ref v))
-                            return v;
+                    try {
+                        while (enumer.MoveNext()) {
+                            var val = BoxedValue.FromObject(enumer.Current);
+                            if (LoopOnce(val, ref v))
+                                return v;
+                        }
+                    }
+                    finally {
+                        (enumer as System.IDisposable)?.Dispose();
                     }
                 }
                 return v;
@@ -2573,7 +2711,12 @@ namespace BatchCommand.Api
                 var listResult = new AsyncCalcResult();
                 if (m_List.IsAsync) {
                     var _ei1 = m_List.Calc(listResult);
-                    while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                    try {
+                        while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                    }
+                    finally {
+                        (_ei1 as System.IDisposable)?.Dispose();
+                    }
                 }
                 else {
                     listResult.Value = m_List.Calc();
@@ -2582,28 +2725,48 @@ namespace BatchCommand.Api
                 IEnumerable obj = list.As<IEnumerable>();
                 if (null != obj && obj is IEnumerable<BoxedValue> bvEnumer) {
                     var enumer = bvEnumer.GetEnumerator();
-                    while (enumer.MoveNext()) {
-                        var val = enumer.Current;
-                        var loopResult = new AsyncCalcResult();
-                        var _ei2 = LoopOnceAsync(val, loopResult);
-                        while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                        v = loopResult.Value;
-                        if (loopResult.IsBreak) {
-                            break;
+                    try {
+                        while (enumer.MoveNext()) {
+                            var val = enumer.Current;
+                            var loopResult = new AsyncCalcResult();
+                            var _ei2 = LoopOnceAsync(val, loopResult);
+                            try {
+                                while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                            }
+                            finally {
+                                (_ei2 as System.IDisposable)?.Dispose();
+                            }
+                            v = loopResult.Value;
+                            if (loopResult.IsBreak) {
+                                break;
+                            }
                         }
+                    }
+                    finally {
+                        enumer.Dispose();
                     }
                 }
                 else if (null != obj) {
                     var enumer = obj.GetEnumerator();
-                    while (enumer.MoveNext()) {
-                        var val = BoxedValue.FromObject(enumer.Current);
-                        var loopResult = new AsyncCalcResult();
-                        var _ei3 = LoopOnceAsync(val, loopResult);
-                        while (_ei3.MoveNext()) { yield return _ei3.Current; }
-                        v = loopResult.Value;
-                        if (loopResult.IsBreak) {
-                            break;
+                    try {
+                        while (enumer.MoveNext()) {
+                            var val = BoxedValue.FromObject(enumer.Current);
+                            var loopResult = new AsyncCalcResult();
+                            var _ei3 = LoopOnceAsync(val, loopResult);
+                            try {
+                                while (_ei3.MoveNext()) { yield return _ei3.Current; }
+                            }
+                            finally {
+                                (_ei3 as System.IDisposable)?.Dispose();
+                            }
+                            v = loopResult.Value;
+                            if (loopResult.IsBreak) {
+                                break;
+                            }
                         }
+                    }
+                    finally {
+                        (enumer as System.IDisposable)?.Dispose();
                     }
                 }
                 result.Value = v;
@@ -2617,8 +2780,13 @@ namespace BatchCommand.Api
                     if (exp.IsAsync) {
                         var subResult = new AsyncCalcResult();
                         var _ei = exp.Calc(subResult);
-                        while (_ei.MoveNext()) { yield return _ei.Current; }
-                        v = subResult.Value;
+                        try {
+                            while (_ei.MoveNext()) { yield return _ei.Current; }
+                            v = subResult.Value;
+                        }
+                        finally {
+                            (_ei as System.IDisposable)?.Dispose();
+                        }
                     }
                     else {
                         v = exp.Calc();
@@ -2673,27 +2841,32 @@ namespace BatchCommand.Api
                     list.Add(val);
                 }
                 var enumer = list.GetEnumerator();
-                while (enumer.MoveNext()) {
-                    var val = enumer.Current;
-                    Calculator.SetVariable("$$", val);
-                    for (int index = 0; index < m_Expressions.Count; ++index) {
-                        BoxedValue tv = m_Expressions[index].Calc();
-                        if (Calculator.RunState == RunStateEnum.Continue) {
-                            Calculator.RunState = RunStateEnum.Normal;
-                            break;
-                        }
-                        else if (Calculator.RunState != RunStateEnum.Normal) {
-                            if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                try {
+                    while (enumer.MoveNext()) {
+                        var val = enumer.Current;
+                        Calculator.SetVariable("$$", val);
+                        for (int index = 0; index < m_Expressions.Count; ++index) {
+                            BoxedValue tv = m_Expressions[index].Calc();
+                            if (Calculator.RunState == RunStateEnum.Continue) {
+                                Calculator.RunState = RunStateEnum.Normal;
+                                break;
+                            }
+                            else if (Calculator.RunState != RunStateEnum.Normal) {
+                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                    v = tv;
+                                }
+                                if (Calculator.RunState == RunStateEnum.Break)
+                                    Calculator.RunState = RunStateEnum.Normal;
+                                return v;
+                            }
+                            else {
                                 v = tv;
                             }
-                            if (Calculator.RunState == RunStateEnum.Break)
-                                Calculator.RunState = RunStateEnum.Normal;
-                            return v;
-                        }
-                        else {
-                            v = tv;
                         }
                     }
+                }
+                finally {
+                    enumer.Dispose();
                 }
                 return v;
             }
@@ -2706,7 +2879,12 @@ namespace BatchCommand.Api
                     if (exp.IsAsync) {
                         var subResult = new AsyncCalcResult();
                         var _ei1 = exp.Calc(subResult);
-                        while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                        try {
+                            while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                        }
+                        finally {
+                            (_ei1 as System.IDisposable)?.Dispose();
+                        }
                         list.Add(subResult.Value);
                     }
                     else {
@@ -2714,38 +2892,48 @@ namespace BatchCommand.Api
                     }
                 }
                 var enumer = list.GetEnumerator();
-                while (enumer.MoveNext()) {
-                    var val = enumer.Current;
-                    Calculator.SetVariable("$$", val);
-                    for (int index = 0; index < m_Expressions.Count; ++index) {
-                        var exp = m_Expressions[index];
-                        BoxedValue tv;
-                        if (exp.IsAsync) {
-                            var subResult = new AsyncCalcResult();
-                            var _ei2 = exp.Calc(subResult);
-                            while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                            tv = subResult.Value;
-                        }
-                        else {
-                            tv = exp.Calc();
-                        }
-                        if (Calculator.RunState == RunStateEnum.Continue) {
-                            Calculator.RunState = RunStateEnum.Normal;
-                            break;
-                        }
-                        else if (Calculator.RunState != RunStateEnum.Normal) {
-                            if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                try {
+                    while (enumer.MoveNext()) {
+                        var val = enumer.Current;
+                        Calculator.SetVariable("$$", val);
+                        for (int index = 0; index < m_Expressions.Count; ++index) {
+                            var exp = m_Expressions[index];
+                            BoxedValue tv;
+                            if (exp.IsAsync) {
+                                var subResult = new AsyncCalcResult();
+                                var _ei2 = exp.Calc(subResult);
+                                try {
+                                    while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                                }
+                                finally {
+                                    (_ei2 as System.IDisposable)?.Dispose();
+                                }
+                                tv = subResult.Value;
+                            }
+                            else {
+                                tv = exp.Calc();
+                            }
+                            if (Calculator.RunState == RunStateEnum.Continue) {
+                                Calculator.RunState = RunStateEnum.Normal;
+                                break;
+                            }
+                            else if (Calculator.RunState != RunStateEnum.Normal) {
+                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                    v = tv;
+                                }
+                                if (Calculator.RunState == RunStateEnum.Break)
+                                    Calculator.RunState = RunStateEnum.Normal;
+                                result.Value = v;
+                                yield break;
+                            }
+                            else {
                                 v = tv;
                             }
-                            if (Calculator.RunState == RunStateEnum.Break)
-                                Calculator.RunState = RunStateEnum.Normal;
-                            result.Value = v;
-                            yield break;
-                        }
-                        else {
-                            v = tv;
                         }
                     }
+                }
+                finally {
+                    enumer.Dispose();
                 }
                 result.Value = v;
             }
@@ -3422,13 +3610,13 @@ namespace BatchCommand.Api
                         if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict && bvDict.TryGetValue(bvMethod, out var val) && val.IsObject && val.ObjectVal is Delegate) {
                             var d = val.ObjectVal as Delegate;
                             if (null != d) {
-                                ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                                ret = BoxedValue.FromObject(d.DynamicInvoke(OptionalArgsHelper.PadDefaultArgs(d, _args)));
                             }
                         }
                         else if (null != dict && dict.Contains(method) && dict[method] is Delegate) {
                             var d = dict[method] as Delegate;
                             if (null != d) {
-                                ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                                ret = BoxedValue.FromObject(d.DynamicInvoke(OptionalArgsHelper.PadDefaultArgs(d, _args)));
                             }
                         }
                         else {
@@ -3436,6 +3624,7 @@ namespace BatchCommand.Api
                             if (null != t) {
                                 try {
                                     BindingFlags flags = BindingFlags.Static | BindingFlags.InvokeMethod | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic;
+                                    _args = OptionalArgsHelper.PadInvokeMemberArgs(t, method, flags, _args);
                                     CastArgsForCall(t, method, flags, _args);
                                     ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, null, _args));
                                 }
@@ -3448,6 +3637,7 @@ namespace BatchCommand.Api
                                 if (null != t) {
                                     try {
                                         BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.InvokeMethod | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic;
+                                        _args = OptionalArgsHelper.PadInvokeMemberArgs(t, method, flags, _args);
                                         CastArgsForCall(t, method, flags, _args);
                                         ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, obj, _args));
                                     }
@@ -3655,13 +3845,13 @@ namespace BatchCommand.Api
                     if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict && bvDict.TryGetValue(bvMethod, out var val)) {
                         var d = val.As<Delegate>();
                         if (null != d) {
-                            ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                            ret = BoxedValue.FromObject(d.DynamicInvoke(OptionalArgsHelper.PadDefaultArgs(d, _args)));
                         }
                     }
                     else if (null != dict && dict.Contains(methodObj)) {
                         var d = dict[methodObj] as Delegate;
                         if (null != d) {
-                            ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                            ret = BoxedValue.FromObject(d.DynamicInvoke(OptionalArgsHelper.PadDefaultArgs(d, _args)));
                         }
                     }
                     else {
@@ -3671,7 +3861,7 @@ namespace BatchCommand.Api
                             if (index >= 0 && index < list.Count) {
                                 var d = list[index] as Delegate;
                                 if (null != d) {
-                                    ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                                    ret = BoxedValue.FromObject(d.DynamicInvoke(OptionalArgsHelper.PadDefaultArgs(d, _args)));
                                 }
                             }
                         }
@@ -3679,14 +3869,25 @@ namespace BatchCommand.Api
                             IEnumerable enumer = obj as IEnumerable;
                             if (null != enumer && bvMethod.IsInteger) {
                                 int index = bvMethod.GetInt();
+                                if (index < 0)
+                                    return ret;
                                 var e = enumer.GetEnumerator();
-                                for (int i = 0; i <= index; ++i) {
-                                    e.MoveNext();
+                                try {
+                                    while (e.MoveNext()) {
+                                        if (index == 0) {
+                                            var d = e.Current as Delegate;
+                                            if (null != d) {
+                                                ret = BoxedValue.FromObject(d.DynamicInvoke(OptionalArgsHelper.PadDefaultArgs(d, _args)));
+                                            }
+                                            break;
+                                        }
+                                        --index;
+                                    }
                                 }
-                                var d = e.Current as Delegate;
-                                if (null != d) {
-                                    ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                                finally {
+                                    (e as System.IDisposable)?.Dispose();
                                 }
+
                             }
                         }
                     }
@@ -3780,114 +3981,27 @@ namespace BatchCommand.Api
                             IEnumerable enumer = obj as IEnumerable;
                             if (null != enumer && bvMethod.IsInteger) {
                                 int index = bvMethod.GetInt();
+                                if (index < 0)
+                                    return ret;
                                 var e = enumer.GetEnumerator();
-                                for (int i = 0; i <= index; ++i) {
-                                    e.MoveNext();
+                                try {
+                                    while (e.MoveNext()) {
+                                        if (index == 0) {
+                                            ret = BoxedValue.FromObject(e.Current);
+                                            break;
+                                        }
+                                        --index;
+                                    }
                                 }
-                                ret = BoxedValue.FromObject(e.Current);
+                                finally {
+                                    (e as System.IDisposable)?.Dispose();
+                                }
                             }
                         }
                     }
                 }
                 return ret;
             }
-        }
-        internal sealed class LinqExp : AbstractExpression
-        {
-            protected override BoxedValue DoCalc()
-            {
-                BoxedValue v = 0;
-                var list = m_List.Calc().GetObject();
-                var method = m_Method.Calc().GetString();
-                IEnumerable obj = list as IEnumerable;
-                if (null != obj && !string.IsNullOrEmpty(method)) {
-                    if (method == "orderby" || method == "orderbydesc") {
-                        bool desc = method == "orderbydesc";
-                        List<BoxedValue> results = new List<BoxedValue>();
-                        var enumer = obj.GetEnumerator();
-                        while (enumer.MoveNext()) {
-                            var val = BoxedValue.FromObject(enumer.Current);
-                            results.Add(val);
-                        }
-                        results.Sort((BoxedValue o1, BoxedValue o2) => {
-                            Calculator.SetVariable("$$", o1);
-                            var r1 = BoxedValue.NullObject;
-                            for (int index = 0; index < m_Expressions.Count; ++index) {
-                                r1 = m_Expressions[index].Calc();
-                            }
-                            Calculator.SetVariable("$$", o2);
-                            var r2 = BoxedValue.NullObject;
-                            for (int index = 0; index < m_Expressions.Count; ++index) {
-                                r2 = m_Expressions[index].Calc();
-                            }
-                            int r = 0;
-                            if (r1.IsString && r2.IsString) {
-                                r = r1.GetString().CompareTo(r2.GetString());
-                            }
-                            else {
-                                double rd1 = r1.GetDouble();
-                                double rd2 = r2.GetDouble();
-                                r = rd1.CompareTo(rd2);
-                            }
-                            if (desc)
-                                r = -r;
-                            return r;
-                        });
-                        v = BoxedValue.FromObject(results);
-                    }
-                    else if (method == "where") {
-                        List<BoxedValue> results = new List<BoxedValue>();
-                        IEnumerator enumer = obj.GetEnumerator();
-                        while (enumer.MoveNext()) {
-                            var val = BoxedValue.FromObject(enumer.Current);
-
-                            Calculator.SetVariable("$$", val);
-                            BoxedValue r = BoxedValue.NullObject;
-                            for (int index = 0; index < m_Expressions.Count; ++index) {
-                                r = m_Expressions[index].Calc();
-                            }
-                            if (r.GetLong() != 0) {
-                                results.Add(val);
-                            }
-                        }
-                        v = BoxedValue.FromObject(results);
-                    }
-                    else if (method == "top") {
-                        BoxedValue r = BoxedValue.NullObject;
-                        for (int index = 0; index < m_Expressions.Count; ++index) {
-                            r = m_Expressions[index].Calc();
-                        }
-                        long ct = r.GetLong();
-                        List<BoxedValue> results = new List<BoxedValue>();
-                        IEnumerator enumer = obj.GetEnumerator();
-                        while (enumer.MoveNext()) {
-                            var val = BoxedValue.FromObject(enumer.Current);
-                            if (ct > 0) {
-                                results.Add(val);
-                                --ct;
-                            }
-                        }
-                        v = BoxedValue.FromObject(results);
-                    }
-                }
-                return v;
-            }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                Dsl.ISyntaxComponent list = callData.GetParam(0);
-                m_List = Calculator.Load(list);
-                Dsl.ISyntaxComponent method = callData.GetParam(1);
-                m_Method = Calculator.Load(method);
-                for (int i = 2; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
-
-            private IExpression m_List;
-            private IExpression m_Method;
-            private List<IExpression> m_Expressions = new List<IExpression>();
         }
         internal sealed class IsNullExp : SimpleExpressionBase
         {
@@ -4031,15 +4145,24 @@ namespace BatchCommand.Api
                     throw new Exception("Expected: await(\"func_name\", arg1, arg2, ...) api");
                 var funcName = operands[0].AsString;
                 var args = Calculator.NewCalculatorValueList();
-                for (int i = 1; i < operands.Count; ++i) {
-                    args.Add(operands[i]);
+                try {
+                    for (int i = 1; i < operands.Count; ++i) {
+                        args.Add(operands[i]);
+                    }
+                    var asyncResult = new AsyncCalcResult();
+                    var enumerator = Calculator.CalcAsync(funcName, args, asyncResult);
+                    try {
+                        while (enumerator.MoveNext()) { yield return enumerator.Current; }
+                        result.Value = asyncResult.Value;
+                    }
+                    finally {
+                        (enumerator as IDisposable)?.Dispose();
+                    }
                 }
-                var asyncResult = new AsyncCalcResult();
-                var enumerator = Calculator.CalcAsync(funcName, args, asyncResult);
-                Calculator.RecycleCalculatorValueList(args);
-                var _ei = enumerator;
-                while (_ei.MoveNext()) { yield return _ei.Current; }
-                result.Value = asyncResult.Value;
+                finally {
+                    Calculator.RecycleCalculatorValueList(args);
+                }
+
             }
         }
         internal sealed class AwaitWhileExp : SimpleAsyncExpressionBase
@@ -4050,16 +4173,21 @@ namespace BatchCommand.Api
                     throw new Exception("Expected: awaitwhile(\"func_name\", arg1, arg2, ...) api, loop call sync function while result is true");
                 var funcName = operands[0].AsString;
                 var args = Calculator.NewCalculatorValueList();
-                for (int i = 1; i < operands.Count; ++i) {
-                    args.Add(operands[i]);
+                try {
+                    for (int i = 1; i < operands.Count; ++i) {
+                        args.Add(operands[i]);
+                    }
+                    BoxedValue v = Calculator.Calc(funcName, args);
+                    while (v.GetBool()) {
+                        yield return null;
+                        v = Calculator.Calc(funcName, args);
+                    }
+                    result.Value = v;
                 }
-                BoxedValue v = Calculator.Calc(funcName, args);
-                while (v.GetBool()) {
-                    yield return null;
-                    v = Calculator.Calc(funcName, args);
+                finally {
+                    Calculator.RecycleCalculatorValueList(args);
                 }
-                Calculator.RecycleCalculatorValueList(args);
-                result.Value = v;
+
             }
         }
         internal sealed class AwaitUntilExp : SimpleAsyncExpressionBase
@@ -4070,16 +4198,21 @@ namespace BatchCommand.Api
                     throw new Exception("Expected: awaituntil(\"func_name\", arg1, arg2, ...) api, loop call sync function until result is true");
                 var funcName = operands[0].AsString;
                 var args = Calculator.NewCalculatorValueList();
-                for (int i = 1; i < operands.Count; ++i) {
-                    args.Add(operands[i]);
+                try {
+                    for (int i = 1; i < operands.Count; ++i) {
+                        args.Add(operands[i]);
+                    }
+                    BoxedValue v = Calculator.Calc(funcName, args);
+                    while (!v.GetBool()) {
+                        yield return null;
+                        v = Calculator.Calc(funcName, args);
+                    }
+                    result.Value = v;
                 }
-                BoxedValue v = Calculator.Calc(funcName, args);
-                while (!v.GetBool()) {
-                    yield return null;
-                    v = Calculator.Calc(funcName, args);
+                finally {
+                    Calculator.RecycleCalculatorValueList(args);
                 }
-                Calculator.RecycleCalculatorValueList(args);
-                result.Value = v;
+
             }
         }
         internal sealed class AwaitTimeExp : SimpleAsyncExpressionBase
@@ -4233,15 +4366,15 @@ namespace BatchCommand.Api
                 }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
-                    string sep = operands[0].AsString;
-                    IList list = operands[1].As<IList>();
-                    if (sep != null && list != null) {
+                    var sep = operands[0].AsString;
+                    var list = operands[1].As<IList>();
+                    if (null != sep && null != list) {
                         string[] strs = new string[list.Count];
                         for (int i = 0; i < list.Count; i++) {
                             var elem = list[i];
-                            if (elem != null) {
+                            if (null != elem) {
                                 var s = elem.ToString();
-                                if (s == null) {
+                                if (null == s) {
                                     strs[i] = string.Empty;
                                 }
                                 else {
@@ -4273,20 +4406,30 @@ namespace BatchCommand.Api
                     else {
                         IList seps = operands[1].As<IList>();
                         if (str != null && seps != null) {
-                            char[] cs = new char[seps.Count];
+                            bool isChar = true;
+                            List<string> strs = new List<string>();
+                            List<char> cs = new List<char>();
                             for (int i = 0; i < seps.Count; i++) {
                                 var _sep = seps[i];
                                 if (null != _sep) {
                                     string? sep = _sep.ToString();
-                                    if (sep?.Length > 0) {
-                                        cs[i] = sep[0];
-                                    }
-                                    else {
-                                        cs[i] = '\0';
+                                    if (!string.IsNullOrEmpty(sep)) {
+                                        strs.Add(sep);
+                                        if (sep.Length == 1) {
+                                            cs.Add(sep[0]);
+                                        }
+                                        else {
+                                            isChar = false;
+                                        }
                                     }
                                 }
                             }
-                            r = BoxedValue.FromObject(str.Split(cs, StringSplitOptions.RemoveEmptyEntries));
+                            if (isChar) {
+                                r = BoxedValue.FromObject(str.Split(cs.ToArray(), StringSplitOptions.RemoveEmptyEntries));
+                            }
+                            else {
+                                r = BoxedValue.FromObject(str.Split(strs.ToArray(), StringSplitOptions.RemoveEmptyEntries));
+                            }
                         }
                     }
                 }
@@ -5015,9 +5158,14 @@ namespace BatchCommand.Api
                     if (null != obj) {
                         List<BoxedValue> al = new List<BoxedValue>();
                         IEnumerator enumer = obj.GetEnumerator();
-                        while (enumer.MoveNext()) {
-                            var val = BoxedValue.FromObject(enumer.Current);
-                            al.Add(val);
+                        try {
+                            while (enumer.MoveNext()) {
+                                var val = BoxedValue.FromObject(enumer.Current);
+                                al.Add(val);
+                            }
+                        }
+                        finally {
+                            (enumer as System.IDisposable)?.Dispose();
                         }
                         r = BoxedValue.FromObject(al.ToArray());
                     }
@@ -5251,34 +5399,13 @@ namespace BatchCommand.Api
                     var ct = operands[1].GetInt();
                     if (null != enumer && enumer is List<BoxedValue> bvList) {
                         var e = bvList.GetEnumerator();
-                        List<List<BoxedValue>> al = new List<List<BoxedValue>>();
-                        List<BoxedValue> arr = new List<BoxedValue>();
-                        int ix = 0;
-                        while (e.MoveNext()) {
-                            if (ix < ct) {
-                                arr.Add(e.Current);
-                                ++ix;
-                            }
-                            if (ix >= ct) {
-                                al.Add(arr);
-                                arr = new List<BoxedValue>();
-                                ix = 0;
-                            }
-                        }
-                        if (arr.Count > 0) {
-                            al.Add(arr);
-                        }
-                        r = BoxedValue.FromObject(al);
-                    }
-                    else if (null != enumer) {
-                        var e = enumer.GetEnumerator();
-                        if (null != e) {
+                        try {
                             List<List<BoxedValue>> al = new List<List<BoxedValue>>();
                             List<BoxedValue> arr = new List<BoxedValue>();
                             int ix = 0;
                             while (e.MoveNext()) {
                                 if (ix < ct) {
-                                    arr.Add(BoxedValue.FromObject(e.Current));
+                                    arr.Add(e.Current);
                                     ++ix;
                                 }
                                 if (ix >= ct) {
@@ -5291,6 +5418,37 @@ namespace BatchCommand.Api
                                 al.Add(arr);
                             }
                             r = BoxedValue.FromObject(al);
+                        }
+                        finally {
+                            e.Dispose();
+                        }
+                    }
+                    else if (null != enumer) {
+                        var e = enumer.GetEnumerator();
+                        if (null != e) {
+                            try {
+                                List<List<BoxedValue>> al = new List<List<BoxedValue>>();
+                                List<BoxedValue> arr = new List<BoxedValue>();
+                                int ix = 0;
+                                while (e.MoveNext()) {
+                                    if (ix < ct) {
+                                        arr.Add(BoxedValue.FromObject(e.Current));
+                                        ++ix;
+                                    }
+                                    if (ix >= ct) {
+                                        al.Add(arr);
+                                        arr = new List<BoxedValue>();
+                                        ix = 0;
+                                    }
+                                }
+                                if (arr.Count > 0) {
+                                    al.Add(arr);
+                                }
+                                r = BoxedValue.FromObject(al);
+                            }
+                            finally {
+                                (e as System.IDisposable)?.Dispose();
+                            }
                         }
                     }
                 }
@@ -5334,9 +5492,20 @@ namespace BatchCommand.Api
                 for (int i = 0; i < funcData.GetParamNum(); ++i) {
                     Dsl.FunctionData? callData = funcData.GetParam(i) as Dsl.FunctionData;
                     if (null != callData && callData.GetParamNum() == 2) {
-                        var expKey = Calculator.Load(callData.GetParam(0));
+                        var p0 = callData.GetParam(0);
+                        var p1 = callData.GetParam(1);
+                        if (p0 is Dsl.ValueData vd0 && vd0.GetIdType() == Dsl.ValueData.ID_TOKEN) {
+                            var vid = vd0.GetId();
+                            if (vid.Length > 0 && (vid[0] == '$' || vid[0] == '@')) {
+                                // Enable variables with prefixed tags
+                            }
+                            else {
+                                vd0.SetType(Dsl.ValueData.STRING_TOKEN);
+                            }
+                        }
+                        var expKey = Calculator.Load(p0);
                         m_Expressions.Add(expKey);
-                        var expVal = Calculator.Load(callData.GetParam(1));
+                        var expVal = Calculator.Load(p1);
                         m_Expressions.Add(expVal);
                     }
                 }
@@ -5568,34 +5737,13 @@ namespace BatchCommand.Api
                     var ct = operands[1].GetInt();
                     if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict) {
                         var e = bvDict.GetEnumerator();
-                        var al = new List<Dictionary<BoxedValue, BoxedValue>>();
-                        var ht = new Dictionary<BoxedValue, BoxedValue>();
-                        int ix = 0;
-                        while (e.MoveNext()) {
-                            if (ix < ct) {
-                                ht.Add(e.Current.Key, e.Current.Value);
-                                ++ix;
-                            }
-                            if (ix >= ct) {
-                                al.Add(ht);
-                                ht = new Dictionary<BoxedValue, BoxedValue>();
-                                ix = 0;
-                            }
-                        }
-                        if (ht.Count > 0) {
-                            al.Add(ht);
-                        }
-                        r = BoxedValue.FromObject(al);
-                    }
-                    else if (null != dict) {
-                        var e = dict.GetEnumerator();
-                        if (null != e) {
+                        try {
                             var al = new List<Dictionary<BoxedValue, BoxedValue>>();
                             var ht = new Dictionary<BoxedValue, BoxedValue>();
                             int ix = 0;
                             while (e.MoveNext()) {
                                 if (ix < ct) {
-                                    ht.Add(BoxedValue.FromObject(e.Key), BoxedValue.FromObject(e.Value));
+                                    ht.Add(e.Current.Key, e.Current.Value);
                                     ++ix;
                                 }
                                 if (ix >= ct) {
@@ -5608,6 +5756,37 @@ namespace BatchCommand.Api
                                 al.Add(ht);
                             }
                             r = BoxedValue.FromObject(al);
+                        }
+                        finally {
+                            e.Dispose();
+                        }
+                    }
+                    else if (null != dict) {
+                        var e = dict.GetEnumerator();
+                        if (null != e) {
+                            try {
+                                var al = new List<Dictionary<BoxedValue, BoxedValue>>();
+                                var ht = new Dictionary<BoxedValue, BoxedValue>();
+                                int ix = 0;
+                                while (e.MoveNext()) {
+                                    if (ix < ct) {
+                                        ht.Add(BoxedValue.FromObject(e.Key), BoxedValue.FromObject(e.Value));
+                                        ++ix;
+                                    }
+                                    if (ix >= ct) {
+                                        al.Add(ht);
+                                        ht = new Dictionary<BoxedValue, BoxedValue>();
+                                        ix = 0;
+                                    }
+                                }
+                                if (ht.Count > 0) {
+                                    al.Add(ht);
+                                }
+                                r = BoxedValue.FromObject(al);
+                            }
+                            finally {
+                                (e as System.IDisposable)?.Dispose();
+                            }
                         }
                     }
                 }
@@ -5627,10 +5806,10 @@ namespace BatchCommand.Api
                 if (operands.Count >= 1) {
                     var stack = operands[0].As<Stack<BoxedValue>>();
                     var queue = operands[0].As<Queue<BoxedValue>>();
-                    if (null != stack) {
+                    if (null != stack && stack.Count > 0) {
                         r = stack.Peek();
                     }
-                    else if (null != queue) {
+                    else if (null != queue && queue.Count > 0) {
                         r = queue.Peek();
                     }
                 }

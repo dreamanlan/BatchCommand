@@ -314,6 +314,7 @@ namespace BatchCommand.Api
             BatchScript.Register("list_to_array", "list_to_array(list[, index, count])", new ExpressionFactoryHelper<ListToArrayExp>());
             BatchScript.Register("listtoarray", "listtoarray(list[, index, count])", false, new ExpressionFactoryHelper<ListToArrayExp>());
             BatchScript.Register("sublist", "sublist(list[, index, count])", new ExpressionFactoryHelper<SubListExp>());
+            BatchScript.Register("slice", "slice(list[, index, count])", false, new ExpressionFactoryHelper<SubListExp>());
             BatchScript.Register("list_slice", "list_slice(list[, index, count])", false, new ExpressionFactoryHelper<SubListExp>());
             BatchScript.Register("list_get_range", "list_get_range(list[, index, count])", false, new ExpressionFactoryHelper<SubListExp>());
             BatchScript.Register("subarray", "subarray(array[, index, count])", new ExpressionFactoryHelper<SubArrayExp>());

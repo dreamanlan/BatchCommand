@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Runtime.InteropServices;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
@@ -146,13 +147,13 @@ namespace BatchCommand.Api
         }
     }
 
-    // Get from list/json array by index
+    // Get from list/json array by start
     sealed class ListOrJsonGetExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: list_or_json_get(paramsObj, index)");
+                ApiErrorInfo.AppendLine("Expected: list_or_json_get(paramsObj, start)");
                 return BoxedValue.NullObject;
             }
 
@@ -183,7 +184,7 @@ namespace BatchCommand.Api
         }
     }
 
-    // Set into list/json array by index. Index must be within range for all
+    // Set into list/json array by start. Index must be within range for all
     // target types. Value conversion depends on the target type:
     //   IList<BoxedValue>          -> store the raw BoxedValue (native element type)
     //   IList<object?>             -> DslHelper.GetValueFromBoxedValue
@@ -193,7 +194,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
-                ApiErrorInfo.AppendLine("Expected: list_or_json_set(paramsObj, index, value)");
+                ApiErrorInfo.AppendLine("Expected: list_or_json_set(paramsObj, start, value)");
                 return BoxedValue.From(false);
             }
 
@@ -225,7 +226,7 @@ namespace BatchCommand.Api
                         return BoxedValue.From(true);
                     }
                 }
-                ApiErrorInfo.AppendLine("list_or_json_set: target is not a supported list/json array or index out of range");
+                ApiErrorInfo.AppendLine("list_or_json_set: target is not a supported list/json array or start out of range");
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"Error setting into list/json: {ex.Message}");
@@ -826,7 +827,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2)
-                throw new Exception("Expected: char_code_at(str,index), aliased as charcodeat");
+                throw new Exception("Expected: char_code_at(str,start), aliased as charcodeat");
             BoxedValue r = BoxedValue.NullObject;
             var str = operands[0].AsString;
             int index = operands[1].GetInt();
@@ -857,7 +858,7 @@ namespace BatchCommand.Api
                             start = 0;
                         }
                         else if (start >= len) {
-                            start = len - 1;
+                            start = len > 0 ? len - 1 : 0;
                         }
                         len -= start;
                     }
@@ -949,7 +950,7 @@ namespace BatchCommand.Api
                             start = 0;
                         }
                         else if (start >= count) {
-                            start = count - 1;
+                            start = count > 0 ? count - 1 : 0;
                         }
                         count -= start;
                     }
@@ -1023,6 +1024,24 @@ namespace BatchCommand.Api
             }
         }
     }
+    public static class CollectionSliceWarmup
+    {
+        // Sandbox warmup entry for the collection slice apis (sublist/subarray/
+        // list_to_array/array_to_list): their fast paths reference
+        // CollectionsMarshal (System.Runtime.InteropServices) and other lazily
+        // loaded assemblies, which fail with an empty-message exception when
+        // first used inside the sandboxed renderer (file access denied). One
+        // call per helper here forces those assembly loads and JITs the fast
+        // paths while file access is still allowed.
+        public static void Warmup()
+        {
+            var src = new List<BoxedValue> { BoxedValue.From(1), BoxedValue.From(2), BoxedValue.From(3) };
+            _ = SubListExp.SubList(src, 0, 2);
+            _ = SubArrayExp.SubArray(src, 0, 2);
+            _ = ListToArrayExp.ListToArray(src, 0, 2);
+            _ = ArrayToListExp.ArrayToList(new BoxedValue[] { BoxedValue.From(1), BoxedValue.From(2) }, 0, 1);
+        }
+    }
     public sealed class SubListExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1041,7 +1060,7 @@ namespace BatchCommand.Api
                             start = 0;
                         }
                         else if (start >= count) {
-                            start = count - 1;
+                            start = count > 0 ? count - 1 : 0;
                         }
                         count -= start;
                     }
@@ -1103,18 +1122,29 @@ namespace BatchCommand.Api
             }
             return r;
         }
-        internal static IList<T> SubList<T>(IList<T> list, int start, int count)
+        internal static List<T> SubList<T>(IList<T> source, int start, int count)
         {
-            if (count == list.Count) {
-                return new List<T>(list);
+            List<T> newList = new List<T>(count);
+
+            if (source is List<T> list) {
+                ReadOnlySpan<T> slice = CollectionsMarshal.AsSpan(list).Slice(start, count);
+                CollectionsMarshal.SetCount(newList, count);
+                slice.CopyTo(CollectionsMarshal.AsSpan(newList));
+                return newList;
             }
-            else {
-                var r = new List<T>(count);
-                for (int i = 0; i < count; ++i) {
-                    r.Add(list[start + i]);
-                }
-                return r;
+
+            if (source is T[] array) {
+                ReadOnlySpan<T> slice = array.AsSpan(start, count);
+                CollectionsMarshal.SetCount(newList, count);
+                slice.CopyTo(CollectionsMarshal.AsSpan(newList));
+                return newList;
             }
+
+            int endIndex = start + count;
+            for (int i = start; i < endIndex; i++) {
+                newList.Add(source[i]);
+            }
+            return newList;
         }
     }
     // subarray(array[, start, count]) - slice array, returns array of same element type
@@ -1125,17 +1155,17 @@ namespace BatchCommand.Api
             if (operands.Count < 1 || operands.Count > 3)
                 throw new Exception("Expected: subarray(array[,start,count]) (alias: array_slice)");
             BoxedValue r = BoxedValue.NullObject;
-            var arr = operands[0].As<Array>();
-            if (null != arr) {
+            var list = operands[0].As<IList>();
+            if (null != list) {
                 int start = 0;
-                int count = arr.Length;
+                int count = list.Count;
                 if (operands.Count >= 2) {
                     start = operands[1].GetInt();
                     if (start < 0) {
                         start = 0;
                     }
                     else if (start >= count) {
-                        start = count - 1;
+                        start = count > 0 ? count - 1 : 0;
                     }
                     count -= start;
                 }
@@ -1144,18 +1174,85 @@ namespace BatchCommand.Api
                     if (count < 0) {
                         count = 0;
                     }
-                    else if (count > arr.Length - start) {
-                        count = arr.Length - start;
+                    else if (count > list.Count - start) {
+                        count = list.Count - start;
                     }
                 }
-                var elementType = arr.GetType().GetElementType();
-                if (null != elementType) {
-                    var result = Array.CreateInstance(elementType, count);
-                    Array.Copy(arr, start, result, 0, count);
-                    r = BoxedValue.FromObject(result);
+
+                if (list is IList<byte> bytes) {
+                    r = BoxedValue.FromObject(SubArray(bytes, start, count));
+                }
+                else if (list is IList<sbyte> sbytes) {
+                    r = BoxedValue.FromObject(SubArray(sbytes, start, count));
+                }
+                else if (list is IList<char> chars) {
+                    r = BoxedValue.FromObject(SubArray(chars, start, count));
+                }
+                else if (list is IList<short> shorts) {
+                    r = BoxedValue.FromObject(SubArray(shorts, start, count));
+                }
+                else if (list is IList<ushort> ushorts) {
+                    r = BoxedValue.FromObject(SubArray(ushorts, start, count));
+                }
+                else if (list is IList<int> ints) {
+                    r = BoxedValue.FromObject(SubArray(ints, start, count));
+                }
+                else if (list is IList<uint> uints) {
+                    r = BoxedValue.FromObject(SubArray(uints, start, count));
+                }
+                else if (list is IList<long> longs) {
+                    r = BoxedValue.FromObject(SubArray(longs, start, count));
+                }
+                else if (list is IList<ulong> ulongs) {
+                    r = BoxedValue.FromObject(SubArray(ulongs, start, count));
+                }
+                else if (list is IList<decimal> decimals) {
+                    r = BoxedValue.FromObject(SubArray(decimals, start, count));
+                }
+                else if (list is IList<float> floats) {
+                    r = BoxedValue.FromObject(SubArray(floats, start, count));
+                }
+                else if (list is IList<double> doubles) {
+                    r = BoxedValue.FromObject(SubArray(doubles, start, count));
+                }
+                else if (list is IList<DateTime> datetimes) {
+                    r = BoxedValue.FromObject(SubArray(datetimes, start, count));
+                }
+                else if (list is IList<BoxedValue> boxedvals) {
+                    r = BoxedValue.FromObject(SubArray(boxedvals, start, count));
+                }
+                else if (list is IList<object> objects) {
+                    r = BoxedValue.FromObject(SubArray(objects, start, count));
                 }
             }
             return r;
+        }
+        internal static T[] SubArray<T>(IList<T> list, int start, int count)
+        {
+            if (count == 0) {
+                return Array.Empty<T>();
+            }
+
+            T[] destinationArray = new T[count];
+
+            if (list is List<T> sourceList) {
+                ((ReadOnlySpan<T>)CollectionsMarshal.AsSpan(sourceList).Slice(start, count))
+                                 .CopyTo(destinationArray);
+                return destinationArray;
+            }
+
+            if (list is T[] sourceArray) {
+                ((ReadOnlySpan<T>)sourceArray.AsSpan(start, count))
+                           .CopyTo(destinationArray);
+                return destinationArray;
+            }
+
+            Span<T> destSpan = destinationArray;
+            for (int i = 0; i < count; i++) {
+                destSpan[i] = list[start + i];
+            }
+
+            return destinationArray;
         }
     }
     // bytes_to_string(bytes[, encoding]) - convert byte array to string, default UTF-8

@@ -5086,6 +5086,18 @@ namespace DotNetLib
             catch (Exception ex) {
                 sb.Append($" + TextCopy(warmup call failed: {ex.GetType().Name})");
             }
+            // Collection slice apis (sublist/subarray/list_to_array/
+            // array_to_list): their CollectionsMarshal fast paths lazily load
+            // System.Runtime.InteropServices (and System.Memory), so a first
+            // use after lockdown fails with an empty-message exception at the
+            // SubList/SubArray JIT. Warm the whole slice family here.
+            try {
+                WarmupCollectionSliceApis();
+                sb.Append(" + CollectionSlice");
+            }
+            catch (Exception ex) {
+                sb.Append($" + CollectionSlice(failed: {ex.GetType().Name}: {ex.Message})");
+            }
             NativeLog(sb.ToString());
         }
         // Leaf warmup methods: keep each one referencing exactly one lazily
@@ -5103,6 +5115,10 @@ namespace DotNetLib
         private static void WarmupTextCopy()
         {
             _ = TextCopy.ClipboardService.GetText();
+        }
+        private static void WarmupCollectionSliceApis()
+        {
+            BatchCommand.Api.CollectionSliceWarmup.Warmup();
         }
 
         private static void TryLoadDSL()

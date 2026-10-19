@@ -792,6 +792,7 @@ script(update_system_prompt)params($pageType,$isFirst)
     $soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
     $projectMemoryFile = combine_path(@ProjectDirectory, "docs/project_memory.txt");
     $backlogFile = combine_path(@ProjectDirectory, "docs/backlog.txt");
+    $patternsFile = combine_path(@ProjectDirectory, "docs/patterns.txt");
     $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
     $contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
     $historyFile = combine_path(@ProjectDirectory, "docs/history.txt");
@@ -803,6 +804,7 @@ script(update_system_prompt)params($pageType,$isFirst)
     $projectMemory = read_file($projectMemoryFile);
     $backlog = read_file($backlogFile);
     restore_backlog_state(@AgentId, $backlog);
+    restore_patterns_state(@AgentId, read_file($patternsFile));
     $plan = read_file($planFile);
     restore_plan_state(@AgentId, $plan);
     $context = read_file($contextFile);
@@ -850,7 +852,7 @@ script(update_system_prompt)params($pageType,$isFirst)
         $time2 = now();
         $days = get_diff_time_days($time1, $time2);
         if ($days > 7) {
-            $reply = format("{0}\n\n[Reminder: Check if soul.md needs updating. Before refining, use read_file(\"{1}/docs/patterns.md\") and semantic_get_recent(\"{2}_episodic_memory\",30) to form the abstraction chain (episodic->pattern->metacognition). Keep soul.md updates under 500 chars, no empty slogans.]", $plan, agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId));
+            $reply = format("{0}\n\n[Reminder: Check if soul.md needs updating. Before refining, use read_file(\"{1}/docs/patterns.txt\") and semantic_get_recent(\"{2}_episodic_memory\",30) to form the abstraction chain (episodic->pattern->metacognition). Keep soul.md updates under 500 chars, no empty slogans.]", $plan, agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId));
         }
         else {
             $reply = $plan;
@@ -958,10 +960,10 @@ script(trigger_plan)params($autoPlan,$lockAgent)
         nativelog("[agent] plan triggered");
 
         if ($lockAgent) {
-            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），更新需求库与计划状态（需求库用backlog API维护：change_backlog_item_state或add_backlog_note等，完成条目置状态2即删除并自动落盘；计划用change_plan_item_state或append_plan_item_note或append_plan_note）。如当前计划完成但仍有可继续工作，先alian_plan获取当前plan信息并将笔记归档到md文件，然后create_plan后start_plan";
+            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），更新需求库与计划状态（需求库用backlog API维护：change_backlog_item_state或add_backlog_clause等，完成条目置状态2即删除并自动落盘；计划用change_plan_item_state或append_plan_item_note或append_plan_note）。如当前计划完成但仍有可继续工作，先align_plan获取当前plan信息并将笔记归档到md文件，然后create_plan后start_plan";
         }
         else {
-            $prompt = "没有识别到代码。请更新需求库与计划状态（需求库用backlog API维护：change_backlog_item_state或add_backlog_note等，完成条目置状态2即删除并自动落盘；计划用change_plan_item_state或append_plan_item_note或append_plan_note）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
+            $prompt = "没有识别到代码。请更新需求库与计划状态（需求库用backlog API维护：change_backlog_item_state或add_backlog_clause等，完成条目置状态2即删除并自动落盘；计划用change_plan_item_state或append_plan_item_note或append_plan_note）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
         };
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }
@@ -1324,7 +1326,7 @@ script(freebie_get_pattern_prompt)params($agentId)
         $agentId = "webagent";
     };
     nativelog("[agent] freebie_get_pattern_prompt, agent: {0}", $agentId);
-    $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先读 read_file(\"{0}/docs/patterns.md\") 了解已有模式，再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳新增/修订模式后追加到 patterns.md（保持简洁，无空话套话）。", agent_get_project_dir($agentId), agent_get_project_identity($agentId));
+    $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限64条、总量控制在30KB内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir($agentId), agent_get_project_identity($agentId), $agentId);
     return($prompt);
 };
 
@@ -1720,7 +1722,7 @@ script(handle_agent_notification)params($jsonData)
         if ($episodicCount - $lastPatternEpisodicCount >= 30) {
             agent_set_context_var(@AgentId, "LastPatternEpisodicCount", $episodicCount);
             nativelog("[agent] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
-            $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先读 read_file(\"{0}/docs/patterns.md\") 了解已有模式，再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳新增/修订模式后追加到 patterns.md（保持简洁，无空话套话）。", agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId));
+            $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限64条、总量控制在30KB内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId), @AgentId);
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
         if (agent_is_context_injection_enabled(@AgentId) && agent_add_cur_context_rounds(@AgentId) == 0) {

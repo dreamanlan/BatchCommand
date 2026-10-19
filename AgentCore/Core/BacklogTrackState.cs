@@ -24,7 +24,7 @@ namespace AgentCore.Core
         {
             public int State = (int)BacklogItemStateEnum.Suspended;
             public string Title = string.Empty;
-            public readonly List<string> Notes = new List<string>();
+            public readonly List<string> Clauses = new List<string>();
         }
     }
 
@@ -32,7 +32,7 @@ namespace AgentCore.Core
     /// Text generation/parsing and persistence for BacklogTrack.
     /// Format (same style as plan.txt, parsed line by line with regexes):
     /// -[3] state=0 item title
-    ///     [0] note text
+    ///     [0] clause text
     /// +    continuation text (plus followed by the first line's indentation)
     /// The item index is its position in the in-memory list (always contiguous,
     /// done items are removed from the list immediately). The active item is
@@ -42,11 +42,11 @@ namespace AgentCore.Core
     /// </summary>
     internal static class BacklogTrackHelper
     {
-        private const int NoteIndentation = 4;
+        private const int ClauseIndentation = 4;
 
         private static readonly Regex ItemLineRegex = new Regex(
             @"^-\[(\d+)\]\s*state=(\d+)\s*(.*)$", RegexOptions.Compiled);
-        private static readonly Regex NoteLineRegex = new Regex(
+        private static readonly Regex ClauseLineRegex = new Regex(
             @"^([ \t]+)\[(\d+)\]\s*(.*)$", RegexOptions.Compiled);
 
         internal static bool IsValidState(int state)
@@ -99,8 +99,8 @@ namespace AgentCore.Core
         {
             sb.Append("-[").Append(idx).Append("] state=").Append(it.State).Append(' ');
             sb.AppendLine(EncodeContinuationLines(it.Title));
-            for (int n = 0; n < it.Notes.Count; n++)
-                sb.Append(' ', NoteIndentation).Append('[').Append(n).Append("] ").AppendLine(EncodeContinuationLines(it.Notes[n], NoteIndentation));
+            for (int n = 0; n < it.Clauses.Count; n++)
+                sb.Append(' ', ClauseIndentation).Append('[').Append(n).Append("] ").AppendLine(EncodeContinuationLines(it.Clauses[n], ClauseIndentation));
         }
 
         // PersistBacklog: regenerate backlog text into AgentInstance.Backlog and write
@@ -144,7 +144,7 @@ namespace AgentCore.Core
             BacklogTrackState.BacklogItem? pendingActive = null;
             int pendingActiveIdx = 0;
             BacklogTrackState.BacklogItem? currentItem = null;
-            List<string>? currentNotes = null;
+            List<string>? currentClauses = null;
             int currentIndentation = 0;
             bool hasActive = false;
             string? line;
@@ -158,8 +158,8 @@ namespace AgentCore.Core
                             && (line[offset] == ' ' || line[offset] == '\t'))
                             offset++;
                         line = line.Substring(offset);
-                        if (currentNotes != null)
-                            currentNotes[currentNotes.Count - 1] += Environment.NewLine + line;
+                        if (currentClauses != null)
+                            currentClauses[currentClauses.Count - 1] += Environment.NewLine + line;
                         else
                             currentItem.Title += Environment.NewLine + line;
                         continue;
@@ -177,12 +177,12 @@ namespace AgentCore.Core
                                 state = (int)BacklogItemStateEnum.Suspended;
                             hasActive = true;
                         }
-                        // Done items are parsed (to absorb their notes) but not kept.
+                        // Done items are parsed (to absorb their clauses) but not kept.
                         currentItem = new BacklogTrackState.BacklogItem {
                             State = state,
                             Title = im.Groups[3].Value.Trim()
                         };
-                        currentNotes = null;
+                        currentClauses = null;
                         currentIndentation = 0;
                         if (state == (int)BacklogItemStateEnum.Done)
                             continue;
@@ -200,10 +200,10 @@ namespace AgentCore.Core
                     }
                     if (currentItem == null)
                         continue;
-                    var nm = NoteLineRegex.Match(line);
+                    var nm = ClauseLineRegex.Match(line);
                     if (nm.Success) {
-                        currentNotes = currentItem.Notes;
-                        currentNotes.Add(nm.Groups[3].Value.Trim());
+                        currentClauses = currentItem.Clauses;
+                        currentClauses.Add(nm.Groups[3].Value.Trim());
                         currentIndentation = nm.Groups[1].Value.Length;
                         continue;
                     }

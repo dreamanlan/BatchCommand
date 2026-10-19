@@ -47,18 +47,24 @@
       "item3";
    };`，创建时直接写入初始条目，条目状态均为计划态(0)。
 - `add_plan_item("gemini", content)`：追加条目，仅计划态(0)可用。
-- `delete_plan_item("gemini", idx)`：删除条目，仅计划态(0)可用；idx 为 0 基序号，删除后重排。
+- `delete_plan_items("gemini", idx[, idx2, ...])`：删除一条或多条条目，仅计划态(0)可用；序号 0 基，可任意顺序传入（内部按从大到小删），删除后重排。任一序号越界则整体报错、不删任何条目。
 - `modify_plan_item("gemini", idx, content)`：修改条目内容，仅计划态(0)可用。
 - `clear_plan("gemini")`：清空条目记录，仅计划态(0)可用；条目状态全回 0，内容保留。
 - `start_plan("gemini")`：启动当前计划（计划态 0 -> 1），此后条目冻结。
 - `change_plan_item_state("gemini", idx, state[, note])`：变更条目状态并附加增量笔记（自动带时间戳），note 可选、缺省时不附加，任意计划态可用。
 - `align_plan("gemini")`：由条目状态推导计划状态，生成新版 plan.txt 文本写入计划槽并返回文本。
 - `restore_plan_state("gemini", plan_text)`：从 plan.txt 文本恢复内存计划态，仅内存态为空时生效。
-- `append_plan_note("gemini", note)`：往计划级 Notes 追加带时间戳笔记，任意计划态可用，不提供删除修改。
+- `append_plan_note("gemini", note)`：往计划级 Notes 追加带时间戳笔记，任意计划态可用。
 - `append_plan_item_note("gemini", idx, note)`：往指定条目（0 基序号）Notes 追加带时间戳笔记，不改条目状态，任意计划态可用。
+- `trim_plan_notes("gemini", keepCount)`：只保留最新 keepCount 条计划级笔记，更早的删除；keepCount=0 即清空。
+- `trim_plan_item_notes("gemini", idx, keepCount)`：只保留该条目最新 keepCount 条笔记，更早的删除；keepCount=0 即清空。
+- `delete_plan_notes("gemini", idx[, idx2, ...])`：按序号删除计划级笔记（可多条，任意顺序）。
+- `delete_plan_item_notes("gemini", idx, noteIdx[, noteIdx2, ...])`：按序号删除该条目的笔记（可多条，任意顺序）。
+
+笔记增删都返回 `ok removed=N left=M`；计划期较长、笔记过多时用 trim 保留最近几条以减轻上下文压力。
 
 状态机（整型）：计划状态 0=计划、1=进行、2=完成；条目状态 0=计划、1=进行、2=废弃、3=完成。
-冻结规则：start_plan 后 delete_plan_item/modify_plan_item/clear_plan 返回 error: items frozen。
+冻结规则：start_plan 后 delete_plan_items/modify_plan_item/clear_plan 返回 error: items frozen。
 align_plan 推导：任一条目=1 -> 计划=1；全部条目为 2 或 3 -> 计划=2；全部条目=0 -> 计划=0；混合 -> 计划=1。
 典型链路：create_plan -> add_plan_item -> append_plan_note -> start_plan -> change_plan_item_state -> append_plan_item_note-> align_plan -> 落盘 plan.txt；重启后先读 plan.txt 再 restore_plan_state。
 提醒：要用好计划笔记与条目笔记，计划内容会注入系统提示词，需要反复使用的信息可以放到笔记里避免重复查找
@@ -69,21 +75,45 @@ align_plan 推导：任一条目=1 -> 计划=1；全部条目为 2 或 3 -> 计�
 - `add_backlog_item("gemini", title[, state])`：追加条目，返回 0 基序号；state 取 0=激活或 1=挂起，缺省 1，不能为 2=完成（报错）。
 - `modify_backlog_item("gemini", idx, title)`：修改条目标题。
 - `move_backlog_item("gemini", idx, newIdx)`：把条目移到 newIdx 位置以调整优先级（序号越小越优先），两者之间的条目序号顺移 1，状态不变。
-- `change_backlog_item_state("gemini", idx, state)`：修改条目状态，state 取 0=激活、1=挂起、2=完成；置为完成即从列表删除该条目及其 note，后续条目序号减 1。
-- `add_backlog_note("gemini", itemIdx, content)`：往条目追加 note，返回 0 基序号。
-- `modify_backlog_note("gemini", itemIdx, noteIdx, content)`：修改指定 note。
-- `delete_backlog_note("gemini", itemIdx, noteIdx)`：删除指定 note，其后 note 序号减 1。
-- `clear_backlog_notes("gemini", itemIdx)`：清空指定条目的全部 note。
-- `view_active_backlog_item("gemini")`：返回当前激活(0)条目的序列化文本（带序号的条目行加 note 行），无激活条目时返回空串。
+- `change_backlog_item_state("gemini", idx, state)`：修改条目状态，state 取 0=激活、1=挂起、2=完成；置为完成即从列表删除该条目及其条款，后续条目序号减 1。
+- `add_backlog_clause("gemini", itemIdx, content)`：往条目追加条款，返回 0 基序号。
+- `modify_backlog_clause("gemini", itemIdx, clauseIdx, content)`：修改指定条款。
+- `delete_backlog_clauses("gemini", itemIdx, clauseIdx[, clauseIdx2, ...])`：按序号删除一条或多条条款，其后条款序号减 1；可任意顺序传入，任一序号越界则整体报错。
+- `clear_backlog_clauses("gemini", itemIdx)`：清空指定条目的全部条款。
+- `view_active_backlog_item("gemini")`：返回当前激活(0)条目的序列化文本（带序号的条目行加条款行），无激活条目时返回空串。
 - `align_backlog("gemini")`：按当前内存需求库生成 backlog.txt 文本落盘并返回完整文本，可用于查看全部条目及最新序号。
 - `restore_backlog_state("gemini", backlog_text)`：从 backlog.txt 文本恢复内存需求库，仅内存态为空时生效（启动时已自动调用）。
 - `agent_get_backlog("gemini")`：读取当前需求文本（最近一次落盘或启动加载的结果）。
 
 状态机（整型）：条目状态 0=激活、1=挂起、2=完成（置为完成即删除）。全局单激活：任一条目置为 0 时原激活(0)条目自动降为挂起(1)；无激活条目也合法。
-文本格式（同 plan.txt）：条目行 `-[序号] state=0 标题`，note 行缩进四空格 `    [0] 内容`；多行文本以 `+` 开头续行；不符合格式的行在恢复时会被丢弃。
+文本格式（同 plan.txt）：条目行 `-[序号] state=0 标题`，条款行缩进四空格 `    [0] 内容`；多行文本以 `+` 开头续行；不符合格式的行在恢复时会被丢弃。
 落盘：上述编辑 API 成功后都会自动写入 docs/backlog.txt；不要再用 write_file 直接改 backlog.txt，否则会被下次落盘覆盖。
-注意：条目序号 idx 即条目行 `-[序号]` 中的数字（0 基，连续），note 序号同理；激活条目总是写在最前，但保留自己的序号，其余条目按序号顺序写出；完成条目或删除 note 后其后序号减 1，同一轮要完成多个条目、或删除同一条目的多个 note 时，必须按序号从大到小依次操作；move 后用 align_backlog 返回的文本确认新序号。
-典型链路：add_backlog_item 登记 -> add_backlog_note 补充 -> change_backlog_item_state 置 0 开始 -> 完成后 change_backlog_item_state 置 2。
+注意：条目序号 idx 即条目行 `-[序号]` 中的数字（0 基，连续），条款序号同理；激活条目总是写在最前，但保留自己的序号，其余条目按序号顺序写出；完成条目后其后序号减 1，同一轮要完成多个条目时，必须按序号从大到小依次操作；删除条款用 delete_backlog_clauses 一次传入多个序号即可，不必排序；move 后用 align_backlog 返回的文本确认新序号。
+典型链路：add_backlog_item 登记 -> add_backlog_clause 补充 -> change_backlog_item_state 置 0 开始 -> 完成后 change_backlog_item_state 置 2。
+
+**模式库 API (patterntrack)**
+
+使用模式库 API 编辑 docs/patterns.txt（跨任务沉淀的重复问题与有效做法，标题加条款，无状态），均带 agentId 首参（本模板 agentId 为 "gemini"）：
+- `add_pattern("gemini", title)`：追加模式，返回 0 基序号；超过 64 条仍会添加，但编辑 API 与 list_patterns 的返回会提示超限，应尽快归并。
+- `modify_pattern("gemini", idx, title)`：修改模式标题。
+- `delete_patterns("gemini", idx[, idx2, ...])`：删除一条或多条模式及其条款，后续模式序号减 1；可任意顺序传入，任一序号越界则整体报错。
+- `move_pattern("gemini", idx, newIdx)`：把模式移到 newIdx 位置，两者之间的模式序号顺移 1。
+- `merge_patterns("gemini", srcIdx, dstIdx)`：把 src 的条款按序追加到 dst 末尾后删除 src，返回 dst 的新序号（src 在 dst 之前时为 dstIdx-1）。
+- `set_pattern_clauses("gemini", idx, clause1, clause2, ...)`：用给定条款整体替换该模式的全部条款（不给条款即清空），适合归并后精简重写。
+- `add_pattern_clause("gemini", idx, content)`：往模式追加条款，返回 0 基序号。
+- `modify_pattern_clause("gemini", idx, clauseIdx, content)`：修改指定条款。
+- `delete_pattern_clauses("gemini", idx, clauseIdx[, clauseIdx2, ...])`：按序号删除一条或多条条款，其后条款序号减 1；可任意顺序传入。
+- `clear_pattern_clauses("gemini", idx)`：清空指定模式的全部条款。
+- `list_patterns("gemini")`：概览，每行 `[序号] 标题 (clauses=N, bytes=B)`，末行为 `total=字节数/30720 bytes, items=条数/64`，超限时附提示。
+- `view_pattern("gemini", idx)`：返回单个模式的序列化文本（条目行加条款行）。
+- `align_patterns("gemini")`：按当前内存模式库生成 patterns.txt 文本落盘并返回完整文本。
+- `restore_patterns_state("gemini", patterns_text)`：从 patterns.txt 文本恢复内存模式库，仅内存态为空时生效（启动时已自动调用）。
+
+文本格式：条目行 `-[序号] 标题`，条款行缩进四空格 `    [0] 内容`；多行文本以 `+` 开头续行；不符合格式的行在恢复时会被丢弃。
+落盘：上述编辑 API 成功后都会自动写入 docs/patterns.txt；不要再用 write_file 直接改 patterns.txt，否则会被下次落盘覆盖。不返回序号的编辑 API 返回 `ok (total=..., items=...)`，便于掌握体积。
+容量：目标 64 条以内、总量 30KB 以内（软上限，超出只提醒不拒绝）；超限或接近上限时优先用 merge_patterns 合并同类、set_pattern_clauses 精简重写、delete_patterns 删除过时模式。
+注意：模式序号 idx 0 基且连续，条款序号同理；删除/合并模式或删除条款后其后序号前移；批量删除用 delete_patterns/delete_pattern_clauses 一次传入多个序号即可，不必排序；move/merge 后用 list_patterns 确认新序号。
+典型链路：list_patterns 看概览 -> view_pattern 看详情 -> merge_patterns 合并同类 -> set_pattern_clauses 精简重写 -> list_patterns 确认体积。
 
 **代码修改步骤**
 

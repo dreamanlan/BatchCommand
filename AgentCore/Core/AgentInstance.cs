@@ -32,6 +32,7 @@ namespace AgentCore.Core
         public int MaxResultSize { get; set; } = 0;
         public PlanTrackState? PlanTrack { get; set; }
         public BacklogTrackState? BacklogTrack { get; set; }
+        public PatternTrackState? PatternTrack { get; set; }
 
         // Per-instance DSL context variables (key/value store), independent from the global one
         public DslContextManagement DslContextManager { get; }

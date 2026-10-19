@@ -9,6 +9,36 @@ using static AgentCore.ScriptApi.AgentIdResolver;
 
 namespace AgentCore.ScriptApi
 {
+    internal static class PlanNoteUtil
+    {
+        // Validate every index in operands[start..] against [0, count), drop
+        // duplicates, and return them in descending order so RemoveAt calls do
+        // not shift each other. Any out-of-range index fails the whole call.
+        internal static bool CollectIndexes(IList<BoxedValue> operands, int start, int count, string api, string what, out List<int> indexes)
+        {
+            indexes = new List<int>();
+            var seen = new HashSet<int>();
+            for (int i = start; i < operands.Count; i++) {
+                int idx = (int)operands[i].GetInt();
+                if (idx < 0 || idx >= count) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(api + " rejected: " + what + " index out of range (" + idx + ")");
+                    indexes.Clear();
+                    return false;
+                }
+                if (seen.Add(idx))
+                    indexes.Add(idx);
+            }
+            indexes.Sort();
+            indexes.Reverse();
+            return true;
+        }
+
+        internal static string OkRemoved(int removed, int left)
+        {
+            return "ok removed=" + removed + " left=" + left;
+        }
+    }
+
     /// <summary>
     /// create_plan(agentId, title) - create a new plan and make it current.
     /// High-order style: create_plan(agentId, title){"item1";"item2";...} adds initial items (state 0=planned).
@@ -86,33 +116,34 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// delete_plan_item(agentId, idx) - delete an item by 0-based index
-    /// (planned state only); remaining items are renumbered implicitly.
+    /// delete_plan_items(agentId, idx[, idx2, ...]) - delete one or more items
+    /// by 0-based index (planned state only); remaining items are renumbered
+    /// implicitly. All indexes are validated first; any out-of-range index
+    /// rejects the whole call without deleting anything.
     /// </summary>
-    sealed class PlanDeleteItemExp : SimpleExpressionBase
+    sealed class PlanDeleteItemsExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 2) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item requires (agentId, idx)");
+            if (operands.Count < 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items requires (agentId, idx[, idx2, ...])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item rejected: no plan");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items rejected: no plan");
                 return BoxedValue.FromString("error: no plan");
             }
             if (inst.PlanTrack.PlanState != (int)PlanStateEnum.Planned) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item rejected: items frozen after start_plan");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items rejected: items frozen after start_plan");
                 return BoxedValue.FromString("error: items frozen");
             }
-            int idx = (int)operands[1].GetInt();
-            if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item rejected: index out of range");
+            List<int> indexes;
+            if (!PlanNoteUtil.CollectIndexes(operands, 1, inst.PlanTrack.Items.Count, "delete_plan_items", "item", out indexes))
                 return BoxedValue.FromString("error: index out of range");
-            }
-            inst.PlanTrack.Items.RemoveAt(idx);
-            return BoxedValue.FromString("ok");
+            foreach (int idx in indexes)
+                inst.PlanTrack.Items.RemoveAt(idx);
+            return BoxedValue.FromString("ok removed=" + indexes.Count + " left=" + inst.PlanTrack.Items.Count);
         }
     }
 
@@ -243,9 +274,10 @@ namespace AgentCore.ScriptApi
 
     /// <summary>
     /// append_plan_note(agentId, note) - append a plan-level note with an
-    /// automatic timestamp prefix; append-only (any plan state, no delete
-    /// or modify API), persisted via PersistPlan only when the plan state
-    /// is in progress(1) or done(2); state 0 keeps the note in memory only.
+    /// automatic timestamp prefix; usable in any plan state (no modify API,
+    /// notes are removed via trim_plan_notes/delete_plan_notes), persisted via
+    /// PersistPlan only when the plan state is in progress(1) or done(2);
+    /// state 0 keeps the note in memory only.
     /// </summary>
     sealed class PlanAppendNoteExp : SimpleExpressionBase
     {
@@ -307,6 +339,150 @@ namespace AgentCore.ScriptApi
                 PlanTrackHelper.PersistPlan(inst);
             }
             return BoxedValue.FromString("ok");
+        }
+    }
+
+    /// <summary>
+    /// trim_plan_notes(agentId, keepCount) - keep only the newest keepCount
+    /// plan-level notes (the list is chronological) and drop the older ones;
+    /// keepCount 0 clears all. Any plan state, persisted like append_plan_note.
+    /// </summary>
+    sealed class PlanTrimNotesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_notes requires (agentId, keepCount)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            int keep = (int)operands[1].GetInt();
+            if (keep < 0) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_notes rejected: keepCount must be >= 0");
+                return BoxedValue.FromString("error: invalid keepCount");
+            }
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
+            if (inst.PlanTrack == null) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_notes rejected: no plan");
+                return BoxedValue.FromString("error: no plan");
+            }
+            var notes = inst.PlanTrack.Notes;
+            int removed = 0;
+            if (keep < notes.Count) {
+                removed = notes.Count - keep;
+                notes.RemoveRange(0, removed);
+            }
+            if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
+                PlanTrackHelper.PersistPlan(inst);
+            }
+            return BoxedValue.FromString(PlanNoteUtil.OkRemoved(removed, notes.Count));
+        }
+    }
+
+    /// <summary>
+    /// trim_plan_item_notes(agentId, itemIdx, keepCount) - keep only the newest
+    /// keepCount notes of the item and drop the older ones; keepCount 0 clears
+    /// all. Any plan state, persisted like append_plan_item_note.
+    /// </summary>
+    sealed class PlanTrimItemNotesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 3) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes requires (agentId, itemIdx, keepCount)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            int idx = (int)operands[1].GetInt();
+            int keep = (int)operands[2].GetInt();
+            if (keep < 0) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes rejected: keepCount must be >= 0");
+                return BoxedValue.FromString("error: invalid keepCount");
+            }
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
+            if (inst.PlanTrack == null) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes rejected: no plan");
+                return BoxedValue.FromString("error: no plan");
+            }
+            if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes rejected: item index out of range");
+                return BoxedValue.FromString("error: index out of range");
+            }
+            var notes = inst.PlanTrack.Items[idx].Notes;
+            int removed = 0;
+            if (keep < notes.Count) {
+                removed = notes.Count - keep;
+                notes.RemoveRange(0, removed);
+            }
+            if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
+                PlanTrackHelper.PersistPlan(inst);
+            }
+            return BoxedValue.FromString(PlanNoteUtil.OkRemoved(removed, notes.Count));
+        }
+    }
+
+    /// <summary>
+    /// delete_plan_notes(agentId, idx[, idx2, ...]) - delete plan-level notes by
+    /// 0-based index; all indexes are validated first. Any plan state,
+    /// persisted like append_plan_note.
+    /// </summary>
+    sealed class PlanDeleteNotesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_notes requires (agentId, idx[, idx2, ...])");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
+            if (inst.PlanTrack == null) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_notes rejected: no plan");
+                return BoxedValue.FromString("error: no plan");
+            }
+            var notes = inst.PlanTrack.Notes;
+            List<int> indexes;
+            if (!PlanNoteUtil.CollectIndexes(operands, 1, notes.Count, "delete_plan_notes", "note", out indexes))
+                return BoxedValue.FromString("error: note index out of range");
+            foreach (int n in indexes)
+                notes.RemoveAt(n);
+            if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
+                PlanTrackHelper.PersistPlan(inst);
+            }
+            return BoxedValue.FromString(PlanNoteUtil.OkRemoved(indexes.Count, notes.Count));
+        }
+    }
+
+    /// <summary>
+    /// delete_plan_item_notes(agentId, itemIdx, idx[, idx2, ...]) - delete notes
+    /// of the item by 0-based index; all indexes are validated first. Any plan
+    /// state, persisted like append_plan_item_note.
+    /// </summary>
+    sealed class PlanDeleteItemNotesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item_notes requires (agentId, itemIdx, idx[, idx2, ...])");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
+            if (inst.PlanTrack == null) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item_notes rejected: no plan");
+                return BoxedValue.FromString("error: no plan");
+            }
+            int idx = (int)operands[1].GetInt();
+            if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item_notes rejected: item index out of range");
+                return BoxedValue.FromString("error: index out of range");
+            }
+            var notes = inst.PlanTrack.Items[idx].Notes;
+            List<int> indexes;
+            if (!PlanNoteUtil.CollectIndexes(operands, 2, notes.Count, "delete_plan_item_notes", "note", out indexes))
+                return BoxedValue.FromString("error: note index out of range");
+            foreach (int n in indexes)
+                notes.RemoveAt(n);
+            if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
+                PlanTrackHelper.PersistPlan(inst);
+            }
+            return BoxedValue.FromString(PlanNoteUtil.OkRemoved(indexes.Count, notes.Count));
         }
     }
 
@@ -373,9 +549,9 @@ namespace AgentCore.ScriptApi
             BatchCommand.BatchScript.Register("add_plan_item",
                 "add_plan_item(agentId, content) - add an item to the current plan",
                 new ExpressionFactoryHelper<PlanAddItemExp>());
-            BatchCommand.BatchScript.Register("delete_plan_item",
-                "delete_plan_item(agentId, idx) - delete the plan item at the index",
-                new ExpressionFactoryHelper<PlanDeleteItemExp>());
+            BatchCommand.BatchScript.Register("delete_plan_items",
+                "delete_plan_items(agentId, idx[, idx2, ...]) - delete one or more plan items by index (planned state only)",
+                new ExpressionFactoryHelper<PlanDeleteItemsExp>());
             BatchCommand.BatchScript.Register("modify_plan_item",
                 "modify_plan_item(agentId, idx, content) - modify the plan item at the index",
                 new ExpressionFactoryHelper<PlanModifyItemExp>());
@@ -394,6 +570,18 @@ namespace AgentCore.ScriptApi
             BatchCommand.BatchScript.Register("append_plan_item_note",
                 "append_plan_item_note(agentId, itemIdx, note) - append a timestamped note to the item without changing state",
                 new ExpressionFactoryHelper<PlanAppendItemNoteExp>());
+            BatchCommand.BatchScript.Register("trim_plan_notes",
+                "trim_plan_notes(agentId, keepCount) - keep only the newest keepCount plan-level notes, drop the older ones (0 clears all)",
+                new ExpressionFactoryHelper<PlanTrimNotesExp>());
+            BatchCommand.BatchScript.Register("trim_plan_item_notes",
+                "trim_plan_item_notes(agentId, itemIdx, keepCount) - keep only the newest keepCount notes of the item (0 clears all)",
+                new ExpressionFactoryHelper<PlanTrimItemNotesExp>());
+            BatchCommand.BatchScript.Register("delete_plan_notes",
+                "delete_plan_notes(agentId, idx[, idx2, ...]) - delete plan-level notes by index",
+                new ExpressionFactoryHelper<PlanDeleteNotesExp>());
+            BatchCommand.BatchScript.Register("delete_plan_item_notes",
+                "delete_plan_item_notes(agentId, itemIdx, idx[, idx2, ...]) - delete notes of the plan item by index",
+                new ExpressionFactoryHelper<PlanDeleteItemNotesExp>());
             BatchCommand.BatchScript.Register("align_plan",
                 "align_plan(agentId) - align the in-memory plan state with docs/plan.txt",
                 new ExpressionFactoryHelper<PlanAlignExp>());

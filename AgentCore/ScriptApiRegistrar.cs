@@ -276,6 +276,9 @@ namespace AgentCore
             // BacklogTrack API
             BacklogTrackApi.RegisterApis();
 
+            // PatternTrack API
+            PatternTrackApi.RegisterApis();
+
             // Web Search API (Brave + SearXNG)
             WebSearchApi.RegisterApis();
 

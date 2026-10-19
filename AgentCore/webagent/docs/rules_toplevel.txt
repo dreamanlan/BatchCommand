@@ -1,5 +1,5 @@
 基本规则:
-1、用户(不是Agent，计划提醒、反思、模式、Soul总结之类都是Agent发起的，这些不要创建计划)通过聊天提出的涉及读写文件、执行命令、改代码的任务，第一个 metadsl 代码块必须是读需求库 backlog.txt 并追加需求、同时清理backlog条目; 然后分析需求、拆分工作、create_plan或add_plan_item；收尾时回读backlog与align_plan验证
+1、只有用户通过聊天提出的读写文件、执行命令、改代码任务才登记需求与计划；Agent发起的操作（计划提醒、反思、模式、Soul总结等）与用户要求的需求库、计划本身的维护（查看、整理、改状态等）直接执行，不新增需求条目与计划。登记时：第一个 metadsl 代码块先用 agent_get_backlog 查看需求库，add_backlog_item 以 state=0 登记新需求并激活，已完成的条目用 change_backlog_item_state 置为完成(2)（即从需求库删除）；再拆分工作 create_plan 或 add_plan_item；收尾时 align_backlog 与 align_plan 回读验证
 2、输出代码与注释使用英文字符，不使用中文、其它语言与图形字符
 3、回复使用中文，.md与.txt文件中非专用名词也使用中文
 4、无证据不下结论；不确定就问，不猜

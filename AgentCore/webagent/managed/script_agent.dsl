@@ -802,6 +802,7 @@ script(update_system_prompt)params($pageType,$isFirst)
     $soul = read_file($soulFile);
     $projectMemory = read_file($projectMemoryFile);
     $backlog = read_file($backlogFile);
+    restore_backlog_state(@AgentId, $backlog);
     $plan = read_file($planFile);
     restore_plan_state(@AgentId, $plan);
     $context = read_file($contextFile);
@@ -957,10 +958,10 @@ script(trigger_plan)params($autoPlan,$lockAgent)
         nativelog("[agent] plan triggered");
 
         if ($lockAgent) {
-            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），更新需求库backlog.txt与计划状态（清理backlog条目，change_plan_item_state或append_plan_item_note或append_plan_note）。如当前计划完成但仍有可继续工作，先alian_plan获取当前plan信息并将笔记归档到md文件，然后create_plan后start_plan";
+            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），更新需求库与计划状态（需求库用backlog API维护：change_backlog_item_state或add_backlog_note等，完成条目置状态2即删除并自动落盘；计划用change_plan_item_state或append_plan_item_note或append_plan_note）。如当前计划完成但仍有可继续工作，先alian_plan获取当前plan信息并将笔记归档到md文件，然后create_plan后start_plan";
         }
         else {
-            $prompt = "没有识别到代码。请更新需求库backlog.txt与计划状态（清理backlog条目、change_plan_item_state或append_plan_item_note或append_plan_note）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
+            $prompt = "没有识别到代码。请更新需求库与计划状态（需求库用backlog API维护：change_backlog_item_state或add_backlog_note等，完成条目置状态2即删除并自动落盘；计划用change_plan_item_state或append_plan_item_note或append_plan_note）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
         };
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }

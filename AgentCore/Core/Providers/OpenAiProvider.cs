@@ -27,7 +27,7 @@ namespace AgentCore.Core
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
         private bool _keepSession = false;
         private int _contextRounds = 16;
-        private int _maxContextChars = 128 * 1024; // 128KB default
+        private int _maxContextChars = 180 * 1024; // 180KB default
         // gateway mode: "" = standard OpenAI, "boxai" = boxai gateway variant
         private string _gatewayMode = "";
         private string _anydevHost = "";

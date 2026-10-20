@@ -878,7 +878,7 @@ script(induction_info)params($batch, $infos, $session)
                 append_line($induction, $infos[$j]);
             };
 
-            llm_chat_callback(@PmLlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。\n直接回复，不要使用metadsl代码（PM会话不执行）", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 100 * 1024, 1)));
+            llm_chat_callback(@PmLlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。\n直接回复，不要使用metadsl代码（PM会话不执行）", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 180 * 1024, 1)));
         };
     }
     else {
@@ -925,7 +925,7 @@ script(induction_info)params($batch, $infos, $session)
                 nativelog("[agent] induction_info, order: {0}, skip: {1}, history id: {2}", $batch - 1, $id, $histId);
             }
             else {
-                $prompt = format("{0}\n\n以上是最近若干次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 75 * 1024, 1),
+                $prompt = format("{0}\n\n以上是最近若干次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 160 * 1024, 1),
                     format("semantic_add(agent_get_project_identity(\"{0}\")+'{1}', [[归纳内容]], to_json({{source: 'inject', date: date_time_str()}}));", @AgentId, $histId)
                     );
                 // Fallback when PM is disabled: just send "continue" to keep LLM moving.
@@ -981,7 +981,7 @@ script(trigger_reflection)params()
     nativelog("[agent] trigger_reflection called");
 
     // Collect recent conversation history
-    $legionnaireHistory = get_string_in_length(to_pretty_string(semantic_get_recent(@LegionnaireHistory, 20)), 75 * 1024, 1);
+    $legionnaireHistory = get_string_in_length(to_pretty_string(semantic_get_recent(@LegionnaireHistory, 20)), 160 * 1024, 1);
     $planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
     $contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
 
@@ -1479,7 +1479,7 @@ script(handle_agent_notification)params($jsonData)
 
         nativelog("[agent] Agent initialized on page type: {0}, url: {1}", $pageType, $url);
 
-        agent_set_max_result_size(@AgentId, 50*1024);
+        agent_set_max_result_size(@AgentId, 80*1024);
         agent_enable_context_injection(@AgentId, false);
         // RSI: resume after an upgrade restart (stage=verify_pending). This
         // notification itself is the smoke proof - the relay round trip

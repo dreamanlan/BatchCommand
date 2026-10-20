@@ -24,7 +24,7 @@ namespace AgentCore.Core
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
         private int _contextRounds = 16;
-        private int _maxContextChars = 128 * 1024; // 128KB default
+        private int _maxContextChars = 180 * 1024; // 180KB default
         private int _timeoutSeconds = 600;
         private static readonly HttpClient s_http = new HttpClient(
             RedirectHandler.Create(new SocketsHttpHandler

@@ -207,6 +207,10 @@ class MetaDSLMonitor {
 
     // Watch for new code blocks (only execute new ones)
     this.startCodeBlockObserver();
+    // Run one page-stable round even if the DOM never changes again: history
+    // rendered before the observer was attached fires no mutation, so the
+    // restart auto-continue timer (armed in onPageStable) would never be set.
+    this.resetPageStableTimer();
 
     // Start state machine execution loop
     this.runStateMachine();

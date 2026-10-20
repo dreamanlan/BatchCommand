@@ -13,7 +13,7 @@ class MessageHandler {
         this.keepMetaDslLines = false; // Controlled by inject panel "Keep DSL" toggle
         this.config = {
             contextRounds: 6, // Number of conversation rounds to include in auto context
-            maxContextChars: 128 * 1024, // Maximum characters for auto context (128KB)
+            maxContextChars: 180 * 1024, // Maximum characters for auto context (180KB)
             maxHistoryMessages: 64 // Maximum messages to keep in memory and localStorage
         };
         this.loadHistory();

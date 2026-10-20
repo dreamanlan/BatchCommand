@@ -33,7 +33,7 @@ class ChatRoom {
 
     this.soloTarget = null;    // solo mode target name
     this.MAX_CONTEXT_COUNT = 16; // max context message count
-    this.MAX_CONTEXT_CHARS = 100000; // max history chars sent to LLM/PM (100KB)
+    this.MAX_CONTEXT_CHARS = 180000; // max history chars sent to LLM/PM (180KB)
     this.contextSummary = localStorage.getItem('aiclaw_context_summary') || ''; // accumulated summary from PM
     this._summarizing = false; // flag to prevent concurrent summarization
     this.pmClient = null; // LlmClient for PM (context summarizer)

@@ -43,7 +43,7 @@ namespace AgentCore.Core
         private bool _keepSession = false;
 
         private int _contextRounds = 16;
-        private int _maxContextChars = 128 * 1024; // 128KB default
+        private int _maxContextChars = 180 * 1024; // 180KB default
 
         public void SetOption(string key, string value)
         {

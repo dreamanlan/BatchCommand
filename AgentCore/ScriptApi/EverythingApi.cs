@@ -248,15 +248,19 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: everything_search(query[, max_count])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             string query = operands[0].AsString;
             uint maxCount = operands.Count > 1 ? operands[1].GetUInt() : c_DefMaxResults;
             if (maxCount > c_MaxResults) maxCount = c_MaxResults;
-            if (string.IsNullOrEmpty(query))
-                return BoxedValue.FromString("error: empty query");
-            if (!EverythingSDK.EverythingExists())
-                return BoxedValue.FromString("[error] Everything service is not running.");
+            if (string.IsNullOrEmpty(query)) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("everything_search: empty query");
+                return BoxedValue.FromString(string.Empty);
+            }
+            if (!EverythingSDK.EverythingExists()) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("everything_search: Everything service is not running.");
+                return BoxedValue.FromString(string.Empty);
+            }
             try {
                 lock (EverythingSDK.Lock) {
                     EverythingSDK.Everything_SetSearchW(query);
@@ -267,8 +271,10 @@ namespace AgentCore.ScriptApi
                                EverythingSDK.EVERYTHING_REQUEST_PATH |
                                EverythingSDK.EVERYTHING_REQUEST_SIZE |
                                EverythingSDK.EVERYTHING_REQUEST_DATE_MODIFIED));
-                    if (!EverythingSDK.Everything_QueryW(true))
-                        return BoxedValue.FromString($"[error] Everything query failed, error code: {EverythingSDK.Everything_GetLastError()}");
+                    if (!EverythingSDK.Everything_QueryW(true)) {
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"everything_search: Everything query failed, error code: {EverythingSDK.Everything_GetLastError()}");
+                        return BoxedValue.FromString(string.Empty);
+                    }
                     uint tot = EverythingSDK.Everything_GetTotResults();
                     uint num = EverythingSDK.Everything_GetNumResults();
                     var sb = new StringBuilder();
@@ -288,7 +294,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"everything_search error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
 
@@ -378,8 +384,10 @@ namespace AgentCore.ScriptApi
                 if (string.IsNullOrEmpty(s_EverythingFullPath))
                     FindEverythingPath();
 
-                if (string.IsNullOrEmpty(s_EverythingFullPath))
-                    return BoxedValue.FromString("[error] not found");
+                if (string.IsNullOrEmpty(s_EverythingFullPath)) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("everything_ensure: Everything executable not found");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 // Process is running, just return path
                 if (IsEverythingRunning())
@@ -403,7 +411,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"everything_ensure error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
 

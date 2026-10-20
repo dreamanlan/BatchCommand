@@ -18,11 +18,14 @@ namespace AgentCore.ScriptApi
             return inst.PatternTrack;
         }
 
-        // Persist docs/patterns.txt and return "ok (total=.../30720 bytes, items=.../64)".
-        internal static BoxedValue PersistAndOk(AgentInstance inst)
+        // Persist docs/patterns.txt; when the library is over budget, append a
+        // non-error notice with the stats to the api error info.
+        internal static void PersistAndNotice(AgentInstance inst, string api)
         {
             string text = PatternTrackHelper.PersistPatterns(inst);
-            return BoxedValue.FromString("ok (" + PatternTrackHelper.GetStatsText(inst.PatternTrack!, text) + ")");
+            var st = inst.PatternTrack!;
+            if (PatternTrackHelper.IsOverBudget(st, text))
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(api + " succeeded (notice, not an error, do not retry): " + PatternTrackHelper.GetStatsText(st, text));
         }
 
         internal static bool CheckItemIndex(PatternTrackState st, int idx, string api)
@@ -69,8 +72,9 @@ namespace AgentCore.ScriptApi
     // All edit APIs below persist docs/patterns.txt immediately after a successful edit.
 
     /// <summary>
-    /// add_pattern(agentId, title) - append a pattern, returns its 0-based index.
-    /// Never rejected by the MaxItems(64) limit; over-limit is only reported
+    /// add_pattern(agentId, title) - append a pattern, returns its 0-based index
+    /// (int), -1 on error (details in the api error info).
+    /// Never rejected by the MaxItems limit; over-limit is only reported
     /// by the stats text of other edit APIs and list_patterns.
     /// </summary>
     sealed class PatternAddItemExp : SimpleExpressionBase
@@ -79,7 +83,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_pattern requires (agentId, title)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
@@ -87,7 +91,7 @@ namespace AgentCore.ScriptApi
             it.Title = operands[1].AsString ?? string.Empty;
             st.Items.Add(it);
             PatternTrackHelper.PersistPatterns(inst);
-            return BoxedValue.FromString((st.Items.Count - 1).ToString());
+            return BoxedValue.From(st.Items.Count - 1);
         }
     }
 
@@ -100,15 +104,16 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_pattern requires (agentId, idx, title)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, idx, "modify_pattern"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             st.Items[idx].Title = operands[2].AsString ?? string.Empty;
-            return PatternApiUtil.PersistAndOk(inst);
+            PatternApiUtil.PersistAndNotice(inst, "modify_pattern");
+            return BoxedValue.From(true);
         }
     }
 
@@ -123,17 +128,17 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_patterns requires (agentId, idx[, idx2, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             List<int> indexes;
             if (!PatternApiUtil.CollectIndexes(operands, 1, st.Items.Count, "delete_patterns", "pattern", out indexes))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             foreach (int idx in indexes)
                 st.Items.RemoveAt(idx);
-            string text = PatternTrackHelper.PersistPatterns(inst);
-            return BoxedValue.FromString("ok removed=" + indexes.Count + " (" + PatternTrackHelper.GetStatsText(inst.PatternTrack!, text) + ")");
+            PatternApiUtil.PersistAndNotice(inst, "delete_patterns");
+            return BoxedValue.From(indexes.Count);
         }
     }
 
@@ -147,27 +152,28 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("move_pattern requires (agentId, idx, newIdx)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             int newIdx = (int)operands[2].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, idx, "move_pattern") || !PatternApiUtil.CheckItemIndex(st, newIdx, "move_pattern"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             if (idx != newIdx) {
                 var it = st.Items[idx];
                 st.Items.RemoveAt(idx);
                 st.Items.Insert(newIdx, it);
             }
-            return PatternApiUtil.PersistAndOk(inst);
+            PatternApiUtil.PersistAndNotice(inst, "move_pattern");
+            return BoxedValue.From(true);
         }
     }
 
     /// <summary>
     /// merge_patterns(agentId, srcIdx, dstIdx) - append the clauses of src to dst
-    /// (in order), then delete src. Returns the new index of dst (dst - 1 when
-    /// src is before dst).
+    /// (in order), then delete src. Returns the new index of dst (int, dst - 1
+    /// when src is before dst), -1 on error (details in the api error info).
     /// </summary>
     sealed class PatternMergeItemsExp : SimpleExpressionBase
     {
@@ -175,23 +181,23 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("merge_patterns requires (agentId, srcIdx, dstIdx)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             int srcIdx = (int)operands[1].GetInt();
             int dstIdx = (int)operands[2].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, srcIdx, "merge_patterns") || !PatternApiUtil.CheckItemIndex(st, dstIdx, "merge_patterns"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             if (srcIdx == dstIdx) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("merge_patterns rejected: srcIdx equals dstIdx");
-                return BoxedValue.FromString("error: same index");
+                return BoxedValue.From(-1);
             }
             st.Items[dstIdx].Clauses.AddRange(st.Items[srcIdx].Clauses);
             st.Items.RemoveAt(srcIdx);
             int newDstIdx = srcIdx < dstIdx ? dstIdx - 1 : dstIdx;
             PatternTrackHelper.PersistPatterns(inst);
-            return BoxedValue.FromString(newDstIdx.ToString());
+            return BoxedValue.From(newDstIdx);
         }
     }
 
@@ -205,24 +211,26 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_pattern_clauses requires (agentId, idx, clause1, clause2, ...)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, idx, "set_pattern_clauses"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             var it = st.Items[idx];
             it.Clauses.Clear();
             for (int i = 2; i < operands.Count; i++)
                 it.Clauses.Add(operands[i].AsString ?? string.Empty);
-            return PatternApiUtil.PersistAndOk(inst);
+            PatternApiUtil.PersistAndNotice(inst, "set_pattern_clauses");
+            return BoxedValue.From(true);
         }
     }
 
     /// <summary>
     /// add_pattern_clause(agentId, idx, content) - append a clause to the pattern,
-    /// returns the 0-based clause index.
+    /// returns the 0-based clause index (int), -1 on error (details in the api
+    /// error info).
     /// </summary>
     sealed class PatternAddClauseExp : SimpleExpressionBase
     {
@@ -230,17 +238,17 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_pattern_clause requires (agentId, idx, content)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, idx, "add_pattern_clause"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             var it = st.Items[idx];
             it.Clauses.Add(operands[2].AsString ?? string.Empty);
             PatternTrackHelper.PersistPatterns(inst);
-            return BoxedValue.FromString((it.Clauses.Count - 1).ToString());
+            return BoxedValue.From(it.Clauses.Count - 1);
         }
     }
 
@@ -253,19 +261,20 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_pattern_clause requires (agentId, idx, clauseIdx, content)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, idx, "modify_pattern_clause"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             var it = st.Items[idx];
             int clauseIdx = (int)operands[2].GetInt();
             if (!PatternApiUtil.CheckClauseIndex(it, clauseIdx, "modify_pattern_clause"))
-                return BoxedValue.FromString("error: clause index out of range");
+                return BoxedValue.From(false);
             it.Clauses[clauseIdx] = operands[3].AsString ?? string.Empty;
-            return PatternApiUtil.PersistAndOk(inst);
+            PatternApiUtil.PersistAndNotice(inst, "modify_pattern_clause");
+            return BoxedValue.From(true);
         }
     }
 
@@ -280,21 +289,21 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_pattern_clauses requires (agentId, idx, clauseIdx[, clauseIdx2, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, idx, "delete_pattern_clauses"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             var it = st.Items[idx];
             List<int> indexes;
             if (!PatternApiUtil.CollectIndexes(operands, 2, it.Clauses.Count, "delete_pattern_clauses", "clause", out indexes))
-                return BoxedValue.FromString("error: clause index out of range");
+                return BoxedValue.From(-1);
             foreach (int n in indexes)
                 it.Clauses.RemoveAt(n);
-            string text = PatternTrackHelper.PersistPatterns(inst);
-            return BoxedValue.FromString("ok removed=" + indexes.Count + " (" + PatternTrackHelper.GetStatsText(inst.PatternTrack!, text) + ")");
+            PatternApiUtil.PersistAndNotice(inst, "delete_pattern_clauses");
+            return BoxedValue.From(indexes.Count);
         }
     }
 
@@ -307,21 +316,22 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_pattern_clauses requires (agentId, idx)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = PatternApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, idx, "clear_pattern_clauses"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             st.Items[idx].Clauses.Clear();
-            return PatternApiUtil.PersistAndOk(inst);
+            PatternApiUtil.PersistAndNotice(inst, "clear_pattern_clauses");
+            return BoxedValue.From(true);
         }
     }
 
     /// <summary>
     /// list_patterns(agentId) - overview lines "[idx] title (clauses=N, bytes=B)"
-    /// followed by a stats line "total=.../30720 bytes, items=.../64".
+    /// followed by a stats line "total=.../MaxBytes bytes, items=.../MaxItems".
     /// </summary>
     sealed class PatternListExp : SimpleExpressionBase
     {
@@ -329,7 +339,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("list_patterns requires (agentId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = inst.PatternTrack ?? new PatternTrackState();
@@ -356,13 +366,13 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("view_pattern requires (agentId, idx)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = inst.PatternTrack ?? new PatternTrackState();
             int idx = (int)operands[1].GetInt();
             if (!PatternApiUtil.CheckItemIndex(st, idx, "view_pattern"))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.FromString(string.Empty);
             var sb = new System.Text.StringBuilder();
             PatternTrackHelper.AppendItemText(sb, st.Items[idx], idx);
             return BoxedValue.FromString(sb.ToString());
@@ -379,7 +389,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("align_patterns requires (agentId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             PatternApiUtil.GetOrCreateTrack(inst);
@@ -400,13 +410,60 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_patterns_state requires (agentId, patterns_text)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PatternTrack != null)
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             inst.PatternTrack = PatternTrackHelper.ParsePatternText(operands[1].AsString);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
+        }
+    }
+
+    /// <summary>
+    /// set_patterns_max(maxCount, maxSize) - global setting: soft limits of the
+    /// pattern library (item count and total bytes), both must be positive.
+    /// Not exposed in the user API doc (for script_agent.dsl only).
+    /// </summary>
+    sealed class PatternSetMaxExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_patterns_max requires (maxCount, maxSize)");
+                return BoxedValue.From(false);
+            }
+            int maxCount = (int)operands[0].GetInt();
+            int maxSize = (int)operands[1].GetInt();
+            if (maxCount <= 0 || maxSize <= 0) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_patterns_max rejected: maxCount and maxSize must be positive");
+                return BoxedValue.From(false);
+            }
+            PatternTrackHelper.MaxItems = maxCount;
+            PatternTrackHelper.MaxBytes = maxSize;
+            return BoxedValue.From(true);
+        }
+    }
+
+    /// <summary>
+    /// get_patterns_max_count() - global setting: soft limit of the pattern item count.
+    /// </summary>
+    sealed class PatternGetMaxCountExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(PatternTrackHelper.MaxItems);
+        }
+    }
+
+    /// <summary>
+    /// get_patterns_max_size() - global setting: soft limit of the pattern library total bytes.
+    /// </summary>
+    sealed class PatternGetMaxSizeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(PatternTrackHelper.MaxBytes);
         }
     }
 
@@ -418,34 +475,34 @@ namespace AgentCore.ScriptApi
         public static void RegisterApis()
         {
             BatchCommand.BatchScript.Register("add_pattern",
-                "add_pattern(agentId, title) - append a pattern (soft limit 64, only warned), returns its index",
+                "add_pattern(agentId, title) - append a pattern (soft count limit, only warned), returns its index or -1 on error",
                 new ExpressionFactoryHelper<PatternAddItemExp>());
             BatchCommand.BatchScript.Register("modify_pattern",
-                "modify_pattern(agentId, idx, title) - modify the pattern title at the index",
+                "modify_pattern(agentId, idx, title) - modify the pattern title at the index, returns true/false",
                 new ExpressionFactoryHelper<PatternModifyItemExp>());
             BatchCommand.BatchScript.Register("delete_patterns",
-                "delete_patterns(agentId, idx[, idx2, ...]) - delete one or more patterns by index, later patterns are renumbered",
+                "delete_patterns(agentId, idx[, idx2, ...]) - delete one or more patterns by index, later patterns are renumbered, returns the removed count or -1 on error",
                 new ExpressionFactoryHelper<PatternDeleteItemExp>());
             BatchCommand.BatchScript.Register("move_pattern",
-                "move_pattern(agentId, idx, newIdx) - move the pattern to the new index",
+                "move_pattern(agentId, idx, newIdx) - move the pattern to the new index, returns true/false",
                 new ExpressionFactoryHelper<PatternMoveItemExp>());
             BatchCommand.BatchScript.Register("merge_patterns",
-                "merge_patterns(agentId, srcIdx, dstIdx) - append clauses of src to dst then delete src, returns the new dst index",
+                "merge_patterns(agentId, srcIdx, dstIdx) - append clauses of src to dst then delete src, returns the new dst index or -1 on error",
                 new ExpressionFactoryHelper<PatternMergeItemsExp>());
             BatchCommand.BatchScript.Register("set_pattern_clauses",
-                "set_pattern_clauses(agentId, idx, clause1, clause2, ...) - replace all clauses of the pattern",
+                "set_pattern_clauses(agentId, idx, clause1, clause2, ...) - replace all clauses of the pattern, returns true/false",
                 new ExpressionFactoryHelper<PatternSetClausesExp>());
             BatchCommand.BatchScript.Register("add_pattern_clause",
-                "add_pattern_clause(agentId, idx, content) - append a clause to the pattern, returns its index",
+                "add_pattern_clause(agentId, idx, content) - append a clause to the pattern, returns its index or -1 on error",
                 new ExpressionFactoryHelper<PatternAddClauseExp>());
             BatchCommand.BatchScript.Register("modify_pattern_clause",
-                "modify_pattern_clause(agentId, idx, clauseIdx, content) - modify the clause of the pattern",
+                "modify_pattern_clause(agentId, idx, clauseIdx, content) - modify the clause of the pattern, returns true/false",
                 new ExpressionFactoryHelper<PatternModifyClauseExp>());
             BatchCommand.BatchScript.Register("delete_pattern_clauses",
-                "delete_pattern_clauses(agentId, idx, clauseIdx[, clauseIdx2, ...]) - delete one or more clauses of the pattern",
+                "delete_pattern_clauses(agentId, idx, clauseIdx[, clauseIdx2, ...]) - delete one or more clauses of the pattern, returns the removed count or -1 on error",
                 new ExpressionFactoryHelper<PatternDeleteClauseExp>());
             BatchCommand.BatchScript.Register("clear_pattern_clauses",
-                "clear_pattern_clauses(agentId, idx) - remove all clauses of the pattern",
+                "clear_pattern_clauses(agentId, idx) - remove all clauses of the pattern, returns true/false",
                 new ExpressionFactoryHelper<PatternClearClausesExp>());
             BatchCommand.BatchScript.Register("list_patterns",
                 "list_patterns(agentId) - list pattern titles with clause count/bytes and the total size/count stats",
@@ -457,8 +514,20 @@ namespace AgentCore.ScriptApi
                 "align_patterns(agentId) - write docs/patterns.txt from the in-memory pattern library and return the text",
                 new ExpressionFactoryHelper<PatternAlignExp>());
             BatchCommand.BatchScript.Register("restore_patterns_state",
-                "restore_patterns_state(agentId, patterns_text) - restore the pattern library from the given patterns text",
+                "restore_patterns_state(agentId, patterns_text) - restore the pattern library from the given patterns text, returns true/false",
                 new ExpressionFactoryHelper<PatternRestoreExp>());
+            BatchCommand.BatchScript.Register("set_patterns_max",
+                "set_patterns_max(maxCount, maxSize) - set the soft limits of the pattern library (item count, total bytes), returns true/false",
+                false,
+                new ExpressionFactoryHelper<PatternSetMaxExp>());
+            BatchCommand.BatchScript.Register("get_patterns_max_count",
+                "get_patterns_max_count() - get the soft limit of the pattern item count",
+                false,
+                new ExpressionFactoryHelper<PatternGetMaxCountExp>());
+            BatchCommand.BatchScript.Register("get_patterns_max_size",
+                "get_patterns_max_size() - get the soft limit of the pattern library total bytes",
+                false,
+                new ExpressionFactoryHelper<PatternGetMaxSizeExp>());
         }
     }
 }

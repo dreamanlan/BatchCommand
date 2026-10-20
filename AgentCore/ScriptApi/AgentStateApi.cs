@@ -80,11 +80,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_project_dir requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.ProjectDir = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -113,11 +113,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_project_identity requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.ProjectIdentity = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -146,11 +146,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_foundation_prompt requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.FoundationPrompt = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -179,11 +179,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_project_memory requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.ProjectMemory = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -212,11 +212,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_emphasize requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.Emphasize = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -245,11 +245,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_soul requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.Soul = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -278,11 +278,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_backlog requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.Backlog = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -311,11 +311,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_plan requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.Plan = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -344,11 +344,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_context requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.Context = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -377,11 +377,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_history requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.History = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -410,10 +410,10 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_max_lines_deleted_by_write_file requires (value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             BatchCommand.Api.FrameworkApiAlias.MaxLinesDeletedByWriteFile = operands[0].GetInt();
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -437,11 +437,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_max_result_size requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.MaxResultSize = operands[1].GetInt();
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -470,11 +470,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_max_context_rounds requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.MaxContextRounds = operands[1].GetInt();
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -503,11 +503,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_cur_context_rounds requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.CurContextRounds = operands[1].GetInt();
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -552,12 +552,12 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_enable_context_injection requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var val = operands[1].GetString();
             inst.ContextInjectionEnabled = val == "true" || val == "1" || val == "True";
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -586,11 +586,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_max_worker_concurrency requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             int port = ResolveServerPort(operands[0]);
             WebSocketServerManager.GetServer(port).MaxWorkerConcurrency = operands[1].GetInt();
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -710,11 +710,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_inject_js_code requires (agentId, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             inst.InjectJsCode = operands[1].AsString;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 

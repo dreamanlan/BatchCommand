@@ -30,12 +30,12 @@ namespace AgentCore.Core
         /// <summary>
         /// Set the SearXNG instance URL (e.g. http://localhost:8080).
         /// </summary>
-        public string SetUrl(string url)
+        public bool SetUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url))
-                return "error: url is empty";
+                return false;
             _instanceUrl = url.TrimEnd('/');
-            return "ok";
+            return true;
         }
 
         /// <summary>
@@ -50,10 +50,10 @@ namespace AgentCore.Core
         /// Set the engines whitelist used in every SearXNG query (comma-separated).
         /// Pass empty string to disable the engines parameter (fall back to server default).
         /// </summary>
-        public string SetEngines(string engines)
+        public bool SetEngines(string engines)
         {
             _engines = engines ?? string.Empty;
-            return "ok";
+            return true;
         }
 
         /// <summary>
@@ -71,9 +71,9 @@ namespace AgentCore.Core
         public string Search(string query, int count = DefaultCount)
         {
             if (!IsConfigured)
-                return "[error] SearXNG instance URL not set. Use searxng_set_url() first.";
+                throw new InvalidOperationException("SearXNG instance URL not set. Use searxng_set_url() first.");
             if (string.IsNullOrWhiteSpace(query))
-                return "[error] Search query is empty.";
+                throw new InvalidOperationException("Search query is empty.");
 
             count = Math.Max(1, Math.Min(count, MaxCount));
 
@@ -91,7 +91,7 @@ namespace AgentCore.Core
                 return FormatResults(json, query, count);
             }
             catch (Exception ex) {
-                return $"[error] SearXNG search failed: {ex.Message}";
+                throw new InvalidOperationException($"SearXNG search failed: {ex.Message}");
             }
         }
 
@@ -101,9 +101,9 @@ namespace AgentCore.Core
         public string SearchRaw(string query, int count = DefaultCount)
         {
             if (!IsConfigured)
-                return "[error] SearXNG instance URL not set. Use searxng_set_url() first.";
+                throw new InvalidOperationException("SearXNG instance URL not set. Use searxng_set_url() first.");
             if (string.IsNullOrWhiteSpace(query))
-                return "[error] Search query is empty.";
+                throw new InvalidOperationException("Search query is empty.");
 
             count = Math.Max(1, Math.Min(count, MaxCount));
 
@@ -120,7 +120,7 @@ namespace AgentCore.Core
                 return _httpClient.Get(url, headers);
             }
             catch (Exception ex) {
-                return $"[error] SearXNG search failed: {ex.Message}";
+                throw new InvalidOperationException($"SearXNG search failed: {ex.Message}");
             }
         }
 
@@ -131,7 +131,7 @@ namespace AgentCore.Core
         {
             try {
                 if (!JsonHelper.TryParseJson(json, out var root) || root == null || !root.IsObject)
-                    return "[error] Failed to parse search response.";
+                    throw new InvalidOperationException("Failed to parse search response.");
 
                 var sb = new StringBuilder();
                 sb.AppendLine($"Search results for: {query}");
@@ -165,7 +165,7 @@ namespace AgentCore.Core
                 return sb.ToString().TrimEnd();
             }
             catch (Exception ex) {
-                return $"[error] Failed to format results: {ex.Message}";
+                throw new InvalidOperationException($"Failed to format results: {ex.Message}");
             }
         }
 

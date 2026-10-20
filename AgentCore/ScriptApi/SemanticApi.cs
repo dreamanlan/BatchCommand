@@ -15,6 +15,16 @@ namespace AgentCore.ScriptApi
     /// All APIs use a 'collection' parameter as namespace.
     /// </summary>
 
+    // ---- Helper for failures: log to api error info and return an empty text result ----
+    static class SemanticApiUtil
+    {
+        public static BoxedValue FailText(string message)
+        {
+            AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic: " + message);
+            return BoxedValue.FromString(string.Empty);
+        }
+    }
+
     // ---- Helper for converting SearchResultItem list to BoxedValue list ----
     static class SearchResultHelper
     {
@@ -92,7 +102,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_add(collection, content[, metadata])");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
 
             {
@@ -109,36 +119,37 @@ namespace AgentCore.ScriptApi
                         if (metadata == null) {
                             const string hint = "metadata is null (likely a bad MetaDSL argument, e.g. an undefined variable). To explicitly pass no metadata, omit the argument or pass an empty string \"\".";
                             AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_add error: " + hint);
-                            return BoxedValue.FromString("[error] " + hint);
+                            return BoxedValue.FromString(string.Empty);
                         }
                     }
 
                     // Explicit null/empty checks: AsString may return null.
                     if (string.IsNullOrWhiteSpace(collection)) {
                         AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_add error: collection is null or empty");
-                        return BoxedValue.FromString("[error] collection is null or empty");
+                        return BoxedValue.FromString(string.Empty);
                     }
                     if (string.IsNullOrWhiteSpace(content)) {
                         AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_add error: content is null or empty");
-                        return BoxedValue.FromString("[error] content is null or empty");
+                        return BoxedValue.FromString(string.Empty);
                     }
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
                         Core.AgentCore.Instance.Logger.Error($"EmbeddingService not ready !");
-                        return BoxedValue.FromString("[error] embedding model not ready");
+                        AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_add error: embedding model not ready");
+                        return BoxedValue.FromString(string.Empty);
                     }
 
                     float[]? vector = embedding.Encode(content);
                     if (vector == null || vector.Length == 0)
-                        return BoxedValue.FromString("[error] encode failed");
+                        return SemanticApiUtil.FailText("encode failed");
 
                     string id = Core.AgentCore.Instance.SemanticIndex.Add(collection, content, vector, metadata);
                     return BoxedValue.FromString(id);
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_add error: {ex.Message}");
-                    return BoxedValue.FromString($"[error] {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -151,7 +162,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search(collection, query[, keywords, topN[, meta_keywords]])");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
 
             {
@@ -164,18 +175,18 @@ namespace AgentCore.ScriptApi
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady)
-                        return BoxedValue.FromString("[error] embedding model not ready");
+                        return SemanticApiUtil.FailText("embedding model not ready");
 
                     float[]? vector = embedding.Encode(query);
                     if (vector == null)
-                        return BoxedValue.FromString("[error] encode failed");
+                        return SemanticApiUtil.FailText("encode failed");
 
                     string result = Core.AgentCore.Instance.SemanticIndex.SemanticSearch(collection, vector, query, keywords, topN, metaKeywords);
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_search error: {ex.Message}");
-                    return BoxedValue.FromString($"[error] {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -188,7 +199,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3 || operands.Count > 7) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
 
             {
@@ -203,18 +214,18 @@ namespace AgentCore.ScriptApi
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady)
-                        return BoxedValue.FromString("[error] embedding model not ready");
+                        return SemanticApiUtil.FailText("embedding model not ready");
 
                     float[]? vector = embedding.Encode(query);
                     if (vector == null)
-                        return BoxedValue.FromString("[error] encode failed");
+                        return SemanticApiUtil.FailText("encode failed");
 
                     var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchBetweenCore(collection, vector, query, keywords, topN, startTime, endTime, metaKeywords);
                     return BoxedValue.FromString(SemanticIndex.ResultsToJson(items));
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_search_between error: {ex.Message}");
-                    return BoxedValue.FromString($"[error] {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -227,7 +238,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3 || operands.Count > 7) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
 
             {
@@ -245,7 +256,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"keyword_search_between error: {ex.Message}");
-                    return BoxedValue.FromString($"[error] {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -306,7 +317,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search(collection, query[, keywords, topN[, meta_keywords]])");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
 
             {
@@ -321,7 +332,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"keyword_search error: {ex.Message}");
-                    return BoxedValue.FromString($"[error] {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -334,7 +345,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_get_recent(collection[, topN])");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
 
             {
@@ -346,7 +357,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_get_recent error: {ex.Message}");
-                    return BoxedValue.FromString($"[error] {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -748,7 +759,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_query(sql)");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
             try {
                 string sql = operands[0].AsString;
@@ -757,7 +768,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_query error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -769,7 +780,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count > 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_backup([path])");
-                return BoxedValue.FromString("[error] too many arguments");
+                return BoxedValue.FromString(string.Empty);
             }
             try {
                 string? path = operands.Count > 0 ? operands[0].AsString : null;
@@ -778,7 +789,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_backup error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -790,16 +801,17 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_restore(backupPath)");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
             try {
                 string backupPath = operands[0].AsString;
                 string result = Core.AgentCore.Instance.SemanticIndex.RestoreDatabase(backupPath);
-                return BoxedValue.FromString(result);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("sqlite_restore succeeded (notice, not an error, do not retry): " + result.Trim().Replace(Environment.NewLine, "; "));
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_restore error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -811,7 +823,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search(collection, query[, topN[, meta_keywords]])");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
             try {
                 string collection = operands[0].AsString;
@@ -823,7 +835,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_search error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -835,7 +847,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3 || operands.Count > 6) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_between(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
-                return BoxedValue.FromString("[error] missing arguments");
+                return BoxedValue.FromString(string.Empty);
             }
             try {
                 string collection = operands[0].AsString;
@@ -849,7 +861,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_search_between error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -987,11 +999,12 @@ namespace AgentCore.ScriptApi
         {
             try {
                 string report = Core.AgentCore.Instance.SemanticIndex.MigrateFtsSchema();
-                return BoxedValue.FromString(report);
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_migrate_fts succeeded (notice, not an error, do not retry): " + report.Trim().Replace(Environment.NewLine, "; "));
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"semantic_migrate_fts error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -1007,7 +1020,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"sqlite_list_tables error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -1023,7 +1036,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"list_semantic_collections error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }

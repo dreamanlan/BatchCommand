@@ -189,7 +189,7 @@ namespace BatchCommand
             }
 
             if (matchedLineIndices.Count == 0) {
-                return $"No matches found for pattern: {searchRegex}";
+                return string.Empty;
             }
 
             // Build output with context lines

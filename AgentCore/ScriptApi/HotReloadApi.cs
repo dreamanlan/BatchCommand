@@ -17,7 +17,8 @@ namespace AgentCore.ScriptApi
             try {
                 var agentCore = Core.AgentCore.Instance;
                 if (agentCore == null) {
-                    return "Error: AgentCore not initialized";
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("AgentCore not initialized");
+                    return BoxedValue.From(false);
                 }
 
                 agentCore.Logger.Info($"Hot reloading");
@@ -25,14 +26,14 @@ namespace AgentCore.ScriptApi
                 // Trigger hot reload through AgentCore
                 agentCore.TriggerHotReload();
 
-                return $"Hot reload triggered";
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 Core.AgentCore.Instance?.Logger.Error($"Error hot reloading: {ex.Message}");
                 if (Core.AgentCore.IsInitialized) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"hot_reload error: {ex.Message}");
                 }
-                return $"Error: {ex.Message}";
+                return BoxedValue.From(false);
             }
         }
     }
@@ -51,21 +52,22 @@ namespace AgentCore.ScriptApi
             try {
                 var agentCore = Core.AgentCore.Instance;
                 if (agentCore == null) {
-                    return "Error: AgentCore not initialized";
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("AgentCore not initialized");
+                    return BoxedValue.From(false);
                 }
 
                 agentCore.Logger.Info("Reopening the browser");
 
                 agentCore.TriggerReopenBrowser();
 
-                return "Browser reopen triggered";
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 Core.AgentCore.Instance?.Logger.Error($"Error reopening the browser: {ex.Message}");
                 if (Core.AgentCore.IsInitialized) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"reopen_browser error: {ex.Message}");
                 }
-                return $"Error: {ex.Message}";
+                return BoxedValue.From(false);
             }
         }
     }

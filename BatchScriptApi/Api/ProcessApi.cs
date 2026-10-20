@@ -369,7 +369,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 1 || operands.Count > 5) {
                 ApiErrorInfo.AppendLine("Expected: " + UsageHint);
-                return BoxedValue.FromString("error: invalid arguments");
+                return BoxedValue.From(false);
             }
 
             try {
@@ -381,7 +381,7 @@ namespace BatchCommand.Api
 
                 if (!s_Extensions.TryGetValue(language, out var ext)) {
                     ApiErrorInfo.AppendLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
-                    return BoxedValue.NullObject;
+                    return BoxedValue.From(false);
                 }
 
                 var script = TrimScriptBlankLines(ApplyTemplate(m_Script, bindingVals));
@@ -390,11 +390,12 @@ namespace BatchCommand.Api
 
                 var (command, arguments) = BuildScriptCommand(ext, file, cmdAndArgs);
                 ProcessOperations.Shared.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackMsg, file);
-                return BoxedValue.FromString($"ok, async exec '{file}', result via command_callback");
+                ApiErrorInfo.AppendLine($"execute_script_callback succeeded (notice, not an error, do not retry): async exec '{file}', result via command_callback");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"ExecuteCommandAsync error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -450,7 +451,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 ApiErrorInfo.AppendLine("Expected: " + UsageHint);
-                return BoxedValue.FromString("error: invalid arguments");
+                return BoxedValue.From(false);
             }
 
             try {
@@ -465,11 +466,12 @@ namespace BatchCommand.Api
                     arguments = ApplyTemplate(arguments, bindingVals);
 
                 ProcessOperations.Shared.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackMsg);
-                return BoxedValue.FromString("ok, async exec, result via command_callback");
+                ApiErrorInfo.AppendLine("execute_command_callback succeeded (notice, not an error, do not retry): async exec, result via command_callback");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"ExecuteCommandAsync error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -630,7 +632,7 @@ namespace BatchCommand.Api
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"GetCommandStatus error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }

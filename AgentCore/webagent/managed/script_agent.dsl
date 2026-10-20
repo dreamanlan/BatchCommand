@@ -511,7 +511,11 @@ script(handle_llm_chat_command)params($id, $params)
 
     $result = llm_chat_callback($providerId, $tag, $topic, $text);
 
-    $response = build_agent_response($id, true, $result, "");
+    $errText = "";
+    if (!$result) {
+        $errText = "llm_chat_callback failed (provider not configured or session busy)";
+    };
+    $response = build_agent_response($id, $result, "", $errText);
     send_response_to_inject($response);
 
     nativelog("[agent] llm_chat sent: {0}", $result);
@@ -960,10 +964,10 @@ script(trigger_plan)params($autoPlan,$lockAgent)
         nativelog("[agent] plan triggered");
 
         if ($lockAgent) {
-            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），更新需求库与计划状态（需求库用backlog API维护：change_backlog_item_state或add_backlog_clause等，完成条目置状态2即删除并自动落盘；计划用change_plan_item_state或append_plan_item_note或append_plan_note）。如当前计划完成但仍有可继续工作，先align_plan获取当前plan信息并将笔记归档到md文件，然后create_plan后start_plan";
+            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），更新计划状态（进度与断点写计划笔记：change_plan_item_state或append_plan_item_note或append_plan_note）；需求库只在需求状态变化时维护（change_backlog_item_state，完成条目置状态2即删除并自动落盘），不要把进度写进需求库条款。如当前计划完成但仍有可继续工作，先align_plan获取当前plan信息并将笔记归档到md文件，然后create_plan后start_plan";
         }
         else {
-            $prompt = "没有识别到代码。请更新需求库与计划状态（需求库用backlog API维护：change_backlog_item_state或add_backlog_clause等，完成条目置状态2即删除并自动落盘；计划用change_plan_item_state或append_plan_item_note或append_plan_note）。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
+            $prompt = "没有识别到代码。请更新计划状态（进度与断点写计划笔记：change_plan_item_state或append_plan_item_note或append_plan_note）；需求库只在需求状态变化时维护（change_backlog_item_state，完成条目置状态2即删除并自动落盘），不要把进度写进需求库条款。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止自动计划以避免重复提醒";
         };
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }
@@ -1326,7 +1330,7 @@ script(freebie_get_pattern_prompt)params($agentId)
         $agentId = "webagent";
     };
     nativelog("[agent] freebie_get_pattern_prompt, agent: {0}", $agentId);
-    $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限64条、总量控制在30KB内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir($agentId), agent_get_project_identity($agentId), $agentId);
+    $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限{3}条、总量控制在{4}字节内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir($agentId), agent_get_project_identity($agentId), $agentId, get_patterns_max_count(), get_patterns_max_size());
     return($prompt);
 };
 
@@ -1665,7 +1669,7 @@ script(handle_agent_notification)params($jsonData)
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 60) {
             $planText = align_plan(@AgentId);
-            if ($planText != "error: no plan") {
+            if (!isnullorempty($planText)) {
                 write_file($planFile, $planText);
                 update_system_prompt($pageType, false);
             };
@@ -1722,7 +1726,7 @@ script(handle_agent_notification)params($jsonData)
         if ($episodicCount - $lastPatternEpisodicCount >= 30) {
             agent_set_context_var(@AgentId, "LastPatternEpisodicCount", $episodicCount);
             nativelog("[agent] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
-            $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限64条、总量控制在30KB内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId), @AgentId);
+            $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限{3}条、总量控制在{4}字节内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId), @AgentId, get_patterns_max_count(), get_patterns_max_size());
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
         if (agent_is_context_injection_enabled(@AgentId) && agent_add_cur_context_rounds(@AgentId) == 0) {

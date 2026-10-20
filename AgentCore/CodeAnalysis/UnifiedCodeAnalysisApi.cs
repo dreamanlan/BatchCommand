@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -117,13 +117,12 @@ namespace AgentCore.CodeAnalysis
             return (errors.Count > 0, errors);
         }
 
-        // Check if parsed file has syntax errors and return error message if any
-        private static string? CheckParsedFileSyntaxErrors(ParsedCodeFile parsed)
+        // Throws when the parsed file has syntax errors
+        private static void ThrowIfSyntaxErrors(ParsedCodeFile parsed)
         {
             if (parsed.HasSyntaxErrors && parsed.SyntaxErrors != null && parsed.SyntaxErrors.Count > 0) {
-                return $"Syntax errors found:\n{string.Join("\n", parsed.SyntaxErrors)}";
+                throw new InvalidOperationException($"Syntax errors found:\n{string.Join("\n", parsed.SyntaxErrors)}");
             }
-            return null;
         }
 
         // Language alias map: input string (lowercase) -> ProgrammingLanguage enum
@@ -911,8 +910,6 @@ namespace AgentCore.CodeAnalysis
         public string FormatFileStructure(string filePath, ProgrammingLanguage language)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatStructureOverview(parsed);
         }
@@ -920,8 +917,6 @@ namespace AgentCore.CodeAnalysis
         public string FormatCodeStructure(string code, ProgrammingLanguage language, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatStructureOverview(parsed);
         }
@@ -930,8 +925,6 @@ namespace AgentCore.CodeAnalysis
         public string FindFunctions(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var functions = FindFunctions(parsed, namePattern);
             return FormatFunctionList(functions, filePath);
@@ -940,8 +933,6 @@ namespace AgentCore.CodeAnalysis
         public string FindFunctionsInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var functions = FindFunctions(parsed, namePattern);
             return FormatFunctionList(functions, fileName);
@@ -950,29 +941,23 @@ namespace AgentCore.CodeAnalysis
         public string FindFunction(string filePath, ProgrammingLanguage language, string functionName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var function = FindFunction(parsed, functionName);
-            return function != null ? FormatFunctionDetail(function, filePath) : $"Function '{functionName}' not found";
+            return function != null ? FormatFunctionDetail(function, filePath) : string.Empty;
         }
 
         public string FindFunctionInCode(string code, ProgrammingLanguage language, string functionName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var function = FindFunction(parsed, functionName);
-            return function != null ? FormatFunctionDetail(function, fileName) : $"Function '{functionName}' not found";
+            return function != null ? FormatFunctionDetail(function, fileName) : string.Empty;
         }
 
         // B2. Type Search APIs
         public string FindTypes(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var types = FindTypes(parsed, namePattern);
             return FormatTypeList(types, filePath);
@@ -981,8 +966,6 @@ namespace AgentCore.CodeAnalysis
         public string FindTypesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var types = FindTypes(parsed, namePattern);
             return FormatTypeList(types, fileName);
@@ -991,29 +974,23 @@ namespace AgentCore.CodeAnalysis
         public string FindType(string filePath, ProgrammingLanguage language, string typeName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var type = FindType(parsed, typeName);
-            return type != null ? FormatTypeDetail(type, filePath) : $"Type '{typeName}' not found";
+            return type != null ? FormatTypeDetail(type, filePath) : string.Empty;
         }
 
         public string FindTypeInCode(string code, ProgrammingLanguage language, string typeName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var type = FindType(parsed, typeName);
-            return type != null ? FormatTypeDetail(type, fileName) : $"Type '{typeName}' not found";
+            return type != null ? FormatTypeDetail(type, fileName) : string.Empty;
         }
 
         // B3. Variable Search APIs
         public string FindVariables(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatVariables(parsed, namePattern, filePath);
         }
@@ -1021,8 +998,6 @@ namespace AgentCore.CodeAnalysis
         public string FindVariablesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatVariables(parsed, namePattern, fileName);
         }
@@ -1030,8 +1005,6 @@ namespace AgentCore.CodeAnalysis
         public string FindVariable(string filePath, ProgrammingLanguage language, string variableName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatVariable(parsed, variableName, filePath);
         }
@@ -1039,8 +1012,6 @@ namespace AgentCore.CodeAnalysis
         public string FindVariableInCode(string code, ProgrammingLanguage language, string variableName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatVariable(parsed, variableName, fileName);
         }
@@ -1048,8 +1019,6 @@ namespace AgentCore.CodeAnalysis
         public string FindGlobalVariables(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatGlobalVariables(parsed, namePattern, filePath);
         }
@@ -1057,8 +1026,6 @@ namespace AgentCore.CodeAnalysis
         public string FindGlobalVariablesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatGlobalVariables(parsed, namePattern, fileName);
         }
@@ -1066,8 +1033,6 @@ namespace AgentCore.CodeAnalysis
         public string FindLocalVariables(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatLocalVariables(parsed, namePattern, filePath);
         }
@@ -1075,8 +1040,6 @@ namespace AgentCore.CodeAnalysis
         public string FindLocalVariablesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatLocalVariables(parsed, namePattern, fileName);
         }
@@ -1084,8 +1047,6 @@ namespace AgentCore.CodeAnalysis
         public string FindParameters(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatParameters(parsed, namePattern, filePath);
         }
@@ -1093,8 +1054,6 @@ namespace AgentCore.CodeAnalysis
         public string FindParametersInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             return FormatParameters(parsed, namePattern, fileName);
         }
@@ -1103,8 +1062,6 @@ namespace AgentCore.CodeAnalysis
         public string FindClassMembers(string filePath, ProgrammingLanguage language, string className)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1124,8 +1081,6 @@ namespace AgentCore.CodeAnalysis
         public string FindClassMembersInCode(string code, ProgrammingLanguage language, string className, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1145,8 +1100,6 @@ namespace AgentCore.CodeAnalysis
         public string FindFields(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1175,8 +1128,6 @@ namespace AgentCore.CodeAnalysis
         public string FindFieldsInCode(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1205,8 +1156,6 @@ namespace AgentCore.CodeAnalysis
         public string FindField(string filePath, ProgrammingLanguage language, string className, string fieldName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
@@ -1216,14 +1165,12 @@ namespace AgentCore.CodeAnalysis
                     return FormatFieldDetail(field, type.Name, filePath);
             }
 
-            return $"No field matching pattern '{fieldName}' found in classes matching '{className}'";
+            return string.Empty;
         }
 
         public string FindFieldInCode(string code, ProgrammingLanguage language, string className, string fieldName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
@@ -1233,14 +1180,12 @@ namespace AgentCore.CodeAnalysis
                     return FormatFieldDetail(field, type.Name, fileName);
             }
 
-            return $"No field matching pattern '{fieldName}' found in classes matching '{className}'";
+            return string.Empty;
         }
 
         public string FindProperties(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1269,8 +1214,6 @@ namespace AgentCore.CodeAnalysis
         public string FindPropertiesInCode(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1299,8 +1242,6 @@ namespace AgentCore.CodeAnalysis
         public string FindProperty(string filePath, ProgrammingLanguage language, string className, string propertyName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
@@ -1310,14 +1251,12 @@ namespace AgentCore.CodeAnalysis
                     return FormatPropertyDetail(property, type.Name, filePath);
             }
 
-            return $"No property matching pattern '{propertyName}' found in classes matching '{className}'";
+            return string.Empty;
         }
 
         public string FindPropertyInCode(string code, ProgrammingLanguage language, string className, string propertyName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
@@ -1327,14 +1266,12 @@ namespace AgentCore.CodeAnalysis
                     return FormatPropertyDetail(property, type.Name, fileName);
             }
 
-            return $"No property matching pattern '{propertyName}' found in classes matching '{className}'";
+            return string.Empty;
         }
 
         public string FindMethods(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1363,8 +1300,6 @@ namespace AgentCore.CodeAnalysis
         public string FindMethodsInCode(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1393,8 +1328,6 @@ namespace AgentCore.CodeAnalysis
         public string FindMethod(string filePath, ProgrammingLanguage language, string className, string methodName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
@@ -1404,14 +1337,12 @@ namespace AgentCore.CodeAnalysis
                     return FormatMethodDetail(method, type.Name, filePath);
             }
 
-            return $"No method matching pattern '{methodName}' found in classes matching '{className}'";
+            return string.Empty;
         }
 
         public string FindMethodInCode(string code, ProgrammingLanguage language, string className, string methodName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
@@ -1421,15 +1352,13 @@ namespace AgentCore.CodeAnalysis
                     return FormatMethodDetail(method, type.Name, fileName);
             }
 
-            return $"No method matching pattern '{methodName}' found in classes matching '{className}'";
+            return string.Empty;
         }
 
         // E. Event Search APIs
         public string FindEvents(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1458,8 +1387,6 @@ namespace AgentCore.CodeAnalysis
         public string FindEventsInCode(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1488,8 +1415,6 @@ namespace AgentCore.CodeAnalysis
         public string FindEvent(string filePath, ProgrammingLanguage language, string className, string eventName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
@@ -1499,14 +1424,12 @@ namespace AgentCore.CodeAnalysis
                     return FormatEventDetail(evt, type.Name, filePath);
             }
 
-            return $"No event matching pattern '{eventName}' found in classes matching '{className}'";
+            return string.Empty;
         }
 
         public string FindEventInCode(string code, ProgrammingLanguage language, string className, string eventName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
@@ -1516,15 +1439,13 @@ namespace AgentCore.CodeAnalysis
                     return FormatEventDetail(evt, type.Name, fileName);
             }
 
-            return $"No event matching pattern '{eventName}' found in classes matching '{className}'";
+            return string.Empty;
         }
 
         // Constructor Search APIs
         public string FindConstructors(string filePath, ProgrammingLanguage language, string className)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1543,14 +1464,12 @@ namespace AgentCore.CodeAnalysis
                 }
             }
 
-            return totalCount > 0 ? sb.ToString() : $"No constructors found in classes matching '{className}'";
+            return totalCount > 0 ? sb.ToString() : string.Empty;
         }
 
         public string FindConstructorsInCode(string code, ProgrammingLanguage language, string className, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
             if (matchingTypes.Count == 0)
@@ -1569,15 +1488,13 @@ namespace AgentCore.CodeAnalysis
                 }
             }
 
-            return totalCount > 0 ? sb.ToString() : $"No constructors found in classes matching '{className}'";
+            return totalCount > 0 ? sb.ToString() : string.Empty;
         }
 
         // F. Interface Search APIs
         public string FindInterfaces(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var interfaces = string.IsNullOrEmpty(namePattern)
                 ? parsed.Interfaces
@@ -1588,8 +1505,6 @@ namespace AgentCore.CodeAnalysis
         public string FindInterfacesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var interfaces = string.IsNullOrEmpty(namePattern)
                 ? parsed.Interfaces
@@ -1600,8 +1515,6 @@ namespace AgentCore.CodeAnalysis
         public string FindInterface(string filePath, ProgrammingLanguage language, string interfaceName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var iface = parsed.Interfaces.FirstOrDefault(i => MatchesPattern(i.Name, interfaceName));
             return iface != null ? FormatInterfaceDetail(iface, filePath) : $"Interface matching pattern '{interfaceName}' not found";
@@ -1610,8 +1523,6 @@ namespace AgentCore.CodeAnalysis
         public string FindInterfaceInCode(string code, ProgrammingLanguage language, string interfaceName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var iface = parsed.Interfaces.FirstOrDefault(i => MatchesPattern(i.Name, interfaceName));
             return iface != null ? FormatInterfaceDetail(iface, fileName) : $"Interface matching pattern '{interfaceName}' not found";
@@ -1621,8 +1532,6 @@ namespace AgentCore.CodeAnalysis
         public string FindStructs(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var structs = string.IsNullOrEmpty(namePattern)
                 ? parsed.Structs
@@ -1633,8 +1542,6 @@ namespace AgentCore.CodeAnalysis
         public string FindStructsInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var structs = string.IsNullOrEmpty(namePattern)
                 ? parsed.Structs
@@ -1645,8 +1552,6 @@ namespace AgentCore.CodeAnalysis
         public string FindStruct(string filePath, ProgrammingLanguage language, string structName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var structType = parsed.Structs.FirstOrDefault(s => MatchesPattern(s.Name, structName));
             return structType != null ? FormatStructDetail(structType, filePath) : $"Struct matching pattern '{structName}' not found";
@@ -1655,8 +1560,6 @@ namespace AgentCore.CodeAnalysis
         public string FindStructInCode(string code, ProgrammingLanguage language, string structName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var structType = parsed.Structs.FirstOrDefault(s => MatchesPattern(s.Name, structName));
             return structType != null ? FormatStructDetail(structType, fileName) : $"Struct matching pattern '{structName}' not found";
@@ -1666,8 +1569,6 @@ namespace AgentCore.CodeAnalysis
         public string FindEnums(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var enums = string.IsNullOrEmpty(namePattern)
                 ? parsed.Enums
@@ -1678,8 +1579,6 @@ namespace AgentCore.CodeAnalysis
         public string FindEnumsInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var enums = string.IsNullOrEmpty(namePattern)
                 ? parsed.Enums
@@ -1690,8 +1589,6 @@ namespace AgentCore.CodeAnalysis
         public string FindEnum(string filePath, ProgrammingLanguage language, string enumName)
         {
             var parsed = ParseFile(filePath, language);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var enumType = parsed.Enums.FirstOrDefault(e => MatchesPattern(e.Name, enumName));
             return enumType != null ? FormatEnumDetail(enumType, filePath) : $"Enum matching pattern '{enumName}' not found";
@@ -1700,8 +1597,6 @@ namespace AgentCore.CodeAnalysis
         public string FindEnumInCode(string code, ProgrammingLanguage language, string enumName, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            var errorMsg = CheckParsedFileSyntaxErrors(parsed);
-            if (errorMsg != null) return errorMsg;
 
             var enumType = parsed.Enums.FirstOrDefault(e => MatchesPattern(e.Name, enumName));
             return enumType != null ? FormatEnumDetail(enumType, fileName) : $"Enum matching pattern '{enumName}' not found";
@@ -1715,7 +1610,7 @@ namespace AgentCore.CodeAnalysis
         public string FindNodes(string filePath, ProgrammingLanguage language, string pattern)
         {
             if (!File.Exists(filePath))
-                return $"File not found: {filePath}";
+                throw new FileNotFoundException($"File not found: {filePath}");
 
             var code = SafeFileReader.ReadAllText(filePath);
             return FindNodesInternal(code, language, pattern, filePath);
@@ -1731,7 +1626,7 @@ namespace AgentCore.CodeAnalysis
         public string FindNode(string filePath, ProgrammingLanguage language, string pattern)
         {
             if (!File.Exists(filePath))
-                return $"File not found: {filePath}";
+                throw new FileNotFoundException($"File not found: {filePath}");
 
             var code = SafeFileReader.ReadAllText(filePath);
             return FindNodeInternal(code, language, pattern, filePath);
@@ -1751,7 +1646,7 @@ namespace AgentCore.CodeAnalysis
                 tree = ParseTreeSitter(code, language);
             }
             catch (Exception ex) {
-                return $"Failed to parse {language}: {ex.Message}";
+                throw new InvalidOperationException($"Failed to parse {language}: {ex.Message}");
             }
 
             var matches = new List<(ITreeSitterNode node, string? nameFieldValue)>();
@@ -1781,7 +1676,7 @@ namespace AgentCore.CodeAnalysis
                 tree = ParseTreeSitter(code, language);
             }
             catch (Exception ex) {
-                return $"Failed to parse {language}: {ex.Message}";
+                throw new InvalidOperationException($"Failed to parse {language}: {ex.Message}");
             }
 
             var matches = new List<(ITreeSitterNode node, string? nameFieldValue)>();
@@ -2226,7 +2121,7 @@ namespace AgentCore.CodeAnalysis
                 }
             }
 
-            return count > 0 ? sb.ToString() : "No variables found";
+            return count > 0 ? sb.ToString() : string.Empty;
         }
 
         private string FormatVariable(ParsedCodeFile parsed, string variableName, string filePath)
@@ -2272,12 +2167,12 @@ namespace AgentCore.CodeAnalysis
                 }
             }
 
-            return count > 0 ? sb.ToString() : "No global variables found";
+            return count > 0 ? sb.ToString() : string.Empty;
         }
 
         private string FormatLocalVariables(ParsedCodeFile parsed, string? namePattern, string filePath)
         {
-            return "Local variable extraction not yet implemented for this language";
+            throw new NotSupportedException("Local variable extraction not yet implemented for this language");
         }
 
         private string FormatParameters(ParsedCodeFile parsed, string? namePattern, string filePath)
@@ -2315,7 +2210,7 @@ namespace AgentCore.CodeAnalysis
                 }
             }
 
-            return count > 0 ? sb.ToString() : "No parameters found";
+            return count > 0 ? sb.ToString() : string.Empty;
         }
 
         private string FormatClassMembers(TypeInfo type, string filePath)

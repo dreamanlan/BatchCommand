@@ -595,7 +595,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_file(path, regex_pattern[, context_lines_after, context_lines_before, encoding]), aliased as grep_file|grepfile");
-                return BoxedValue.FromString("Expected: search_in_file(path, regex_pattern[, context_lines_after, context_lines_before, encoding])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -609,7 +609,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_file error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -621,7 +621,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files|grepfiles");
-                return BoxedValue.FromString("Expected: search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -654,7 +654,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_files error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -666,7 +666,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
-                return BoxedValue.FromString("Expected: search_in_files_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -700,7 +700,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"search_in_files_with_encoding error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -841,7 +841,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: count_file_indentations(path[, startLine, endLine, encoding])");
-                return BoxedValue.FromString("Expected: count_file_indentations(path[, startLine, endLine, encoding])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -849,14 +849,14 @@ namespace AgentCore.ScriptApi
                 string fullPath = BatchCommand.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 if (!System.IO.File.Exists(fullPath)) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"count_file_indentations: file not found: {path}");
-                    return BoxedValue.FromString($"Error: file not found: {path}");
+                    return BoxedValue.FromString(string.Empty);
                 }
 
                 Encoding? encoding = operands.Count > 3 ? BatchCommand.Utils.BomHelper.GetEncoding(operands[3], fullPath) : null;
                 string[] allLines = SafeFileReader.ReadAllLines(fullPath, encoding ?? System.Text.Encoding.UTF8);
                 int totalLines = allLines.Length;
                 if (totalLines == 0) {
-                    return BoxedValue.FromString("(empty file, 0 lines)");
+                    return BoxedValue.FromString(string.Empty);
                 }
 
                 int startLine = operands.Count > 1 ? operands[1].GetInt() : 1;
@@ -868,7 +868,7 @@ namespace AgentCore.ScriptApi
                 if (startLine > totalLines) startLine = totalLines;
                 if (endLine < 1) endLine = 1;
                 if (startLine > endLine) {
-                    return BoxedValue.FromString($"(no lines in range {startLine}-{endLine}, file has {totalLines} lines)");
+                    return BoxedValue.FromString(string.Empty);
                 }
 
                 // First pass: compute indent info strings and find max prefix width
@@ -909,7 +909,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"count_file_indentations error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
 

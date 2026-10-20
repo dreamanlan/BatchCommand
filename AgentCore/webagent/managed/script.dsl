@@ -414,9 +414,20 @@ script(on_browser_init)
     $notFirst = get_context_var("notFirst");
     if (isnull($notFirst)) {
         set_context_var("notFirst", 1);
+        // Keep the previous run as *.prev.log instead of deleting it, so the
+        // logs of a failure survive one restart. agentcore.log is written by
+        // the agent host next to its own exe (basepath); debug.log sits next to
+        // webagent.exe (appdir, which differs from basepath in webagentdbg).
+        // Copy then delete, not movefile: movefile deletes the target first, so
+        // a locked source would cost the previous backup. debug.log goes last:
+        // a child process that is still writing its early log lines can hold
+        // it, and the exception skips only this step.
+        // chrome_debug.log is rotated in on_before_command_line_processing,
+        // because CEF holds it open from then on.
+        copyfile(combinepath(basepath, "agentcore.log"), combinepath(basepath, "agentcore.prev.log"));
         deletefile(combinepath(basepath, "agentcore.log"));
-        deletefile(combinepath(basepath, "debug.log"));
-        deletefile(combinepath(basepath, "webagent_cache/chrome_debug.log"));
+        copyfile(combinepath(appdir, "debug.log"), combinepath(appdir, "debug.prev.log"));
+        deletefile(combinepath(appdir, "debug.log"));
     };
 };
 // Default handler for the C# hot reload watcher (watch_file / watch_dir /
@@ -660,6 +671,17 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 
     // Override user-agent-product to look like standard Chrome
     $cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/150.0.7871.187");
+
+    // Keep the previous browser log as chrome_debug.prev.log: CEF starts a new
+    // chrome_debug.log on every launch and opens it right after this callback,
+    // so this is the last moment to save the old one. Copy only - CEF drops the
+    // old file itself, and a failed copy leaves the previous backup alone.
+    // MUST stay the last statement: when another instance is running
+    // (relaunch) the file is held open by it, the copy throws, and only this
+    // step is skipped.
+    if ($processType == 0) {
+        copyfile(combinepath(appdir, "webagent_cache/chrome_debug.log"), combinepath(appdir, "webagent_cache/chrome_debug.prev.log"));
+    };
 };
 
 script(on_before_child_process_launch)params($processType, $cmdLine)

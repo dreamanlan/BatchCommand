@@ -14,12 +14,14 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             try {
-                string result = Core.AgentCore.Instance.RefreshEmbedding();
-                return BoxedValue.FromString(result ?? string.Empty);
+                bool result = Core.AgentCore.Instance.RefreshEmbedding();
+                if (!result)
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("refresh_embedding failed: model or tokenizer missing or load error, see log");
+                return BoxedValue.From(result);
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"RefreshEmbedding error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -30,12 +32,14 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             try {
-                string result = Core.AgentCore.Instance.RefreshReranker();
-                return BoxedValue.FromString(result ?? string.Empty);
+                bool result = Core.AgentCore.Instance.RefreshReranker();
+                if (!result)
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("refresh_reranker failed: model or tokenizer missing or load error, see log");
+                return BoxedValue.From(result);
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"RefreshReranker error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -46,13 +50,13 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             try {
-                string result = Core.AgentCore.Instance.RefreshSkills(
+                bool result = Core.AgentCore.Instance.RefreshSkills(
                     System.IO.Path.Combine(Core.AgentCore.Instance.BasePath, "skills"));
-                return BoxedValue.FromString(result ?? string.Empty);
+                return BoxedValue.From(result);
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"RefreshSkills error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -64,7 +68,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: call_skill(skill_name, arg1, arg2, ...), aliased as callskill");
-                return BoxedValue.FromString("[error] call_skill requires at least skill name");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -78,7 +82,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"CallSkill error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }

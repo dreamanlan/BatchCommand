@@ -1107,7 +1107,7 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         public string RestoreDatabase(string backupPath)
         {
             if (!File.Exists(backupPath))
-                return $"[error] Backup file not found: {backupPath}";
+                throw new FileNotFoundException($"Backup file not found: {backupPath}");
             var sb = new StringBuilder();
             // 1. Reset all in-memory collection states
             lock (_collectionsLock) {
@@ -1186,34 +1186,34 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
 
         public List<Dictionary<string, BoxedValue>> QuerySqlCore(string sql)
         {
-         using var conn = OpenConnection();
-         using var cmd = conn.CreateCommand();
-         cmd.CommandText = sql;
-         using var reader = cmd.ExecuteReader();
-         var rows = new List<Dictionary<string, BoxedValue>>();
-         while (reader.Read()) {
-          var row = new Dictionary<string, BoxedValue>();
-          for (int i = 0; i < reader.FieldCount; i++) {
-           string colName = reader.GetName(i);
-           if (reader.IsDBNull(i)) {
-            row[colName] = BoxedValue.NullObject;
-           }
-           else {
-            var fieldType = reader.GetFieldType(i);
-            if (fieldType == typeof(long) || fieldType == typeof(int)) {
-             row[colName] = BoxedValue.From(Convert.ToInt64(reader.GetValue(i)));
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+            using var reader = cmd.ExecuteReader();
+            var rows = new List<Dictionary<string, BoxedValue>>();
+            while (reader.Read()) {
+                var row = new Dictionary<string, BoxedValue>();
+                for (int i = 0; i < reader.FieldCount; i++) {
+                    string colName = reader.GetName(i);
+                    if (reader.IsDBNull(i)) {
+                        row[colName] = BoxedValue.NullObject;
+                    }
+                    else {
+                        var fieldType = reader.GetFieldType(i);
+                        if (fieldType == typeof(long) || fieldType == typeof(int)) {
+                            row[colName] = BoxedValue.From(Convert.ToInt64(reader.GetValue(i)));
+                        }
+                        else if (fieldType == typeof(double) || fieldType == typeof(float)) {
+                            row[colName] = BoxedValue.From(Convert.ToDouble(reader.GetValue(i)));
+                        }
+                        else {
+                            row[colName] = BoxedValue.FromString(reader.GetValue(i).ToString() ?? "");
+                        }
+                    }
+                }
+                rows.Add(row);
             }
-            else if (fieldType == typeof(double) || fieldType == typeof(float)) {
-             row[colName] = BoxedValue.From(Convert.ToDouble(reader.GetValue(i)));
-            }
-            else {
-             row[colName] = BoxedValue.FromString(reader.GetValue(i).ToString() ?? "");
-            }
-           }
-          }
-          rows.Add(row);
-         }
-         return rows;
+            return rows;
         }
 
         private void MigrateV1ToV2()

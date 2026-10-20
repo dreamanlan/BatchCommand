@@ -46,7 +46,7 @@ namespace AgentCore.ScriptApi
             catch (Exception ex) {
                 var error = $"Error inspecting C language DLL: {ex.Message}\n{ex.StackTrace}";
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
-                return BoxedValue.FromString(error);
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -66,7 +66,7 @@ namespace AgentCore.ScriptApi
             catch (Exception ex) {
                 var error = $"Error inspecting C++ language DLL: {ex.Message}\n{ex.StackTrace}";
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
-                return BoxedValue.FromString(error);
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -86,7 +86,7 @@ namespace AgentCore.ScriptApi
             catch (Exception ex) {
                 var error = $"Error exploring TreeSitter.DotNet C API: {ex.Message}\n{ex.StackTrace}";
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
-                return BoxedValue.FromString(error);
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -106,7 +106,7 @@ namespace AgentCore.ScriptApi
             catch (Exception ex) {
                 var error = $"Error exploring TreeSitter.DotNet C++ API: {ex.Message}\n{ex.StackTrace}";
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
-                return BoxedValue.FromString(error);
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -126,7 +126,7 @@ namespace AgentCore.ScriptApi
             catch (Exception ex) {
                 var error = $"Error testing C parser creation: {ex.Message}\n{ex.StackTrace}";
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
-                return BoxedValue.FromString(error);
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -146,7 +146,7 @@ namespace AgentCore.ScriptApi
             catch (Exception ex) {
                 var error = $"Error testing C++ parser creation: {ex.Message}\n{ex.StackTrace}";
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
-                return BoxedValue.FromString(error);
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -166,7 +166,7 @@ namespace AgentCore.ScriptApi
             catch (Exception ex) {
                 var error = $"Error exploring all TreeSitter APIs: {ex.Message}\n{ex.StackTrace}";
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
-                return BoxedValue.FromString(error);
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -222,7 +222,7 @@ namespace AgentCore.ScriptApi
             catch (Exception ex) {
                 var error = $"Error testing GetNodeText: {ex.Message}\n{ex.StackTrace}";
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(error);
-                return BoxedValue.FromString(error);
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }

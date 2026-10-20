@@ -15,7 +15,7 @@ namespace AgentCore.ScriptApi
     /// type="openai": url=baseUrl, api_key=Bearer token, model=model name
     /// type="claude": url=API endpoint (empty=default Anthropic), api_key=x-api-key, model=model name
     /// type="knot": url=baseUrl, api_key=token (optional), model=ignored
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class LlmSetProviderExp : SimpleExpressionBase
     {
@@ -23,7 +23,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_provider requires (provider_id, type, url, api_key, model)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string type = operands[1].AsString;
@@ -32,7 +32,7 @@ namespace AgentCore.ScriptApi
             string model = operands[4].AsString;
             // apiKey may contain %var% placeholders (e.g. %person_token%).
             // It is stored as a template; actual value is resolved at HTTP request time.
-            return BoxedValue.FromString(Core.LlmClientService.Instance.SetProvider(providerId, type, url, apiKey, model));
+            return BoxedValue.From(Core.LlmClientService.Instance.SetProvider(providerId, type, url, apiKey, model));
         }
     }
 
@@ -40,7 +40,7 @@ namespace AgentCore.ScriptApi
     /// llm_set_provider_option(provider_id, key, value)
     /// Sets a provider-specific option. Supported keys: max_tokens (claude only),
     /// max_queue_len (per-session chat waiting-queue depth, default 10).
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class LlmSetProviderOptionExp : SimpleExpressionBase
     {
@@ -48,19 +48,19 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_provider_option requires (provider_id, key, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string key = operands[1].AsString;
             string value = operands[2].ToString();
-            return BoxedValue.FromString(Core.LlmClientService.Instance.SetProviderOption(providerId, key, value));
+            return BoxedValue.From(Core.LlmClientService.Instance.SetProviderOption(providerId, key, value));
         }
     }
 
     /// <summary>
     /// llm_chat_callback(provider_id, tag, topic, message)
     /// Sends a message to the specified provider+session.
-    /// Returns "ok", "busy", or an error string.
+    /// Returns true when queued, false when the session queue is full or the send failed (api error info).
     /// Full reply arrives via llm_callback(provider_id, tag, topic, reply) CEF message.
     /// </summary>
     sealed class LlmChatCallbackExp : SimpleExpressionBase
@@ -69,13 +69,13 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_callback requires (provider_id, tag, topic, message)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
             string topic = operands[2].AsString;
             string message = operands[3].AsString;
-            return BoxedValue.FromString(Core.LlmClientService.Instance.ChatCallback(providerId, tag, topic, message));
+            return BoxedValue.From(Core.LlmClientService.Instance.ChatCallback(providerId, tag, topic, message));
         }
     }
 
@@ -83,7 +83,7 @@ namespace AgentCore.ScriptApi
     /// llm_chat_with_images_callback(provider_id, tag, topic, message [, image_url1, image_url2, ...])
     /// Sends a message with attached image URLs to the specified provider+session.
     /// Images must be URLs starting with http://, https:// or data: (base64 data URI).
-    /// Returns "ok", "busy", or an error string.
+    /// Returns true when queued, false when the session queue is full or the send failed (api error info).
     /// Full reply arrives via llm_callback(provider_id, tag, topic, reply) CEF message.
     /// </summary>
     sealed class LlmChatWithImagesCallbackExp : SimpleExpressionBase
@@ -92,7 +92,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_with_images_callback requires (provider_id, tag, topic, message [, image_url1, image_url2, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
@@ -104,18 +104,19 @@ namespace AgentCore.ScriptApi
                 string url = operands[i].AsString;
                 if (string.IsNullOrWhiteSpace(url)) continue;
                 if (!url.StartsWith("http://") && !url.StartsWith("https://") && !url.StartsWith("data:")) {
-                    return BoxedValue.FromString($"error: image must be a URL (http/https/data), got: {url}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat_with_images_callback: image must be a URL (http/https/data), got: {url}");
+                    return BoxedValue.From(false);
                 }
                 imageUrls.Add(url);
             }
-            return BoxedValue.FromString(Core.LlmClientService.Instance.ChatWithImagesCallback(providerId, tag, topic, message, imageUrls.ToArray()));
+            return BoxedValue.From(Core.LlmClientService.Instance.ChatWithImagesCallback(providerId, tag, topic, message, imageUrls.ToArray()));
         }
     }
 
     /// <summary>
     /// llm_clear_history(provider_id, tag)
     /// Clears conversation history for the given provider+session.
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class LlmClearHistoryExp : SimpleExpressionBase
     {
@@ -123,11 +124,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_clear_history requires (provider_id, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
-            return BoxedValue.FromString(Core.LlmClientService.Instance.ClearHistory(providerId, tag));
+            return BoxedValue.From(Core.LlmClientService.Instance.ClearHistory(providerId, tag));
         }
     }
 
@@ -135,7 +136,7 @@ namespace AgentCore.ScriptApi
     /// llm_add_chat_extra(provider_id, tag, key, values...)
     /// Adds a chat_extra entry for the given provider+session.
     /// key: "agent_client_uuid" (single value), "extra_headers" (key,val,key,val,...), or other custom keys.
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class LlmAddChatExtraExp : SimpleExpressionBase
     {
@@ -143,7 +144,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_add_chat_extra requires (provider_id, tag, key [, value1, value2, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
@@ -153,14 +154,14 @@ namespace AgentCore.ScriptApi
             for (int i = 3; i < operands.Count; i++) {
                 values.Add(operands[i].AsString);
             }
-            return BoxedValue.FromString(Core.LlmClientService.Instance.AddChatExtra(providerId, tag, key, values.ToArray()));
+            return BoxedValue.From(Core.LlmClientService.Instance.AddChatExtra(providerId, tag, key, values.ToArray()));
         }
     }
 
     /// <summary>
     /// llm_clear_chat_extras(provider_id, tag)
     /// Clears all chat_extra entries for the given provider+session.
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class LlmClearChatExtrasExp : SimpleExpressionBase
     {
@@ -168,11 +169,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_clear_chat_extras requires (provider_id, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
-            return BoxedValue.FromString(Core.LlmClientService.Instance.ClearChatExtras(providerId, tag));
+            return BoxedValue.From(Core.LlmClientService.Instance.ClearChatExtras(providerId, tag));
         }
     }
 
@@ -215,7 +216,7 @@ namespace AgentCore.ScriptApi
     /// <summary>
     /// llm_cancel(provider_id, tag)
     /// Cancels an active LLM request for the given session.
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class LlmCancelExp : SimpleExpressionBase
     {
@@ -223,11 +224,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_cancel requires (provider_id, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
-            return BoxedValue.FromString(Core.LlmClientService.Instance.Cancel(providerId, tag));
+            return BoxedValue.From(Core.LlmClientService.Instance.Cancel(providerId, tag));
         }
     }
 
@@ -250,7 +251,7 @@ namespace AgentCore.ScriptApi
     /// Sets a system prompt for the given provider+session.
     /// For openai/claude/ollama: prepended to every request as a system message.
     /// For knot: prepended to the message every context_rounds sends (default 12).
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class LlmSetSystemPromptExp : SimpleExpressionBase
     {
@@ -258,12 +259,12 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_system_prompt requires (provider_id, tag, prompt)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
             string prompt = operands[2].AsString;
-            return BoxedValue.FromString(Core.LlmClientService.Instance.SetSystemPrompt(providerId, tag, prompt));
+            return BoxedValue.From(Core.LlmClientService.Instance.SetSystemPrompt(providerId, tag, prompt));
         }
     }
 
@@ -276,9 +277,9 @@ namespace AgentCore.ScriptApi
     {
         protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
         {
-            if (operands.Count < 4)
-            {
-                result.Value = BoxedValue.FromString("error: llm_chat_async requires 4 args: provider_id, tag, topic, message");
+            if (operands.Count < 4) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_async requires 4 args: provider_id, tag, topic, message");
+                result.Value = BoxedValue.FromString(string.Empty);
                 yield break;
             }
             string providerId = operands[0].GetString();
@@ -290,8 +291,10 @@ namespace AgentCore.ScriptApi
             while (!task.IsCompleted)
                 yield return null;
 
-            if (task.IsFaulted)
-                result.Value = BoxedValue.FromString($"[error] {task.Exception?.InnerException?.Message ?? task.Exception?.Message}");
+            if (task.IsFaulted) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat_async error: {task.Exception?.InnerException?.Message ?? task.Exception?.Message}");
+                result.Value = BoxedValue.FromString(string.Empty);
+            }
             else
                 result.Value = BoxedValue.FromString(task.Result);
         }
@@ -306,9 +309,9 @@ namespace AgentCore.ScriptApi
     {
         protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
         {
-            if (operands.Count < 5)
-            {
-                result.Value = BoxedValue.FromString("error: llm_chat_with_images_async requires at least 5 args: provider_id, tag, topic, message, image_url...");
+            if (operands.Count < 5) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_with_images_async requires at least 5 args: provider_id, tag, topic, message, image_url...");
+                result.Value = BoxedValue.FromString(string.Empty);
                 yield break;
             }
             string providerId = operands[0].GetString();
@@ -320,7 +323,8 @@ namespace AgentCore.ScriptApi
                 string url = operands[i].GetString();
                 if (string.IsNullOrWhiteSpace(url)) continue;
                 if (!url.StartsWith("http://") && !url.StartsWith("https://") && !url.StartsWith("data:")) {
-                    result.Value = BoxedValue.FromString($"error: image must be a URL (http/https/data), got: {url}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat_with_images_async: image must be a URL (http/https/data), got: {url}");
+                    result.Value = BoxedValue.FromString(string.Empty);
                     yield break;
                 }
                 imageUrls.Add(url);
@@ -330,8 +334,10 @@ namespace AgentCore.ScriptApi
             while (!task.IsCompleted)
                 yield return null;
 
-            if (task.IsFaulted)
-                result.Value = BoxedValue.FromString($"[error] {task.Exception?.InnerException?.Message ?? task.Exception?.Message}");
+            if (task.IsFaulted) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat_with_images_async error: {task.Exception?.InnerException?.Message ?? task.Exception?.Message}");
+                result.Value = BoxedValue.FromString(string.Empty);
+            }
             else
                 result.Value = BoxedValue.FromString(task.Result);
         }
@@ -348,7 +354,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat requires (provider_id, tag, topic, message)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
@@ -360,7 +366,7 @@ namespace AgentCore.ScriptApi
             }
             catch (System.Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -376,7 +382,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_with_images requires (provider_id, tag, topic, message [, image_url1, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
@@ -387,7 +393,8 @@ namespace AgentCore.ScriptApi
                 string url = operands[i].AsString;
                 if (string.IsNullOrWhiteSpace(url)) continue;
                 if (!url.StartsWith("http://") && !url.StartsWith("https://") && !url.StartsWith("data:")) {
-                    return BoxedValue.FromString($"error: image must be a URL (http/https/data), got: {url}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat_with_images: image must be a URL (http/https/data), got: {url}");
+                    return BoxedValue.FromString(string.Empty);
                 }
                 imageUrls.Add(url);
             }
@@ -397,7 +404,7 @@ namespace AgentCore.ScriptApi
             }
             catch (System.Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"llm_chat_with_images error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }

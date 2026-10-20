@@ -11,7 +11,7 @@ namespace AgentCore.ScriptApi
     /// <summary>
     /// brave_set_api_key(api_key)
     /// Sets the Brave Search API key and activates Brave as the current search engine.
-    /// Returns "ok" or an error string.
+    /// Returns true/false.
     /// </summary>
     sealed class BraveSetApiKeyExp : SimpleExpressionBase
     {
@@ -19,23 +19,26 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("brave_set_api_key requires (api_key)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string apiKey = operands[0].AsString;
             // apiKey may contain %var% placeholders (e.g. %brave_api_key%).
             // It is stored as a template; actual value is resolved at HTTP request time.
-            string result = Core.AgentCore.Instance.BraveSearch.SetApiKey(apiKey);
-            if (result == "ok") {
+            bool result = Core.AgentCore.Instance.BraveSearch.SetApiKey(apiKey);
+            if (result) {
                 Core.AgentCore.Instance.WebSearchRouter.ActivateBrave();
             }
-            return BoxedValue.FromString(result);
+            else {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("brave_set_api_key: api key is empty");
+            }
+            return BoxedValue.From(result);
         }
     }
 
     /// <summary>
     /// searxng_set_url(url)
     /// Sets the SearXNG instance URL and activates SearXNG as the current search engine.
-    /// Returns "ok" or an error string.
+    /// Returns true/false.
     /// </summary>
     sealed class SearXNGSetUrlExp : SimpleExpressionBase
     {
@@ -43,14 +46,17 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("searxng_set_url requires (url)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string url = operands[0].AsString;
-            string result = Core.AgentCore.Instance.SearXNGSearch.SetUrl(url);
-            if (result == "ok") {
+            bool result = Core.AgentCore.Instance.SearXNGSearch.SetUrl(url);
+            if (result) {
                 Core.AgentCore.Instance.WebSearchRouter.ActivateSearXNG();
             }
-            return BoxedValue.FromString(result);
+            else {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("searxng_set_url: url is empty");
+            }
+            return BoxedValue.From(result);
         }
     }
 
@@ -70,7 +76,7 @@ namespace AgentCore.ScriptApi
     /// searxng_set_engines(engines_csv)
     /// Sets the engines whitelist used in every SearXNG query (comma-separated, e.g. "google,bing,yahoo_news").
     /// Pass empty string to disable the engines parameter (fall back to server default).
-    /// Returns "ok".
+    /// Returns true/false.
     /// </summary>
     sealed class SearXNGSetEnginesExp : SimpleExpressionBase
     {
@@ -78,10 +84,10 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("searxng_set_engines requires (engines_csv)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string engines = operands[0].AsString;
-            return BoxedValue.FromString(Core.AgentCore.Instance.SearXNGSearch.SetEngines(engines));
+            return BoxedValue.From(Core.AgentCore.Instance.SearXNGSearch.SetEngines(engines));
         }
     }
 
@@ -109,7 +115,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("web_search requires (query[, count])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             try {
                 string query = operands[0].AsString;
@@ -118,7 +124,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"web_search error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -134,7 +140,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("web_search_raw requires (query[, count])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             try {
                 string query = operands[0].AsString;
@@ -143,7 +149,7 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"web_search_raw error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -156,16 +162,16 @@ namespace AgentCore.ScriptApi
         public static void RegisterApis()
         {
             BatchCommand.BatchScript.Register("brave_set_api_key",
-                "brave_set_api_key(api_key) - set Brave Search API key and activate Brave engine",
+                "brave_set_api_key(api_key) - set Brave Search API key and activate Brave engine, returns true/false",
                 new ExpressionFactoryHelper<BraveSetApiKeyExp>());
             BatchCommand.BatchScript.Register("searxng_set_url",
-                "searxng_set_url(url) - set SearXNG instance URL and activate SearXNG engine",
+                "searxng_set_url(url) - set SearXNG instance URL and activate SearXNG engine, returns true/false",
                 new ExpressionFactoryHelper<SearXNGSetUrlExp>());
             BatchCommand.BatchScript.Register("searxng_get_url",
                 "searxng_get_url() - get current SearXNG instance URL, returns empty string if not set",
                 new ExpressionFactoryHelper<SearXNGGetUrlExp>());
             BatchCommand.BatchScript.Register("searxng_set_engines",
-                "searxng_set_engines(engines_csv) - set SearXNG engines whitelist (comma-separated, e.g. \"google,bing,yahoo_news\"). Empty string disables the filter.",
+                "searxng_set_engines(engines_csv) - set SearXNG engines whitelist (comma-separated, e.g. \"google,bing,yahoo_news\"). Empty string disables the filter. Returns true/false.",
                 new ExpressionFactoryHelper<SearXNGSetEnginesExp>());
             BatchCommand.BatchScript.Register("searxng_get_engines",
                 "searxng_get_engines() - get current SearXNG engines whitelist, empty string means disabled",

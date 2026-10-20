@@ -390,11 +390,13 @@ namespace AgentCore.Core
             SkillToolInfo? skill;
             lock (_lock) {
                 if (!_skills.TryGetValue(skillKey, out skill)) {
-                    return $"[error] skill '{skillKey}' not found";
+                    MetaDslExecutor.AppendApiErrorInfoLine($"call_skill: skill '{skillKey}' not found");
+                    return string.Empty;
                 }
             }
             if (string.IsNullOrWhiteSpace(skill.CommandScript)) {
-                return $"[error] skill '{skillKey}' has no command script";
+                MetaDslExecutor.AppendApiErrorInfoLine($"call_skill: skill '{skillKey}' has no command script");
+                return string.Empty;
             }
 
             if (skill.IsMetaDSL) {
@@ -412,7 +414,8 @@ namespace AgentCore.Core
                     return MetaDslExecutor.CallDslFunc(skill.FuncName, argVals);
                 }
                 else {
-                    return result;
+                    MetaDslExecutor.AppendApiErrorInfoLine($"call_skill: skill '{skillKey}' load failed: {result}");
+                    return string.Empty;
                 }
             }
             else {
@@ -441,24 +444,24 @@ namespace AgentCore.Core
 
                 if (skill.IsAsync) {
                     _processOps.ExecuteCommandWithCallback(shell, shellArg, null, skill.TimeoutMs, "skill_callback");
-                    return $"[async] skill '{skillKey}' started, result will arrive via skill_callback";
+                    MetaDslExecutor.AppendApiErrorInfoLine($"call_skill succeeded (notice, not an error, do not retry): skill '{skillKey}' started async, result will arrive via skill_callback");
+                    return string.Empty;
                 }
 
                 var result = _processOps.ExecuteCommand(shell, shellArg, null, skill.TimeoutMs);
-                var sb = new StringBuilder();
-                if (!string.IsNullOrEmpty(result.Output))
-                    sb.Append(result.Output);
-                if (!string.IsNullOrEmpty(result.Error)) {
-                    if (sb.Length > 0) sb.AppendLine();
-                    sb.Append("[stderr] ").Append(result.Error);
-                }
                 if (!result.Success) {
-                    if (sb.Length == 0)
-                        sb.Append($"[error] exit code {result.ExitCode}");
+                    var sb = new StringBuilder();
+                    sb.Append($"call_skill: skill '{skillKey}' failed, exit code {result.ExitCode}");
+                    if (!string.IsNullOrEmpty(result.Error))
+                        sb.Append(", stderr: ").Append(result.Error);
                     if (!string.IsNullOrEmpty(skill.SkillMd))
-                        sb.AppendLine().Append($"[hint] refer to {skill.SkillMd} for usage details");
+                        sb.Append($", refer to {skill.SkillMd} for usage details");
+                    MetaDslExecutor.AppendApiErrorInfoLine(sb.ToString());
                 }
-                return sb.ToString();
+                else if (!string.IsNullOrEmpty(result.Error)) {
+                    MetaDslExecutor.AppendApiErrorInfoLine($"call_skill succeeded (notice, not an error, do not retry): skill '{skillKey}' stderr: {result.Error}");
+                }
+                return result.Output ?? string.Empty;
             }
         }
 
@@ -629,7 +632,8 @@ namespace AgentCore.Core
             else if (bagOfWordsService != null && bagOfWordsService.IsReady) {
                 if (AgentCore.Instance.HelpDebug) {
                     searchResults = bagOfWordsService.SearchWithDebug(queries, _skillDocs.Select(pair => (pair.Key, pair.Value)), recallN, out bm25DebugInfo);
-                } else {
+                }
+                else {
                     searchResults = bagOfWordsService.Search(queries, recallN);
                 }
             }
@@ -666,7 +670,8 @@ namespace AgentCore.Core
                 sb.AppendLine("[help_debug]");
                 if (!string.IsNullOrEmpty(bm25DebugInfo)) {
                     sb.Append(bm25DebugInfo);
-                } else {
+                }
+                else {
                     sb.AppendLine("BM25 Explain is unavailable for this skill search path.");
                 }
                 sb.AppendLine(string.Format("reranker: {0}", hasReranker ? "enabled" : "disabled"));

@@ -24,13 +24,15 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("find_file requires (query[, max_count])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             string query = operands[0].AsString;
             uint maxCount = operands.Count > 1 ? operands[1].GetUInt() : c_DefMaxResults;
             if (maxCount > c_MaxResults) maxCount = c_MaxResults;
-            if (string.IsNullOrEmpty(query))
-                return BoxedValue.FromString("error: empty query");
+            if (string.IsNullOrEmpty(query)) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("find_file: empty query");
+                return BoxedValue.FromString(string.Empty);
+            }
             try {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return SearchWindows(query, maxCount);
@@ -38,14 +40,16 @@ namespace AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"find_file error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
 
         private static BoxedValue SearchWindows(string query, uint maxCount)
         {
-            if (!EverythingSDK.EverythingExists())
-                return BoxedValue.FromString("[error] Everything service is not running. Use everything_ensure() first.");
+            if (!EverythingSDK.EverythingExists()) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("find_file: Everything service is not running. Use everything_ensure() first.");
+                return BoxedValue.FromString(string.Empty);
+            }
             lock (EverythingSDK.Lock) {
                 EverythingSDK.Everything_SetSearchW(query);
                 EverythingSDK.Everything_SetOffset(0);
@@ -55,8 +59,10 @@ namespace AgentCore.ScriptApi
                            EverythingSDK.EVERYTHING_REQUEST_PATH |
                            EverythingSDK.EVERYTHING_REQUEST_SIZE |
                            EverythingSDK.EVERYTHING_REQUEST_DATE_MODIFIED));
-                if (!EverythingSDK.Everything_QueryW(true))
-                    return BoxedValue.FromString($"[error] Everything query failed, error code: {EverythingSDK.Everything_GetLastError()}");
+                if (!EverythingSDK.Everything_QueryW(true)) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"find_file: Everything query failed, error code: {EverythingSDK.Everything_GetLastError()}");
+                    return BoxedValue.FromString(string.Empty);
+                }
                 uint tot = EverythingSDK.Everything_GetTotResults();
                 uint num = EverythingSDK.Everything_GetNumResults();
                 var sb = new StringBuilder();
@@ -79,7 +85,7 @@ namespace AgentCore.ScriptApi
         {
             var paths = PlatformFileSearch.Search(query, maxCount);
             if (paths.Count == 0)
-                return BoxedValue.FromString($"No results found for: {query}");
+                return BoxedValue.FromString(string.Empty);
             var sb = new StringBuilder();
             string platform = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "Spotlight" : "locate/find";
             sb.AppendLine($"Found {paths.Count} results (via {platform}) for: {query}");

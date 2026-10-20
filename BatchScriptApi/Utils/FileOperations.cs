@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -612,7 +612,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath))
-                return $"File not found: {path}";
+                throw new IOException($"File not found: {path}");
             return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
         }
 
@@ -623,7 +623,7 @@ namespace BatchCommand.Utils
                 return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
             }
             if (!Directory.Exists(fullPath)) {
-                return $"Directory not found: {path}";
+                throw new DirectoryNotFoundException($"Directory not found: {path}");
             }
 
             if (null == filterAndNewExts) {
@@ -649,7 +649,7 @@ namespace BatchCommand.Utils
                 }
             }
             if (sb.Length == 0) {
-                return $"No matches found for pattern: {searchRegex}";
+                return string.Empty;
             }
             return sb.ToString();
         }
@@ -658,7 +658,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
             if (!File.Exists(fullPath))
-                return $"Log file not found: {logFile}";
+                throw new IOException($"Log file not found: {logFile}");
             return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
         }
 
@@ -717,7 +717,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
             if (!File.Exists(fullPath))
-                return $"File not found: {file}";
+                throw new IOException($"File not found: {file}");
             return HeadInternal(fullPath, lines, encoding);
         }
 
@@ -725,7 +725,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
             if (!File.Exists(fullPath))
-                return $"File not found: {file}";
+                throw new IOException($"File not found: {file}");
             return TailInternal(fullPath, lines, encoding);
         }
 
@@ -733,7 +733,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _appDir);
             if (!File.Exists(fullPath))
-                return $"File not found: {file}";
+                throw new IOException($"File not found: {file}");
             return HeadInternal(fullPath, lines, encoding);
         }
 
@@ -741,7 +741,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _appDir);
             if (!File.Exists(fullPath))
-                return $"File not found: {file}";
+                throw new IOException($"File not found: {file}");
             return TailInternal(fullPath, lines, encoding);
         }
         // Private helpers
@@ -847,7 +847,7 @@ namespace BatchCommand.Utils
             var blocks = SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
             if (blocks.Count == 0) {
                 hasMatch = false;
-                return $"No matches found for pattern: {searchRegex}";
+                return string.Empty;
             }
             hasMatch = true;
             return RenderBlocksAsString(blocks);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -37,7 +37,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("http_put_callback", "http_put_callback(url, content, tag) or (url, content, contentType, tag) or (url, content, contentType, headers, tag) - async PUT, result via http_put_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpPutCallbackExp>());
             BatchCommand.BatchScript.Register("http_delete_callback", "http_delete_callback(url, tag) or (url, headers, tag) - async DELETE, result via http_delete_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpDeleteCallbackExp>());
             BatchCommand.BatchScript.Register("http_upload_file_callback", "http_upload_file_callback(url, filePath, tag) or (url, filePath, fieldName, tag) or (url, filePath, fieldName, formData, tag) or (url, filePath, fieldName, formData, headers, tag) - async upload, result via http_upload_file_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<HttpUploadFileCallbackExp>());
-            BatchCommand.BatchScript.Register("download_file_callback", "download_file_callback(url, savePath, tag) or (url, savePath, headers, tag) - async download, result 'ok' or 'error: ...' via download_file_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<DownloadFileCallbackExp>());
+            BatchCommand.BatchScript.Register("download_file_callback", "download_file_callback(url, savePath, tag) or (url, savePath, headers, tag) - async download, returns true when queued, result arrives via download_file_callback CEF message (url, tag, result)", new ExpressionFactoryHelper<DownloadFileCallbackExp>());
             BatchCommand.BatchScript.Register("set_http_user_agent", "set_http_user_agent(user_agent) - set User-Agent header for http_get/http_post/download_file", new ExpressionFactoryHelper<SetHttpUserAgentExp>());
             BatchCommand.BatchScript.Register("get_http_user_agent", "get_http_user_agent() - get current User-Agent header string", new ExpressionFactoryHelper<GetHttpUserAgentExp>());
         }
@@ -368,10 +368,10 @@ namespace BatchCommand.Api
         {
             if (operands.Count != 2) {
                 ApiErrorInfo.AppendLine("Expected: set_http_default_header(name, value)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             HttpClientOperations.Shared.SetDefaultHeader(operands[0].AsString, operands[1].AsString);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -381,15 +381,15 @@ namespace BatchCommand.Api
         {
             if (operands.Count != 1) {
                 ApiErrorInfo.AppendLine("Expected: remove_http_default_header(name)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             HttpClientOperations.Shared.RemoveDefaultHeader(operands[0].AsString);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
     // HTTP async callback expressions. tag is always the last operand. Each
-    // returns "ok" immediately; result arrives via a same-named CEF message
+    // returns true when queued (false when invalid); result arrives via a same-named CEF message
     // with 3 string args: (url, tag, result).
     sealed class HttpGetCallbackExp : SimpleExpressionBase
     {
@@ -397,7 +397,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiErrorInfo.AppendLine("Expected: http_get_callback(url, tag) or http_get_callback(url, headers, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             try {
                 string url = operands[0].AsString;
@@ -407,15 +407,15 @@ namespace BatchCommand.Api
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                     if (headers == null) {
                         ApiErrorInfo.AppendLine("Expected: http_get_callback(url, headers, tag), headers must be hashtable");
-                        return BoxedValue.FromString("error: invalid headers");
+                        return BoxedValue.From(false);
                     }
                 }
                 HttpClientOperations.Shared.GetWithCallback(url, headers, tag);
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"http_get_callback error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -428,7 +428,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiErrorInfo.AppendLine("Expected: http_get_bytes_callback(url, tag) or http_get_bytes_callback(url, headers, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             try {
                 string url = operands[0].AsString;
@@ -438,15 +438,15 @@ namespace BatchCommand.Api
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                     if (headers == null) {
                         ApiErrorInfo.AppendLine("Expected: http_get_bytes_callback(url, headers, tag), headers must be hashtable");
-                        return BoxedValue.FromString("error: invalid headers");
+                        return BoxedValue.From(false);
                     }
                 }
                 HttpClientOperations.Shared.GetBytesWithCallback(url, headers, tag);
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"http_get_bytes_callback error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -457,7 +457,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 3 || operands.Count > 5) {
                 ApiErrorInfo.AppendLine("Expected: http_post_callback(url, content, tag) or http_post_callback(url, content, contentType, tag) or http_post_callback(url, content, contentType, headers, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             try {
                 string url = operands[0].AsString;
@@ -470,7 +470,7 @@ namespace BatchCommand.Api
                     }
                     else {
                         ApiErrorInfo.AppendLine("Expected: http_post_callback(url, content, contentType, ...), contentType must be string");
-                        return BoxedValue.FromString("error: invalid contentType");
+                        return BoxedValue.From(false);
                     }
                 }
                 Dictionary<string, string>? headers = null;
@@ -478,15 +478,15 @@ namespace BatchCommand.Api
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                     if (headers == null) {
                         ApiErrorInfo.AppendLine("Expected: http_post_callback(url, content, contentType, headers, tag), headers must be hashtable");
-                        return BoxedValue.FromString("error: invalid headers");
+                        return BoxedValue.From(false);
                     }
                 }
                 HttpClientOperations.Shared.PostWithCallback(url, content, contentType, headers, tag);
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"http_post_callback error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -497,7 +497,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 ApiErrorInfo.AppendLine("Expected: http_post_form_callback(url, formData, tag) or http_post_form_callback(url, formData, headers, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             try {
                 string url = operands[0].AsString;
@@ -505,22 +505,22 @@ namespace BatchCommand.Api
                 var formData = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                 if (formData == null) {
                     ApiErrorInfo.AppendLine("Expected: http_post_form_callback(url, formData, ...), formData must be hashtable");
-                    return BoxedValue.FromString("error: invalid formData");
+                    return BoxedValue.From(false);
                 }
                 Dictionary<string, string>? headers = null;
                 if (operands.Count == 4) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
                     if (headers == null) {
                         ApiErrorInfo.AppendLine("Expected: http_post_form_callback(url, formData, headers, tag), headers must be hashtable");
-                        return BoxedValue.FromString("error: invalid headers");
+                        return BoxedValue.From(false);
                     }
                 }
                 HttpClientOperations.Shared.PostFormWithCallback(url, formData, headers, tag);
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"http_post_form_callback error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -531,7 +531,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 3 || operands.Count > 5) {
                 ApiErrorInfo.AppendLine("Expected: http_put_callback(url, content, tag) or http_put_callback(url, content, contentType, tag) or http_put_callback(url, content, contentType, headers, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             try {
                 string url = operands[0].AsString;
@@ -544,7 +544,7 @@ namespace BatchCommand.Api
                     }
                     else {
                         ApiErrorInfo.AppendLine("Expected: http_put_callback(url, content, contentType, ...), contentType must be string");
-                        return BoxedValue.FromString("error: invalid contentType");
+                        return BoxedValue.From(false);
                     }
                 }
                 Dictionary<string, string>? headers = null;
@@ -552,15 +552,15 @@ namespace BatchCommand.Api
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                     if (headers == null) {
                         ApiErrorInfo.AppendLine("Expected: http_put_callback(url, content, contentType, headers, tag), headers must be hashtable");
-                        return BoxedValue.FromString("error: invalid headers");
+                        return BoxedValue.From(false);
                     }
                 }
                 HttpClientOperations.Shared.PutWithCallback(url, content, contentType, headers, tag);
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"http_put_callback error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -571,7 +571,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiErrorInfo.AppendLine("Expected: http_delete_callback(url, tag) or http_delete_callback(url, headers, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             try {
                 string url = operands[0].AsString;
@@ -581,15 +581,15 @@ namespace BatchCommand.Api
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                     if (headers == null) {
                         ApiErrorInfo.AppendLine("Expected: http_delete_callback(url, headers, tag), headers must be hashtable");
-                        return BoxedValue.FromString("error: invalid headers");
+                        return BoxedValue.From(false);
                     }
                 }
                 HttpClientOperations.Shared.DeleteWithCallback(url, headers, tag);
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"http_delete_callback error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -600,7 +600,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 3 || operands.Count > 6) {
                 ApiErrorInfo.AppendLine("Expected: http_upload_file_callback(url, filePath, tag) or (url, filePath, fieldName, tag) or (url, filePath, fieldName, formData, tag) or (url, filePath, fieldName, formData, headers, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             try {
                 string url = operands[0].AsString;
@@ -613,7 +613,7 @@ namespace BatchCommand.Api
                     }
                     else {
                         ApiErrorInfo.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, ...), fieldName must be string");
-                        return BoxedValue.FromString("error: invalid fieldName");
+                        return BoxedValue.From(false);
                     }
                 }
                 Dictionary<string, string>? formData = null;
@@ -621,7 +621,7 @@ namespace BatchCommand.Api
                     formData = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                     if (formData == null) {
                         ApiErrorInfo.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, formData, ...), formData must be hashtable");
-                        return BoxedValue.FromString("error: invalid formData");
+                        return BoxedValue.From(false);
                     }
                 }
                 Dictionary<string, string>? headers = null;
@@ -629,15 +629,15 @@ namespace BatchCommand.Api
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[4]);
                     if (headers == null) {
                         ApiErrorInfo.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, formData, headers, tag), headers must be hashtable");
-                        return BoxedValue.FromString("error: invalid headers");
+                        return BoxedValue.From(false);
                     }
                 }
                 HttpClientOperations.Shared.UploadFileWithCallback(url, filePath, fieldName, formData, headers, tag);
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"http_upload_file_callback error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -648,7 +648,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 ApiErrorInfo.AppendLine("Expected: download_file_callback(url, savePath, tag) or download_file_callback(url, savePath, headers, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             try {
                 string url = operands[0].AsString;
@@ -659,15 +659,15 @@ namespace BatchCommand.Api
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
                     if (headers == null) {
                         ApiErrorInfo.AppendLine("Expected: download_file_callback(url, savePath, headers, tag), headers must be hashtable");
-                        return BoxedValue.FromString("error: invalid headers");
+                        return BoxedValue.From(false);
                     }
                 }
                 HttpClientOperations.Shared.DownloadFileWithCallback(url, savePath, headers, tag);
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"download_file_callback error: {ex.Message}");
-                return BoxedValue.FromString($"error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -678,11 +678,11 @@ namespace BatchCommand.Api
         {
             if (operands.Count != 1) {
                 ApiErrorInfo.AppendLine("Expected: set_http_user_agent(user_agent)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string ua = operands[0].AsString;
             HttpClientOperations.Shared.SetUserAgent(ua);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 

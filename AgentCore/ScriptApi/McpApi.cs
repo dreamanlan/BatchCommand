@@ -9,7 +9,7 @@ namespace AgentCore.ScriptApi
     /// <summary>
     /// mcp_connect(serverId, type, target)
     /// Connects to an MCP server. type="stdio" or "sse". target=command line or URL.
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class McpConnectExp : SimpleExpressionBase
     {
@@ -17,12 +17,12 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_connect requires (serverId, type, target)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string serverId = operands[0].AsString;
             string type = operands[1].AsString;
             string target = operands[2].AsString;
-            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.Connect(serverId, type, target));
+            return BoxedValue.From(AgentCore.Core.McpClientService.Instance.Connect(serverId, type, target));
         }
     }
 
@@ -70,7 +70,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_tools requires (serverId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ListTools(operands[0].AsString));
         }
@@ -87,7 +87,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_resources requires (serverId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ListResources(operands[0].AsString));
         }
@@ -96,7 +96,7 @@ namespace AgentCore.ScriptApi
     /// <summary>
     /// mcp_read_resource(serverId, uri, mrtrJson?)
     /// Synchronously reads an MCP resource and blocks until the result is received.
-    /// Returns the resource text (or "[error] ..." / "[binary N base64 chars]").
+    /// Returns the resource text (or "[binary N base64 chars]"); errors go to the api error info.
     /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
     /// "[input required]" result (2026-07-28 MRTR retry).
     /// </summary>
@@ -106,7 +106,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_resource requires (serverId, uri)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             string serverId = operands[0].AsString;
             string uri = operands[1].AsString;
@@ -117,7 +117,7 @@ namespace AgentCore.ScriptApi
             }
             catch (System.Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"mcp_read_resource error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -128,7 +128,7 @@ namespace AgentCore.ScriptApi
     /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
     /// "[input required]" result (2026-07-28 MRTR retry).
     /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class McpReadResourceCallbackExp : SimpleExpressionBase
     {
@@ -136,13 +136,13 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_resource_callback requires (serverId, uri, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string serverId = operands[0].AsString;
             string uri = operands[1].AsString;
             string tag = operands[2].AsString;
             string? mrtrJson = operands.Count >= 4 ? operands[3].AsString : null;
-            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ReadResourceCallback(serverId, uri, tag, mrtrJson));
+            return BoxedValue.From(AgentCore.Core.McpClientService.Instance.ReadResourceCallback(serverId, uri, tag, mrtrJson));
         }
     }
 
@@ -157,7 +157,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_prompts requires (serverId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ListPrompts(operands[0].AsString));
         }
@@ -176,7 +176,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_prompt requires (serverId, promptName[, argsJson])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             string serverId = operands[0].AsString;
             string promptName = operands[1].AsString;
@@ -188,7 +188,7 @@ namespace AgentCore.ScriptApi
             }
             catch (System.Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"mcp_read_prompt error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -199,7 +199,7 @@ namespace AgentCore.ScriptApi
     /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
     /// "[input required]" result (2026-07-28 MRTR retry).
     /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class McpReadPromptCallbackExp : SimpleExpressionBase
     {
@@ -207,14 +207,14 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_prompt_callback requires (serverId, promptName, argsJson, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string serverId = operands[0].AsString;
             string promptName = operands[1].AsString;
             string argsJson = operands[2].AsString;
             string tag = operands[3].AsString;
             string? mrtrJson = operands.Count >= 5 ? operands[4].AsString : null;
-            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.ReadPromptCallback(serverId, promptName, argsJson, tag, mrtrJson));
+            return BoxedValue.From(AgentCore.Core.McpClientService.Instance.ReadPromptCallback(serverId, promptName, argsJson, tag, mrtrJson));
         }
     }
 
@@ -225,7 +225,7 @@ namespace AgentCore.ScriptApi
     /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to answer an
     /// "[input required]" result (2026-07-28 MRTR retry).
     /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class McpCallToolCallbackExp : SimpleExpressionBase
     {
@@ -233,14 +233,14 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_call_tool_callback requires (serverId, toolName, argsJson, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string serverId = operands[0].AsString;
             string toolName = operands[1].AsString;
             string argsJson = operands[2].AsString;
             string tag = operands[3].AsString;
             string? mrtrJson = operands.Count >= 5 ? operands[4].AsString : null;
-            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.CallToolCallback(serverId, toolName, argsJson, tag, mrtrJson));
+            return BoxedValue.From(AgentCore.Core.McpClientService.Instance.CallToolCallback(serverId, toolName, argsJson, tag, mrtrJson));
         }
     }
 
@@ -300,7 +300,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_call_tool requires (serverId, toolName, argsJson)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             string serverId = operands[0].AsString;
             string toolName = operands[1].AsString;
@@ -312,7 +312,7 @@ namespace AgentCore.ScriptApi
             }
             catch (System.Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"mcp_call_tool error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -338,7 +338,7 @@ namespace AgentCore.ScriptApi
     /// <summary>
     /// mcp_cancel(serverId, tag)
     /// Cancels an active MCP tool call for the given session.
-    /// Returns "ok" or an error string.
+    /// Returns true/false; errors go to the api error info.
     /// </summary>
     sealed class McpCancelExp : SimpleExpressionBase
     {
@@ -346,11 +346,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_cancel requires (serverId, tag)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string serverId = operands[0].AsString;
             string tag = operands[1].AsString;
-            return BoxedValue.FromString(AgentCore.Core.McpClientService.Instance.Cancel(serverId, tag));
+            return BoxedValue.From(AgentCore.Core.McpClientService.Instance.Cancel(serverId, tag));
         }
     }
 

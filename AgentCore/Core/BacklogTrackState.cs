@@ -43,6 +43,9 @@ namespace AgentCore.Core
     internal static class BacklogTrackHelper
     {
         private const int ClauseIndentation = 4;
+        // Soft limit of one clause in UTF-8 bytes (global, warn only); adjustable
+        // via set_backlog_clause_max_size.
+        internal static int MaxClauseBytes = 600;
 
         private static readonly Regex ItemLineRegex = new Regex(
             @"^-\[(\d+)\]\s*state=(\d+)\s*(.*)$", RegexOptions.Compiled);
@@ -72,6 +75,18 @@ namespace AgentCore.Core
                     st.Items[i].State = (int)BacklogItemStateEnum.Suspended;
             }
             st.Items[idx].State = (int)BacklogItemStateEnum.Active;
+        }
+
+        // Over-length clauses are still stored; a non-error notice is appended to
+        // the api error info so the model sees it wherever the call sits.
+        internal static void WarnLongClause(string api, string clause)
+        {
+            int bytes = System.Text.Encoding.UTF8.GetByteCount(clause);
+            if (bytes > MaxClauseBytes) {
+                MetaDslExecutor.AppendApiErrorInfoLine(api + " succeeded (notice, not an error, do not retry): clause bytes="
+                    + bytes + " > " + MaxClauseBytes
+                    + "; a clause should be one short requirement constraint, put progress/evidence into plan notes and shorten it with modify_backlog_clause");
+            }
         }
 
         private static string EncodeContinuationLines(string text, int indentation = 0)

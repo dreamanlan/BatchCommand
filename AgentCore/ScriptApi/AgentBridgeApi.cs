@@ -97,12 +97,13 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_command_to_inject(command, paramsJson)");
-                return BoxedValue.FromString("Error: Missing command or params parameter");
+                return BoxedValue.From(false);
             }
 
             try {
                 if (!Core.AgentCore.IsInitialized) {
-                    return BoxedValue.FromString("Error: AgentCore not initialized");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("AgentCore not initialized");
+                    return BoxedValue.From(false);
                 }
 
                 string command = operands[0].AsString;
@@ -115,13 +116,13 @@ namespace AgentCore.ScriptApi
                 // {"ValueKind": 3} instead of the actual strings).
                 Core.AgentPush.SendCommandToInject(command, paramsJson ?? "{}");
 
-                return BoxedValue.FromString("Command sent");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"send_command_to_inject error: {ex.Message}");
                 }
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }
@@ -176,7 +177,7 @@ namespace AgentCore.ScriptApi
                 if (Core.AgentCore.IsInitialized) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"build_agent_response error: {ex.Message}");
                 }
-                return BoxedValue.FromString($"{{\"error\":\"{ex.Message}\"}}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -188,12 +189,13 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_response_to_inject(responseJson)");
-                return BoxedValue.FromString("Error: Missing response JSON parameter");
+                return BoxedValue.From(false);
             }
 
             try {
                 if (!Core.AgentCore.IsInitialized) {
-                    return BoxedValue.FromString("Error: AgentCore not initialized");
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("AgentCore not initialized");
+                    return BoxedValue.From(false);
                 }
 
                 string responseJson = operands[0].AsString;
@@ -202,13 +204,13 @@ namespace AgentCore.ScriptApi
                 // available, broadcast otherwise.
                 Core.AgentPush.SendResponseToInject(responseJson);
 
-                return BoxedValue.FromString("Response sent");
+                return BoxedValue.From(true);
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Error sending response to inject: {ex.Message}");
                 }
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }

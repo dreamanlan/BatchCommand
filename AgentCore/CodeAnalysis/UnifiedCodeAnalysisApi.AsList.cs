@@ -24,7 +24,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindFunctionsAsList(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var functions = FindFunctions(parsed, namePattern);
             return BuildFunctionItems(functions, filePath);
@@ -33,7 +33,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindFunctionsInCodeAsList(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var functions = FindFunctions(parsed, namePattern);
             return BuildFunctionItems(functions, fileName);
@@ -73,7 +73,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindTypesAsList(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var types = FindTypes(parsed, namePattern);
             return BuildTypeItems(types, filePath);
@@ -82,7 +82,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindTypesInCodeAsList(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var types = FindTypes(parsed, namePattern);
             return BuildTypeItems(types, fileName);
@@ -128,7 +128,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindVariablesAsList(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildVariableItems(parsed, namePattern, filePath);
         }
@@ -136,7 +136,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindVariablesInCodeAsList(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildVariableItems(parsed, namePattern, fileName);
         }
@@ -171,7 +171,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindGlobalVariablesAsList(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildGlobalVariableItems(parsed, namePattern, filePath);
         }
@@ -179,7 +179,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindGlobalVariablesInCodeAsList(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildGlobalVariableItems(parsed, namePattern, fileName);
         }
@@ -214,7 +214,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindParametersAsList(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildParameterItems(parsed, namePattern, filePath);
         }
@@ -222,7 +222,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindParametersInCodeAsList(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildParameterItems(parsed, namePattern, fileName);
         }
@@ -392,7 +392,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindClassMembersAsList(string filePath, ProgrammingLanguage language, string className)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildClassMemberItemsPerClass(parsed, className, filePath);
         }
@@ -400,7 +400,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindClassMembersInCodeAsList(string code, ProgrammingLanguage language, string className, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildClassMemberItemsPerClass(parsed, className, fileName);
         }
@@ -429,7 +429,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindFieldsAsList(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildFieldsItemsPerClass(parsed, className, namePattern, filePath);
         }
@@ -437,7 +437,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindFieldsInCodeAsList(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildFieldsItemsPerClass(parsed, className, namePattern, fileName);
         }
@@ -461,7 +461,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindPropertiesAsList(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildPropertiesItemsPerClass(parsed, className, namePattern, filePath);
         }
@@ -469,7 +469,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindPropertiesInCodeAsList(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildPropertiesItemsPerClass(parsed, className, namePattern, fileName);
         }
@@ -493,7 +493,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindMethodsAsList(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildMethodsItemsPerClass(parsed, className, namePattern, filePath);
         }
@@ -501,7 +501,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindMethodsInCodeAsList(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildMethodsItemsPerClass(parsed, className, namePattern, fileName);
         }
@@ -525,7 +525,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindEventsAsList(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildEventsItemsPerClass(parsed, className, namePattern, filePath);
         }
@@ -533,7 +533,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindEventsInCodeAsList(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildEventsItemsPerClass(parsed, className, namePattern, fileName);
         }
@@ -557,7 +557,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindConstructorsAsList(string filePath, ProgrammingLanguage language, string className)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildConstructorsItemsPerClass(parsed, className, filePath);
         }
@@ -565,7 +565,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindConstructorsInCodeAsList(string code, ProgrammingLanguage language, string className, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             return BuildConstructorsItemsPerClass(parsed, className, fileName);
         }
@@ -589,7 +589,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindInterfacesAsList(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var interfaces = string.IsNullOrEmpty(namePattern)
                 ? parsed.Interfaces
@@ -600,7 +600,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindInterfacesInCodeAsList(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var interfaces = string.IsNullOrEmpty(namePattern)
                 ? parsed.Interfaces
@@ -647,7 +647,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindStructsAsList(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var structs = string.IsNullOrEmpty(namePattern)
                 ? parsed.Structs
@@ -658,7 +658,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindStructsInCodeAsList(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var structs = string.IsNullOrEmpty(namePattern)
                 ? parsed.Structs
@@ -701,7 +701,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindEnumsAsList(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var enums = string.IsNullOrEmpty(namePattern)
                 ? parsed.Enums
@@ -712,7 +712,7 @@ namespace AgentCore.CodeAnalysis
         public List<CodeItem> FindEnumsInCodeAsList(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
-            if (CheckParsedFileSyntaxErrors(parsed) != null) return new List<CodeItem>();
+            ThrowIfSyntaxErrors(parsed);
 
             var enums = string.IsNullOrEmpty(namePattern)
                 ? parsed.Enums

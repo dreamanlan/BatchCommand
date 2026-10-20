@@ -80,21 +80,17 @@ namespace AgentCore.Core
         public BraveSearchService BraveSearch => _braveSearch;
         public SearXNGSearchService SearXNGSearch => _searxngSearch;
         public WebSearchRouter WebSearchRouter => _webSearchRouter;
-        public HelpSearchType HelpSearchMode
-        {
+        public HelpSearchType HelpSearchMode {
             get => _helpSearchMode;
             set => _helpSearchMode = value;
         }
-        public bool HelpUseReranker
-        {
+        public bool HelpUseReranker {
             get => _helpUseReranker;
             set => _helpUseReranker = value;
         }
-        public bool HelpDebug
-        {
+        public bool HelpDebug {
             get => _helpDebug;
-            set
-            {
+            set {
                 _helpDebug = value;
                 if (!value)
                     _helpSearchDebugInfo = string.Empty;
@@ -179,8 +175,7 @@ namespace AgentCore.Core
         /// </summary>
         public ConcurrentDictionary<string, string>? GetAgentEnvironmentGroup(string category, string group)
         {
-            if (_agentEnvironments.TryGetValue(category, out var groups))
-            {
+            if (_agentEnvironments.TryGetValue(category, out var groups)) {
                 if (groups.TryGetValue(group, out var kvs))
                     return kvs;
             }
@@ -211,8 +206,7 @@ namespace AgentCore.Core
         {
             var kvs = GetAgentEnvironmentGroup(category, group);
             if (kvs == null) return;
-            foreach (var kvp in kvs)
-            {
+            foreach (var kvp in kvs) {
                 Environment.SetEnvironmentVariable(kvp.Key, AesCrypto.Decrypt(kvp.Value), EnvironmentVariableTarget.Process);
             }
         }
@@ -224,8 +218,7 @@ namespace AgentCore.Core
         {
             var kvs = GetAgentEnvironmentGroup(category, group);
             if (kvs == null) return;
-            foreach (var kvp in kvs)
-            {
+            foreach (var kvp in kvs) {
                 Environment.SetEnvironmentVariable(kvp.Key, null, EnvironmentVariableTarget.Process);
             }
         }
@@ -239,15 +232,12 @@ namespace AgentCore.Core
         {
             if (string.IsNullOrEmpty(template) || !template.Contains('%'))
                 return template;
-            lock (_envResolveLock)
-            {
+            lock (_envResolveLock) {
                 ApplyAgentEnvironment(category, group);
-                try
-                {
+                try {
                     return Environment.ExpandEnvironmentVariables(template);
                 }
-                finally
-                {
+                finally {
                     ClearAgentEnvironment(category, group);
                 }
             }
@@ -262,30 +252,25 @@ namespace AgentCore.Core
         {
             if (templates == null || templates.Length == 0)
                 return Array.Empty<string>();
-            lock (_envResolveLock)
-            {
+            lock (_envResolveLock) {
                 ApplyAgentEnvironment(category, group);
-                try
-                {
+                try {
                     var results = new string[templates.Length];
-                    for (int i = 0; i < templates.Length; i++)
-                    {
+                    for (int i = 0; i < templates.Length; i++) {
                         results[i] = (templates[i] != null && templates[i].Contains('%'))
                             ? Environment.ExpandEnvironmentVariables(templates[i])
                             : templates[i] ?? string.Empty;
                     }
                     return results;
                 }
-                finally
-                {
+                finally {
                     ClearAgentEnvironment(category, group);
                 }
             }
         }
 
         public static bool IsInitialized => _isInitialized;
-        public static AgentCore Instance
-        {
+        public static AgentCore Instance {
             get {
                 if (!_isInitialized)
                     throw new InvalidOperationException("AgentCore not initialized. Call Initialize first.");
@@ -373,15 +358,15 @@ namespace AgentCore.Core
             }
         }
 
-        public string RefreshSkills(string skillsDir)
+        public bool RefreshSkills(string skillsDir)
         {
             _skillMgr.RefreshSkills(skillsDir);
             RebuildEmbeddingIndex();
             _logger.Info($"Skills refreshed from {skillsDir}");
-            return "ok";
+            return true;
         }
 
-        public string RefreshEmbedding()
+        public bool RefreshEmbedding()
         {
             try {
                 //string modelPath = System.IO.Path.Combine(_basePath, "onnx", "nomic_embed_text_v1_5.onnx");
@@ -390,16 +375,16 @@ namespace AgentCore.Core
                 string tokenizerPath = System.IO.Path.Combine(_basePath, "onnx", "paraphrase_multilingual_MiniLM_L12_v2_sentencepiece.bpe.model");
                 if (!System.IO.File.Exists(modelPath) || !System.IO.File.Exists(tokenizerPath)) {
                     _logger.Warning($"[EmbeddingService] model or tokenizer not found in {_basePath}/onnx/");
-                    return "[error] model or tokenizer not found";
+                    return false;
                 }
                 _embeddingService.Load(modelPath, tokenizerPath);
                 RebuildEmbeddingIndex();
                 _logger.Info("[EmbeddingService] reloaded");
-                return "ok";
+                return true;
             }
             catch (Exception ex) {
                 _logger.Error($"[EmbeddingService] RefreshEmbedding failed: {ex.Message}");
-                return $"[error] {ex.Message}";
+                return false;
             }
         }
 
@@ -510,23 +495,23 @@ namespace AgentCore.Core
             return _skillMgr.GetSkillHelp(keyRegexes, null, reranker, _bagOfWordsService);
         }
 
-        public string RefreshReranker()
+        public bool RefreshReranker()
         {
             try {
                 string modelPath = System.IO.Path.Combine(_basePath, "onnx", "bge_reranker_base.onnx");
                 string tokenizerPath = System.IO.Path.Combine(_basePath, "onnx", "bge_reranker_base_sentencepiece.bpe.model");
                 if (!System.IO.File.Exists(modelPath) || !System.IO.File.Exists(tokenizerPath)) {
                     _logger.Warning($"[RerankService] model or tokenizer not found in {_basePath}/onnx/");
-                    return "[error] model or tokenizer not found";
+                    return false;
                 }
                 _rerankService.Load(modelPath, tokenizerPath);
                 _semanticIndex.SetRerankService(_rerankService);
                 _logger.Info("[RerankService] reloaded");
-                return "ok";
+                return true;
             }
             catch (Exception ex) {
                 _logger.Error($"[RerankService] RefreshReranker failed: {ex.Message}");
-                return $"[error] {ex.Message}";
+                return false;
             }
         }
 

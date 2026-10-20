@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text;
 
 using System.Collections;
@@ -592,15 +592,11 @@ namespace BatchCommand.Api
         {
             if (operands.Count != 1) {
                 ApiErrorInfo.AppendLine("Expected: ensure_directory(dir), aliased as ensure_dir");
-                return BoxedValue.NullObject;
+                return BoxedValue.From(false);
             }
-            bool ret = false;
-            if (operands.Count >= 1) {
-                var dir = operands[0].AsString;
-                dir = Environment.ExpandEnvironmentVariables(dir);
-                DslHost.Current!.FileOps.EnsureDirectory(dir);
-            }
-            return ret;
+            var dir = operands[0].AsString;
+            dir = Environment.ExpandEnvironmentVariables(dir);
+            return BoxedValue.From(DslHost.Current!.FileOps.EnsureDirectory(dir));
         }
     }
     public sealed class RemoveDirectoryExp : SimpleExpressionBase
@@ -609,15 +605,11 @@ namespace BatchCommand.Api
         {
             if (operands.Count != 1) {
                 ApiErrorInfo.AppendLine("Expected: remove_directory(dir), aliased as remove_dir");
-                return BoxedValue.NullObject;
+                return BoxedValue.From(false);
             }
-            bool ret = false;
-            if (operands.Count >= 1) {
-                var dir = operands[0].AsString;
-                dir = Environment.ExpandEnvironmentVariables(dir);
-                DslHost.Current!.FileOps.RemoveDirectory(dir);
-            }
-            return ret;
+            var dir = operands[0].AsString;
+            dir = Environment.ExpandEnvironmentVariables(dir);
+            return BoxedValue.From(DslHost.Current!.FileOps.RemoveDirectory(dir));
         }
     }
 
@@ -657,7 +649,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 ApiErrorInfo.AppendLine("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file");
-                return BoxedValue.FromString("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -671,7 +663,7 @@ namespace BatchCommand.Api
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"search_log_file error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -713,7 +705,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiErrorInfo.AppendLine("Expected: tail_log_file(log_file, lines[, encoding])");
-                return BoxedValue.FromString("Expected: tail_log_file(log_file, lines[, encoding])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -725,7 +717,7 @@ namespace BatchCommand.Api
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"tail_log_file error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -737,7 +729,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiErrorInfo.AppendLine("Expected: head_log_file(log_file, lines[, encoding])");
-                return BoxedValue.FromString("Expected: head_log_file(log_file, lines[, encoding])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -749,7 +741,7 @@ namespace BatchCommand.Api
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"head_log_file error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -761,7 +753,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiErrorInfo.AppendLine("Expected: tail_file(file, lines[, encoding])");
-                return BoxedValue.FromString("Expected: tail_file(file, lines[, encoding])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -773,7 +765,7 @@ namespace BatchCommand.Api
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"tail_file error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }
@@ -785,7 +777,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiErrorInfo.AppendLine("Expected: head_file(file, lines[, encoding])");
-                return BoxedValue.FromString("Expected: head_file(file, lines[, encoding])");
+                return BoxedValue.FromString(string.Empty);
             }
 
             try {
@@ -797,7 +789,7 @@ namespace BatchCommand.Api
             }
             catch (Exception ex) {
                 ApiErrorInfo.AppendLine($"head_file error: {ex.Message}");
-                return BoxedValue.FromString($"Error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
             }
         }
     }

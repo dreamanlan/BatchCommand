@@ -46,13 +46,13 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_help_semantic_search(type)");
-                return BoxedValue.FromString("[error] missing argument");
+                return BoxedValue.From(false);
             }
 
             {
                 int type = operands[0].GetInt();
                 Core.AgentCore.Instance.HelpSearchMode = (Core.HelpSearchType)type;
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
         }
     }
@@ -64,12 +64,12 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_help_reranker(enable)");
-                return BoxedValue.FromString("[error] missing argument");
+                return BoxedValue.From(false);
             }
 
             {
                 Core.AgentCore.Instance.HelpUseReranker = operands[0].GetInt() != 0;
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             }
         }
     }
@@ -81,11 +81,11 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sethelp_debug(enable)");
-                return BoxedValue.FromString("[error] missing argument");
+                return BoxedValue.From(false);
             }
 
             Core.AgentCore.Instance.HelpDebug = operands[0].GetInt() != 0;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -162,13 +162,15 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: update_help_freq(file)");
-                return BoxedValue.FromString("[error] update_help_freq requires an output file path");
+                return BoxedValue.From(-1);
             }
 
             try {
                 string file_path = operands[0].AsString;
-                if (string.IsNullOrWhiteSpace(file_path))
-                    return BoxedValue.FromString("[error] output file path is empty");
+                if (string.IsNullOrWhiteSpace(file_path)) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("update_help_freq: output file path is empty");
+                    return BoxedValue.From(-1);
+                }
 
                 var documents = new List<List<string>>();
                 var vocabulary = new HashSet<string>(TechnicalTerms, StringComparer.OrdinalIgnoreCase);
@@ -244,11 +246,11 @@ namespace AgentCore.ScriptApi
                     .OrderBy(pair => pair.Key, StringComparer.Ordinal)
                     .Select(pair => string.Format("{0} {1}", pair.Key, pair.Value));
                 File.WriteAllLines(file_path, lines, new UTF8Encoding(false));
-                return BoxedValue.FromString($"ok: wrote {frequencies.Count} tokens to {file_path}");
+                return BoxedValue.From(frequencies.Count);
             }
             catch (Exception ex) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"UpdateHelpFreq error: {ex.Message}");
-                return BoxedValue.FromString($"[error] {ex.Message}");
+                return BoxedValue.From(-1);
             }
         }
     }
@@ -258,8 +260,8 @@ namespace AgentCore.ScriptApi
         public static void RegisterApis()
         {
             BatchCommand.BatchScript.Register("tokenize", "tokenize(text) => list", new ExpressionFactoryHelper<TokenizeExp>());
-            BatchCommand.BatchScript.Register("update_help_freq", "update_help_freq(file) - rebuild help token frequency file from API and loaded Skill documents", new ExpressionFactoryHelper<UpdateHelpFreqExp>());
-            BatchCommand.BatchScript.Register("updatehelpfreq", "updatehelpfreq(file) - rebuild help token frequency file from API and loaded Skill documents", false, new ExpressionFactoryHelper<UpdateHelpFreqExp>());
+            BatchCommand.BatchScript.Register("update_help_freq", "update_help_freq(file) - rebuild help token frequency file from API and loaded Skill documents, returns the written token count or -1 on error", new ExpressionFactoryHelper<UpdateHelpFreqExp>());
+            BatchCommand.BatchScript.Register("updatehelpfreq", "updatehelpfreq(file) - rebuild help token frequency file from API and loaded Skill documents, returns the written token count or -1 on error", false, new ExpressionFactoryHelper<UpdateHelpFreqExp>());
             BatchCommand.BatchScript.Register("set_help_semantic_search", "set_help_semantic_search(type) - 0=BagOfWords,1=TfIdf,2=Embedding", new ExpressionFactoryHelper<SetHelpSemanticSearchExp>());
             BatchCommand.BatchScript.Register("set_help_reranker", "set_help_reranker(enable) - 1=enable,0=disable", new ExpressionFactoryHelper<SetHelpRerankerExp>());
             BatchCommand.BatchScript.Register("sethelp_debug", "sethelp_debug(enable) - 1=enable,0=disable help search diagnostics", new ExpressionFactoryHelper<SetHelpDebugExp>());

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using DotnetStoryScript;
@@ -125,8 +125,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: view_file_structure(filePath, language)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ViewFileStructure");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -138,7 +140,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -148,8 +150,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: view_code_structure(code, language, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ViewCodeStructure");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -162,7 +166,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -172,8 +176,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_functions(filePath, language, [nameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFunctions");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -186,7 +192,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -196,8 +202,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_functions_in_code(code, language, [nameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFunctionsInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -211,7 +219,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -221,8 +229,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_function(filePath, language, functionNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFunction");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -235,7 +245,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -245,8 +255,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_function_in_code(code, language, functionNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFunctionInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -260,7 +272,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -270,8 +282,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_types(filePath, language, [nameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindTypes");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -284,7 +298,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -294,8 +308,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_types_in_code(code, language, [nameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindTypesInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -309,7 +325,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -319,8 +335,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_type(filePath, language, typeNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindType");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -333,7 +351,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -343,8 +361,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_type_in_code(code, language, typeNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindTypeInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -358,7 +378,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -369,8 +389,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_variables(filePath, language, [nameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindVariables");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -383,7 +405,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -393,8 +415,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_variables_in_code(code, language, [nameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindVariablesInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -408,7 +432,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -418,8 +442,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_variable(filePath, language, variableNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindVariable");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -432,7 +458,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -442,8 +468,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_variable_in_code(code, language, variableNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindVariableInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -457,7 +485,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -467,8 +495,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_global_variables(filePath, language, [nameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindGlobalVariables");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -481,7 +511,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -491,8 +521,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_global_variables_in_code(code, language, [nameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindGlobalVariablesInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -506,7 +538,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -516,8 +548,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_parameters(filePath, language, [nameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindParameters");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -530,7 +564,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -540,8 +574,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_parameters_in_code(code, language, [nameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindParametersInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -555,7 +591,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -567,8 +603,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_class_members(filePath, language, classNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindClassMembers");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -581,7 +619,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -591,8 +629,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_class_members_in_code(code, language, classNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindClassMembersInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -606,7 +646,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -616,8 +656,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_fields(filePath, language, classNameRegexPattern, [fieldNameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFields");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -631,7 +673,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -641,8 +683,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_fields_in_code(code, language, classNameRegexPattern, [fieldNameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFieldsInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -657,7 +701,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -667,8 +711,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 4)
-                    return BoxedValue.FromString("Expected: find_field(filePath, language, classNameRegexPattern, fieldNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindField");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -682,7 +728,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -692,8 +738,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 4)
-                    return BoxedValue.FromString("Expected: find_field_in_code(code, language, classNameRegexPattern, fieldNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFieldInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -708,7 +756,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -718,8 +766,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_properties(filePath, language, classNameRegexPattern, [propertyNameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindProperties");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -733,7 +783,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -743,8 +793,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_properties_in_code(code, language, classNameRegexPattern, [propertyNameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindPropertiesInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -759,7 +811,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -769,8 +821,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 4)
-                    return BoxedValue.FromString("Expected: find_property(filePath, language, classNameRegexPattern, propertyNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindProperty");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -784,7 +838,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -794,8 +848,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 4)
-                    return BoxedValue.FromString("Expected: find_property_in_code(code, language, classNameRegexPattern, propertyNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindPropertyInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -810,7 +866,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -820,8 +876,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_methods(filePath, language, classNameRegexPattern, [methodNameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindMethods");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -835,7 +893,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -845,8 +903,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_methods_in_code(code, language, classNameRegexPattern, [methodNameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindMethodsInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -861,7 +921,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -871,8 +931,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 4)
-                    return BoxedValue.FromString("Expected: find_method(filePath, language, classNameRegexPattern, methodNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindMethod");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -886,7 +948,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -896,8 +958,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 4)
-                    return BoxedValue.FromString("Expected: find_method_in_code(code, language, classNameRegexPattern, methodNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindMethodInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -912,7 +976,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -922,8 +986,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_constructors(filePath, language, classNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindConstructors");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -936,7 +1002,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -946,8 +1012,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_constructors_in_code(code, language, classNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindConstructorsInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -961,7 +1029,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -971,8 +1039,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_events(filePath, language, classNameRegexPattern, [eventNameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEvents");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -986,7 +1056,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -996,8 +1066,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_events_in_code(code, language, classNameRegexPattern, [eventNameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEventsInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1012,7 +1084,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1022,8 +1094,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 4)
-                    return BoxedValue.FromString("Expected: find_event(filePath, language, classNameRegexPattern, eventNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEvent");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1037,7 +1111,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1047,8 +1121,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 4)
-                    return BoxedValue.FromString("Expected: find_event_in_code(code, language, classNameRegexPattern, eventNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEventInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1063,7 +1139,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1073,8 +1149,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_interfaces(filePath, language, [nameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindInterfaces");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1087,7 +1165,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1097,8 +1175,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_interfaces_in_code(code, language, [nameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindInterfacesInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1112,7 +1192,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1122,8 +1202,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_interface(filePath, language, interfaceNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindInterface");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1136,7 +1218,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1146,8 +1228,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_interface_in_code(code, language, interfaceNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindInterfaceInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1161,7 +1245,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1171,8 +1255,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_structs(filePath, language, [nameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindStructs");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1185,7 +1271,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1195,8 +1281,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_structs_in_code(code, language, [nameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindStructsInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1210,7 +1298,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1220,8 +1308,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_struct(filePath, language, structNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindStruct");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1234,7 +1324,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1244,8 +1334,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_struct_in_code(code, language, structNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindStructInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1259,7 +1351,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1269,8 +1361,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_enums(filePath, language, [nameRegexPattern])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEnums");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1283,7 +1377,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1293,8 +1387,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2)
-                    return BoxedValue.FromString("Expected: find_enums_in_code(code, language, [nameRegexPattern], [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEnumsInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1308,7 +1404,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1318,8 +1414,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_enum(filePath, language, enumNameRegexPattern)");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEnum");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1332,7 +1430,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1342,8 +1440,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3)
-                    return BoxedValue.FromString("Expected: find_enum_in_code(code, language, enumNameRegexPattern, [fileName])");
+                if (operands.Count < 2) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEnumInCode");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1357,7 +1457,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1369,8 +1469,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count != 3)
-                    return BoxedValue.FromString("Expected: find_nodes(filePath, language, nodeRegexPattern)");
+                if (operands.Count != 3) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: find_nodes(filePath, language, nodeRegexPattern)");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1383,7 +1485,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1393,8 +1495,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3 || operands.Count > 4)
-                    return BoxedValue.FromString("Expected: find_nodes_in_code(code, language, nodeRegexPattern, [fileName])");
+                if (operands.Count < 3 || operands.Count > 4) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: find_nodes_in_code(code, language, nodeRegexPattern, [fileName])");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1408,7 +1512,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1418,8 +1522,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count != 3)
-                    return BoxedValue.FromString("Expected: find_node(filePath, language, nodeRegexPattern)");
+                if (operands.Count != 3) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: find_node(filePath, language, nodeRegexPattern)");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string filePath = operands[0].GetString();
@@ -1432,7 +1538,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }
@@ -1442,8 +1548,10 @@ namespace AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 3 || operands.Count > 4)
-                    return BoxedValue.FromString("Expected: find_node_in_code(code, language, nodeRegexPattern, [fileName])");
+                if (operands.Count < 3 || operands.Count > 4) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: find_node_in_code(code, language, nodeRegexPattern, [fileName])");
+                    return BoxedValue.FromString(string.Empty);
+                }
 
                 try {
                     string code = operands[0].GetString();
@@ -1457,7 +1565,7 @@ namespace AgentCore.ScriptApi
                 }
                 catch (Exception ex) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"code_analysis error: {ex.Message}");
-                    return BoxedValue.FromString($"Error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
                 }
             }
         }

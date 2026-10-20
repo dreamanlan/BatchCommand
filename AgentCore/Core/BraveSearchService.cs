@@ -31,12 +31,12 @@ namespace AgentCore.Core
         /// Set the Brave Search API Key template (may contain %var% placeholders).
         /// Actual value is resolved at search time.
         /// </summary>
-        public string SetApiKey(string apiKey)
+        public bool SetApiKey(string apiKey)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
-                return "error: api key is empty";
+                return false;
             _apiKeyTemplate = apiKey.Trim();
-            return "ok";
+            return true;
         }
 
         /// <summary>
@@ -46,9 +46,9 @@ namespace AgentCore.Core
         public string Search(string query, int count = DefaultCount)
         {
             if (!IsConfigured)
-                return "[error] Brave Search API key not set. Use brave_set_api_key() first.";
+                throw new InvalidOperationException("Brave Search API key not set. Use brave_set_api_key() first.");
             if (string.IsNullOrWhiteSpace(query))
-                return "[error] Search query is empty.";
+                throw new InvalidOperationException("Search query is empty.");
 
             count = Math.Max(1, Math.Min(count, MaxCount));
 
@@ -68,7 +68,7 @@ namespace AgentCore.Core
                 return FormatResults(json, query);
             }
             catch (Exception ex) {
-                return $"[error] Brave search failed: {ex.Message}";
+                throw new InvalidOperationException($"Brave search failed: {ex.Message}");
             }
         }
 
@@ -78,9 +78,9 @@ namespace AgentCore.Core
         public string SearchRaw(string query, int count = DefaultCount)
         {
             if (!IsConfigured)
-                return "[error] Brave Search API key not set. Use brave_set_api_key() first.";
+                throw new InvalidOperationException("Brave Search API key not set. Use brave_set_api_key() first.");
             if (string.IsNullOrWhiteSpace(query))
-                return "[error] Search query is empty.";
+                throw new InvalidOperationException("Search query is empty.");
 
             count = Math.Max(1, Math.Min(count, MaxCount));
 
@@ -99,7 +99,7 @@ namespace AgentCore.Core
                 return _httpClient.Get(url, headers);
             }
             catch (Exception ex) {
-                return $"[error] Brave search failed: {ex.Message}";
+                throw new InvalidOperationException($"Brave search failed: {ex.Message}");
             }
         }
 
@@ -111,7 +111,7 @@ namespace AgentCore.Core
         {
             try {
                 if (!JsonHelper.TryParseJson(json, out var root) || root == null || !root.IsObject)
-                    return "[error] Failed to parse search response.";
+                    throw new InvalidOperationException("Failed to parse search response.");
 
                 var sb = new StringBuilder();
                 sb.AppendLine($"Search results for: {query}");
@@ -151,7 +151,7 @@ namespace AgentCore.Core
                 return sb.ToString().TrimEnd();
             }
             catch (Exception ex) {
-                return $"[error] Failed to format results: {ex.Message}";
+                throw new InvalidOperationException($"Failed to format results: {ex.Message}");
             }
         }
 

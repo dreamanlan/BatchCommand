@@ -45,7 +45,8 @@ namespace AgentCore.ScriptApi
 
     /// <summary>
     /// add_backlog_item(agentId, title[, state]) - append an item, returns its
-    /// 0-based index. state (0=active 1=suspended) defaults to 1; done(2) is
+    /// 0-based index (int), -1 on error (details in the api error info).
+    /// state (0=active 1=suspended) defaults to 1; done(2) is
     /// rejected. An active item demotes the previous active item to suspended.
     /// </summary>
     sealed class BacklogAddItemExp : SimpleExpressionBase
@@ -54,14 +55,14 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2 && operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_backlog_item requires (agentId, title[, state])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             int state = (int)BacklogItemStateEnum.Suspended;
             if (operands.Count > 2) {
                 state = (int)operands[2].GetInt();
                 if (state != (int)BacklogItemStateEnum.Active && state != (int)BacklogItemStateEnum.Suspended) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_backlog_item rejected: state must be 0(active)/1(suspended)");
-                    return BoxedValue.FromString("error: invalid state");
+                    return BoxedValue.From(-1);
                 }
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
@@ -74,7 +75,7 @@ namespace AgentCore.ScriptApi
             if (state == (int)BacklogItemStateEnum.Active)
                 BacklogTrackHelper.SetActive(st, idx);
             BacklogTrackHelper.PersistBacklog(inst);
-            return BoxedValue.FromString(idx.ToString());
+            return BoxedValue.From(idx);
         }
     }
 
@@ -87,18 +88,18 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_backlog_item requires (agentId, idx, title)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = BacklogApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= st.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_backlog_item rejected: index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             }
             st.Items[idx].Title = operands[2].AsString ?? string.Empty;
             BacklogTrackHelper.PersistBacklog(inst);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -112,7 +113,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("move_backlog_item requires (agentId, idx, newIdx)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = BacklogApiUtil.GetOrCreateTrack(inst);
@@ -120,7 +121,7 @@ namespace AgentCore.ScriptApi
             int newIdx = (int)operands[2].GetInt();
             if (idx < 0 || idx >= st.Items.Count || newIdx < 0 || newIdx >= st.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("move_backlog_item rejected: index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             }
             if (idx != newIdx) {
                 var it = st.Items[idx];
@@ -128,7 +129,7 @@ namespace AgentCore.ScriptApi
                 st.Items.Insert(newIdx, it);
             }
             BacklogTrackHelper.PersistBacklog(inst);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -144,19 +145,19 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_backlog_item_state requires (agentId, idx, state)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             int state = (int)operands[2].GetInt();
             if (!BacklogTrackHelper.IsValidState(state)) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_backlog_item_state rejected: state must be 0(active)/1(suspended)/2(done)");
-                return BoxedValue.FromString("error: invalid state");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = BacklogApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= st.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_backlog_item_state rejected: index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             }
             if (state == (int)BacklogItemStateEnum.Active)
                 BacklogTrackHelper.SetActive(st, idx);
@@ -165,13 +166,14 @@ namespace AgentCore.ScriptApi
             else
                 st.Items[idx].State = state;
             BacklogTrackHelper.PersistBacklog(inst);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
     /// <summary>
     /// add_backlog_clause(agentId, itemIdx, content) - append a clause to the item,
-    /// returns the 0-based clause index.
+    /// returns the 0-based clause index (int), -1 on error (details in the api
+    /// error info). An over-length clause is stored with a notice.
     /// </summary>
     sealed class BacklogAddClauseExp : SimpleExpressionBase
     {
@@ -179,24 +181,27 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_backlog_clause requires (agentId, itemIdx, content)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = BacklogApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= st.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_backlog_clause rejected: item index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             }
             var it = st.Items[idx];
-            it.Clauses.Add(operands[2].AsString ?? string.Empty);
+            string clause = operands[2].AsString ?? string.Empty;
+            it.Clauses.Add(clause);
             BacklogTrackHelper.PersistBacklog(inst);
-            return BoxedValue.FromString((it.Clauses.Count - 1).ToString());
+            BacklogTrackHelper.WarnLongClause("add_backlog_clause", clause);
+            return BoxedValue.From(it.Clauses.Count - 1);
         }
     }
 
     /// <summary>
     /// modify_backlog_clause(agentId, itemIdx, clauseIdx, content) - modify the clause.
+    /// An over-length clause is stored with a notice.
     /// </summary>
     sealed class BacklogModifyClauseExp : SimpleExpressionBase
     {
@@ -204,24 +209,26 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_backlog_clause requires (agentId, itemIdx, clauseIdx, content)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = BacklogApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= st.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_backlog_clause rejected: item index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             }
             var it = st.Items[idx];
             int clauseIdx = (int)operands[2].GetInt();
             if (clauseIdx < 0 || clauseIdx >= it.Clauses.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_backlog_clause rejected: clause index out of range");
-                return BoxedValue.FromString("error: clause index out of range");
+                return BoxedValue.From(false);
             }
-            it.Clauses[clauseIdx] = operands[3].AsString ?? string.Empty;
+            string clause = operands[3].AsString ?? string.Empty;
+            it.Clauses[clauseIdx] = clause;
             BacklogTrackHelper.PersistBacklog(inst);
-            return BoxedValue.FromString("ok");
+            BacklogTrackHelper.WarnLongClause("modify_backlog_clause", clause);
+            return BoxedValue.From(true);
         }
     }
 
@@ -237,23 +244,23 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_backlog_clauses requires (agentId, itemIdx, clauseIdx[, clauseIdx2, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = BacklogApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= st.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_backlog_clauses rejected: item index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             }
             var it = st.Items[idx];
             List<int> indexes;
             if (!BacklogApiUtil.CollectIndexes(operands, 2, it.Clauses.Count, "delete_backlog_clauses", "clause", out indexes))
-                return BoxedValue.FromString("error: clause index out of range");
+                return BoxedValue.From(-1);
             foreach (int n in indexes)
                 it.Clauses.RemoveAt(n);
             BacklogTrackHelper.PersistBacklog(inst);
-            return BoxedValue.FromString("ok removed=" + indexes.Count + " left=" + it.Clauses.Count);
+            return BoxedValue.From(indexes.Count);
         }
     }
 
@@ -266,18 +273,18 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_backlog_clauses requires (agentId, itemIdx)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             var st = BacklogApiUtil.GetOrCreateTrack(inst);
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= st.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_backlog_clauses rejected: item index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             }
             st.Items[idx].Clauses.Clear();
             BacklogTrackHelper.PersistBacklog(inst);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -291,7 +298,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("view_active_backlog_item requires (agentId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.BacklogTrack == null)
@@ -315,7 +322,7 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("align_backlog requires (agentId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             BacklogApiUtil.GetOrCreateTrack(inst);
@@ -336,13 +343,47 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_backlog_state requires (agentId, backlog_text)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.BacklogTrack != null)
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             inst.BacklogTrack = BacklogTrackHelper.ParseBacklogText(operands[1].AsString);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
+        }
+    }
+
+    /// <summary>
+    /// set_backlog_clause_max_size(maxSize) - global setting: soft limit of one
+    /// backlog clause in UTF-8 bytes (must be positive), over-length clauses get
+    /// a notice. Not exposed in the user API doc (for script_agent.dsl only).
+    /// </summary>
+    sealed class BacklogSetClauseMaxSizeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_backlog_clause_max_size requires (maxSize)");
+                return BoxedValue.From(false);
+            }
+            int maxSize = (int)operands[0].GetInt();
+            if (maxSize <= 0) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_backlog_clause_max_size rejected: maxSize must be positive");
+                return BoxedValue.From(false);
+            }
+            BacklogTrackHelper.MaxClauseBytes = maxSize;
+            return BoxedValue.From(true);
+        }
+    }
+
+    /// <summary>
+    /// get_backlog_clause_max_size() - global setting: soft limit of one backlog clause in bytes.
+    /// </summary>
+    sealed class BacklogGetClauseMaxSizeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(BacklogTrackHelper.MaxClauseBytes);
         }
     }
 
@@ -354,28 +395,28 @@ namespace AgentCore.ScriptApi
         public static void RegisterApis()
         {
             BatchCommand.BatchScript.Register("add_backlog_item",
-                "add_backlog_item(agentId, title[, state]) - append a backlog item (state 0=active 1=suspended, default 1), returns its index",
+                "add_backlog_item(agentId, title[, state]) - append a backlog item (state 0=active 1=suspended, default 1), returns its index or -1 on error",
                 new ExpressionFactoryHelper<BacklogAddItemExp>());
             BatchCommand.BatchScript.Register("modify_backlog_item",
-                "modify_backlog_item(agentId, idx, title) - modify the backlog item title at the index",
+                "modify_backlog_item(agentId, idx, title) - modify the backlog item title at the index, returns true/false",
                 new ExpressionFactoryHelper<BacklogModifyItemExp>());
             BatchCommand.BatchScript.Register("move_backlog_item",
-                "move_backlog_item(agentId, idx, newIdx) - move the backlog item to the new index (priority order)",
+                "move_backlog_item(agentId, idx, newIdx) - move the backlog item to the new index (priority order), returns true/false",
                 new ExpressionFactoryHelper<BacklogMoveItemExp>());
             BatchCommand.BatchScript.Register("change_backlog_item_state",
-                "change_backlog_item_state(agentId, idx, state) - change the backlog item state (0=active 1=suspended 2=done, done removes the item)",
+                "change_backlog_item_state(agentId, idx, state) - change the backlog item state (0=active 1=suspended 2=done, done removes the item), returns true/false",
                 new ExpressionFactoryHelper<BacklogChangeItemStateExp>());
             BatchCommand.BatchScript.Register("add_backlog_clause",
-                "add_backlog_clause(agentId, itemIdx, content) - append a clause to the backlog item, returns its index",
+                "add_backlog_clause(agentId, itemIdx, content) - append a clause to the backlog item, returns its index or -1 on error",
                 new ExpressionFactoryHelper<BacklogAddClauseExp>());
             BatchCommand.BatchScript.Register("modify_backlog_clause",
-                "modify_backlog_clause(agentId, itemIdx, clauseIdx, content) - modify the clause of the backlog item",
+                "modify_backlog_clause(agentId, itemIdx, clauseIdx, content) - modify the clause of the backlog item, returns true/false",
                 new ExpressionFactoryHelper<BacklogModifyClauseExp>());
             BatchCommand.BatchScript.Register("delete_backlog_clauses",
-                "delete_backlog_clauses(agentId, itemIdx, clauseIdx[, clauseIdx2, ...]) - delete one or more clauses of the backlog item",
+                "delete_backlog_clauses(agentId, itemIdx, clauseIdx[, clauseIdx2, ...]) - delete one or more clauses of the backlog item, returns the removed count or -1 on error",
                 new ExpressionFactoryHelper<BacklogDeleteClauseExp>());
             BatchCommand.BatchScript.Register("clear_backlog_clauses",
-                "clear_backlog_clauses(agentId, itemIdx) - remove all clauses of the backlog item",
+                "clear_backlog_clauses(agentId, itemIdx) - remove all clauses of the backlog item, returns true/false",
                 new ExpressionFactoryHelper<BacklogClearClausesExp>());
             BatchCommand.BatchScript.Register("view_active_backlog_item",
                 "view_active_backlog_item(agentId) - return the active backlog item in serialized text, empty if none",
@@ -384,8 +425,16 @@ namespace AgentCore.ScriptApi
                 "align_backlog(agentId) - write docs/backlog.txt from the in-memory backlog and return the text",
                 new ExpressionFactoryHelper<BacklogAlignExp>());
             BatchCommand.BatchScript.Register("restore_backlog_state",
-                "restore_backlog_state(agentId, backlog_text) - restore the backlog state from the given backlog text",
+                "restore_backlog_state(agentId, backlog_text) - restore the backlog state from the given backlog text, returns true/false",
                 new ExpressionFactoryHelper<BacklogRestoreExp>());
+            BatchCommand.BatchScript.Register("set_backlog_clause_max_size",
+                "set_backlog_clause_max_size(maxSize) - set the soft limit of one backlog clause in bytes, returns true/false",
+                false,
+                new ExpressionFactoryHelper<BacklogSetClauseMaxSizeExp>());
+            BatchCommand.BatchScript.Register("get_backlog_clause_max_size",
+                "get_backlog_clause_max_size() - get the soft limit of one backlog clause in bytes",
+                false,
+                new ExpressionFactoryHelper<BacklogGetClauseMaxSizeExp>());
         }
     }
 }

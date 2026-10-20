@@ -43,7 +43,7 @@ namespace AgentCore.Core
                 case SearchEngineType.SearXNG:
                     return _searxng.Search(query, count);
                 default:
-                    return "[error] No search engine configured. Use brave_set_api_key() or searxng_set_url() first.";
+                    throw new InvalidOperationException("No search engine configured. Use brave_set_api_key() or searxng_set_url() first.");
             }
         }
 
@@ -55,7 +55,7 @@ namespace AgentCore.Core
                 case SearchEngineType.SearXNG:
                     return _searxng.SearchRaw(query, count);
                 default:
-                    return "[error] No search engine configured. Use brave_set_api_key() or searxng_set_url() first.";
+                    throw new InvalidOperationException("No search engine configured. Use brave_set_api_key() or searxng_set_url() first.");
             }
         }
     }

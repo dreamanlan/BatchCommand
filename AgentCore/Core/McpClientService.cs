@@ -425,10 +425,19 @@ namespace AgentCore.Core
         /// Connects to an MCP server and caches its tool list.
         /// type: "stdio" or "sse"
         /// target: command line (stdio) or base URL (sse)
-        /// Returns "ok" or an error string.
+        /// Returns true/false; errors go to the api error info.
         /// </summary>
-        public string Connect(string serverId, string type, string target)
+        public bool Connect(string serverId, string type, string target)
         {
+            if (ConnectCore(serverId, type, target, out string error))
+                return true;
+            MetaDslExecutor.AppendApiErrorInfoLine("mcp_connect: " + error);
+            return false;
+        }
+
+        private bool ConnectCore(string serverId, string type, string target, out string error)
+        {
+            error = string.Empty;
             if (_servers.ContainsKey(serverId))
                 Disconnect(serverId);
 
@@ -441,8 +450,10 @@ namespace AgentCore.Core
                 transport = new StdioTransport(target, opts.TimeoutMs, opts.UseLspFraming);
             }
             else if (type == "sse") {
-                if (forceModern)
-                    return "error: transport 'sse' (HTTP+SSE) does not support protocol 2026-07-28; use 'streamable-http'";
+                if (forceModern) {
+                    error = "transport 'sse' (HTTP+SSE) does not support protocol 2026-07-28; use 'streamable-http'";
+                    return false;
+                }
                 transport = new SseTransport(target, opts.Headers, opts.TimeoutMs, opts.ProtocolVersion);
             }
             else if (type == "streamable-http") {
@@ -466,7 +477,8 @@ namespace AgentCore.Core
                     : new StreamableHttpTransport(target, opts.Headers, opts.TimeoutMs, opts.ProtocolVersion);
             }
             else {
-                return $"error: unknown transport type '{type}', use 'stdio', 'sse' or 'streamable-http'";
+                error = $"unknown transport type '{type}', use 'stdio', 'sse' or 'streamable-http'";
+                return false;
             }
 
             // Route server-initiated notifications (e.g. list_changed, via the
@@ -479,7 +491,8 @@ namespace AgentCore.Core
             }
             catch (Exception ex) {
                 transport.Dispose();
-                return $"error: connect failed - {ex.Message}";
+                error = $"connect failed - {ex.Message}";
+                return false;
             }
 
             var conn = new McpServerConnection(transport, type, target);
@@ -530,7 +543,8 @@ namespace AgentCore.Core
                     }
                     catch (Exception ex) {
                         conn.Dispose();
-                        return $"error: initialize failed - {ex.Message}";
+                        error = $"initialize failed - {ex.Message}";
+                        return false;
                     }
                 }
             }
@@ -544,7 +558,8 @@ namespace AgentCore.Core
                 catch (Exception ex) {
                     AgentCore.Instance.Logger.Info($"[McpClientService] initialized notification failed for server '{serverId}' (transport '{type}'): {ex}");
                     conn.Dispose();
-                    return $"error: initialized notification failed - {ex.Message}";
+                    error = $"initialized notification failed - {ex.Message}";
+                    return false;
                 }
 
             }
@@ -563,17 +578,30 @@ namespace AgentCore.Core
                 AgentCore.Instance.Logger.Info($"[McpClientService] failed to list tools for server '{serverId}' (transport '{type}'): {ex}");
                 if (!transport.IsConnected) {
                     conn.Dispose();
-                    return $"error: tools/list failed and transport disconnected - {ex.Message}";
+                    error = $"tools/list failed and transport disconnected - {ex.Message}";
+                    return false;
                 }
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] Warning: failed to list tools for '{serverId}': {ex.Message}");
             }
 
             if (!transport.IsConnected) {
                 conn.Dispose();
-                return "error: transport disconnected before connection registration";
+                error = "transport disconnected before connection registration";
+                return false;
             }
             _servers[serverId] = conn;
-            return "ok";
+            return true;
+        }
+
+        private static bool ReportNotConnected(string serverId)
+        {
+            MetaDslExecutor.AppendApiErrorInfoLine($"mcp: server '{serverId}' not connected");
+            return false;
+        }
+
+        private static InvalidOperationException NotConnectedException(string serverId)
+        {
+            return new InvalidOperationException($"server '{serverId}' not connected");
         }
         private static bool TryParseRequestId(string jsonRpc, out int id)
         {
@@ -634,13 +662,15 @@ namespace AgentCore.Core
         /// </summary>
         public string ListTools(string serverId)
         {
-            if (!_servers.TryGetValue(serverId, out var conn))
-                return $"error: server '{serverId}' not connected";
+            if (!_servers.TryGetValue(serverId, out var conn)) {
+                ReportNotConnected(serverId);
+                return string.Empty;
+            }
 
             RefreshToolsIfStale(serverId, conn);
 
             if (conn.Tools.Count == 0)
-                return "(no tools available)";
+                return string.Empty;
 
             var sb = new StringBuilder();
             lock (conn.Tools) {
@@ -693,8 +723,10 @@ namespace AgentCore.Core
         /// </summary>
         public string ListResources(string serverId)
         {
-            if (!_servers.TryGetValue(serverId, out var conn))
-                return $"error: server '{serverId}' not connected";
+            if (!_servers.TryGetValue(serverId, out var conn)) {
+                ReportNotConnected(serverId);
+                return string.Empty;
+            }
             if (conn.TryGetCached("resources/list", out string cachedList))
                 return cachedList;
             try {
@@ -708,7 +740,7 @@ namespace AgentCore.Core
                     string resp = conn.Transport.SendRequestAsync(req).GetAwaiter().GetResult();
                     string? rpcError = JsonRpcHelper.ParseError(resp);
                     if (rpcError != null)
-                        return $"[error] {rpcError}";
+                        throw new InvalidOperationException(rpcError);
                     var result = JsonRpcHelper.ParseResult(resp);
                     if (result == null)
                         break;
@@ -744,7 +776,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ListResources error for '{serverId}': {ex.Message}");
-                return $"[error] {ex.Message}";
+                return string.Empty;
             }
         }
 
@@ -759,7 +791,7 @@ namespace AgentCore.Core
         {
             return Task.Run(async () => {
                 if (!_servers.TryGetValue(serverId, out var conn))
-                    return $"error: server '{serverId}' not connected";
+                    throw NotConnectedException(serverId);
                 string cacheKey = $"resources/read:{uri}";
                 if (mrtrJson == null && conn.TryGetCached(cacheKey, out string cachedContent))
                     return cachedContent;
@@ -776,11 +808,10 @@ namespace AgentCore.Core
                                 conn = latest;
                             if (!conn.Transport.IsConnected) {
                                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
-                                string reconnResult = Connect(serverId, conn.Type, conn.Target);
-                                if (!reconnResult.StartsWith("ok"))
-                                    return $"[error] reconnect failed: {reconnResult}";
+                                if (!ConnectCore(serverId, conn.Type, conn.Target, out string reconnError))
+                                    throw new InvalidOperationException($"reconnect failed: {reconnError}");
                                 if (!_servers.TryGetValue(serverId, out conn!))
-                                    return "[error] server not found after reconnect";
+                                    throw NotConnectedException(serverId);
                             }
                             req = BuildRpcRequest(conn, "resources/read", BuildResourceReadParams(uri, inputResponses, requestState), conn.NextId());
                         }
@@ -794,7 +825,7 @@ namespace AgentCore.Core
                 }
                 catch (Exception ex) {
                     MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ReadResource error for '{serverId}' uri '{uri}': {ex.Message}");
-                    return $"[error] {ex.Message}";
+                    throw;
                 }
             });
         }
@@ -804,17 +835,19 @@ namespace AgentCore.Core
         /// tag: identifier forwarded to the mcp_callback CEF message.
         /// mrtrJson (optional): {"inputResponses": {...}, "requestState": "..."} to
         /// answer an "[input required]" result (2026-07-28 MRTR).
-        /// Returns "ok" immediately; result arrives via mcp_callback(serverId, tag, resultText).
+        /// Returns true when queued (false when busy or failed, see api error info); result arrives via mcp_callback(serverId, tag, resultText).
         /// Shares the per-session queue with tool calls (key "serverId:tag").
         /// </summary>
-        public string ReadResourceCallback(string serverId, string uri, string tag, string? mrtrJson = null)
+        public bool ReadResourceCallback(string serverId, string uri, string tag, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
-                return $"error: server '{serverId}' not connected";
+                return ReportNotConnected(serverId);
 
             var ctx = MetaDslExecutor.CurrentContext;
-            if (ctx == null)
-                return "error: no request context";
+            if (ctx == null) {
+                MetaDslExecutor.AppendApiErrorInfoLine("mcp: no request context");
+                return false;
+            }
 
             var session = GetSession(serverId, tag);
             var item = new WorkItem {
@@ -823,18 +856,21 @@ namespace AgentCore.Core
                 Run = ct => ExecuteResourceRead(serverId, uri, tag, ct, mrtrJson),
                 Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "mcp_callback", new BoxedValue[] { serverId, tag, result })
             };
-            return Submit(session, item) ? "ok" : "busy";
+            if (Submit(session, item))
+                return true;
+            MetaDslExecutor.AppendApiErrorInfoLine($"mcp: session '{session.Key}' queue is full (busy)");
+            return false;
         }
 
         /// <summary>
         /// Performs a single resources/read request (with auto-reconnect) and
-        /// returns the result text (or "[error] ..."). Used by the per-session
+        /// returns the result text (throws on error). Used by the per-session
         /// queue worker.
         /// </summary>
         private async Task<string> ExecuteResourceRead(string serverId, string uri, string tag, CancellationToken token, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
-                return $"[error] server '{serverId}' not connected";
+                throw NotConnectedException(serverId);
             string cacheKey = $"resources/read:{uri}";
             if (mrtrJson == null && conn.TryGetCached(cacheKey, out string cachedContent))
                 return cachedContent;
@@ -852,11 +888,10 @@ namespace AgentCore.Core
                         if (!conn.Transport.IsConnected) // double-check inside lock
                         {
                             MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
-                            string reconnResult = Connect(serverId, conn.Type, conn.Target);
-                            if (!reconnResult.StartsWith("ok"))
-                                return $"[error] reconnect failed: {reconnResult}";
+                            if (!ConnectCore(serverId, conn.Type, conn.Target, out string reconnError))
+                                throw new InvalidOperationException($"reconnect failed: {reconnError}");
                             if (!_servers.TryGetValue(serverId, out conn!))
-                                return "[error] server not found after reconnect";
+                                throw NotConnectedException(serverId);
                         }
                         req = BuildRpcRequest(conn, "resources/read", BuildResourceReadParams(uri, inputResponses, requestState), conn.NextId());
                     }
@@ -876,7 +911,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ReadResource error for '{serverId}' uri '{uri}': {ex.Message}");
-                return $"[error] {ex.Message}";
+                throw;
             }
         }
 
@@ -889,7 +924,6 @@ namespace AgentCore.Core
             string content = ExtractResourceContent(response);
             if (!isMrtrRetry &&
                 content.Length > 0 &&
-                !content.StartsWith("[error]") &&
                 !content.StartsWith("[input required]")) {
                 long? ttl = ParseTtlMs(response);
                 if (ttl != null)
@@ -902,7 +936,7 @@ namespace AgentCore.Core
         {
             var errMsg = JsonRpcHelper.ParseError(response);
             if (errMsg != null)
-                return $"[error] {errMsg}";
+                throw new InvalidOperationException(errMsg);
 
             var result = JsonRpcHelper.ParseResult(response);
             if (result == null)
@@ -937,8 +971,10 @@ namespace AgentCore.Core
         /// </summary>
         public string ListPrompts(string serverId)
         {
-            if (!_servers.TryGetValue(serverId, out var conn))
-                return $"error: server '{serverId}' not connected";
+            if (!_servers.TryGetValue(serverId, out var conn)) {
+                ReportNotConnected(serverId);
+                return string.Empty;
+            }
             if (conn.TryGetCached("prompts/list", out string cachedPrompts))
                 return cachedPrompts;
             try {
@@ -954,7 +990,7 @@ namespace AgentCore.Core
                     string resp = conn.Transport.SendRequestAsync(req).GetAwaiter().GetResult();
                     string? rpcError = JsonRpcHelper.ParseError(resp);
                     if (rpcError != null)
-                        return $"[error] {rpcError}";
+                        throw new InvalidOperationException(rpcError);
                     var result = JsonRpcHelper.ParseResult(resp);
                     if (result == null)
                         break;
@@ -993,7 +1029,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ListPrompts error for '{serverId}': {ex.Message}");
-                return $"[error] {ex.Message}";
+                return string.Empty;
             }
         }
 
@@ -1006,7 +1042,7 @@ namespace AgentCore.Core
         {
             return Task.Run(async () => {
                 if (!_servers.TryGetValue(serverId, out var conn))
-                    return $"error: server '{serverId}' not connected";
+                    throw NotConnectedException(serverId);
                 try {
                     conn = await EnsureConnectedAsync(serverId, conn);
                     string req = BuildPromptGetRequest(conn, promptName, argsJson, mrtrJson);
@@ -1015,7 +1051,7 @@ namespace AgentCore.Core
                 }
                 catch (Exception ex) {
                     MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ReadPrompt error for '{serverId}/{promptName}': {ex.Message}");
-                    return $"[error] {ex.Message}";
+                    throw;
                 }
             });
         }
@@ -1023,17 +1059,19 @@ namespace AgentCore.Core
         /// <summary>
         /// Renders a server-defined prompt template asynchronously.
         /// tag: identifier forwarded to the mcp_callback CEF message.
-        /// Returns "ok" immediately; result arrives via mcp_callback(serverId, tag, resultText).
+        /// Returns true when queued (false when busy or failed, see api error info); result arrives via mcp_callback(serverId, tag, resultText).
         /// Shares the per-session queue with tool/resource calls (key "serverId:tag").
         /// </summary>
-        public string ReadPromptCallback(string serverId, string promptName, string argsJson, string tag, string? mrtrJson = null)
+        public bool ReadPromptCallback(string serverId, string promptName, string argsJson, string tag, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
-                return $"error: server '{serverId}' not connected";
+                return ReportNotConnected(serverId);
 
             var ctx = MetaDslExecutor.CurrentContext;
-            if (ctx == null)
-                return "error: no request context";
+            if (ctx == null) {
+                MetaDslExecutor.AppendApiErrorInfoLine("mcp: no request context");
+                return false;
+            }
 
             var session = GetSession(serverId, tag);
             var item = new WorkItem {
@@ -1042,18 +1080,21 @@ namespace AgentCore.Core
                 Run = ct => ExecutePromptGet(serverId, promptName, argsJson, tag, ct, mrtrJson),
                 Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "mcp_callback", new BoxedValue[] { serverId, tag, result })
             };
-            return Submit(session, item) ? "ok" : "busy";
+            if (Submit(session, item))
+                return true;
+            MetaDslExecutor.AppendApiErrorInfoLine($"mcp: session '{session.Key}' queue is full (busy)");
+            return false;
         }
 
         /// <summary>
         /// Performs a single prompts/get request (with auto-reconnect) and
-        /// returns the result text (or "[error] ..."). Used by the per-session
+        /// returns the result text (throws on error). Used by the per-session
         /// queue worker.
         /// </summary>
         private async Task<string> ExecutePromptGet(string serverId, string promptName, string argsJson, string tag, CancellationToken token, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
-                return $"[error] server '{serverId}' not connected";
+                throw NotConnectedException(serverId);
             try {
                 conn = await EnsureConnectedAsync(serverId, conn);
                 string req = BuildPromptGetRequest(conn, promptName, argsJson, mrtrJson);
@@ -1068,7 +1109,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] ReadPrompt error for '{serverId}/{promptName}': {ex.Message}");
-                return $"[error] {ex.Message}";
+                throw;
             }
         }
 
@@ -1105,7 +1146,7 @@ namespace AgentCore.Core
         {
             var errMsg = JsonRpcHelper.ParseError(response);
             if (errMsg != null)
-                return $"[error] {errMsg}";
+                throw new InvalidOperationException(errMsg);
 
             var result = JsonRpcHelper.ParseResult(response);
             if (result == null)
@@ -1168,7 +1209,7 @@ namespace AgentCore.Core
                 string req = BuildRpcRequest(conn, "resources/read", new { uri }, conn.NextId());
                 string resp = conn.Transport.SendRequestAsync(req).GetAwaiter().GetResult();
                 string content = CacheResourceContent(conn, cacheKey, resp, false);
-                if (content.StartsWith("[error]") || content.StartsWith("[input required]"))
+                if (content.StartsWith("[input required]"))
                     return $"[resource link: {uri}] ({content})";
                 return content;
             }
@@ -1181,16 +1222,18 @@ namespace AgentCore.Core
         /// Calls an MCP tool asynchronously.
         /// argsJson: JSON object string of tool arguments, e.g. {"path":"/tmp/foo.txt"}
         /// tag: identifier forwarded to the mcp_callback CEF message
-        /// Returns "ok" immediately; result arrives via mcp_callback(serverId, tag, resultText)
+        /// Returns true when queued (false when busy or failed, see api error info); result arrives via mcp_callback(serverId, tag, resultText)
         /// </summary>
-        public string CallToolCallback(string serverId, string toolName, string argsJson, string tag, string? mrtrJson = null)
+        public bool CallToolCallback(string serverId, string toolName, string argsJson, string tag, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
-                return $"error: server '{serverId}' not connected";
+                return ReportNotConnected(serverId);
 
             var ctx = MetaDslExecutor.CurrentContext;
-            if (ctx == null)
-                return "error: no request context";
+            if (ctx == null) {
+                MetaDslExecutor.AppendApiErrorInfoLine("mcp: no request context");
+                return false;
+            }
 
             var session = GetSession(serverId, tag);
             var item = new WorkItem {
@@ -1199,17 +1242,20 @@ namespace AgentCore.Core
                 Run = ct => ExecuteToolCall(serverId, toolName, argsJson, tag, ct, mrtrJson),
                 Deliver = result => MetaDslExecutor.EnqueueCallback(ctx, "mcp_callback", new BoxedValue[] { serverId, tag, result })
             };
-            return Submit(session, item) ? "ok" : "busy";
+            if (Submit(session, item))
+                return true;
+            MetaDslExecutor.AppendApiErrorInfoLine($"mcp: session '{session.Key}' queue is full (busy)");
+            return false;
         }
 
         /// <summary>
         /// Performs a single MCP tool call (with auto-reconnect) and returns the
-        /// result text (or "[error] ...") . Used by the per-session queue worker.
+        /// result text (throws on error). Used by the per-session queue worker.
         /// </summary>
         private async Task<string> ExecuteToolCall(string serverId, string toolName, string argsJson, string tag, CancellationToken token, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
-                return $"[error] server '{serverId}' not connected";
+                throw NotConnectedException(serverId);
             try {
                 object? args = null;
                 if (!string.IsNullOrWhiteSpace(argsJson) && argsJson != "{}") {
@@ -1230,11 +1276,10 @@ namespace AgentCore.Core
                         if (!conn.Transport.IsConnected) // double-check inside lock
                         {
                             MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
-                            string reconnResult = Connect(serverId, conn.Type, conn.Target);
-                            if (!reconnResult.StartsWith("ok"))
-                                return $"[error] reconnect failed: {reconnResult}";
+                            if (!ConnectCore(serverId, conn.Type, conn.Target, out string reconnError))
+                                throw new InvalidOperationException($"reconnect failed: {reconnError}");
                             if (!_servers.TryGetValue(serverId, out conn!))
-                                return "[error] server not found after reconnect";
+                                throw NotConnectedException(serverId);
                         }
                         req = BuildRpcRequest(conn, "tools/call", BuildToolCallParams(toolName, args, inputResponses, requestState), conn.NextId());
                     }
@@ -1254,7 +1299,7 @@ namespace AgentCore.Core
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
-                return $"[error] {ex.Message}";
+                throw;
             }
         }
 
@@ -1265,7 +1310,7 @@ namespace AgentCore.Core
         public Task<string> CallTool(string serverId, string toolName, string argsJson, string? mrtrJson = null)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
-                return Task.FromResult($"error: server '{serverId}' not connected");
+                return Task.FromException<string>(NotConnectedException(serverId));
 
             string callKey = $"{serverId}:sync{Interlocked.Increment(ref s_syncCallId)}";
             _busyCalls[callKey] = true;
@@ -1293,11 +1338,10 @@ namespace AgentCore.Core
                                 conn = latest;
                             if (!conn.Transport.IsConnected) {
                                 MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
-                                string reconnResult = Connect(serverId, conn.Type, conn.Target);
-                                if (!reconnResult.StartsWith("ok"))
-                                    return $"[error] reconnect failed: {reconnResult}";
+                                if (!ConnectCore(serverId, conn.Type, conn.Target, out string reconnError))
+                                    throw new InvalidOperationException($"reconnect failed: {reconnError}");
                                 if (!_servers.TryGetValue(serverId, out conn!))
-                                    return "[error] server not found after reconnect";
+                                    throw NotConnectedException(serverId);
                             }
                             req = BuildRpcRequest(conn, "tools/call", BuildToolCallParams(toolName, args, inputResponses, requestState), conn.NextId());
                         }
@@ -1318,7 +1362,7 @@ namespace AgentCore.Core
                 }
                 catch (Exception ex) {
                     MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] CallToolForScript error for '{serverId}/{toolName}': {ex.Message}");
-                    return $"[error] {ex.Message}";
+                    throw;
                 }
                 finally {
                     _busyCalls[callKey] = false;
@@ -1339,16 +1383,17 @@ namespace AgentCore.Core
         }
 
         /// <summary>Cancels an active MCP tool call for the given session.</summary>
-        public string Cancel(string serverId, string tag)
+        public bool Cancel(string serverId, string tag)
         {
             string callKey = $"{serverId}:{tag}";
             if (_activeCts.TryGetValue(callKey, out var cts)) {
                 try { cts.Cancel(); }
                 catch (ObjectDisposedException) { }
                 AgentCore.Instance.Logger.Info($"[McpClientService] Cancel requested for call '{callKey}'");
-                return "ok";
+                return true;
             }
-            return "error: call not active";
+            MetaDslExecutor.AppendApiErrorInfoLine("mcp_cancel: no active call for the session");
+            return false;
         }
 
         /// <summary>
@@ -1489,9 +1534,8 @@ namespace AgentCore.Core
                 if (!conn.Transport.IsConnected) // double-check inside lock
                 {
                     MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
-                    string reconnResult = Connect(serverId, conn.Type, conn.Target);
-                    if (!reconnResult.StartsWith("ok"))
-                        throw new InvalidOperationException($"reconnect failed: {reconnResult}");
+                    if (!ConnectCore(serverId, conn.Type, conn.Target, out string reconnError))
+                        throw new InvalidOperationException($"reconnect failed: {reconnError}");
                     if (!_servers.TryGetValue(serverId, out conn!))
                         throw new InvalidOperationException("server not found after reconnect");
                 }
@@ -1796,7 +1840,7 @@ namespace AgentCore.Core
         {
             var errMsg = JsonRpcHelper.ParseError(response);
             if (errMsg != null)
-                return $"[error] {errMsg}";
+                throw new InvalidOperationException(errMsg);
 
             var result = JsonRpcHelper.ParseResult(response);
             if (result == null)
@@ -1823,7 +1867,9 @@ namespace AgentCore.Core
 
             bool isError = result.Value.TryGetProperty("isError", out var isErrEl) &&
                 isErrEl.ValueKind == System.Text.Json.JsonValueKind.True;
-            return isError ? $"[tool error] {text}" : text;
+            if (isError)
+                throw new InvalidOperationException($"tool error: {text}");
+            return text;
         }
 
         private static string ExtractContentText(System.Text.Json.JsonElement contentEl)

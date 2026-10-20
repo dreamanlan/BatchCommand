@@ -32,8 +32,9 @@ namespace AgentCore.Core
     /// </summary>
     internal static class PatternTrackHelper
     {
-        internal const int MaxItems = 64;
-        internal const int MaxBytes = 30720;
+        // Soft limits (global, warn only); adjustable via set_patterns_max.
+        internal static int MaxItems = 64;
+        internal static int MaxBytes = 51200;
         private const int ClauseIndentation = 4;
 
         private static readonly Regex ItemLineRegex = new Regex(
@@ -70,7 +71,12 @@ namespace AgentCore.Core
             return System.Text.Encoding.UTF8.GetByteCount(sb.ToString());
         }
 
-        // Summary like "total=12345/30720 bytes, items=40/64", with an over-budget hint.
+        internal static bool IsOverBudget(PatternTrackState st, string text)
+        {
+            return System.Text.Encoding.UTF8.GetByteCount(text) > MaxBytes || st.Items.Count > MaxItems;
+        }
+
+        // Summary like "total=12345/MaxBytes bytes, items=40/MaxItems", with an over-budget hint.
         internal static string GetStatsText(PatternTrackState st, string text)
         {
             int bytes = System.Text.Encoding.UTF8.GetByteCount(text);

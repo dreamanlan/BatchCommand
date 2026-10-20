@@ -32,11 +32,6 @@ namespace AgentCore.ScriptApi
             indexes.Reverse();
             return true;
         }
-
-        internal static string OkRemoved(int removed, int left)
-        {
-            return "ok removed=" + removed + " left=" + left;
-        }
     }
 
     /// <summary>
@@ -71,12 +66,12 @@ namespace AgentCore.ScriptApi
         {
             if (null == m_AgentIdExp || null == m_TitleExp) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("create_plan requires (agentId, title)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(m_AgentIdExp.Calc()));
             if (inst.PlanTrack != null && inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("create_plan rejected: a plan is in progress, align or finish it first");
-                return BoxedValue.FromString("error: plan in progress");
+                return BoxedValue.From(false);
             }
             inst.PlanTrack = new PlanTrackState();
             inst.PlanTrack.Title = m_TitleExp.Calc().AsString ?? string.Empty;
@@ -84,13 +79,14 @@ namespace AgentCore.ScriptApi
             foreach (var itemExp in m_ItemExps) {
                 inst.PlanTrack.Items.Add(new PlanTrackState.PlanItem { State = (int)PlayItemStateEnum.Planned, Content = itemExp.Calc().AsString ?? string.Empty });
             }
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
     /// <summary>
     /// add_plan_item(agentId, content) - append an item (planned state only),
-    /// returns the 0-based index of the new item.
+    /// returns the 0-based index of the new item (int), -1 on error (details
+    /// in the api error info).
     /// </summary>
     sealed class PlanAddItemExp : SimpleExpressionBase
     {
@@ -98,12 +94,12 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_plan_item requires (agentId, content)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_plan_item rejected: no plan, create_plan first");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(-1);
             }
             var it = new PlanTrackState.PlanItem();
             it.Content = operands[1].AsString ?? string.Empty;
@@ -111,7 +107,7 @@ namespace AgentCore.ScriptApi
             if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
                 PlanTrackHelper.PersistPlan(inst);
             }
-            return BoxedValue.FromString((inst.PlanTrack.Items.Count - 1).ToString());
+            return BoxedValue.From(inst.PlanTrack.Items.Count - 1);
         }
     }
 
@@ -127,23 +123,23 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items requires (agentId, idx[, idx2, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(-1);
             }
             if (inst.PlanTrack.PlanState != (int)PlanStateEnum.Planned) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items rejected: items frozen after start_plan");
-                return BoxedValue.FromString("error: items frozen");
+                return BoxedValue.From(-1);
             }
             List<int> indexes;
             if (!PlanNoteUtil.CollectIndexes(operands, 1, inst.PlanTrack.Items.Count, "delete_plan_items", "item", out indexes))
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             foreach (int idx in indexes)
                 inst.PlanTrack.Items.RemoveAt(idx);
-            return BoxedValue.FromString("ok removed=" + indexes.Count + " left=" + inst.PlanTrack.Items.Count);
+            return BoxedValue.From(indexes.Count);
         }
     }
 
@@ -156,24 +152,24 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item requires (agentId, idx, content)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(false);
             }
             if (inst.PlanTrack.PlanState != (int)PlanStateEnum.Planned) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item rejected: items frozen after start_plan");
-                return BoxedValue.FromString("error: items frozen");
+                return BoxedValue.From(false);
             }
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item rejected: index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             }
             inst.PlanTrack.Items[idx].Content = operands[2].AsString ?? string.Empty;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -187,22 +183,22 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_plan requires (agentId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_plan rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(false);
             }
             if (inst.PlanTrack.PlanState != (int)PlanStateEnum.Planned) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_plan rejected: items frozen after start_plan");
-                return BoxedValue.FromString("error: items frozen");
+                return BoxedValue.From(false);
             }
             foreach (var it in inst.PlanTrack.Items) {
                 it.State = (int)PlayItemStateEnum.Planned;
                 it.Notes.Clear();
             }
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -216,20 +212,20 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("start_plan requires (agentId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("start_plan rejected: no plan, create_plan first");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(false);
             }
             if (inst.PlanTrack.PlanState != (int)PlanStateEnum.Planned) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("start_plan rejected: plan state is not planned(0)");
-                return BoxedValue.FromString("error: plan not in planned state");
+                return BoxedValue.From(false);
             }
             inst.PlanTrack.PlanState = (int)PlanStateEnum.InProgress;
             PlanTrackHelper.PersistPlan(inst);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -245,22 +241,22 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3 && operands.Count != 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_plan_item_state requires (agentId, idx, state[, note])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_plan_item_state rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(false);
             }
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_plan_item_state rejected: index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(false);
             }
             int state = (int)operands[2].GetInt();
             if (inst.PlanTrack.PlanState == (int)PlanStateEnum.Planned) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_plan_item_state must be called after start_plan");
-                return BoxedValue.FromString("error: invalid state");
+                return BoxedValue.From(false);
             }
             var it = inst.PlanTrack.Items[idx];
             it.State = state;
@@ -268,7 +264,7 @@ namespace AgentCore.ScriptApi
             if (!string.IsNullOrEmpty(note))
                 it.Notes.Add(DateTime.Now.ToString("yyyy-MM-dd HH:mm") + " " + note);
             PlanTrackHelper.PersistPlan(inst);
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -285,23 +281,23 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_note requires (agentId, note)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             string note = operands[1].AsString ?? string.Empty;
             if (note.Length == 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_note rejected: note is empty");
-                return BoxedValue.FromString("error: empty note");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_note rejected: no plan, create_plan first");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(false);
             }
             inst.PlanTrack.Notes.Add(DateTime.Now.ToString("yyyy-MM-dd HH:mm") + " " + note);
             if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
                 PlanTrackHelper.PersistPlan(inst);
             }
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -316,29 +312,29 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_item_note requires (agentId, itemIdx, note)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             int idx = (int)operands[1].GetInt();
             string note = operands[2].AsString ?? string.Empty;
             if (note.Length == 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_item_note rejected: note is empty");
-                return BoxedValue.FromString("error: empty note");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_item_note rejected: no plan, create_plan first");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(false);
             }
             if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_item_note rejected: item index out of range");
-                return BoxedValue.FromString("error: invalid index");
+                return BoxedValue.From(false);
             }
             var it = inst.PlanTrack.Items[idx];
             it.Notes.Add(DateTime.Now.ToString("yyyy-MM-dd HH:mm") + " " + note);
             if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
                 PlanTrackHelper.PersistPlan(inst);
             }
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -353,17 +349,17 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_notes requires (agentId, keepCount)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             int keep = (int)operands[1].GetInt();
             if (keep < 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_notes rejected: keepCount must be >= 0");
-                return BoxedValue.FromString("error: invalid keepCount");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_notes rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(-1);
             }
             var notes = inst.PlanTrack.Notes;
             int removed = 0;
@@ -374,7 +370,7 @@ namespace AgentCore.ScriptApi
             if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
                 PlanTrackHelper.PersistPlan(inst);
             }
-            return BoxedValue.FromString(PlanNoteUtil.OkRemoved(removed, notes.Count));
+            return BoxedValue.From(removed);
         }
     }
 
@@ -389,22 +385,22 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes requires (agentId, itemIdx, keepCount)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             int idx = (int)operands[1].GetInt();
             int keep = (int)operands[2].GetInt();
             if (keep < 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes rejected: keepCount must be >= 0");
-                return BoxedValue.FromString("error: invalid keepCount");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(-1);
             }
             if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes rejected: item index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             }
             var notes = inst.PlanTrack.Items[idx].Notes;
             int removed = 0;
@@ -415,7 +411,7 @@ namespace AgentCore.ScriptApi
             if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
                 PlanTrackHelper.PersistPlan(inst);
             }
-            return BoxedValue.FromString(PlanNoteUtil.OkRemoved(removed, notes.Count));
+            return BoxedValue.From(removed);
         }
     }
 
@@ -430,23 +426,23 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_notes requires (agentId, idx[, idx2, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_notes rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(-1);
             }
             var notes = inst.PlanTrack.Notes;
             List<int> indexes;
             if (!PlanNoteUtil.CollectIndexes(operands, 1, notes.Count, "delete_plan_notes", "note", out indexes))
-                return BoxedValue.FromString("error: note index out of range");
+                return BoxedValue.From(-1);
             foreach (int n in indexes)
                 notes.RemoveAt(n);
             if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
                 PlanTrackHelper.PersistPlan(inst);
             }
-            return BoxedValue.FromString(PlanNoteUtil.OkRemoved(indexes.Count, notes.Count));
+            return BoxedValue.From(indexes.Count);
         }
     }
 
@@ -461,28 +457,28 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item_notes requires (agentId, itemIdx, idx[, idx2, ...])");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(-1);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item_notes rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.From(-1);
             }
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item_notes rejected: item index out of range");
-                return BoxedValue.FromString("error: index out of range");
+                return BoxedValue.From(-1);
             }
             var notes = inst.PlanTrack.Items[idx].Notes;
             List<int> indexes;
             if (!PlanNoteUtil.CollectIndexes(operands, 2, notes.Count, "delete_plan_item_notes", "note", out indexes))
-                return BoxedValue.FromString("error: note index out of range");
+                return BoxedValue.From(-1);
             foreach (int n in indexes)
                 notes.RemoveAt(n);
             if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
                 PlanTrackHelper.PersistPlan(inst);
             }
-            return BoxedValue.FromString(PlanNoteUtil.OkRemoved(indexes.Count, notes.Count));
+            return BoxedValue.From(indexes.Count);
         }
     }
 
@@ -496,12 +492,12 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("align_plan requires (agentId)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.FromString(string.Empty);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("align_plan rejected: no plan");
-                return BoxedValue.FromString("error: no plan");
+                return BoxedValue.FromString(string.Empty);
             }
             inst.PlanTrack.PlanState = PlanTrackHelper.DerivePlanState(inst.PlanTrack.PlanState, inst.PlanTrack.Items);
             string text = PlanTrackHelper.PersistPlan(inst);
@@ -520,18 +516,18 @@ namespace AgentCore.ScriptApi
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_plan_state requires (agentId, plan_text)");
-                return BoxedValue.FromString("error: missing parameters");
+                return BoxedValue.From(false);
             }
             var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
             if (inst.PlanTrack != null)
-                return BoxedValue.FromString("ok");
+                return BoxedValue.From(true);
             var st = PlanTrackHelper.ParsePlanText(operands[1].AsString);
             if (st == null) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_plan_state rejected: no [PLAN] line found in text");
-                return BoxedValue.FromString("error: no plan line");
+                return BoxedValue.From(false);
             }
             inst.PlanTrack = st;
-            return BoxedValue.FromString("ok");
+            return BoxedValue.From(true);
         }
     }
 
@@ -544,49 +540,49 @@ namespace AgentCore.ScriptApi
         {
             // PlanTrack APIs
             BatchCommand.BatchScript.Register("create_plan",
-                "create_plan(agentId, title) or create_plan(agentId, title){\"item1\";\"item2\";...} - Create a new plan track with a title and optionally add items.",
+                "create_plan(agentId, title) or create_plan(agentId, title){\"item1\";\"item2\";...} - Create a new plan track with a title and optionally add items, returns true/false",
                 new ExpressionFactoryHelper<PlanCreateExp>());
             BatchCommand.BatchScript.Register("add_plan_item",
-                "add_plan_item(agentId, content) - add an item to the current plan",
+                "add_plan_item(agentId, content) - add an item to the current plan, returns its index or -1 on error",
                 new ExpressionFactoryHelper<PlanAddItemExp>());
             BatchCommand.BatchScript.Register("delete_plan_items",
-                "delete_plan_items(agentId, idx[, idx2, ...]) - delete one or more plan items by index (planned state only)",
+                "delete_plan_items(agentId, idx[, idx2, ...]) - delete one or more plan items by index (planned state only), returns the removed count or -1 on error",
                 new ExpressionFactoryHelper<PlanDeleteItemsExp>());
             BatchCommand.BatchScript.Register("modify_plan_item",
-                "modify_plan_item(agentId, idx, content) - modify the plan item at the index",
+                "modify_plan_item(agentId, idx, content) - modify the plan item at the index, returns true/false",
                 new ExpressionFactoryHelper<PlanModifyItemExp>());
             BatchCommand.BatchScript.Register("clear_plan",
-                "clear_plan(agentId) - clear the current plan",
+                "clear_plan(agentId) - clear the current plan, returns true/false",
                 new ExpressionFactoryHelper<PlanClearExp>());
             BatchCommand.BatchScript.Register("change_plan_item_state",
-                "change_plan_item_state(agentId, idx, state[, note]) - change the state of the plan item at the index",
+                "change_plan_item_state(agentId, idx, state[, note]) - change the state of the plan item at the index, returns true/false",
                 new ExpressionFactoryHelper<PlanChangeItemStateExp>());
             BatchCommand.BatchScript.Register("start_plan",
-                "start_plan(agentId) - start the current plan",
+                "start_plan(agentId) - start the current plan, returns true/false",
                 new ExpressionFactoryHelper<PlanStartExp>());
             BatchCommand.BatchScript.Register("append_plan_note",
-                "append_plan_note(agentId, note) - append a timestamped plan-level note (append-only)",
+                "append_plan_note(agentId, note) - append a timestamped plan-level note (append-only), returns true/false",
                 new ExpressionFactoryHelper<PlanAppendNoteExp>());
             BatchCommand.BatchScript.Register("append_plan_item_note",
-                "append_plan_item_note(agentId, itemIdx, note) - append a timestamped note to the item without changing state",
+                "append_plan_item_note(agentId, itemIdx, note) - append a timestamped note to the item without changing state, returns true/false",
                 new ExpressionFactoryHelper<PlanAppendItemNoteExp>());
             BatchCommand.BatchScript.Register("trim_plan_notes",
-                "trim_plan_notes(agentId, keepCount) - keep only the newest keepCount plan-level notes, drop the older ones (0 clears all)",
+                "trim_plan_notes(agentId, keepCount) - keep only the newest keepCount plan-level notes, drop the older ones (0 clears all), returns the removed count or -1 on error",
                 new ExpressionFactoryHelper<PlanTrimNotesExp>());
             BatchCommand.BatchScript.Register("trim_plan_item_notes",
-                "trim_plan_item_notes(agentId, itemIdx, keepCount) - keep only the newest keepCount notes of the item (0 clears all)",
+                "trim_plan_item_notes(agentId, itemIdx, keepCount) - keep only the newest keepCount notes of the item (0 clears all), returns the removed count or -1 on error",
                 new ExpressionFactoryHelper<PlanTrimItemNotesExp>());
             BatchCommand.BatchScript.Register("delete_plan_notes",
-                "delete_plan_notes(agentId, idx[, idx2, ...]) - delete plan-level notes by index",
+                "delete_plan_notes(agentId, idx[, idx2, ...]) - delete plan-level notes by index, returns the removed count or -1 on error",
                 new ExpressionFactoryHelper<PlanDeleteNotesExp>());
             BatchCommand.BatchScript.Register("delete_plan_item_notes",
-                "delete_plan_item_notes(agentId, itemIdx, idx[, idx2, ...]) - delete notes of the plan item by index",
+                "delete_plan_item_notes(agentId, itemIdx, idx[, idx2, ...]) - delete notes of the plan item by index, returns the removed count or -1 on error",
                 new ExpressionFactoryHelper<PlanDeleteItemNotesExp>());
             BatchCommand.BatchScript.Register("align_plan",
                 "align_plan(agentId) - align the in-memory plan state with docs/plan.txt",
                 new ExpressionFactoryHelper<PlanAlignExp>());
             BatchCommand.BatchScript.Register("restore_plan_state",
-                "restore_plan_state(agentId, plan_text) - restore the plan state from the given plan text",
+                "restore_plan_state(agentId, plan_text) - restore the plan state from the given plan text, returns true/false",
                 new ExpressionFactoryHelper<PlanRestoreExp>());
         }
     }

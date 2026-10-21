@@ -196,6 +196,9 @@ class LLMRespondingState extends State {
     this.noOutputExit = false;
     // Timestamp of the last stop click attempt (first try or retry)
     this.stopRetryLastTs = 0;
+    // A nudge deferred by the previous round is obsolete: the LLM is already
+    // responding again.
+    this.monitor.pendingContinueNudge = false;
     // User must have sent a message to trigger LLM response
     this.monitor.onUserSendMessage();
     // Record the last user message node after a short delay (wait for DOM render)
@@ -247,17 +250,17 @@ class LLMRespondingState extends State {
 
     // Nudge the LLM to continue when auto planning is active, so long-term
     // agent planning resumes immediately after a timeout stop or after a
-    // response that produced no output at all. Only send once generation has
-    // actually stopped: sending while still generating would click the stop
-    // icon (the send button swaps to stop during generation) and leave the
-    // text stranded in the input.
+    // response that produced no output at all.
+    // The nudge is only scheduled here and sent by ScanningCodeBlocksState
+    // once its scan has finished: sending it now made the next reply start
+    // streaming while SCANNING_CODE_BLOCKS was still waiting, and that state's
+    // timeout scan then marked the streaming reply seen before its code block
+    // rendered, so the block was never executed.
     if ((this.timeoutStopTriggered || this.noOutputExit) && !this.timeoutNudgeSent) {
       this.timeoutNudgeSent = true;
-      if (this.checkLLMResponding()) {
-        this.warn('[LLMRespondingState] Still generating at exit, skip continue nudge');
-      } else if (this.monitor.bridge && this.monitor.bridge.autoPlanEnabled) {
-        this.info('[LLMRespondingState] AutoPlan on, sending continue nudge to LLM');
-        this.monitor.sendResultToLLM('卡了，请继续');
+      if (this.monitor.bridge && this.monitor.bridge.autoPlanEnabled) {
+        this.info('[LLMRespondingState] AutoPlan on, continue nudge deferred until code block scan finishes');
+        this.monitor.pendingContinueNudge = true;
       }
     }
   }
@@ -385,7 +388,14 @@ class LLMRespondingState extends State {
 class ScanningCodeBlocksState extends State {
   constructor(monitor) {
     super(monitor);
-    this.scanTimeout = 10000; // max wait time in ms
+    // Max wait time in ms, recomputed on enter(). The page stable scan needs
+    // at least two observations pageStableDelay apart (a block seen for the
+    // first time always counts as changing), so the timeout must clearly
+    // exceed 2 x pageStableDelay or it wins the race and scans first.
+    this.scanTimeout = 20000;
+    // Delay of the one extra look the timeout scan takes when blocks were
+    // seen for the first time (unstable), before giving up on queuing them.
+    this.timeoutRecheckDelay = 1500;
   }
 
   enter() {
@@ -393,6 +403,38 @@ class ScanningCodeBlocksState extends State {
     this.monitor.scanComplete = false;
     this.monitor.resetPageStableTimer();
     this.enterTime = Date.now();
+    this.scanTimeout = Math.max(20000, (this.monitor.pageStableDelay || 0) * 4);
+  }
+
+  // Send the "stuck, please continue" nudge scheduled by LLMRespondingState,
+  // now that this round's code blocks have been scanned. Called right before
+  // leaving to AGENT_EXECUTING (no user input monitor runs in this state, so
+  // the programmatic send is not mistaken for typing). Skipped when work is
+  // already pending: its result reaches the LLM anyway.
+  sendPendingContinueNudge() {
+    if (!this.monitor.pendingContinueNudge) return;
+    this.monitor.pendingContinueNudge = false;
+    if (!this.monitor.bridge || !this.monitor.bridge.autoPlanEnabled) return;
+    if (this.checkLLMResponding()) {
+      this.warn('[ScanningCodeBlocksState] LLM is generating, skip continue nudge');
+      return;
+    }
+    // A draft in the input means the user is there and about to act: a nudge
+    // would overwrite what they are typing and is not needed.
+    const pa = this.monitor.pageAdapter;
+    if (pa && typeof pa.hasUserDraft === 'function' && pa.hasUserDraft()) {
+      this.info('[ScanningCodeBlocksState] User is composing a message, skip continue nudge');
+      return;
+    }
+    const worker = this.monitor.metadslWorker;
+    const receive = worker && typeof worker.getReceiveQueueCount === 'function'
+      ? worker.getReceiveQueueCount() : 0;
+    if (this.monitor.operationQueue.length > 0 || receive > 0) {
+      this.info('[ScanningCodeBlocksState] Work pending, skip continue nudge');
+      return;
+    }
+    this.info('[ScanningCodeBlocksState] AutoPlan on, sending continue nudge to LLM');
+    this.monitor.sendResultToLLM('卡了，请继续');
   }
 
   exit() {
@@ -433,18 +475,42 @@ class ScanningCodeBlocksState extends State {
 
       if (this.monitor.scanComplete) {
         this.info('[ScanningCodeBlocksState] Scan complete, transitioning to AGENT_EXECUTING');
+        this.sendPendingContinueNudge();
         this.monitor.transitionTo('AGENT_EXECUTING', 'Code block scan complete');
         break;
       }
 
       if (Date.now() > maxWait) {
+        // A new reply started streaming while this state was waiting: a scan
+        // now would mark the streaming reply seen before its code block
+        // renders, and that block would never run. Follow the reply instead;
+        // the next SCANNING_CODE_BLOCKS round scans every unseen message.
+        if (this.checkLLMResponding()) {
+          this.info('[ScanningCodeBlocksState] LLM is generating at scan timeout, back to LLM_RESPONDING without scanning');
+          this.monitor.transitionTo('LLM_RESPONDING', 'LLM generating at scan timeout');
+          break;
+        }
         this.info('[ScanningCodeBlocksState] Scan timeout, forcing scan before transitioning');
-        this.monitor.scanForNewCodeBlocks();
-        // Unstable blocks left lastScannedResponse untouched. Generation has
-        // already stopped (that is how this state was entered), so capture
-        // the latest response directly: a stale value would make exit()
-        // forward the previous round's reply (or nothing), losing this
-        // round's reply on the remote side.
+        let unstable = this.monitor.scanForNewCodeBlocks();
+        if (unstable) {
+          // Blocks seen for the first time always count as changing. Take one
+          // more look shortly after instead of leaving them unqueued until
+          // some later round.
+          await this.sleep(this.timeoutRecheckDelay);
+          if (!isCurrent()) return;
+          if (this.checkLLMResponding()) {
+            this.info('[ScanningCodeBlocksState] LLM started generating during recheck, back to LLM_RESPONDING');
+            this.monitor.transitionTo('LLM_RESPONDING', 'LLM generating at scan timeout');
+            break;
+          }
+          this.info('[ScanningCodeBlocksState] Blocks unstable at timeout, rechecking once');
+          unstable = this.monitor.scanForNewCodeBlocks();
+        }
+        // The forced scan does not update lastScannedResponse (only
+        // onPageStable does). Generation has already stopped (that is how
+        // this state was entered), so capture the latest response directly:
+        // a stale value would make exit() forward the previous round's reply
+        // (or nothing), losing this round's reply on the remote side.
         if (!this.monitor.scanComplete) {
           const latest = this.monitor.pageAdapter.extractLatestResponse();
           const allBoxes = document.querySelectorAll('.vac-message-box:not(.vac-offset-current)');
@@ -452,9 +518,12 @@ class ScanningCodeBlocksState extends State {
           if (latest && lastBox) {
             this.monitor.pageAdapter.setLastScannedResponse(latest, lastBox);
             this.monitor.scanComplete = true;
-            this.warn('[ScanningCodeBlocksState] Blocks still unstable at timeout, captured latest response directly');
+            if (unstable) {
+              this.warn('[ScanningCodeBlocksState] Blocks still unstable at timeout, captured latest response directly');
+            }
           }
         }
+        this.sendPendingContinueNudge();
         this.monitor.transitionTo('AGENT_EXECUTING', 'Code block scan timeout');
         break;
       }

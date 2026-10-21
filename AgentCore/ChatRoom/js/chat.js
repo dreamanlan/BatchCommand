@@ -34,6 +34,7 @@ class ChatRoom {
     this.soloTarget = null;    // solo mode target name
     this.MAX_CONTEXT_COUNT = 16; // max context message count
     this.MAX_CONTEXT_CHARS = 180000; // max history chars sent to LLM/PM (180KB)
+    this.MAX_DISPLAY_MESSAGES = 1000; // max displayed messages kept per channel/session
     this.contextSummary = localStorage.getItem('aiclaw_context_summary') || ''; // accumulated summary from PM
     this._summarizing = false; // flag to prevent concurrent summarization
     this.pmClient = null; // LlmClient for PM (context summarizer)
@@ -972,6 +973,14 @@ class ChatRoom {
     const msg = { sender: sender, text: text, type: type, time: new Date() };
 
     this.messages.push(msg);
+    // Cap displayed messages per channel: drop the oldest data entry and its
+    // DOM node. System messages never enter this.messages, so the oldest
+    // data node is the first non-system chat-msg in the container.
+    if (this.messages.length > this.MAX_DISPLAY_MESSAGES) {
+      this.messages.shift();
+      const oldestEl = this.chatMessages.querySelector('.chat-msg:not(.chat-msg-system)');
+      if (oldestEl) oldestEl.remove();
+    }
     const el = document.createElement('div');
     el.className = 'chat-msg chat-msg-' + type;
     const header = document.createElement('div');
@@ -1613,7 +1622,7 @@ class ChatRoom {
     if (this._lastSessionId) {
       delete this._sessionData[this._lastSessionId];
     }
-    localStorage.removeItem('aiclawcontext_summary');
+    localStorage.removeItem('aiclaw_context_summary');
     this._addSystemMessage('Chat cleared');
   }
 
@@ -1690,6 +1699,9 @@ class ChatRoom {
       this._sessionData[sessionId] = data;
     }
     data.messages.push({ sender: sender, text: text, type: type, time: new Date() });
+    if (data.messages.length > this.MAX_DISPLAY_MESSAGES) {
+      data.messages.shift();
+    }
   }
 
   _addToContextForSession(sessionId, role, content, name) {

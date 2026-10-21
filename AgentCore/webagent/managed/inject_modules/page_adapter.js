@@ -520,9 +520,52 @@ class LLMPageAdapter extends PageAdapter {
     this.logger = logger.createLogger('LLMPageAdapter');
     this.observer = null;
     this.responseCallbacks = [];
+    // Agent-to-LLM messages held while the user has an unsent draft. Sending
+    // overwrites the input element (sendLocalAgentMessage assigns textContent),
+    // so an agent reply would silently discard what the user was typing.
+    // FIFO order is preserved; drained once the input is empty again.
+    this.pendingSends = [];
+    this.maxPendingSends = 20;
+    this.pendingSendTimer = null;
+    this.pendingSendRetryMs = 500;
+  }
+
+  // Text currently sitting in the input box, typed by the user and not sent yet.
+  getInputDraft() {
+    const el = document.getElementById('editable-content');
+    if (!el) return '';
+    return (el.textContent || el.value || '').trim();
+  }
+
+  // Whether agent traffic to the LLM must wait. Never true for the test page:
+  // its input is the simulated prompt, not a user draft.
+  hasUserDraft() {
+    if (this.pageType === 'test') return false;
+    return this.getInputDraft().length > 0;
   }
 
   sendMessage(text) {
+    // One choke point for every path that pushes text to the LLM (execution
+    // results, decider replies, continue nudges): hold it while the user is
+    // composing, so their input is not wiped.
+    if (this.hasUserDraft()) {
+      if (this.pendingSends.length >= this.maxPendingSends) {
+        const dropped = this.pendingSends.shift();
+        this.logger.warn('Pending agent sends full, dropped oldest', { text: String(dropped).substring(0, 80) });
+      }
+      this.pendingSends.push(String(text));
+      this.logger.info('User draft in input, holding agent message', {
+        held: this.pendingSends.length,
+        draftLength: this.getInputDraft().length
+      });
+      this.schedulePendingSends();
+      return false;
+    }
+    this.dispatchMessage(text);
+    return true;
+  }
+
+  dispatchMessage(text) {
     switch (this.pageType) {
       case 'local-agent':
         this.sendLocalAgentMessage(text);
@@ -536,6 +579,29 @@ class LLMPageAdapter extends PageAdapter {
       default:
         this.logger.warn('Unsupported page type', { pageType: this.pageType });
     }
+  }
+
+  schedulePendingSends() {
+    if (this.pendingSendTimer) return;
+    this.pendingSendTimer = setTimeout(() => {
+      this.pendingSendTimer = null;
+      this.flushPendingSends();
+    }, this.pendingSendRetryMs);
+  }
+
+  // Send held messages one at a time, oldest first, only once the input is
+  // empty. One per flush: sendLocalAgentMessage assigns textContent now and
+  // clicks send later, so the next send has to wait for the box to clear.
+  flushPendingSends() {
+    if (this.pendingSends.length === 0) return;
+    if (this.hasUserDraft()) {
+      this.schedulePendingSends();
+      return;
+    }
+    const next = this.pendingSends.shift();
+    this.logger.info('User draft cleared, sending held agent message', { remaining: this.pendingSends.length });
+    this.dispatchMessage(next);
+    if (this.pendingSends.length > 0) this.schedulePendingSends();
   }
 
   sendTestMessage(text) {

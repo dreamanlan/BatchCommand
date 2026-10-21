@@ -59,7 +59,13 @@ class ResponseDecider {
     }
 
     // 2. Still has queued operations -> remind LLM to wait
+    // Not while the user is composing: the reminder would land right after
+    // their own message once the input clears, and they are already present.
     if (queued > 0) {
+      const pa = panel?.pageAdapter;
+      if (pa && typeof pa.hasUserDraft === 'function' && pa.hasUserDraft()) {
+        return { action: 'skip', reason: 'user is composing' };
+      }
       return {
         action: 'reply',
         text: `还有${queued}个代码要执行，${send}个请求要发送，${receive}个结果要接收，不要再发新代码，回复继续即可`,
@@ -68,6 +74,16 @@ class ResponseDecider {
 
     // 3. Last message came from LLM
     if (lastFromLLM) {
+      // The newest reply has not been through a completed scan yet (e.g. the
+      // scan timeout found its blocks still changing): its code may still be
+      // queued. Replying now (format reminder, planning) would tell the model
+      // its code was not recognized while it is only late. Bounded inside
+      // isLatestReplyScanPending, which also arms a rescan.
+      const monitor = panel?.metadslMonitor;
+      if (monitor && typeof monitor.isLatestReplyScanPending === 'function'
+        && monitor.isLatestReplyScanPending()) {
+        return { action: 'skip', reason: 'latest reply scan pending' };
+      }
       if (this.containsAll(msg, 'Error', 'Occur')) {
         return { action: 'reply', text: '继续' };
       }

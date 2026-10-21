@@ -636,7 +636,15 @@ script(on_console_log)params($level,$message,$source,$line,$maxLogSize)
 script(on_before_command_line_processing)params($processType, $cmdLine)
 {
     if ($processType == 0) {
-        //debuggerlaunch();
+        // DXGI vsync spam guard: with the monitor off, vsync_thread_win_dxgi
+        // retries DXGI output enumeration every ~15ms all night and floods
+        // chrome_debug.log. The fake rate makes WaitForVSync skip the
+        // hardware wait entirely for both impls (pacing via Sleep at 60Hz);
+        // the compositor-clock feature is the backup: without the DXGI impl
+        // there is no output enumeration to spam either. Both switches
+        // propagate to child processes automatically.
+        $cmdLine.AppendSwitchWithValue("fake-vsync-rate", "60");
+        $cmdLine.AppendSwitchWithValue("enable-features", "UseCompositorClockVSyncInterval");
     };
 
     // Add command line switches here

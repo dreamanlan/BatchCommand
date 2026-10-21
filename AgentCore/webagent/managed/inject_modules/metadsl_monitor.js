@@ -55,6 +55,19 @@ class MetaDSLMonitor {
     // indicator would reschedule the scan forever. Timestamp of the first
     // "still generating" observation in the current round; 0 = not armed.
     this.generatingSince = 0;
+    // Per-wrapper clock for the scan-side "still streaming" hold: the newest
+    // LLM reply stays unseen while the page reports generating, bounded by
+    // CONFIG.llmResponseTimeoutMin so a stuck loading indicator cannot hold
+    // it forever (see scanForNewCodeBlocks).
+    this.generatingPendingSince = new WeakMap();
+    // Per-wrapper clock for isLatestReplyScanPending: how long the newest LLM
+    // reply has been waiting for a completed scan. Past the timeout the reply
+    // no longer counts as pending, so the decider cannot be held forever.
+    this.scanPendingSince = new WeakMap();
+    this.scanPendingTimeoutMs = 60000;
+    // Set by LLMRespondingState.exit when a "stuck, please continue" nudge is
+    // due; sent by ScanningCodeBlocksState once its scan has finished.
+    this.pendingContinueNudge = false;
 
     // Block ID cache. Keyed by DOM node: the id is derived from the message
     // fingerprint, which changes while the message is still streaming, so the
@@ -976,6 +989,42 @@ class MetaDSLMonitor {
     return null;
   }
 
+  // Whether the page reports that the LLM is still generating.
+  isLLMGenerating() {
+    const st = this.states && this.states['LLM_RESPONDING'];
+    return st ? st.checkLLMResponding() : false;
+  }
+
+  // Whether the newest LLM reply has not gone through a completed scan yet
+  // (its wrapper is unknown to the message sequence or still unseen), i.e.
+  // its code blocks may still be queued. Used by ResponseDecider so it does
+  // not tell the model its code was not recognized while the scan is only
+  // late. Bounded by scanPendingTimeoutMs per wrapper. Arms a page stable
+  // scan when none is scheduled, so a pending reply always gets rescanned;
+  // an armed timer is left alone (re-arming every call would postpone it).
+  isLatestReplyScanPending() {
+    if (!this.started || this.isInitializing || !this.pageAdapter) return false;
+    const wrappers = this.pageAdapter.getMessageWrappers
+      ? this.pageAdapter.getMessageWrappers()
+      : Array.from(document.querySelectorAll('.vac-message-wrapper'));
+    const last = this.findLastLlmWrapper(wrappers);
+    if (!last) return false;
+    const id = this.messageIdCache.get(last);
+    const record = id ? this.messageSequence.find(r => r.id === id) : null;
+    if (record && record.seen) {
+      this.scanPendingSince.delete(last);
+      return false;
+    }
+    let since = this.scanPendingSince.get(last);
+    if (!since) {
+      since = Date.now();
+      this.scanPendingSince.set(last, since);
+    }
+    if (Date.now() - since >= this.scanPendingTimeoutMs) return false;
+    if (!this.pageStableTimer) this.resetPageStableTimer();
+    return true;
+  }
+
   // Whether an empty block (or a marker-stripped-empty unit) in this wrapper
   // must keep deferring its message. The last LLM reply may still be
   // streaming, so it defers without a clock; a superseded message gets a
@@ -1010,6 +1059,11 @@ class MetaDSLMonitor {
     clone.querySelectorAll(sel).forEach((el) => {
       const host = el.closest('pre') || el;
       if (host && host.parentNode) host.parentNode.removeChild(host);
+    });
+    // The reasoning block holds plain (never rendered) model thinking, which
+    // routinely quotes ``` fences. Those are not unrendered answer fences.
+    clone.querySelectorAll('.reasoning-block').forEach((el) => {
+      if (el.parentNode) el.parentNode.removeChild(el);
     });
     const outsideText = clone.textContent || '';
     // Match a run of 3+ backticks (covers variable-length fences too).
@@ -1505,6 +1559,24 @@ class MetaDSLMonitor {
     // Wrappers that still hold an empty code block this round; used at the
     // tail to keep their grace clock (emptyPendingSince) running.
     const emptyBlockWrappers = new Set();
+
+    // The newest LLM reply is still streaming (e.g. a new reply started while
+    // SCANNING_CODE_BLOCKS was waiting): it may hold no code block yet, and
+    // marking it seen now would turn the block that renders later into a
+    // skipped one that never runs. Keep it pending (unseen, not enqueued).
+    // Bounded per wrapper by the LLM response timeout, matching the forced
+    // scan deadline in onPageStable, so a stuck indicator cannot hold it.
+    if (lastLlmWrapper && newWrappers.has(lastLlmWrapper) && this.isLLMGenerating()) {
+      let since = this.generatingPendingSince.get(lastLlmWrapper);
+      if (!since) {
+        since = Date.now();
+        this.generatingPendingSince.set(lastLlmWrapper, since);
+      }
+      if (Date.now() - since < CONFIG.llmResponseTimeoutMin * 60000) {
+        pendingWrappers.add(lastLlmWrapper);
+        this.info('Newest LLM reply is still streaming, keeping it pending this round');
+      }
+    }
 
     codeBlocks.forEach((block) => {
       // A block whose message is not part of the newly arrived ones is history

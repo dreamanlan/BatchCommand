@@ -9,7 +9,7 @@ namespace BatchCommand.Api
 {
     // Shared utility apis used by multiple hosts (AgentCore, CefDotnetApp,
     // ...). Implementations only: BatchScriptApiRegistrar registers the names.
-    // Errors are recorded through ApiErrorInfo (thread static, fetched
+    // Errors are recorded through ApiTextInfo.Error (thread static, fetched
     // uniformly by the host after dsl execution) and a null/default value is
     // returned, so execution continues.
     // Note: read_file/to_json/strlen (StringLengthExp) moved in from AgentCore
@@ -23,12 +23,12 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: append_line(stringbuilder, val)");
+                ApiTextInfo.Error.AppendLine("Expected: append_line(stringbuilder, val)");
                 return BoxedValue.NullObject;
             }
             var sb = operands[0].As<StringBuilder>();
             if (null == sb) {
-                ApiErrorInfo.AppendLine("append_line: first argument is not a string builder");
+                ApiTextInfo.Error.AppendLine("append_line: first argument is not a string builder");
                 return BoxedValue.NullObject;
             }
             var tmp = new StringBuilder();

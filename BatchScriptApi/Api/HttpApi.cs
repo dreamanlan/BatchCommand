@@ -72,7 +72,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: http_get(url) or http_get(url, headers)");
+                ApiTextInfo.Error.AppendLine("Expected: http_get(url) or http_get(url, headers)");
                 return BoxedValue.NullObject;
             }
 
@@ -83,7 +83,7 @@ namespace BatchCommand.Api
                     if (operands.Count > 1) {
                         headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                         if (headers == null) {
-                            ApiErrorInfo.AppendLine("Expected: http_get(url, headers), headers must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: http_get(url, headers), headers must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -91,7 +91,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"httpget error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"httpget error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -103,7 +103,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: http_post(url, content) or http_post(url, content, contentType) or http_post(url, content, contentType, headers)");
+                ApiTextInfo.Error.AppendLine("Expected: http_post(url, content) or http_post(url, content, contentType) or http_post(url, content, contentType, headers)");
                 return BoxedValue.NullObject;
             }
 
@@ -117,7 +117,7 @@ namespace BatchCommand.Api
                             contentType = operands[2].ToString();
                         }
                         else {
-                            ApiErrorInfo.AppendLine("Expected: http_post(url, content, contentType) or http_post(url, content, contentType, headers), contentType must be string");
+                            ApiTextInfo.Error.AppendLine("Expected: http_post(url, content, contentType) or http_post(url, content, contentType, headers), contentType must be string");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -125,7 +125,7 @@ namespace BatchCommand.Api
                     if (operands.Count > 3) {
                         headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                         if (headers == null) {
-                            ApiErrorInfo.AppendLine("Expected: http_post(url, content, contentType, headers), headers must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: http_post(url, content, contentType, headers), headers must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -133,7 +133,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"httppost error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"httppost error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -145,7 +145,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: download_file(url, savePath) or download_file(url, savePath, headers)");
+                ApiTextInfo.Error.AppendLine("Expected: download_file(url, savePath) or download_file(url, savePath, headers)");
                 return BoxedValue.From(false);
             }
 
@@ -157,7 +157,7 @@ namespace BatchCommand.Api
                     if (operands.Count > 2) {
                         headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
                         if (headers == null) {
-                            ApiErrorInfo.AppendLine("Expected: download_file(url, savePath, headers), headers must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: download_file(url, savePath, headers), headers must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -165,7 +165,7 @@ namespace BatchCommand.Api
                     return BoxedValue.From(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"downloadfile error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"downloadfile error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -177,7 +177,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: http_get_bytes(url) or http_get_bytes(url, headers)");
+                ApiTextInfo.Error.AppendLine("Expected: http_get_bytes(url) or http_get_bytes(url, headers)");
                 return BoxedValue.NullObject;
             }
 
@@ -188,7 +188,7 @@ namespace BatchCommand.Api
                     if (operands.Count > 1) {
                         headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                         if (headers == null) {
-                            ApiErrorInfo.AppendLine("Expected: http_get_bytes(url, headers), headers must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: http_get_bytes(url, headers), headers must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -196,7 +196,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromObject(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"http_get_bytes error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"http_get_bytes error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -208,7 +208,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: http_put(url, content) or http_put(url, content, contentType) or http_put(url, content, contentType, headers)");
+                ApiTextInfo.Error.AppendLine("Expected: http_put(url, content) or http_put(url, content, contentType) or http_put(url, content, contentType, headers)");
                 return BoxedValue.NullObject;
             }
 
@@ -222,7 +222,7 @@ namespace BatchCommand.Api
                             contentType = operands[2].ToString();
                         }
                         else {
-                            ApiErrorInfo.AppendLine("Expected: http_put(url, content, contentType) or http_put(url, content, contentType, headers), contentType must be string");
+                            ApiTextInfo.Error.AppendLine("Expected: http_put(url, content, contentType) or http_put(url, content, contentType, headers), contentType must be string");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -230,7 +230,7 @@ namespace BatchCommand.Api
                     if (operands.Count > 3) {
                         headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                         if (headers == null) {
-                            ApiErrorInfo.AppendLine("Expected: http_put(url, content, contentType, headers), headers must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: http_put(url, content, contentType, headers), headers must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -238,7 +238,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"http_put error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"http_put error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -250,7 +250,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: http_delete(url) or http_delete(url, headers)");
+                ApiTextInfo.Error.AppendLine("Expected: http_delete(url) or http_delete(url, headers)");
                 return BoxedValue.NullObject;
             }
 
@@ -261,7 +261,7 @@ namespace BatchCommand.Api
                     if (operands.Count > 1) {
                         headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                         if (headers == null) {
-                            ApiErrorInfo.AppendLine("Expected: http_delete(url, headers), headers must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: http_delete(url, headers), headers must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -269,7 +269,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"http_delete error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"http_delete error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -281,7 +281,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: http_post_form(url, formData) or http_post_form(url, formData, headers)");
+                ApiTextInfo.Error.AppendLine("Expected: http_post_form(url, formData) or http_post_form(url, formData, headers)");
                 return BoxedValue.NullObject;
             }
 
@@ -290,14 +290,14 @@ namespace BatchCommand.Api
                     string url = operands[0].AsString;
                     var formData = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                     if (formData == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_post_form(url, formData[, headers]), formData must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_post_form(url, formData[, headers]), formData must be hashtable");
                         return BoxedValue.NullObject;
                     }
                     Dictionary<string, string>? headers = null;
                     if (operands.Count > 2) {
                         headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
                         if (headers == null) {
-                            ApiErrorInfo.AppendLine("Expected: http_post_form(url, formData, headers), headers must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: http_post_form(url, formData, headers), headers must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -305,7 +305,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"http_post_form error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"http_post_form error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -317,7 +317,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: http_upload_file(url, filePath) or http_upload_file(url, filePath, fieldName) or http_upload_file(url, filePath, fieldName, formData) or http_upload_file(url, filePath, fieldName, formData, headers)");
+                ApiTextInfo.Error.AppendLine("Expected: http_upload_file(url, filePath) or http_upload_file(url, filePath, fieldName) or http_upload_file(url, filePath, fieldName, formData) or http_upload_file(url, filePath, fieldName, formData, headers)");
                 return BoxedValue.NullObject;
             }
 
@@ -331,7 +331,7 @@ namespace BatchCommand.Api
                             fieldName = operands[2].ToString();
                         }
                         else {
-                            ApiErrorInfo.AppendLine("Expected: http_upload_file(url, filePath, fieldName, ...), fieldName must be string");
+                            ApiTextInfo.Error.AppendLine("Expected: http_upload_file(url, filePath, fieldName, ...), fieldName must be string");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -339,7 +339,7 @@ namespace BatchCommand.Api
                     if (operands.Count > 3) {
                         formData = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                         if (formData == null) {
-                            ApiErrorInfo.AppendLine("Expected: http_upload_file(url, filePath, fieldName, formData, ...), formData must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: http_upload_file(url, filePath, fieldName, formData, ...), formData must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -347,7 +347,7 @@ namespace BatchCommand.Api
                     if (operands.Count > 4) {
                         headers = HttpHeaderHelper.ExtractStringHeaders(operands[4]);
                         if (headers == null) {
-                            ApiErrorInfo.AppendLine("Expected: http_upload_file(url, filePath, fieldName, formData, headers), headers must be hashtable");
+                            ApiTextInfo.Error.AppendLine("Expected: http_upload_file(url, filePath, fieldName, formData, headers), headers must be hashtable");
                             return BoxedValue.NullObject;
                         }
                     }
@@ -355,7 +355,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"http_upload_file error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"http_upload_file error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -367,7 +367,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: set_http_default_header(name, value)");
+                ApiTextInfo.Error.AppendLine("Expected: set_http_default_header(name, value)");
                 return BoxedValue.From(false);
             }
             HttpClientOperations.Shared.SetDefaultHeader(operands[0].AsString, operands[1].AsString);
@@ -380,7 +380,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: remove_http_default_header(name)");
+                ApiTextInfo.Error.AppendLine("Expected: remove_http_default_header(name)");
                 return BoxedValue.From(false);
             }
             HttpClientOperations.Shared.RemoveDefaultHeader(operands[0].AsString);
@@ -396,7 +396,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: http_get_callback(url, tag) or http_get_callback(url, headers, tag)");
+                ApiTextInfo.Error.AppendLine("Expected: http_get_callback(url, tag) or http_get_callback(url, headers, tag)");
                 return BoxedValue.From(false);
             }
             try {
@@ -406,7 +406,7 @@ namespace BatchCommand.Api
                 if (operands.Count == 3) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                     if (headers == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_get_callback(url, headers, tag), headers must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_get_callback(url, headers, tag), headers must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -414,7 +414,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"http_get_callback error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"http_get_callback error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -427,7 +427,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: http_get_bytes_callback(url, tag) or http_get_bytes_callback(url, headers, tag)");
+                ApiTextInfo.Error.AppendLine("Expected: http_get_bytes_callback(url, tag) or http_get_bytes_callback(url, headers, tag)");
                 return BoxedValue.From(false);
             }
             try {
@@ -437,7 +437,7 @@ namespace BatchCommand.Api
                 if (operands.Count == 3) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                     if (headers == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_get_bytes_callback(url, headers, tag), headers must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_get_bytes_callback(url, headers, tag), headers must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -445,7 +445,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"http_get_bytes_callback error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"http_get_bytes_callback error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -456,7 +456,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: http_post_callback(url, content, tag) or http_post_callback(url, content, contentType, tag) or http_post_callback(url, content, contentType, headers, tag)");
+                ApiTextInfo.Error.AppendLine("Expected: http_post_callback(url, content, tag) or http_post_callback(url, content, contentType, tag) or http_post_callback(url, content, contentType, headers, tag)");
                 return BoxedValue.From(false);
             }
             try {
@@ -469,7 +469,7 @@ namespace BatchCommand.Api
                         contentType = operands[2].ToString();
                     }
                     else {
-                        ApiErrorInfo.AppendLine("Expected: http_post_callback(url, content, contentType, ...), contentType must be string");
+                        ApiTextInfo.Error.AppendLine("Expected: http_post_callback(url, content, contentType, ...), contentType must be string");
                         return BoxedValue.From(false);
                     }
                 }
@@ -477,7 +477,7 @@ namespace BatchCommand.Api
                 if (operands.Count == 5) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                     if (headers == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_post_callback(url, content, contentType, headers, tag), headers must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_post_callback(url, content, contentType, headers, tag), headers must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -485,7 +485,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"http_post_callback error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"http_post_callback error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -496,7 +496,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: http_post_form_callback(url, formData, tag) or http_post_form_callback(url, formData, headers, tag)");
+                ApiTextInfo.Error.AppendLine("Expected: http_post_form_callback(url, formData, tag) or http_post_form_callback(url, formData, headers, tag)");
                 return BoxedValue.From(false);
             }
             try {
@@ -504,14 +504,14 @@ namespace BatchCommand.Api
                 string tag = operands[operands.Count - 1].AsString;
                 var formData = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                 if (formData == null) {
-                    ApiErrorInfo.AppendLine("Expected: http_post_form_callback(url, formData, ...), formData must be hashtable");
+                    ApiTextInfo.Error.AppendLine("Expected: http_post_form_callback(url, formData, ...), formData must be hashtable");
                     return BoxedValue.From(false);
                 }
                 Dictionary<string, string>? headers = null;
                 if (operands.Count == 4) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
                     if (headers == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_post_form_callback(url, formData, headers, tag), headers must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_post_form_callback(url, formData, headers, tag), headers must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -519,7 +519,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"http_post_form_callback error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"http_post_form_callback error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -530,7 +530,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: http_put_callback(url, content, tag) or http_put_callback(url, content, contentType, tag) or http_put_callback(url, content, contentType, headers, tag)");
+                ApiTextInfo.Error.AppendLine("Expected: http_put_callback(url, content, tag) or http_put_callback(url, content, contentType, tag) or http_put_callback(url, content, contentType, headers, tag)");
                 return BoxedValue.From(false);
             }
             try {
@@ -543,7 +543,7 @@ namespace BatchCommand.Api
                         contentType = operands[2].ToString();
                     }
                     else {
-                        ApiErrorInfo.AppendLine("Expected: http_put_callback(url, content, contentType, ...), contentType must be string");
+                        ApiTextInfo.Error.AppendLine("Expected: http_put_callback(url, content, contentType, ...), contentType must be string");
                         return BoxedValue.From(false);
                     }
                 }
@@ -551,7 +551,7 @@ namespace BatchCommand.Api
                 if (operands.Count == 5) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                     if (headers == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_put_callback(url, content, contentType, headers, tag), headers must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_put_callback(url, content, contentType, headers, tag), headers must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -559,7 +559,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"http_put_callback error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"http_put_callback error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -570,7 +570,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: http_delete_callback(url, tag) or http_delete_callback(url, headers, tag)");
+                ApiTextInfo.Error.AppendLine("Expected: http_delete_callback(url, tag) or http_delete_callback(url, headers, tag)");
                 return BoxedValue.From(false);
             }
             try {
@@ -580,7 +580,7 @@ namespace BatchCommand.Api
                 if (operands.Count == 3) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
                     if (headers == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_delete_callback(url, headers, tag), headers must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_delete_callback(url, headers, tag), headers must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -588,7 +588,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"http_delete_callback error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"http_delete_callback error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -599,7 +599,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
-                ApiErrorInfo.AppendLine("Expected: http_upload_file_callback(url, filePath, tag) or (url, filePath, fieldName, tag) or (url, filePath, fieldName, formData, tag) or (url, filePath, fieldName, formData, headers, tag)");
+                ApiTextInfo.Error.AppendLine("Expected: http_upload_file_callback(url, filePath, tag) or (url, filePath, fieldName, tag) or (url, filePath, fieldName, formData, tag) or (url, filePath, fieldName, formData, headers, tag)");
                 return BoxedValue.From(false);
             }
             try {
@@ -612,7 +612,7 @@ namespace BatchCommand.Api
                         fieldName = operands[2].ToString();
                     }
                     else {
-                        ApiErrorInfo.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, ...), fieldName must be string");
+                        ApiTextInfo.Error.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, ...), fieldName must be string");
                         return BoxedValue.From(false);
                     }
                 }
@@ -620,7 +620,7 @@ namespace BatchCommand.Api
                 if (operands.Count >= 5) {
                     formData = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
                     if (formData == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, formData, ...), formData must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, formData, ...), formData must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -628,7 +628,7 @@ namespace BatchCommand.Api
                 if (operands.Count == 6) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[4]);
                     if (headers == null) {
-                        ApiErrorInfo.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, formData, headers, tag), headers must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: http_upload_file_callback(url, filePath, fieldName, formData, headers, tag), headers must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -636,7 +636,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"http_upload_file_callback error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"http_upload_file_callback error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -647,7 +647,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: download_file_callback(url, savePath, tag) or download_file_callback(url, savePath, headers, tag)");
+                ApiTextInfo.Error.AppendLine("Expected: download_file_callback(url, savePath, tag) or download_file_callback(url, savePath, headers, tag)");
                 return BoxedValue.From(false);
             }
             try {
@@ -658,7 +658,7 @@ namespace BatchCommand.Api
                 if (operands.Count == 4) {
                     headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
                     if (headers == null) {
-                        ApiErrorInfo.AppendLine("Expected: download_file_callback(url, savePath, headers, tag), headers must be hashtable");
+                        ApiTextInfo.Error.AppendLine("Expected: download_file_callback(url, savePath, headers, tag), headers must be hashtable");
                         return BoxedValue.From(false);
                     }
                 }
@@ -666,7 +666,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"download_file_callback error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"download_file_callback error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -677,7 +677,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: set_http_user_agent(user_agent)");
+                ApiTextInfo.Error.AppendLine("Expected: set_http_user_agent(user_agent)");
                 return BoxedValue.From(false);
             }
             string ua = operands[0].AsString;

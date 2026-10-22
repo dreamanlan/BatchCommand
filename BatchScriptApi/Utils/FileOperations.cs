@@ -195,7 +195,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
-                ApiErrorInfo.AppendLine("file_add_bom: file not found");
+                ApiTextInfo.Error.AppendLine("file_add_bom: file not found");
                 return false;
             }
             if (BatchCommand.Utils.BomHelper.HasBom(fullPath)) {
@@ -215,7 +215,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
-                ApiErrorInfo.AppendLine("file_remove_bom: file not found");
+                ApiTextInfo.Error.AppendLine("file_remove_bom: file not found");
                 return false;
             }
             byte[]? bom = BatchCommand.Utils.BomHelper.GetBomBytes(fullPath);
@@ -294,7 +294,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
-                ApiErrorInfo.AppendLine("replace_in_file: file not found");
+                ApiTextInfo.Error.AppendLine("replace_in_file: file not found");
                 return false;
             }
 
@@ -320,7 +320,7 @@ namespace BatchCommand.Utils
                 }
             }
             if (exactMatch) {
-                ApiErrorInfo.AppendLine("replace_in_file: old string not found (exact match)");
+                ApiTextInfo.Error.AppendLine("replace_in_file: old string not found (exact match)");
                 return false;
             }
             // Level 2: Trimmed match
@@ -347,7 +347,7 @@ namespace BatchCommand.Utils
                 File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
                 return true;
             }
-            ApiErrorInfo.AppendLine("replace_in_file: old string not found");
+            ApiTextInfo.Error.AppendLine("replace_in_file: old string not found");
             return false;
         }
 
@@ -355,14 +355,14 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
-                ApiErrorInfo.AppendLine("replace_lines: file not found");
+                ApiTextInfo.Error.AppendLine("replace_lines: file not found");
                 return false;
             }
 
             string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
             if (startLine < 1 || endLine > lines.Length || startLine > endLine) {
-                ApiErrorInfo.AppendLine("replace_lines: out of range");
+                ApiTextInfo.Error.AppendLine("replace_lines: out of range");
                 return false;
             }
 
@@ -391,7 +391,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
-                ApiErrorInfo.AppendLine("insert_after: file not found");
+                ApiTextInfo.Error.AppendLine("insert_after: file not found");
                 return false;
             }
 
@@ -417,7 +417,7 @@ namespace BatchCommand.Utils
                 }
             }
             if (exactMatch) {
-                ApiErrorInfo.AppendLine("insert_after: search literal text not found (exact match)");
+                ApiTextInfo.Error.AppendLine("insert_after: search literal text not found (exact match)");
                 return false;
             }
             // Level 2: Trimmed match
@@ -443,7 +443,7 @@ namespace BatchCommand.Utils
                 File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
                 return true;
             }
-            ApiErrorInfo.AppendLine("insert_after: search literal text not found");
+            ApiTextInfo.Error.AppendLine("insert_after: search literal text not found");
             return false;
         }
 
@@ -451,7 +451,7 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
-                ApiErrorInfo.AppendLine("insert_before: file not found");
+                ApiTextInfo.Error.AppendLine("insert_before: file not found");
                 return false;
             }
 
@@ -477,7 +477,7 @@ namespace BatchCommand.Utils
                 }
             }
             if (exactMatch) {
-                ApiErrorInfo.AppendLine("insert_before: search literal text not found (exact match)");
+                ApiTextInfo.Error.AppendLine("insert_before: search literal text not found (exact match)");
                 return false;
             }
             // Level 2: Trimmed match
@@ -503,7 +503,7 @@ namespace BatchCommand.Utils
                 File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
                 return true;
             }
-            ApiErrorInfo.AppendLine("insert_before: search literal text not found");
+            ApiTextInfo.Error.AppendLine("insert_before: search literal text not found");
             return false;
         }
 
@@ -511,14 +511,14 @@ namespace BatchCommand.Utils
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
-                ApiErrorInfo.AppendLine("delete_lines: file not found");
+                ApiTextInfo.Error.AppendLine("delete_lines: file not found");
                 return false;
             }
 
             string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
             if (startLine < 1 || endLine > lines.Length || startLine > endLine) {
-                ApiErrorInfo.AppendLine("delete_lines: out of range");
+                ApiTextInfo.Error.AppendLine("delete_lines: out of range");
                 return false;
             }
 

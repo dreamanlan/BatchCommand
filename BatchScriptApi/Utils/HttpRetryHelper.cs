@@ -32,7 +32,7 @@ namespace BatchCommand.Utils
                     {
                         retryDelay = Math.Max(retryDelay, 5000); // at least 5s for rate limit
                     }
-                    ApiErrorInfo.AppendLine($"[{callerTag}] retry {i + 1}/{maxRetries}: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"[{callerTag}] retry {i + 1}/{maxRetries}: {ex.Message}");
                     await Task.Delay(retryDelay);
                     delay = Math.Min(delay * 2, 30000); // cap at 30s
                 }

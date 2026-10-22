@@ -61,7 +61,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: regex_match(str, regex_pattern, [ignoreCase or 'i']), aliased as regex_is_match or regex_find");
+                ApiTextInfo.Error.AppendLine("Expected: regex_match(str, regex_pattern, [ignoreCase or 'i']), aliased as regex_is_match or regex_find");
                 return BoxedValue.From(false);
             }
 
@@ -72,12 +72,12 @@ namespace BatchCommand.Api
 
                 bool result = StringHelper.MatchesPattern(str, pattern, ignoreCase);
                 if (!result && File.Exists(str)) {
-                    ApiErrorInfo.AppendLine("Expected: regex_match(str, regex_pattern, [ignoreCase]), aliased as regex_is_match, str must be a string");
+                    ApiTextInfo.Error.AppendLine("Expected: regex_match(str, regex_pattern, [ignoreCase]), aliased as regex_is_match, str must be a string");
                 }
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_match: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_match: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -91,7 +91,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: regex_replace(str, regex_pattern, replacement, [ignoreCase]), aliased as regex_replace_string");
+                ApiTextInfo.Error.AppendLine("Expected: regex_replace(str, regex_pattern, replacement, [ignoreCase]), aliased as regex_replace_string");
                 return BoxedValue.EmptyString;
             }
 
@@ -102,9 +102,9 @@ namespace BatchCommand.Api
                 bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() || operands[3].ToString() == "i" : true;
 
                 if (!StringHelper.MatchesPattern(str, pattern, ignoreCase)) {
-                    ApiErrorInfo.AppendLine($"Error: pattern not found: {pattern}");
+                    ApiTextInfo.Error.AppendLine($"Error: pattern not found: {pattern}");
                     if (File.Exists(str)) {
-                        ApiErrorInfo.AppendLine("Expected: regex_replace(str, regex_pattern, replacement, [ignoreCase]), aliased as regex_replace_string, str must be a string");
+                        ApiTextInfo.Error.AppendLine("Expected: regex_replace(str, regex_pattern, replacement, [ignoreCase]), aliased as regex_replace_string, str must be a string");
                     }
                     return BoxedValue.EmptyString;
                 }
@@ -112,7 +112,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_replace: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_replace: {ex.Message}");
                 if (null != str) {
                     return str;
                 }
@@ -130,7 +130,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 6) {
-                ApiErrorInfo.AppendLine("Expected: regex_replace_with_count(str, regex_pattern, replacement, count, [skipCount, [ignoreCase]]), aliased as regex_replace_string_with_count");
+                ApiTextInfo.Error.AppendLine("Expected: regex_replace_with_count(str, regex_pattern, replacement, count, [skipCount, [ignoreCase]]), aliased as regex_replace_string_with_count");
                 return BoxedValue.EmptyString;
             }
 
@@ -147,9 +147,9 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(str ?? string.Empty);
                 }
                 if (!StringHelper.MatchesPattern(str, pattern, ignoreCase)) {
-                    ApiErrorInfo.AppendLine($"Error: pattern not found: {pattern}");
+                    ApiTextInfo.Error.AppendLine($"Error: pattern not found: {pattern}");
                     if (File.Exists(str)) {
-                        ApiErrorInfo.AppendLine("Expected: regex_replace_with_count(str, regex_pattern, replacement, count, [skipCount, [ignoreCase]]), str must be a string");
+                        ApiTextInfo.Error.AppendLine("Expected: regex_replace_with_count(str, regex_pattern, replacement, count, [skipCount, [ignoreCase]]), str must be a string");
                     }
                     return BoxedValue.FromString(str ?? string.Empty);
                 }
@@ -160,7 +160,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_replace_with_count: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_replace_with_count: {ex.Message}");
                 if (null != str) {
                     return str;
                 }
@@ -212,7 +212,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: regex_find_all(str, regex_pattern, [ignoreCase]), returns a list. Please use 'to_string' to convert it to a string, aliased as regex_matches.");
+                ApiTextInfo.Error.AppendLine("Expected: regex_find_all(str, regex_pattern, [ignoreCase]), returns a list. Please use 'to_string' to convert it to a string, aliased as regex_matches.");
                 return BoxedValue.FromObject(new List<string>());
             }
 
@@ -223,12 +223,12 @@ namespace BatchCommand.Api
 
                 var matches = StringHelper.FindAllMatches(str, pattern, ignoreCase);
                 if (matches.Count == 0 && File.Exists(str)) {
-                    ApiErrorInfo.AppendLine("Expected: regex_find_all(str, regex_pattern, [ignoreCase]), returns a list. Please use 'to_string' to convert it to a string, aliased as regex_matches, str must be a string");
+                    ApiTextInfo.Error.AppendLine("Expected: regex_find_all(str, regex_pattern, [ignoreCase]), returns a list. Please use 'to_string' to convert it to a string, aliased as regex_matches, str must be a string");
                 }
                 return BoxedValue.FromObject(matches);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_find_all: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_find_all: {ex.Message}");
                 return BoxedValue.FromObject(new List<string>());
             }
         }
@@ -242,7 +242,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: regex_find_first(str, regex_pattern, [ignoreCase]) returns first match string or null");
+                ApiTextInfo.Error.AppendLine("Expected: regex_find_first(str, regex_pattern, [ignoreCase]) returns first match string or null");
                 return BoxedValue.NullObject;
             }
 
@@ -257,7 +257,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(first);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_find_first: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_find_first: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -271,7 +271,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase[, encoding]])");
+                ApiTextInfo.Error.AppendLine("Expected: regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase[, encoding]])");
                 return BoxedValue.From(false);
             }
 
@@ -283,13 +283,13 @@ namespace BatchCommand.Api
                 Encoding? encoding = operands.Count > 4 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[4], path) : null;
 
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"Error: File not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"Error: File not found: {path}");
                     return BoxedValue.From(false);
                 }
 
                 string content = SafeFileReader.ReadAllText(path, encoding ?? Encoding.UTF8);
                 if (!StringHelper.MatchesPattern(content, pattern, ignoreCase)) {
-                    ApiErrorInfo.AppendLine($"Error: {path} pattern not found: {pattern}");
+                    ApiTextInfo.Error.AppendLine($"Error: {path} pattern not found: {pattern}");
                     return BoxedValue.From(false);
                 }
                 string newContent = StringHelper.ReplacePattern(content, pattern, replacement, ignoreCase);
@@ -300,7 +300,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_replace_in_file: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_replace_in_file: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -315,7 +315,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 7) {
-                ApiErrorInfo.AppendLine("Expected: regex_replace_in_file_with_count(path, regex_pattern, replacement, count, [skipCount, [ignoreCase, [encoding]]])");
+                ApiTextInfo.Error.AppendLine("Expected: regex_replace_in_file_with_count(path, regex_pattern, replacement, count, [skipCount, [ignoreCase, [encoding]]])");
                 return BoxedValue.From(false);
             }
 
@@ -330,21 +330,21 @@ namespace BatchCommand.Api
                 Encoding? encoding = operands.Count > 6 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[6], path) : null;
 
                 if (count <= 0) {
-                    ApiErrorInfo.AppendLine($"regex_replace_in_file_with_count: count must be > 0, got {count}");
+                    ApiTextInfo.Error.AppendLine($"regex_replace_in_file_with_count: count must be > 0, got {count}");
                     return BoxedValue.From(false);
                 }
                 if (string.IsNullOrEmpty(pattern)) {
-                    ApiErrorInfo.AppendLine("regex_replace_in_file_with_count: regex_pattern cannot be empty");
+                    ApiTextInfo.Error.AppendLine("regex_replace_in_file_with_count: regex_pattern cannot be empty");
                     return BoxedValue.From(false);
                 }
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"Error: File not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"Error: File not found: {path}");
                     return BoxedValue.From(false);
                 }
 
                 string content = SafeFileReader.ReadAllText(path, encoding ?? Encoding.UTF8);
                 if (!StringHelper.MatchesPattern(content, pattern, ignoreCase)) {
-                    ApiErrorInfo.AppendLine($"Error: {path} pattern not found: {pattern}");
+                    ApiTextInfo.Error.AppendLine($"Error: {path} pattern not found: {pattern}");
                     return BoxedValue.From(false);
                 }
                 var options = ignoreCase ? System.Text.RegularExpressions.RegexOptions.IgnoreCase : System.Text.RegularExpressions.RegexOptions.None;
@@ -357,7 +357,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_replace_in_file_with_count: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_replace_in_file_with_count: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -371,7 +371,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: regex_search_file(path, regex_pattern, [ignoreCase[, encoding]]) return List, use 'to_string' to convert to a string");
+                ApiTextInfo.Error.AppendLine("Expected: regex_search_file(path, regex_pattern, [ignoreCase[, encoding]]) return List, use 'to_string' to convert to a string");
                 return BoxedValue.FromObject(new List<string>());
             }
 
@@ -382,7 +382,7 @@ namespace BatchCommand.Api
                 Encoding? encoding = operands.Count > 3 ? BatchCommand.Utils.BomHelper.GetEncoding(operands[3], path) : null;
 
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"Error: File not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"Error: File not found: {path}");
                     return BoxedValue.FromObject(new List<string>());
                 }
 
@@ -391,7 +391,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(matches);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_search_file: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_search_file: {ex.Message}");
                 return BoxedValue.FromObject(new List<string>());
             }
         }
@@ -405,7 +405,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: regex_escape(str)");
+                ApiTextInfo.Error.AppendLine("Expected: regex_escape(str)");
                 return BoxedValue.EmptyString;
             }
 
@@ -415,7 +415,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_escape: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_escape: {ex.Message}");
                 return BoxedValue.EmptyString;
             }
         }
@@ -429,7 +429,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: regex_unescape(str)");
+                ApiTextInfo.Error.AppendLine("Expected: regex_unescape(str)");
                 return BoxedValue.EmptyString;
             }
 
@@ -439,7 +439,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_unescape: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_unescape: {ex.Message}");
                 return BoxedValue.EmptyString;
             }
         }
@@ -454,7 +454,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: regex_group(str, regex_pattern, group_index, [ignoreCase]) group_index: 0=full match, 1+=capture groups");
+                ApiTextInfo.Error.AppendLine("Expected: regex_group(str, regex_pattern, group_index, [ignoreCase]) group_index: 0=full match, 1+=capture groups");
                 return BoxedValue.NullObject;
             }
 
@@ -470,7 +470,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_group: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_group: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -484,7 +484,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: regex_group_all(str, regex_pattern, [ignoreCase]) returns List<List<string>>, use 'to_string' to convert to a string");
+                ApiTextInfo.Error.AppendLine("Expected: regex_group_all(str, regex_pattern, [ignoreCase]) returns List<List<string>>, use 'to_string' to convert to a string");
                 return BoxedValue.FromObject(new List<List<string>>());
             }
 
@@ -497,7 +497,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error in regex_group_all: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error in regex_group_all: {ex.Message}");
                 return BoxedValue.FromObject(new List<List<string>>());
             }
         }

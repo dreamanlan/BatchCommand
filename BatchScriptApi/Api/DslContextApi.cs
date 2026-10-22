@@ -17,7 +17,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: set_context_var(key, value)");
+                ApiTextInfo.Error.AppendLine("Expected: set_context_var(key, value)");
                 return BoxedValue.From(false);
             }
 
@@ -29,7 +29,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"SetContextVar error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"SetContextVar error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -41,7 +41,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: get_context_var(key)");
+                ApiTextInfo.Error.AppendLine("Expected: get_context_var(key)");
                 return BoxedValue.NullObject;
             }
 
@@ -52,7 +52,7 @@ namespace BatchCommand.Api
                 return value != null ? BoxedValue.FromObject(value) : BoxedValue.NullObject;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"GetContextVar error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"GetContextVar error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -64,7 +64,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: remove_context_var(key)");
+                ApiTextInfo.Error.AppendLine("Expected: remove_context_var(key)");
                 return BoxedValue.FromBool(false);
             }
 
@@ -75,7 +75,7 @@ namespace BatchCommand.Api
                 return r;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"RemoveContextVar error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"RemoveContextVar error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }
@@ -87,7 +87,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count > 0) {
-                ApiErrorInfo.AppendLine("Expected: clear_context_vars()");
+                ApiTextInfo.Error.AppendLine("Expected: clear_context_vars()");
                 return BoxedValue.FromBool(false);
             }
 
@@ -96,7 +96,7 @@ namespace BatchCommand.Api
                 return true;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"ClearContextVars error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"ClearContextVars error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }

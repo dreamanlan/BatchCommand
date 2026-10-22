@@ -89,7 +89,7 @@ namespace AgentCore.CodeAnalysis
             catch (Exception ex)
             {
                 // Log but don't fail - we can still return partial results
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Warning: Failed to extract symbols: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiTipInfoLine($"Warning: Failed to extract symbols: {ex.Message}");
             }
         }
 

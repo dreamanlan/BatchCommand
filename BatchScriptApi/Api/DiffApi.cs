@@ -14,7 +14,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: apply_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]), aliased as apply_unified_diff|applydiff");
+                ApiTextInfo.Error.AppendLine("Expected: apply_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]), aliased as apply_unified_diff|applydiff");
                 return BoxedValue.NullObject;
             }
 
@@ -60,7 +60,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(resultObj);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"applydiff error: {ex.Message}, Expected: apply_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]), aliased as apply_unified_diff|applydiff");
+                ApiTextInfo.Error.AppendLine($"applydiff error: {ex.Message}, Expected: apply_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]), aliased as apply_unified_diff|applydiff");
                 var errorObj = new Dictionary<string, object>
                 {
                     { "success", false },

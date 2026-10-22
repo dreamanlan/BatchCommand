@@ -69,7 +69,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: wsclient_open(url[, id[, reconnect_count]])");
+                ApiTextInfo.Error.AppendLine("Expected: wsclient_open(url[, id[, reconnect_count]])");
                 return BoxedValue.EmptyString;
             }
             string url = operands[0].AsString;
@@ -85,7 +85,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: wsclient_send(id, message)");
+                ApiTextInfo.Error.AppendLine("Expected: wsclient_send(id, message)");
                 return BoxedValue.From(false);
             }
             string id = operands[0].AsString;
@@ -99,7 +99,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: wsclient_drain_send(id[, timeout_ms])");
+                ApiTextInfo.Error.AppendLine("Expected: wsclient_drain_send(id[, timeout_ms])");
                 return BoxedValue.From(false);
             }
             int timeoutMs = operands.Count > 1 ? operands[1].GetInt() : 10000;
@@ -113,7 +113,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: wsclient_drain_send_status(id)");
+                ApiTextInfo.Error.AppendLine("Expected: wsclient_drain_send_status(id)");
                 return BoxedValue.NullObject;
             }
             return BoxedValue.FromObject(
@@ -126,7 +126,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: wsclient_drain_wait(id[, wait_timeout_ms])");
+                ApiTextInfo.Error.AppendLine("Expected: wsclient_drain_wait(id[, wait_timeout_ms])");
                 return BoxedValue.NullObject;
             }
             int waitTimeoutMs = operands.Count > 1 ? operands[1].GetInt() : 1000;
@@ -140,7 +140,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: wsclient_close(id)");
+                ApiTextInfo.Error.AppendLine("Expected: wsclient_close(id)");
                 return BoxedValue.From(false);
             }
             return BoxedValue.From(WebSocketClientManager.Close(operands[0].AsString));
@@ -168,7 +168,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: wsclient_state(id)");
+                ApiTextInfo.Error.AppendLine("Expected: wsclient_state(id)");
                 return BoxedValue.FromString("unknown");
             }
             return BoxedValue.FromString(WebSocketClientManager.GetState(operands[0].AsString));

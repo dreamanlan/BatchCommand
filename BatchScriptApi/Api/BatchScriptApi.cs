@@ -16,7 +16,7 @@ namespace BatchCommand.Api
     // calls, sub-script execution, the script task pool, host logging, quoting
     // helpers and the api help search. Host specific behavior (logging, process
     // info, help search, task state) is taken from DslHost.Current. Errors are
-    // recorded through ApiErrorInfo and returned to the caller as part of the
+    // recorded through ApiTextInfo.Error and returned to the caller as part of the
     // unified execution error text.
     // Registered by BatchScriptApiRegistrar.RegisterBatchScriptApis().
 
@@ -59,7 +59,7 @@ namespace BatchCommand.Api
         {
             int num = operands.Count;
             if (num < 1) {
-                ApiErrorInfo.AppendLine("Expected: redirectcall(func_name) or redirectcall(func_name, args) or redirectcall(func_name, args, ...)");
+                ApiTextInfo.Error.AppendLine("Expected: redirectcall(func_name) or redirectcall(func_name, args) or redirectcall(func_name, args, ...)");
                 return BoxedValue.EmptyString;
             }
             else {
@@ -95,7 +95,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: execute_metadsl(dsl_code), aliased as executemetadsl");
+                ApiTextInfo.Error.AppendLine("Expected: execute_metadsl(dsl_code), aliased as executemetadsl");
                 return BoxedValue.From(-1);
             }
             string dslCode = operands[0].AsString;
@@ -116,13 +116,13 @@ namespace BatchCommand.Api
                 return BoxedValue.From(false);
             }
             if (operands.Count < 2) {
-                ApiErrorInfo.AppendLine("Expected: call_metadsl_task(task_index, func_name, arg1, arg2, ...)");
+                ApiTextInfo.Error.AppendLine("Expected: call_metadsl_task(task_index, func_name, arg1, arg2, ...)");
                 return BoxedValue.From(false);
             }
             int taskIndex = operands[0].GetInt();
             string funcName = operands[1].AsString;
             if (string.IsNullOrEmpty(funcName)) {
-                ApiErrorInfo.AppendLine("Expected: call_metadsl_task(task_index, func_name, arg1, arg2, ...), func_name is empty");
+                ApiTextInfo.Error.AppendLine("Expected: call_metadsl_task(task_index, func_name, arg1, arg2, ...), func_name is empty");
                 return BoxedValue.From(false);
             }
             // Build the args on the calling thread; the list is handed to the worker and
@@ -151,7 +151,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                ApiErrorInfo.AppendLine("Expected: set_metadsl_task_num(num)");
+                ApiTextInfo.Error.AppendLine("Expected: set_metadsl_task_num(num)");
                 return BoxedValue.From(0);
             }
             return BoxedValue.From(DslHost.Current!.SetMetaDslTaskNum(operands[0].GetInt()));
@@ -174,7 +174,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                ApiErrorInfo.AppendLine("Expected: set_dsl_file_worker_count(num)");
+                ApiTextInfo.Error.AppendLine("Expected: set_dsl_file_worker_count(num)");
                 return BoxedValue.From(0);
             }
             return BoxedValue.From(DslHost.Current!.SetDslFileWorkerCount(operands[0].GetInt()));
@@ -202,7 +202,7 @@ namespace BatchCommand.Api
         {
             if (operands.Count < 2) {
                 string usage = "Expected: execute_dsl_file_in_worker(path, func [, args] [, timeout_ms] [, worker_index])";
-                ApiErrorInfo.AppendLine(usage);
+                ApiTextInfo.Error.AppendLine(usage);
                 return Tuple.Create(BoxedValue.NullObject, BoxedValue.FromBool(true), BoxedValue.FromString(usage));
             }
             // A worker must never wait on the pool it belongs to (same or
@@ -210,7 +210,7 @@ namespace BatchCommand.Api
             // running on a worker thread should use call_metadsl_task instead.
             if (DslHost.IsDslFileWorkerThread) {
                 string err = "execute_dsl_file_in_worker must not run inside a dsl file worker thread (it would wait on its own pool); use call_metadsl_task";
-                ApiErrorInfo.AppendLine(err);
+                ApiTextInfo.Error.AppendLine(err);
                 return Tuple.Create(BoxedValue.NullObject, BoxedValue.FromBool(true), BoxedValue.FromString(err));
             }
             try {
@@ -221,7 +221,7 @@ namespace BatchCommand.Api
                     var list = operands[2].As<IList<BoxedValue>>();
                     if (list == null) {
                         string err = "execute_dsl_file_in_worker: third argument (args) must be a list or null";
-                        ApiErrorInfo.AppendLine(err);
+                        ApiTextInfo.Error.AppendLine(err);
                         return Tuple.Create(BoxedValue.NullObject, BoxedValue.FromBool(true), BoxedValue.FromString(err));
                     }
                     args.AddRange(list);
@@ -238,7 +238,7 @@ namespace BatchCommand.Api
             }
             catch (Exception ex) {
                 string err = "execute_dsl_file_in_worker error: " + ex.Message;
-                ApiErrorInfo.AppendLine(err);
+                ApiTextInfo.Error.AppendLine(err);
                 return Tuple.Create(BoxedValue.NullObject, BoxedValue.FromBool(true), BoxedValue.FromString(err));
             }
         }
@@ -267,7 +267,7 @@ namespace BatchCommand.Api
                     str = string.Format(fmt, al.ToArray());
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine("nativelog format error: " + ex.Message);
+                    ApiTextInfo.Error.AppendLine("nativelog format error: " + ex.Message);
                     return BoxedValue.FromString(fmt);
                 }
             }
@@ -282,7 +282,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: quotestring(str)");
+                ApiTextInfo.Error.AppendLine("Expected: quotestring(str)");
                 return BoxedValue.EmptyString;
             }
             string str = operands[0].AsString;
@@ -296,7 +296,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: stripquotes(str)");
+                ApiTextInfo.Error.AppendLine("Expected: stripquotes(str)");
                 return BoxedValue.EmptyString;
             }
             string str = operands[0].AsString;
@@ -310,7 +310,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: try_get_raw_command_line_switch(str), return (bool, str)");
+                ApiTextInfo.Error.AppendLine("Expected: try_get_raw_command_line_switch(str), return (bool, str)");
                 return BoxedValue.EmptyString;
             }
             string str = operands[0].AsString;
@@ -355,7 +355,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: get_string_in_length(str,len[,begin0_end1_or_beginend2])");
+                ApiTextInfo.Error.AppendLine("Expected: get_string_in_length(str,len[,begin0_end1_or_beginend2])");
                 return BoxedValue.EmptyString;
             }
             string str = operands[0].AsString;

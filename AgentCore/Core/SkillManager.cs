@@ -444,7 +444,7 @@ namespace AgentCore.Core
 
                 if (skill.IsAsync) {
                     _processOps.ExecuteCommandWithCallback(shell, shellArg, null, skill.TimeoutMs, "skill_callback");
-                    MetaDslExecutor.AppendApiErrorInfoLine($"call_skill succeeded (notice, not an error, do not retry): skill '{skillKey}' started async, result will arrive via skill_callback");
+                    MetaDslExecutor.AppendApiTipInfoLine($"call_skill succeeded (notice): skill '{skillKey}' started async, result will arrive via skill_callback");
                     return string.Empty;
                 }
 
@@ -459,7 +459,7 @@ namespace AgentCore.Core
                     MetaDslExecutor.AppendApiErrorInfoLine(sb.ToString());
                 }
                 else if (!string.IsNullOrEmpty(result.Error)) {
-                    MetaDslExecutor.AppendApiErrorInfoLine($"call_skill succeeded (notice, not an error, do not retry): skill '{skillKey}' stderr: {result.Error}");
+                    MetaDslExecutor.AppendApiTipInfoLine($"call_skill succeeded (notice): skill '{skillKey}' stderr: {result.Error}");
                 }
                 return result.Output ?? string.Empty;
             }

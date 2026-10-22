@@ -78,12 +78,12 @@ namespace AgentCore.Core
         }
 
         // Over-length clauses are still stored; a non-error notice is appended to
-        // the api error info so the model sees it wherever the call sits.
+        // the api tip info so the model sees it wherever the call sits.
         internal static void WarnLongClause(string api, string clause)
         {
             int bytes = System.Text.Encoding.UTF8.GetByteCount(clause);
             if (bytes > MaxClauseBytes) {
-                MetaDslExecutor.AppendApiErrorInfoLine(api + " succeeded (notice, not an error, do not retry): clause bytes="
+                MetaDslExecutor.AppendApiTipInfoLine(api + " succeeded (notice): clause bytes="
                     + bytes + " > " + MaxClauseBytes
                     + "; a clause should be one short requirement constraint, put progress/evidence into plan notes and shorten it with modify_backlog_clause");
             }

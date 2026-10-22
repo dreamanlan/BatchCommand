@@ -19,13 +19,13 @@ namespace AgentCore.ScriptApi
         }
 
         // Persist docs/patterns.txt; when the library is over budget, append a
-        // non-error notice with the stats to the api error info.
+        // non-error notice with the stats to the api tip info.
         internal static void PersistAndNotice(AgentInstance inst, string api)
         {
             string text = PatternTrackHelper.PersistPatterns(inst);
             var st = inst.PatternTrack!;
             if (PatternTrackHelper.IsOverBudget(st, text))
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(api + " succeeded (notice, not an error, do not retry): " + PatternTrackHelper.GetStatsText(st, text));
+                AgentCore.Core.MetaDslExecutor.AppendApiTipInfoLine(api + " succeeded (notice): " + PatternTrackHelper.GetStatsText(st, text));
         }
 
         internal static bool CheckItemIndex(PatternTrackState st, int idx, string api)

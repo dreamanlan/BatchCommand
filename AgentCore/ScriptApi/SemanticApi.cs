@@ -806,7 +806,7 @@ namespace AgentCore.ScriptApi
             try {
                 string backupPath = operands[0].AsString;
                 string result = Core.AgentCore.Instance.SemanticIndex.RestoreDatabase(backupPath);
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("sqlite_restore succeeded (notice, not an error, do not retry): " + result.Trim().Replace(Environment.NewLine, "; "));
+                AgentCore.Core.MetaDslExecutor.AppendApiTipInfoLine("sqlite_restore succeeded (notice): " + result.Trim().Replace(Environment.NewLine, "; "));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
@@ -999,7 +999,7 @@ namespace AgentCore.ScriptApi
         {
             try {
                 string report = Core.AgentCore.Instance.SemanticIndex.MigrateFtsSchema();
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("semantic_migrate_fts succeeded (notice, not an error, do not retry): " + report.Trim().Replace(Environment.NewLine, "; "));
+                AgentCore.Core.MetaDslExecutor.AppendApiTipInfoLine("semantic_migrate_fts succeeded (notice): " + report.Trim().Replace(Environment.NewLine, "; "));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {

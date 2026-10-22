@@ -61,7 +61,7 @@ namespace AgentCore.CodeAnalysis
                     _syntaxTrees[file] = tree;
                 }
                 catch (Exception ex) {
-                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"Warning: Failed to parse {file}: {ex.Message}");
+                    AgentCore.Core.MetaDslExecutor.AppendApiTipInfoLine($"Warning: Failed to parse {file}: {ex.Message}");
                 }
             }
 

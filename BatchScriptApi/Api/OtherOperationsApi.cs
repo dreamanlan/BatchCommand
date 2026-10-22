@@ -28,7 +28,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(text);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"getclipboard error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"getclipboard error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -41,7 +41,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: set_clipboard(text)");
+                ApiTextInfo.Error.AppendLine("Expected: set_clipboard(text)");
                 return BoxedValue.From(false);
             }
 
@@ -52,7 +52,7 @@ namespace BatchCommand.Api
                     return BoxedValue.From(result);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"setclipboard error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"setclipboard error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -65,7 +65,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: dict_or_json_get(paramsObj, key)");
+                ApiTextInfo.Error.AppendLine("Expected: dict_or_json_get(paramsObj, key)");
                 return BoxedValue.NullObject;
             }
 
@@ -91,7 +91,7 @@ namespace BatchCommand.Api
                 return BoxedValue.NullObject;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error getting from dict/json: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error getting from dict/json: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -108,7 +108,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
-                ApiErrorInfo.AppendLine("Expected: dict_or_json_set(paramsObj, key, value)");
+                ApiTextInfo.Error.AppendLine("Expected: dict_or_json_set(paramsObj, key, value)");
                 return BoxedValue.From(false);
             }
 
@@ -138,10 +138,10 @@ namespace BatchCommand.Api
                         }
                     }
                 }
-                ApiErrorInfo.AppendLine("dict_or_json_set: target is not a supported dict/json object");
+                ApiTextInfo.Error.AppendLine("dict_or_json_set: target is not a supported dict/json object");
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error setting into dict/json: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error setting into dict/json: {ex.Message}");
             }
             return BoxedValue.From(false);
         }
@@ -153,7 +153,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: list_or_json_get(paramsObj, start)");
+                ApiTextInfo.Error.AppendLine("Expected: list_or_json_get(paramsObj, start)");
                 return BoxedValue.NullObject;
             }
 
@@ -178,7 +178,7 @@ namespace BatchCommand.Api
                 }
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error getting from list/json: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error getting from list/json: {ex.Message}");
             }
             return BoxedValue.NullObject;
         }
@@ -194,7 +194,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
-                ApiErrorInfo.AppendLine("Expected: list_or_json_set(paramsObj, start, value)");
+                ApiTextInfo.Error.AppendLine("Expected: list_or_json_set(paramsObj, start, value)");
                 return BoxedValue.From(false);
             }
 
@@ -226,10 +226,10 @@ namespace BatchCommand.Api
                         return BoxedValue.From(true);
                     }
                 }
-                ApiErrorInfo.AppendLine("list_or_json_set: target is not a supported list/json array or start out of range");
+                ApiTextInfo.Error.AppendLine("list_or_json_set: target is not a supported list/json array or start out of range");
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"Error setting into list/json: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"Error setting into list/json: {ex.Message}");
             }
             return BoxedValue.From(false);
         }
@@ -241,7 +241,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: to_json(obj, prettyPrint)");
+                ApiTextInfo.Error.AppendLine("Expected: to_json(obj, prettyPrint)");
                 return BoxedValue.FromString("null");
             }
 
@@ -256,7 +256,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(json);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"tojson error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"tojson error: {ex.Message}");
                 }
             }
             return BoxedValue.FromString("null");
@@ -268,7 +268,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: from_json(json)");
+                ApiTextInfo.Error.AppendLine("Expected: from_json(json)");
                 return BoxedValue.NullObject;
             }
 
@@ -279,7 +279,7 @@ namespace BatchCommand.Api
                     return DslHelper.GetBoxedValueFromValue(obj);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"fromjson error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"fromjson error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -291,7 +291,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: json_escape(str[, bool_add_quotes])");
+                ApiTextInfo.Error.AppendLine("Expected: json_escape(str[, bool_add_quotes])");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -303,7 +303,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(esc);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"json_escape error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"json_escape error: {ex.Message}");
                 }
             }
             return BoxedValue.FromString(string.Empty);
@@ -315,7 +315,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: json_unescape(str)");
+                ApiTextInfo.Error.AppendLine("Expected: json_unescape(str)");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -326,7 +326,7 @@ namespace BatchCommand.Api
                     return BoxedValue.FromString(un);
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"json_unescape error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"json_unescape error: {ex.Message}");
                 }
             }
             return BoxedValue.FromString(string.Empty);
@@ -353,7 +353,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(dict);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"newobject error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"newobject error: {ex.Message}");
                 return BoxedValue.FromObject(new Dictionary<string, object>());
             }
         }
@@ -364,7 +364,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: to_string(val)");
+                ApiTextInfo.Error.AppendLine("Expected: to_string(val)");
                 return (BoxedValue)string.Empty;
             }
 
@@ -376,7 +376,7 @@ namespace BatchCommand.Api
                     return sb.ToString();
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"fromjson error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"fromjson error: {ex.Message}");
                 }
             }
             return string.Empty;
@@ -388,7 +388,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: string_length(val), aliased as stringlength|strlen");
+                ApiTextInfo.Error.AppendLine("Expected: string_length(val), aliased as stringlength|strlen");
                 return (BoxedValue)(-1);
             }
 
@@ -407,7 +407,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: string_starts_with(str, substr), aliased as starts_with");
+                ApiTextInfo.Error.AppendLine("Expected: string_starts_with(str, substr), aliased as starts_with");
                 return BoxedValue.From(false);
             }
 
@@ -424,7 +424,7 @@ namespace BatchCommand.Api
                     return BoxedValue.From(str.StartsWith(sub));
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"string_starts_with error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"string_starts_with error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -436,7 +436,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: string_ends_with(str, substr), aliased as ends_with");
+                ApiTextInfo.Error.AppendLine("Expected: string_ends_with(str, substr), aliased as ends_with");
                 return BoxedValue.From(false);
             }
 
@@ -453,7 +453,7 @@ namespace BatchCommand.Api
                     return BoxedValue.From(str.EndsWith(sub));
                 }
                 catch (Exception ex) {
-                    ApiErrorInfo.AppendLine($"string_ends_with error: {ex.Message}");
+                    ApiTextInfo.Error.AppendLine($"string_ends_with error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -466,7 +466,7 @@ namespace BatchCommand.Api
         {
             var empty = new List<IList<string>>();
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: extract_tags(txt, tag_name[, max_num]), aliased as extracttags");
+                ApiTextInfo.Error.AppendLine("Expected: extract_tags(txt, tag_name[, max_num]), aliased as extracttags");
                 return BoxedValue.FromObject(empty);
             }
 
@@ -504,7 +504,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"extract_tags error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"extract_tags error: {ex.Message}");
             }
             return BoxedValue.FromObject(empty);
         }
@@ -516,7 +516,7 @@ namespace BatchCommand.Api
         {
             var empty = new List<BoxedValue>();
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: extract_tag_codes(txt, tag_name[, max_num]), aliased as extracttagcodes");
+                ApiTextInfo.Error.AppendLine("Expected: extract_tag_codes(txt, tag_name[, max_num]), aliased as extracttagcodes");
                 return BoxedValue.FromObject(empty);
             }
 
@@ -548,7 +548,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"extract_tag_codes error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"extract_tag_codes error: {ex.Message}");
             }
             return BoxedValue.FromObject(empty);
         }
@@ -560,7 +560,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: html_encode(html_str)");
+                ApiTextInfo.Error.AppendLine("Expected: html_encode(html_str)");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -569,7 +569,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(System.Net.WebUtility.HtmlEncode(s));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"html_encode error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"html_encode error: {ex.Message}");
             }
             return BoxedValue.FromString(string.Empty);
         }
@@ -580,7 +580,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: html_decode(encoded_html_str)");
+                ApiTextInfo.Error.AppendLine("Expected: html_decode(encoded_html_str)");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -589,7 +589,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(System.Net.WebUtility.HtmlDecode(s));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"html_decode error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"html_decode error: {ex.Message}");
             }
             return BoxedValue.FromString(string.Empty);
         }
@@ -600,7 +600,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: url_encode(url_str)");
+                ApiTextInfo.Error.AppendLine("Expected: url_encode(url_str)");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -609,7 +609,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(System.Net.WebUtility.UrlEncode(s));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"url_encode error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"url_encode error: {ex.Message}");
             }
             return BoxedValue.FromString(string.Empty);
         }
@@ -620,7 +620,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: url_decode(encoded_url_str)");
+                ApiTextInfo.Error.AppendLine("Expected: url_decode(encoded_url_str)");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -629,7 +629,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(System.Net.WebUtility.UrlDecode(s));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"url_decode error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"url_decode error: {ex.Message}");
             }
             return BoxedValue.FromString(string.Empty);
         }
@@ -640,7 +640,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: to_pretty_string(val)");
+                ApiTextInfo.Error.AppendLine("Expected: to_pretty_string(val)");
                 return (BoxedValue)string.Empty;
             }
 
@@ -664,7 +664,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(UnescapeLiteral(input));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"to_pretty_string error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"to_pretty_string error: {ex.Message}");
             }
             return BoxedValue.FromString(string.Empty);
         }
@@ -765,7 +765,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: list_contains(list,val)");
+                ApiTextInfo.Error.AppendLine("Expected: list_contains(list,val)");
                 return BoxedValue.NullObject;
             }
             bool r = false;
@@ -787,7 +787,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: hashtable_contains(hash,val)");
+                ApiTextInfo.Error.AppendLine("Expected: hashtable_contains(hash,val)");
                 return BoxedValue.NullObject;
             }
             bool r = false;
@@ -809,7 +809,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: string_builder_length(sb), aliased as stringbuilder_length or stringbuilderlength");
+                ApiTextInfo.Error.AppendLine("Expected: string_builder_length(sb), aliased as stringbuilder_length or stringbuilderlength");
                 return BoxedValue.NullObject;
             }
             int r = -1;

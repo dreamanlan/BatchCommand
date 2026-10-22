@@ -16,7 +16,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: read_file(path[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: read_file(path[, encoding])");
                 return BoxedValue.NullObject;
             }
 
@@ -27,7 +27,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(content ?? string.Empty);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"read_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"read_file error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -39,7 +39,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: write_file(path, content[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: write_file(path, content[, encoding])");
                 return BoxedValue.From(false);
             }
 
@@ -49,7 +49,7 @@ namespace BatchCommand.Api
                 string content = operands[1].AsString;
                 Encoding? encoding = operands.Count > 2 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
                 if (string.IsNullOrEmpty(content)) {
-                    ApiErrorInfo.AppendLine("You cannot write empty values to a file !!! To delete certain lines, use the 'delete_lines' function.");
+                    ApiTextInfo.Error.AppendLine("You cannot write empty values to a file !!! To delete certain lines, use the 'delete_lines' function.");
                     return BoxedValue.From(false);
                 }
                 string ext = Path.GetExtension(path).ToLower();
@@ -57,7 +57,7 @@ namespace BatchCommand.Api
                     var lineCount = SafeFileReader.ReadAllLines(path).Length;
                     var newLineCount = path.Split('\n').Length;
                     if (lineCount > newLineCount + BatchCommand.Api.FrameworkApiAlias.MaxLinesDeletedByWriteFile) {
-                        ApiErrorInfo.AppendLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
+                        ApiTextInfo.Error.AppendLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
                         return BoxedValue.From(false);
                     }
                 }
@@ -65,7 +65,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"write_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"write_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -77,7 +77,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: write_file_no_bom(path, content)");
+                ApiTextInfo.Error.AppendLine("Expected: write_file_no_bom(path, content)");
                 return BoxedValue.From(false);
             }
 
@@ -85,7 +85,7 @@ namespace BatchCommand.Api
                 string path = operands[0].AsString;
                 string content = operands[1].AsString;
                 if (string.IsNullOrEmpty(content)) {
-                    ApiErrorInfo.AppendLine("You cannot write empty content to a file !!!");
+                    ApiTextInfo.Error.AppendLine("You cannot write empty content to a file !!!");
                     return BoxedValue.From(false);
                 }
                 string ext = Path.GetExtension(path).ToLower();
@@ -93,7 +93,7 @@ namespace BatchCommand.Api
                     var lineCount = SafeFileReader.ReadAllLines(path).Length;
                     var newLineCount = content.Split('\n').Length;
                     if (lineCount > newLineCount + BatchCommand.Api.FrameworkApiAlias.MaxLinesDeletedByWriteFile) {
-                        ApiErrorInfo.AppendLine("You cannot significantly reduce code using 'write_file_no_bom' !!! To delete certain lines, use the 'delete_lines' function.");
+                        ApiTextInfo.Error.AppendLine("You cannot significantly reduce code using 'write_file_no_bom' !!! To delete certain lines, use the 'delete_lines' function.");
                         return BoxedValue.From(false);
                     }
                 }
@@ -101,7 +101,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"write_file_no_bom error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"write_file_no_bom error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -113,7 +113,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: read_file_bytes(path)");
+                ApiTextInfo.Error.AppendLine("Expected: read_file_bytes(path)");
                 return BoxedValue.NullObject;
             }
 
@@ -123,7 +123,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(content);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"read_file_bytes error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"read_file_bytes error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -135,7 +135,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: write_file_bytes(path, bytes)");
+                ApiTextInfo.Error.AppendLine("Expected: write_file_bytes(path, bytes)");
                 return BoxedValue.From(false);
             }
 
@@ -151,12 +151,12 @@ namespace BatchCommand.Api
                     return BoxedValue.From(result);
                 }
                 else {
-                    ApiErrorInfo.AppendLine("write_file_bytes: second argument must be a byte array or a byte list");
+                    ApiTextInfo.Error.AppendLine("write_file_bytes: second argument must be a byte array or a byte list");
                     return BoxedValue.From(false);
                 }
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"write_file_bytes error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"write_file_bytes error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -168,7 +168,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: hex_to_bytes(hexString), aliased as hex_string_to_bytes");
+                ApiTextInfo.Error.AppendLine("Expected: hex_to_bytes(hexString), aliased as hex_string_to_bytes");
                 return BoxedValue.NullObject;
             }
 
@@ -177,7 +177,7 @@ namespace BatchCommand.Api
                 // Remove all whitespace (spaces, newlines, tabs)
                 hex = hex.Replace(" ", "").Replace("\r", "").Replace("\n", "").Replace("\t", "");
                 if (hex.Length % 2 != 0) {
-                    ApiErrorInfo.AppendLine("hex_to_bytes: hex string length must be even");
+                    ApiTextInfo.Error.AppendLine("hex_to_bytes: hex string length must be even");
                     return BoxedValue.NullObject;
                 }
                 byte[] bytes = new byte[hex.Length / 2];
@@ -187,7 +187,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(bytes);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"hex_to_bytes error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"hex_to_bytes error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -199,14 +199,14 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: bytes_to_hex(bytes[, bytesPerLine]), aliased as bytes_to_hex_string");
+                ApiTextInfo.Error.AppendLine("Expected: bytes_to_hex(bytes[, bytesPerLine]), aliased as bytes_to_hex_string");
                 return BoxedValue.NullObject;
             }
 
             try {
                 var obj = operands[0].GetObject();
                 if (obj is not byte[] bytes) {
-                    ApiErrorInfo.AppendLine("bytes_to_hex: first argument must be a byte array");
+                    ApiTextInfo.Error.AppendLine("bytes_to_hex: first argument must be a byte array");
                     return BoxedValue.NullObject;
                 }
                 int bytesPerLine = operands.Count > 1 ? operands[1].GetInt() : 32;
@@ -224,7 +224,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(sb.ToString());
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"bytes_to_hex error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"bytes_to_hex error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -236,7 +236,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: base64_to_bytes(base64String)");
+                ApiTextInfo.Error.AppendLine("Expected: base64_to_bytes(base64String)");
                 return BoxedValue.NullObject;
             }
 
@@ -246,7 +246,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(bytes);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"base64_to_bytes error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"base64_to_bytes error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -258,7 +258,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: bytes_to_base64(bytes)");
+                ApiTextInfo.Error.AppendLine("Expected: bytes_to_base64(bytes)");
                 return BoxedValue.NullObject;
             }
 
@@ -270,13 +270,13 @@ namespace BatchCommand.Api
                     _ => null
                 };
                 if (bytes == null) {
-                    ApiErrorInfo.AppendLine("bytes_to_base64: first argument must be a byte array");
+                    ApiTextInfo.Error.AppendLine("bytes_to_base64: first argument must be a byte array");
                     return BoxedValue.NullObject;
                 }
                 return BoxedValue.FromString(Convert.ToBase64String(bytes));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"bytes_to_base64 error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"bytes_to_base64 error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -288,7 +288,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: append_file(path, content[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: append_file(path, content[, encoding])");
                 return BoxedValue.From(false);
             }
 
@@ -298,14 +298,14 @@ namespace BatchCommand.Api
                 string content = operands[1].AsString;
                 Encoding? encoding = operands.Count > 2 ? BatchCommand.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
                 if (string.IsNullOrEmpty(content)) {
-                    ApiErrorInfo.AppendLine("You cannot append empty values to a file !!!");
+                    ApiTextInfo.Error.AppendLine("You cannot append empty values to a file !!!");
                     return BoxedValue.From(false);
                 }
                 bool result = DslHost.Current!.FileOps.AppendFile(path, content, encoding);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"append_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"append_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -317,7 +317,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: copy_file(sourcePath, destPath, overwrite)");
+                ApiTextInfo.Error.AppendLine("Expected: copy_file(sourcePath, destPath, overwrite)");
                 return BoxedValue.From(false);
             }
 
@@ -329,7 +329,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"copy_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"copy_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -341,7 +341,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: move_file(sourcePath, destPath, overwrite)");
+                ApiTextInfo.Error.AppendLine("Expected: move_file(sourcePath, destPath, overwrite)");
                 return BoxedValue.From(false);
             }
 
@@ -353,7 +353,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"move_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"move_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -365,7 +365,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: file_exists(path), aliased as file_exist");
+                ApiTextInfo.Error.AppendLine("Expected: file_exists(path), aliased as file_exist");
                 return BoxedValue.From(false);
             }
 
@@ -375,7 +375,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"file_exists error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"file_exists error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -387,7 +387,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: file_not_exists(path), aliased as file_not_exist");
+                ApiTextInfo.Error.AppendLine("Expected: file_not_exists(path), aliased as file_not_exist");
                 return BoxedValue.From(true);
             }
 
@@ -397,7 +397,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"file_not_exists error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"file_not_exists error: {ex.Message}");
                 return BoxedValue.From(true);
             }
         }
@@ -409,7 +409,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: file_has_bom(path)");
+                ApiTextInfo.Error.AppendLine("Expected: file_has_bom(path)");
                 return BoxedValue.From(false);
             }
 
@@ -419,7 +419,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"file_has_bom error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"file_has_bom error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -431,7 +431,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: file_add_bom(path)");
+                ApiTextInfo.Error.AppendLine("Expected: file_add_bom(path)");
                 return BoxedValue.From(false);
             }
 
@@ -441,7 +441,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"file_add_bom error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"file_add_bom error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -453,7 +453,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: file_remove_bom(path)");
+                ApiTextInfo.Error.AppendLine("Expected: file_remove_bom(path)");
                 return BoxedValue.From(false);
             }
 
@@ -463,7 +463,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"file_remove_bom error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"file_remove_bom error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -475,7 +475,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: dir_exists(path), aliased as dir_exist");
+                ApiTextInfo.Error.AppendLine("Expected: dir_exists(path), aliased as dir_exist");
                 return BoxedValue.From(false);
             }
 
@@ -485,7 +485,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"dir_exists error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"dir_exists error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -497,7 +497,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: dir_not_exists(path), aliased as dir_not_exist");
+                ApiTextInfo.Error.AppendLine("Expected: dir_not_exists(path), aliased as dir_not_exist");
                 return BoxedValue.From(true);
             }
 
@@ -507,7 +507,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"dir_not_exists error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"dir_not_exists error: {ex.Message}");
                 return BoxedValue.From(true);
             }
         }
@@ -519,7 +519,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: path_exists(path), aliased as path_exist");
+                ApiTextInfo.Error.AppendLine("Expected: path_exists(path), aliased as path_exist");
                 return BoxedValue.From(false);
             }
 
@@ -528,7 +528,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromBool(DslHost.Current!.FileOps.DirectoryExists(path) || DslHost.Current!.FileOps.FileExists(path));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"path_exists error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"path_exists error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -540,7 +540,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: path_not_exists(path), aliased as path_not_exist");
+                ApiTextInfo.Error.AppendLine("Expected: path_not_exists(path), aliased as path_not_exist");
                 return BoxedValue.From(true);
             }
 
@@ -549,7 +549,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromBool(!(DslHost.Current!.FileOps.DirectoryExists(path) || DslHost.Current!.FileOps.FileExists(path)));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"path_not_exists error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"path_not_exists error: {ex.Message}");
                 return BoxedValue.From(true);
             }
         }
@@ -561,7 +561,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: list_dir_info(path[, glob_pattern, recursive])");
+                ApiTextInfo.Error.AppendLine("Expected: list_dir_info(path[, glob_pattern, recursive])");
                 return BoxedValue.NullObject;
             }
 
@@ -580,7 +580,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"list_dir_info error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"list_dir_info error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -591,7 +591,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: ensure_directory(dir), aliased as ensure_dir");
+                ApiTextInfo.Error.AppendLine("Expected: ensure_directory(dir), aliased as ensure_dir");
                 return BoxedValue.From(false);
             }
             var dir = operands[0].AsString;
@@ -604,7 +604,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: remove_directory(dir), aliased as remove_dir");
+                ApiTextInfo.Error.AppendLine("Expected: remove_directory(dir), aliased as remove_dir");
                 return BoxedValue.From(false);
             }
             var dir = operands[0].AsString;
@@ -618,7 +618,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: find_files(path,glob_pattern[,recursive])");
+                ApiTextInfo.Error.AppendLine("Expected: find_files(path,glob_pattern[,recursive])");
                 return BoxedValue.NullObject;
             }
             string dir = operands[0].AsString;
@@ -633,7 +633,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: search_files(glob_pattern,path)");
+                ApiTextInfo.Error.AppendLine("Expected: search_files(glob_pattern,path)");
                 return BoxedValue.NullObject;
             }
             string globPattern = operands[0].AsString;
@@ -648,7 +648,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file");
+                ApiTextInfo.Error.AppendLine("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -662,7 +662,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"search_log_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"search_log_file error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -674,7 +674,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file_as_list");
+                ApiTextInfo.Error.AppendLine("Expected: search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file_as_list");
                 return BoxedValue.FromObject(new List<object>());
             }
 
@@ -692,7 +692,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"search_log_file_as_list error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"search_log_file_as_list error: {ex.Message}");
                 return BoxedValue.FromObject(new List<object>());
             }
         }
@@ -704,7 +704,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: tail_log_file(log_file, lines[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: tail_log_file(log_file, lines[, encoding])");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -716,7 +716,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"tail_log_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"tail_log_file error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -728,7 +728,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: head_log_file(log_file, lines[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: head_log_file(log_file, lines[, encoding])");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -740,7 +740,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"head_log_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"head_log_file error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -752,7 +752,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: tail_file(file, lines[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: tail_file(file, lines[, encoding])");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -764,7 +764,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"tail_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"tail_file error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -776,7 +776,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: head_file(file, lines[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: head_file(file, lines[, encoding])");
                 return BoxedValue.FromString(string.Empty);
             }
 
@@ -788,7 +788,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"head_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"head_file error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -799,7 +799,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: csv_read(path[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: csv_read(path[, encoding])");
                 return BoxedValue.NullObject;
             }
             try {
@@ -849,7 +849,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(rows);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"csv_read error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"csv_read error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -861,7 +861,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: read_file_line_range(path, startLine, endLine[, encoding])");
+                ApiTextInfo.Error.AppendLine("Expected: read_file_line_range(path, startLine, endLine[, encoding])");
                 return BoxedValue.FromString(string.Empty);
             }
             try {
@@ -885,7 +885,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(sb.ToString());
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"read_file_line_range error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"read_file_line_range error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }

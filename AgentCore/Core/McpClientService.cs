@@ -581,7 +581,7 @@ namespace AgentCore.Core
                     error = $"tools/list failed and transport disconnected - {ex.Message}";
                     return false;
                 }
-                MetaDslExecutor.AppendApiErrorInfoLine($"[McpClientService] Warning: failed to list tools for '{serverId}': {ex.Message}");
+                MetaDslExecutor.AppendApiTipInfoLine($"[McpClientService] Warning: failed to list tools for '{serverId}': {ex.Message}");
             }
 
             if (!transport.IsConnected) {

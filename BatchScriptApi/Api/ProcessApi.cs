@@ -85,7 +85,7 @@ namespace BatchCommand.Api
                         m_Script = last.GetParamId(0);
                     }
                     else {
-                        ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                        ApiTextInfo.Error.AppendLine("Expected: " + UsageHint);
                     }
                 }
             }
@@ -285,7 +285,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
             if (operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                ApiTextInfo.Error.AppendLine("Expected: " + UsageHint);
                 return BoxedValue.NullObject;
             }
 
@@ -296,7 +296,7 @@ namespace BatchCommand.Api
                 string? cmdAndArgs = operands.Count > 3 ? operands[3].AsString : null;
 
                 if (!s_Extensions.TryGetValue(language, out var ext)) {
-                    ApiErrorInfo.AppendLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
+                    ApiTextInfo.Error.AppendLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
                     return BoxedValue.NullObject;
                 }
 
@@ -353,7 +353,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(dict);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"ExecuteCommand error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"ExecuteCommand error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -368,7 +368,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
             if (operands.Count < 1 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                ApiTextInfo.Error.AppendLine("Expected: " + UsageHint);
                 return BoxedValue.From(false);
             }
 
@@ -380,7 +380,7 @@ namespace BatchCommand.Api
                 string? cmdAndArgs = operands.Count > 4 ? operands[4].AsString : null;
 
                 if (!s_Extensions.TryGetValue(language, out var ext)) {
-                    ApiErrorInfo.AppendLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
+                    ApiTextInfo.Error.AppendLine("We only support Python, NodeJS, Perl, Ruby, PowerShell, BAT, Bash, and Zsh scripts. !");
                     return BoxedValue.From(false);
                 }
 
@@ -390,11 +390,11 @@ namespace BatchCommand.Api
 
                 var (command, arguments) = BuildScriptCommand(ext, file, cmdAndArgs);
                 ProcessOperations.Shared.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackMsg, file);
-                ApiErrorInfo.AppendLine($"execute_script_callback succeeded (notice, not an error, do not retry): async exec '{file}', result via command_callback");
+                ApiTextInfo.Tip.AppendLine($"execute_script_callback succeeded (notice): async exec '{file}', result via command_callback");
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"ExecuteCommandAsync error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"ExecuteCommandAsync error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -408,7 +408,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
             if (operands.Count < 1 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                ApiTextInfo.Error.AppendLine("Expected: " + UsageHint);
                 return BoxedValue.NullObject;
             }
 
@@ -436,7 +436,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromObject(dict);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"ExecuteCommand error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"ExecuteCommand error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -450,7 +450,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                ApiTextInfo.Error.AppendLine("Expected: " + UsageHint);
                 return BoxedValue.From(false);
             }
 
@@ -466,11 +466,11 @@ namespace BatchCommand.Api
                     arguments = ApplyTemplate(arguments, bindingVals);
 
                 ProcessOperations.Shared.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackMsg);
-                ApiErrorInfo.AppendLine("execute_command_callback succeeded (notice, not an error, do not retry): async exec, result via command_callback");
+                ApiTextInfo.Tip.AppendLine("execute_command_callback succeeded (notice): async exec, result via command_callback");
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"ExecuteCommandAsync error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"ExecuteCommandAsync error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -484,7 +484,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> argVals)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                ApiErrorInfo.AppendLine("Expected: " + UsageHint);
+                ApiTextInfo.Error.AppendLine("Expected: " + UsageHint);
                 return BoxedValue.NullObject;
             }
 
@@ -502,7 +502,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(id);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"StartProcess error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"StartProcess error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -514,7 +514,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: stop_process(processId[, timeout_def_5000ms])");
+                ApiTextInfo.Error.AppendLine("Expected: stop_process(processId[, timeout_def_5000ms])");
                 return BoxedValue.From(false);
             }
 
@@ -526,7 +526,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"StopProcess error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"StopProcess error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -538,7 +538,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: is_process_running(processId)");
+                ApiTextInfo.Error.AppendLine("Expected: is_process_running(processId)");
                 return BoxedValue.From(false);
             }
 
@@ -548,7 +548,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"IsProcessRunning error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"IsProcessRunning error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -560,7 +560,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: write_process_input(processId, input)");
+                ApiTextInfo.Error.AppendLine("Expected: write_process_input(processId, input)");
                 return BoxedValue.From(false);
             }
 
@@ -572,7 +572,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"WriteProcessInput error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"WriteProcessInput error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -584,7 +584,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: read_process_output(processId)");
+                ApiTextInfo.Error.AppendLine("Expected: read_process_output(processId)");
                 return BoxedValue.NullObject;
             }
 
@@ -594,7 +594,7 @@ namespace BatchCommand.Api
                 return output != null ? BoxedValue.FromString(output) : BoxedValue.NullObject;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"ReadProcessOutput error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"ReadProcessOutput error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -606,7 +606,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: read_process_error(processId)");
+                ApiTextInfo.Error.AppendLine("Expected: read_process_error(processId)");
                 return BoxedValue.NullObject;
             }
 
@@ -616,7 +616,7 @@ namespace BatchCommand.Api
                 return error != null ? BoxedValue.FromString(error) : BoxedValue.NullObject;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"ReadProcessError error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"ReadProcessError error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -631,7 +631,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromString(ProcessOperations.Shared.GetActiveCommandStatus());
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"GetCommandStatus error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"GetCommandStatus error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -650,7 +650,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
-                ApiErrorInfo.AppendLine("Expected: get_process_memory([name_or_pid])");
+                ApiTextInfo.Error.AppendLine("Expected: get_process_memory([name_or_pid])");
                 return BoxedValue.From(0.0);
             }
             try {
@@ -667,7 +667,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(bytes / (1024.0 * 1024.0));
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"get_process_memory error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"get_process_memory error: {ex.Message}");
                 return BoxedValue.From(0.0);
             }
         }

@@ -95,7 +95,7 @@ namespace AgentCore.Core
         }
 
         // Execute MetaDSL script; errors (api + dsl) are collected uniformly by
-        // the host and appended to the result text (see ApiErrorInfo).
+        // the host and appended to the result text (see ApiTextInfo.Error).
         internal static string ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError)
         {
             return Host.ExecuteScript(script, maxResultSize, out hasError);
@@ -173,32 +173,57 @@ namespace AgentCore.Core
 
         internal static void ClearApiErrorInfo()
         {
-            ApiErrorInfo.Clear();
+            ApiTextInfo.Error.Clear();
         }
         internal static void AppendApiErrorInfo(string msg)
         {
-            ApiErrorInfo.Append(msg);
+            ApiTextInfo.Error.Append(msg);
         }
         internal static void AppendApiErrorInfoLine(string msg)
         {
-            ApiErrorInfo.AppendLine(msg);
+            ApiTextInfo.Error.AppendLine(msg);
         }
         internal static void AppendApiErrorInfoFormat(string fmt, params object[] args)
         {
-            ApiErrorInfo.AppendFormat(fmt, args);
+            ApiTextInfo.Error.AppendFormat(fmt, args);
         }
         internal static void AppendApiErrorInfoFormatLine(string fmt, params object[] args)
         {
-            ApiErrorInfo.AppendFormatLine(fmt, args);
+            ApiTextInfo.Error.AppendFormatLine(fmt, args);
         }
         internal static bool HasApiErrorInfo {
             get {
-                return ApiErrorInfo.HasInfo;
+                return ApiTextInfo.Error.HasContent;
             }
         }
         internal static string GetApiErrorInfo()
         {
-            return ApiErrorInfo.GetInfo();
+            return ApiTextInfo.Error.GetText();
+        }
+
+        // ---- api tip recording (non-error hints, no HasError on the result) --
+
+        internal static void ClearApiTipInfo()
+        {
+            ApiTextInfo.Tip.Clear();
+        }
+        internal static void AppendApiTipInfo(string msg)
+        {
+            ApiTextInfo.Tip.Append(msg);
+        }
+        internal static void AppendApiTipInfoLine(string msg)
+        {
+            ApiTextInfo.Tip.AppendLine(msg);
+        }
+        internal static bool HasApiTipInfo
+        {
+            get {
+                return ApiTextInfo.Tip.HasContent;
+            }
+        }
+        internal static string GetApiTipInfo()
+        {
+            return ApiTextInfo.Tip.GetText();
         }
 
         // ---- process info ----------------------------------------------------
@@ -572,16 +597,21 @@ namespace AgentCore.Core
                     }
                     var result = BatchCommand.BatchScript.Call(func, vargs);
                     string resultStr = result.IsNullObject ? "null" : DslHost.ResultToString(result);
-                    if (ApiErrorInfo.HasInfo || BatchCommand.BatchScript.HasDslErrors) {
+                    if (ApiTextInfo.Error.HasContent || BatchCommand.BatchScript.HasDslErrors) {
                         hasError = true;
                         var errSb = new StringBuilder();
-                        if (ApiErrorInfo.HasInfo) {
-                            errSb.AppendLine(ApiErrorInfo.GetInfo());
+                        if (ApiTextInfo.Error.HasContent) {
+                            errSb.AppendLine(ApiTextInfo.Error.GetText());
                         }
                         if (BatchCommand.BatchScript.HasDslErrors) {
                             errSb.AppendLine(BatchCommand.BatchScript.GetDslErrors());
                         }
                         return errSb.ToString();
+                    }
+                    // Api tips are hints, not errors: append them to the normal
+                    // result so hasError stays false.
+                    if (ApiTextInfo.Tip.HasContent) {
+                        resultStr = resultStr + "\n" + ApiTextInfo.Tip.GetText();
                     }
                     return resultStr;
                 }

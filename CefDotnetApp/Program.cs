@@ -1102,23 +1102,23 @@ namespace DotNetLib
         }
         internal static void ClearApiErrorInfo()
         {
-            BatchCommand.Api.ApiErrorInfo.Clear();
+            BatchCommand.Api.ApiTextInfo.Error.Clear();
         }
         internal static void AppendApiErrorInfo(string msg)
         {
-            BatchCommand.Api.ApiErrorInfo.Append(msg);
+            BatchCommand.Api.ApiTextInfo.Error.Append(msg);
         }
         internal static void AppendApiErrorInfoLine(string msg)
         {
-            BatchCommand.Api.ApiErrorInfo.AppendLine(msg);
+            BatchCommand.Api.ApiTextInfo.Error.AppendLine(msg);
         }
         internal static void AppendApiErrorInfoFormat(string fmt, params object[] args)
         {
-            BatchCommand.Api.ApiErrorInfo.AppendFormat(fmt, args);
+            BatchCommand.Api.ApiTextInfo.Error.AppendFormat(fmt, args);
         }
         internal static void AppendApiErrorInfoFormatLine(string fmt, params object[] args)
         {
-            BatchCommand.Api.ApiErrorInfo.AppendFormatLine(fmt, args);
+            BatchCommand.Api.ApiTextInfo.Error.AppendFormatLine(fmt, args);
         }
         internal static string GetStringInLength(string str, int len, int beginOrEndOrBeginEnd)
         {
@@ -1145,8 +1145,8 @@ namespace DotNetLib
             string s = Regex.Replace(pattern, @"[^\p{L}\p{N}]", " ");
             return Regex.Replace(s, @" {2,}", " ").Trim();
         }
-        internal static bool HasApiErrorInfo => BatchCommand.Api.ApiErrorInfo.HasInfo;
-        internal static string GetApiErrorInfo() => BatchCommand.Api.ApiErrorInfo.GetInfo();
+        internal static bool HasApiErrorInfo => BatchCommand.Api.ApiTextInfo.Error.HasContent;
+        internal static string GetApiErrorInfo() => BatchCommand.Api.ApiTextInfo.Error.GetText();
 
         internal static void SetContext(IntPtr browser, IntPtr frame)
         {

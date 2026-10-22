@@ -53,7 +53,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_open(local_address, local_port[, id])");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_open(local_address, local_port[, id])");
                 return BoxedValue.EmptyString;
             }
             string localAddress = operands[0].AsString;
@@ -69,7 +69,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 4 || !(operands[1].GetObject() is byte[] bytes)) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_send(id, bytes, remote_address, remote_port), where bytes is byte[]");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_send(id, bytes, remote_address, remote_port), where bytes is byte[]");
                 return BoxedValue.From(false);
             }
             return BoxedValue.From(UdpClientManager.Send(
@@ -82,7 +82,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_close(id)");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_close(id)");
                 return BoxedValue.From(false);
             }
             return BoxedValue.From(UdpClientManager.Close(operands[0].AsString));
@@ -94,7 +94,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_drain_send(id[, timeout_ms])");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_drain_send(id[, timeout_ms])");
                 return BoxedValue.From(false);
             }
             int timeoutMs = operands.Count > 1 ? operands[1].GetInt() : 10000;
@@ -108,7 +108,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_drain_send_status(id)");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_drain_send_status(id)");
                 return BoxedValue.NullObject;
             }
             return BoxedValue.FromObject(
@@ -121,7 +121,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_drain_wait(id[, wait_timeout_ms])");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_drain_wait(id[, wait_timeout_ms])");
                 return BoxedValue.NullObject;
             }
             int waitTimeoutMs = operands.Count > 1 ? operands[1].GetInt() : 1000;
@@ -135,7 +135,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_close_all()");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_close_all()");
                 return BoxedValue.From(0);
             }
             return BoxedValue.From(UdpClientManager.CloseAll());
@@ -147,7 +147,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_count()");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_count()");
                 return BoxedValue.From(0);
             }
             return BoxedValue.From(UdpClientManager.Count());
@@ -159,7 +159,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_state(id)");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_state(id)");
                 return BoxedValue.FromString("unknown");
             }
             return BoxedValue.FromString(UdpClientManager.GetState(operands[0].AsString));
@@ -171,7 +171,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_local_endpoint(id)");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_local_endpoint(id)");
                 return BoxedValue.EmptyString;
             }
             return BoxedValue.FromString(UdpClientManager.GetLocalEndPoint(operands[0].AsString));
@@ -183,7 +183,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                ApiErrorInfo.AppendLine("Expected: udpclient_list()");
+                ApiTextInfo.Error.AppendLine("Expected: udpclient_list()");
                 return BoxedValue.NullObject;
             }
             return BoxedValue.FromObject(UdpClientManager.List());
@@ -195,7 +195,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
-                ApiErrorInfo.AppendLine("Expected: handle_udpclient_queue([max_count])");
+                ApiTextInfo.Error.AppendLine("Expected: handle_udpclient_queue([max_count])");
                 return BoxedValue.From(0);
             }
             int maxCount = operands.Count > 0 ? operands[0].GetInt() : 100;

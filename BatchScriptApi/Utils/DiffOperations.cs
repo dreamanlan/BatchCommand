@@ -981,7 +981,7 @@ namespace BatchCommand.Utils
                 string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
 
                 if (!File.Exists(fullTargetPath)) {
-                    ApiErrorInfo.AppendLine($"Target file not found: {fullTargetPath}");
+                    ApiTextInfo.Error.AppendLine($"Target file not found: {fullTargetPath}");
                     return false;
                 }
 
@@ -991,7 +991,7 @@ namespace BatchCommand.Utils
                 // Call ReplaceFullLinesText to perform the replacement
                 var result = ReplaceFullLinesText(targetContent, searchText, replacementText, replaceAll, normalizeWhitespace);
                 if (!result.Success) {
-                    ApiErrorInfo.AppendLine($"Replace failed: {result.Error}");
+                    ApiTextInfo.Error.AppendLine($"Replace failed: {result.Error}");
                     return false;
                 }
 
@@ -1003,7 +1003,7 @@ namespace BatchCommand.Utils
                 return true;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"ReplaceFullLinesTextInFile error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"ReplaceFullLinesTextInFile error: {ex.Message}");
                 return false;
             }
         }
@@ -1278,7 +1278,7 @@ namespace BatchCommand.Utils
                 string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
 
                 if (!File.Exists(fullTargetPath)) {
-                    ApiErrorInfo.AppendLine($"Target file not found: {fullTargetPath}");
+                    ApiTextInfo.Error.AppendLine($"Target file not found: {fullTargetPath}");
                     return false;
                 }
 
@@ -1288,7 +1288,7 @@ namespace BatchCommand.Utils
                 // Call InsertAfterFullLinesText to perform the insertion
                 var result = InsertAfterFullLinesText(targetContent, searchText, insertText, insertAll, normalizeWhitespace);
                 if (!result.Success) {
-                    ApiErrorInfo.AppendLine($"Insert after failed: {result.Error}");
+                    ApiTextInfo.Error.AppendLine($"Insert after failed: {result.Error}");
                     return false;
                 }
 
@@ -1300,7 +1300,7 @@ namespace BatchCommand.Utils
                 return true;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"InsertAfterFullLinesTextInFile error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"InsertAfterFullLinesTextInFile error: {ex.Message}");
                 return false;
             }
         }
@@ -1321,7 +1321,7 @@ namespace BatchCommand.Utils
                 string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
 
                 if (!File.Exists(fullTargetPath)) {
-                    ApiErrorInfo.AppendLine($"Target file not found: {fullTargetPath}");
+                    ApiTextInfo.Error.AppendLine($"Target file not found: {fullTargetPath}");
                     return false;
                 }
 
@@ -1331,7 +1331,7 @@ namespace BatchCommand.Utils
                 // Call InsertBeforeFullLinesText to perform the insertion
                 var result = InsertBeforeFullLinesText(targetContent, searchText, insertText, insertAll, normalizeWhitespace);
                 if (!result.Success) {
-                    ApiErrorInfo.AppendLine($"Insert before failed: {result.Error}");
+                    ApiTextInfo.Error.AppendLine($"Insert before failed: {result.Error}");
                     return false;
                 }
 
@@ -1343,7 +1343,7 @@ namespace BatchCommand.Utils
                 return true;
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"InsertBeforeFullLinesTextInFile error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"InsertBeforeFullLinesTextInFile error: {ex.Message}");
                 return false;
             }
         }

@@ -50,7 +50,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_open(host, port[, id[, frame_mode[, reconnect_count]]])");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_open(host, port[, id[, frame_mode[, reconnect_count]]])");
                 return BoxedValue.EmptyString;
             }
             string host = operands[0].AsString;
@@ -68,7 +68,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2 || !(operands[1].GetObject() is byte[] bytes)) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_send(id, bytes), where bytes is byte[]");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_send(id, bytes), where bytes is byte[]");
                 return BoxedValue.From(false);
             }
             return BoxedValue.From(TcpClientManager.Send(operands[0].AsString, bytes));
@@ -80,7 +80,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_shutdown_send(id[, timeout_ms])");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_shutdown_send(id[, timeout_ms])");
                 return BoxedValue.From(false);
             }
             int timeoutMs = operands.Count > 1 ? operands[1].GetInt() : 10000;
@@ -94,7 +94,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_shutdown_send_status(id)");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_shutdown_send_status(id)");
                 return BoxedValue.NullObject;
             }
             return BoxedValue.FromObject(
@@ -107,7 +107,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_drain_wait(id[, wait_timeout_ms])");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_drain_wait(id[, wait_timeout_ms])");
                 return BoxedValue.NullObject;
             }
             int waitTimeoutMs = operands.Count > 1 ? operands[1].GetInt() : 1000;
@@ -121,7 +121,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_close(id)");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_close(id)");
                 return BoxedValue.From(false);
             }
             return BoxedValue.From(TcpClientManager.Close(operands[0].AsString));
@@ -133,7 +133,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_close_all()");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_close_all()");
                 return BoxedValue.From(0);
             }
             return BoxedValue.From(TcpClientManager.CloseAll());
@@ -145,7 +145,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_count()");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_count()");
                 return BoxedValue.From(0);
             }
             return BoxedValue.From(TcpClientManager.Count());
@@ -157,7 +157,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_state(id)");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_state(id)");
                 return BoxedValue.FromString("unknown");
             }
             return BoxedValue.FromString(TcpClientManager.GetState(operands[0].AsString));
@@ -169,7 +169,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
-                ApiErrorInfo.AppendLine("Expected: tcpclient_list()");
+                ApiTextInfo.Error.AppendLine("Expected: tcpclient_list()");
                 return BoxedValue.NullObject;
             }
             return BoxedValue.FromObject(TcpClientManager.List());
@@ -181,7 +181,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
-                ApiErrorInfo.AppendLine("Expected: handle_tcpclient_queue([max_count])");
+                ApiTextInfo.Error.AppendLine("Expected: handle_tcpclient_queue([max_count])");
                 return BoxedValue.From(0);
             }
             int maxCount = operands.Count > 0 ? operands[0].GetInt() : 100;

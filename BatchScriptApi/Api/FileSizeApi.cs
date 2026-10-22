@@ -13,14 +13,14 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: get_file_size(path), aliased as file_size");
+                ApiTextInfo.Error.AppendLine("Expected: get_file_size(path), aliased as file_size");
                 return BoxedValue.From(-1L);
             }
 
             try {
                 string path = operands[0].AsString;
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"get_file_size: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"get_file_size: file not found: {path}");
                     return BoxedValue.From(-1L);
                 }
 
@@ -29,7 +29,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(size);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"get_file_size error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"get_file_size error: {ex.Message}");
                 return BoxedValue.From(-1L);
             }
         }
@@ -41,14 +41,14 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: file_last_write_time(path)");
+                ApiTextInfo.Error.AppendLine("Expected: file_last_write_time(path)");
                 return BoxedValue.NullObject;
             }
 
             try {
                 string path = operands[0].AsString;
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"file_last_write_time: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"file_last_write_time: file not found: {path}");
                     return BoxedValue.NullObject;
                 }
 
@@ -56,7 +56,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromDateTime(t);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"file_last_write_time error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"file_last_write_time error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -68,14 +68,14 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: file_last_access_time(path)");
+                ApiTextInfo.Error.AppendLine("Expected: file_last_access_time(path)");
                 return BoxedValue.NullObject;
             }
 
             try {
                 string path = operands[0].AsString;
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"file_last_access_time: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"file_last_access_time: file not found: {path}");
                     return BoxedValue.NullObject;
                 }
 
@@ -83,7 +83,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromDateTime(t);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"file_last_access_time error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"file_last_access_time error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -95,14 +95,14 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: file_create_time(path)");
+                ApiTextInfo.Error.AppendLine("Expected: file_create_time(path)");
                 return BoxedValue.NullObject;
             }
 
             try {
                 string path = operands[0].AsString;
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"file_create_time: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"file_create_time: file not found: {path}");
                     return BoxedValue.NullObject;
                 }
 
@@ -110,7 +110,7 @@ namespace BatchCommand.Api
                 return BoxedValue.FromDateTime(t);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"file_create_time error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"file_create_time error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -122,7 +122,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: set_file_attributes(path, int_attrs)");
+                ApiTextInfo.Error.AppendLine("Expected: set_file_attributes(path, int_attrs)");
                 return BoxedValue.From(false);
             }
 
@@ -130,7 +130,7 @@ namespace BatchCommand.Api
                 string path = operands[0].AsString;
                 int attrs = operands[1].GetInt();
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"set_file_attributes: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"set_file_attributes: file not found: {path}");
                     return BoxedValue.From(false);
                 }
 
@@ -138,7 +138,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"set_file_attributes error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"set_file_attributes error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -150,14 +150,14 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                ApiErrorInfo.AppendLine("Expected: get_file_attributes(path)");
+                ApiTextInfo.Error.AppendLine("Expected: get_file_attributes(path)");
                 return BoxedValue.From(-1);
             }
 
             try {
                 string path = operands[0].AsString;
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"get_file_attributes: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"get_file_attributes: file not found: {path}");
                     return BoxedValue.From(-1);
                 }
 
@@ -165,7 +165,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From((int)attrs);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"get_file_attributes error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"get_file_attributes error: {ex.Message}");
                 return BoxedValue.From(-1);
             }
         }
@@ -177,7 +177,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: set_file_last_write_time(path, date_time)");
+                ApiTextInfo.Error.AppendLine("Expected: set_file_last_write_time(path, date_time)");
                 return BoxedValue.From(false);
             }
 
@@ -185,7 +185,7 @@ namespace BatchCommand.Api
                 string path = operands[0].AsString;
                 DateTime dt = operands[1].GetDateTime();
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"set_file_last_write_time: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"set_file_last_write_time: file not found: {path}");
                     return BoxedValue.From(false);
                 }
 
@@ -193,7 +193,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"set_file_last_write_time error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"set_file_last_write_time error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -205,7 +205,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: set_file_last_access_time(path, date_time)");
+                ApiTextInfo.Error.AppendLine("Expected: set_file_last_access_time(path, date_time)");
                 return BoxedValue.From(false);
             }
 
@@ -213,7 +213,7 @@ namespace BatchCommand.Api
                 string path = operands[0].AsString;
                 DateTime dt = operands[1].GetDateTime();
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"set_file_last_access_time: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"set_file_last_access_time: file not found: {path}");
                     return BoxedValue.From(false);
                 }
 
@@ -221,7 +221,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"set_file_last_access_time error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"set_file_last_access_time error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -233,7 +233,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: set_file_create_time(path, date_time)");
+                ApiTextInfo.Error.AppendLine("Expected: set_file_create_time(path, date_time)");
                 return BoxedValue.From(false);
             }
 
@@ -241,7 +241,7 @@ namespace BatchCommand.Api
                 string path = operands[0].AsString;
                 DateTime dt = operands[1].GetDateTime();
                 if (!System.IO.File.Exists(path)) {
-                    ApiErrorInfo.AppendLine($"set_file_create_time: file not found: {path}");
+                    ApiTextInfo.Error.AppendLine($"set_file_create_time: file not found: {path}");
                     return BoxedValue.From(false);
                 }
 
@@ -249,7 +249,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"set_file_create_time error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"set_file_create_time error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -261,7 +261,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: get_diff_time_days(date_time_1, date_time_2)");
+                ApiTextInfo.Error.AppendLine("Expected: get_diff_time_days(date_time_1, date_time_2)");
                 return BoxedValue.From(0);
             }
 
@@ -272,7 +272,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(days);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"get_diff_time_days error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"get_diff_time_days error: {ex.Message}");
                 return BoxedValue.From(0);
             }
         }
@@ -284,7 +284,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: get_diff_time_seconds(date_time_1, date_time_2)");
+                ApiTextInfo.Error.AppendLine("Expected: get_diff_time_seconds(date_time_1, date_time_2)");
                 return BoxedValue.From(0);
             }
 
@@ -295,7 +295,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(seconds);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"get_diff_time_seconds error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"get_diff_time_seconds error: {ex.Message}");
                 return BoxedValue.From(0);
             }
         }
@@ -307,7 +307,7 @@ namespace BatchCommand.Api
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                ApiErrorInfo.AppendLine("Expected: get_diff_time_ms(date_time_1, date_time_2)");
+                ApiTextInfo.Error.AppendLine("Expected: get_diff_time_ms(date_time_1, date_time_2)");
                 return BoxedValue.From(0L);
             }
 
@@ -318,7 +318,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(ms);
             }
             catch (Exception ex) {
-                ApiErrorInfo.AppendLine($"get_diff_time_ms error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"get_diff_time_ms error: {ex.Message}");
                 return BoxedValue.From(0L);
             }
         }

@@ -121,7 +121,7 @@ namespace BatchCommand.Api
     /// Error-info-supporting implementations of the DotnetStoryScript.dll built-in
     /// framework apis (clone/copy/add/string/path/file/time utilities, ...): the
     /// same logic as the framework apis, but errors are recorded through
-    /// ApiErrorInfo (and surfaced uniformly after dsl execution) instead of
+    /// ApiTextInfo.Error (and surfaced uniformly after dsl execution) instead of
     /// throwing exceptions.
     ///
     /// NOTE: do NOT delete orphaned implementation classes - ones whose
@@ -598,7 +598,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: clone(v), aliased as clone_array|clone_list|clone_hashtable|clone_queue|clone_stack|clone_tuple|copy|copy_array|copy_list|copy_hashtable|copy_queue|copy_stack|copy_tuple");
+                    ApiTextInfo.Error.AppendLine("Expected: clone(v), aliased as clone_array|clone_list|clone_hashtable|clone_queue|clone_stack|clone_tuple|copy|copy_array|copy_list|copy_hashtable|copy_queue|copy_stack|copy_tuple");
                     return BoxedValue.NullObject;
                 }
                 if (operands.Count >= 1) {
@@ -1473,7 +1473,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_object(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_object(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsObject);
@@ -1484,7 +1484,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_string(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_string(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsString);
@@ -1495,7 +1495,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_boolean(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_boolean(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsBoolean);
@@ -1506,7 +1506,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_char(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_char(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsChar);
@@ -1517,7 +1517,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_integer(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_integer(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsInteger);
@@ -1528,7 +1528,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_signed_integer(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_signed_integer(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsSignedInteger);
@@ -1539,7 +1539,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_unsigned_integer(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_unsigned_integer(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsUnsignedInteger);
@@ -1550,7 +1550,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_number(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_number(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsNumber);
@@ -1561,7 +1561,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_date_time(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_date_time(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsDateTime);
@@ -1572,7 +1572,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_tuple(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_tuple(v)");
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsTuple);
@@ -1583,7 +1583,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: boxed_value_type(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: boxed_value_type(v)");
                     return BoxedValue.From(-1);
                 }
                 return BoxedValue.From(operands[0].Type);
@@ -1594,7 +1594,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: boxed_value_type_name(v)");
+                    ApiTextInfo.Error.AppendLine("Expected: boxed_value_type_name(v)");
                     return BoxedValue.EmptyString;
                 }
                 return BoxedValue.FromString(operands[0].GetTypeName());
@@ -4077,7 +4077,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: call_stack()");
+                    ApiTextInfo.Error.AppendLine("Expected: call_stack()");
                     return BoxedValue.NullObject;
                 }
                 var r = System.Environment.StackTrace;
@@ -4310,7 +4310,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
-                    ApiErrorInfo.AppendLine("Expected: append_format_line(sb,fmt,arg1,arg2,...)");
+                    ApiTextInfo.Error.AppendLine("Expected: append_format_line(sb,fmt,arg1,arg2,...)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4343,7 +4343,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_builder_to_string(sb)");
+                    ApiTextInfo.Error.AppendLine("Expected: string_builder_to_string(sb)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4361,7 +4361,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: string_join(sep,list), aliased as join_string|join");
+                    ApiTextInfo.Error.AppendLine("Expected: string_join(sep,list), aliased as join_string|join");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4393,7 +4393,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: string_split(str, sep) or string_split(str,sep_list), aliased as split_string|split");
+                    ApiTextInfo.Error.AppendLine("Expected: string_split(str, sep) or string_split(str,sep_list), aliased as split_string|split");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4441,7 +4441,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_trim(str), aliased as trim_string|trim");
+                    ApiTextInfo.Error.AppendLine("Expected: string_trim(str), aliased as trim_string|trim");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4459,7 +4459,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_trim_start(str), aliased as trim_start_string|trim_start");
+                    ApiTextInfo.Error.AppendLine("Expected: string_trim_start(str), aliased as trim_start_string|trim_start");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4477,7 +4477,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_trim_end(str), aliased as trim_end_string|trim_end");
+                    ApiTextInfo.Error.AppendLine("Expected: string_trim_end(str), aliased as trim_end_string|trim_end");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4495,7 +4495,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_to_lower(str)");
+                    ApiTextInfo.Error.AppendLine("Expected: string_to_lower(str)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4513,7 +4513,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_to_upper(str)");
+                    ApiTextInfo.Error.AppendLine("Expected: string_to_upper(str)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4532,7 +4532,7 @@ namespace BatchCommand.Api
             {
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count < 3 || operands.Count > 4) {
-                    ApiErrorInfo.AppendLine("Expected: string_replace(str, substr, replace[, exactMatch]), aliased as replace_string|replace");
+                    ApiTextInfo.Error.AppendLine("Expected: string_replace(str, substr, replace[, exactMatch]), aliased as replace_string|replace");
                     return BoxedValue.NullObject;
                 }
                 var str = operands[0].AsString;
@@ -4541,7 +4541,7 @@ namespace BatchCommand.Api
                 bool exactMatch = operands.Count > 3 ? operands[3].GetBool() : false;
                 if (null != str && null != key && null != val) {
                     if (string.IsNullOrEmpty(key)) {
-                        ApiErrorInfo.AppendLine("The substr cannot be empty !!!");
+                        ApiTextInfo.Error.AppendLine("The substr cannot be empty !!!");
                         return BoxedValue.From(str);
                     }
                     // Level 1: Exact match (no modification to search string)
@@ -4550,10 +4550,10 @@ namespace BatchCommand.Api
                     }
                     else if (exactMatch) {
                         if (File.Exists(str.Trim())) {
-                            ApiErrorInfo.AppendLine("string_replace: used for strings, not files.");
+                            ApiTextInfo.Error.AppendLine("string_replace: used for strings, not files.");
                         }
                         else {
-                            ApiErrorInfo.AppendLine("string_replace: substr not found (exact match)");
+                            ApiTextInfo.Error.AppendLine("string_replace: substr not found (exact match)");
                         }
                         return BoxedValue.From(str);
                     }
@@ -4571,17 +4571,17 @@ namespace BatchCommand.Api
                                 return BoxedValue.From(normResult.ResultContent);
                             }
                             if (File.Exists(str.Trim())) {
-                                ApiErrorInfo.AppendLine("string_replace: used for strings, not files.");
+                                ApiTextInfo.Error.AppendLine("string_replace: used for strings, not files.");
                             }
                             else {
-                                ApiErrorInfo.AppendLine("string_replace: substr not found");
+                                ApiTextInfo.Error.AppendLine("string_replace: substr not found");
                             }
                             return BoxedValue.From(str);
                         }
                     }
                 }
                 else {
-                    ApiErrorInfo.AppendLine("string_replace: str or substr or replace is null !!!");
+                    ApiTextInfo.Error.AppendLine("string_replace: str or substr or replace is null !!!");
                     r = str;
                 }
                 return r;
@@ -4592,7 +4592,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
-                    ApiErrorInfo.AppendLine("Expected: string_replace_char(str,key,char_as_str)");
+                    ApiTextInfo.Error.AppendLine("Expected: string_replace_char(str,key,char_as_str)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4605,10 +4605,10 @@ namespace BatchCommand.Api
                             r = str.Replace(key[0], val[0]);
                         }
                         else if (File.Exists(str.Trim())) {
-                            ApiErrorInfo.AppendLine("string_replace_char: used for strings, not files.");
+                            ApiTextInfo.Error.AppendLine("string_replace_char: used for strings, not files.");
                         }
                         else {
-                            ApiErrorInfo.AppendLine("string_replace_char: char not found");
+                            ApiTextInfo.Error.AppendLine("string_replace_char: char not found");
                         }
                     }
                 }
@@ -4643,7 +4643,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
-                    ApiErrorInfo.AppendLine("Expected: string_contains(str,str_or_list_1,str_or_list_2,...), aliased as contains");
+                    ApiTextInfo.Error.AppendLine("Expected: string_contains(str,str_or_list_1,str_or_list_2,...), aliased as contains");
                     return BoxedValue.NullObject;
                 }
                 bool r = false;
@@ -4678,7 +4678,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
-                    ApiErrorInfo.AppendLine("Expected: string_not_contains(str,str_or_list_1,str_or_list_2,...), aliased as not_contains");
+                    ApiTextInfo.Error.AppendLine("Expected: string_not_contains(str,str_or_list_1,str_or_list_2,...), aliased as not_contains");
                     return BoxedValue.NullObject;
                 }
                 bool r = false;
@@ -4713,7 +4713,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
-                    ApiErrorInfo.AppendLine("Expected: string_contains_any(str,str_or_list_1,str_or_list_2,...), aliased as contains_any");
+                    ApiTextInfo.Error.AppendLine("Expected: string_contains_any(str,str_or_list_1,str_or_list_2,...), aliased as contains_any");
                     return BoxedValue.NullObject;
                 }
                 bool r = false;
@@ -4758,7 +4758,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
-                    ApiErrorInfo.AppendLine("Expected: string_not_contains_any(str,str_or_list_1,str_or_list_2,...), aliased as not_contains_any");
+                    ApiTextInfo.Error.AppendLine("Expected: string_not_contains_any(str,str_or_list_1,str_or_list_2,...), aliased as not_contains_any");
                     return BoxedValue.NullObject;
                 }
                 bool r = false;
@@ -4803,7 +4803,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_to_int(str), aliased as str_to_int");
+                    ApiTextInfo.Error.AppendLine("Expected: string_to_int(str), aliased as str_to_int");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4824,7 +4824,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_to_uint(str), aliased as str_to_uint");
+                    ApiTextInfo.Error.AppendLine("Expected: string_to_uint(str), aliased as str_to_uint");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4845,7 +4845,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_to_long(str), aliased as str_to_long");
+                    ApiTextInfo.Error.AppendLine("Expected: string_to_long(str), aliased as str_to_long");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4866,7 +4866,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_to_ulong(str), aliased as str_to_ulong");
+                    ApiTextInfo.Error.AppendLine("Expected: string_to_ulong(str), aliased as str_to_ulong");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4887,7 +4887,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: string_to_float(str), aliased as str_to_float");
+                    ApiTextInfo.Error.AppendLine("Expected: string_to_float(str), aliased as str_to_float");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4908,7 +4908,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: strint_to_double(str), aliased as str_to_double");
+                    ApiTextInfo.Error.AppendLine("Expected: strint_to_double(str), aliased as str_to_double");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4929,7 +4929,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: hex_string_to_int(str), aliased as hex_to_int");
+                    ApiTextInfo.Error.AppendLine("Expected: hex_string_to_int(str), aliased as hex_to_int");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4950,7 +4950,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: hex_string_to_uint(str), aliased as hex_to_uint");
+                    ApiTextInfo.Error.AppendLine("Expected: hex_string_to_uint(str), aliased as hex_to_uint");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4971,7 +4971,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: hex_string_to_long(str), aliased as hex_to_long");
+                    ApiTextInfo.Error.AppendLine("Expected: hex_string_to_long(str), aliased as hex_to_long");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -4992,7 +4992,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: hex_string_to_ulong(str), aliased as hex_to_ulong");
+                    ApiTextInfo.Error.AppendLine("Expected: hex_string_to_ulong(str), aliased as hex_to_ulong");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5013,7 +5013,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count > 1) {
-                    ApiErrorInfo.AppendLine("Expected: date_time_string([fmt]), aliased as date_time_str");
+                    ApiTextInfo.Error.AppendLine("Expected: date_time_string([fmt]), aliased as date_time_str");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5034,7 +5034,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: long_date_string(), aliased as long_date_str");
+                    ApiTextInfo.Error.AppendLine("Expected: long_date_string(), aliased as long_date_str");
                     return BoxedValue.NullObject;
                 }
                 var r = BoxedValue.FromObject(DateTime.Now.ToLongDateString());
@@ -5046,7 +5046,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: long_time_string(), aliased as long_time_str");
+                    ApiTextInfo.Error.AppendLine("Expected: long_time_string(), aliased as long_time_str");
                     return BoxedValue.NullObject;
                 }
                 var r = BoxedValue.FromObject(DateTime.Now.ToShortDateString());
@@ -5058,7 +5058,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: short_date_string(), aliased as short_date_str");
+                    ApiTextInfo.Error.AppendLine("Expected: short_date_string(), aliased as short_date_str");
                     return BoxedValue.NullObject;
                 }
                 var r = BoxedValue.FromObject(DateTime.Now.ToShortDateString());
@@ -5070,7 +5070,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: short_time_string(), aliased as short_time_str");
+                    ApiTextInfo.Error.AppendLine("Expected: short_time_string(), aliased as short_time_str");
                     return BoxedValue.NullObject;
                 }
                 var r = BoxedValue.FromObject(DateTime.Now.ToShortTimeString());
@@ -5082,7 +5082,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: now()");
+                    ApiTextInfo.Error.AppendLine("Expected: now()");
                     return BoxedValue.NullObject;
                 }
                 var r = BoxedValue.FromDateTime(DateTime.Now);
@@ -5094,7 +5094,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: parse_date_time(str)");
+                    ApiTextInfo.Error.AppendLine("Expected: parse_date_time(str)");
                     return BoxedValue.NullObject;
                 }
                 DateTime.TryParse(operands[0].ToString(), out var dt);
@@ -5107,7 +5107,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: format_date_time(str,datetime)");
+                    ApiTextInfo.Error.AppendLine("Expected: format_date_time(str,datetime)");
                     return BoxedValue.NullObject;
                 }
                 string fmt = operands[0].ToString();
@@ -5121,7 +5121,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_null_or_empty(str)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_null_or_empty(str)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5148,7 +5148,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: to_array(list)");
+                    ApiTextInfo.Error.AppendLine("Expected: to_array(list)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5178,7 +5178,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: list_count(list), aliased as list_get_count|get_list_count|list_size");
+                    ApiTextInfo.Error.AppendLine("Expected: list_count(list), aliased as list_get_count|get_list_count|list_size");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5209,7 +5209,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2 || operands.Count > 3) {
-                    ApiErrorInfo.AppendLine("Expected: list_get(list,index[,defval])");
+                    ApiTextInfo.Error.AppendLine("Expected: list_get(list,index[,defval])");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5237,7 +5237,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
-                    ApiErrorInfo.AppendLine("Expected: list_set(list,index,val)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_set(list,index,val)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5264,7 +5264,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: list_index_of(list,val), aliased as list_indexof");
+                    ApiTextInfo.Error.AppendLine("Expected: list_index_of(list,val), aliased as list_indexof");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5286,7 +5286,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: list_add(list,val)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_add(list,val)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5308,7 +5308,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: list_remove(list,val)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_remove(list,val)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5330,7 +5330,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
-                    ApiErrorInfo.AppendLine("Expected: list_insert(list,index,val)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_insert(list,index,val)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5353,7 +5353,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: list_remove_at(list,index)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_remove_at(list,index)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5372,7 +5372,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: list_clear(list)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_clear(list)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5390,7 +5390,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: list_split(list,ct) api, return list of list");
+                    ApiTextInfo.Error.AppendLine("Expected: list_split(list,ct) api, return list of list");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5460,7 +5460,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_count(hash), aliased as hashtable_get_count|get_hashtable_count|hashtable_size");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_count(hash), aliased as hashtable_get_count|get_hashtable_count|hashtable_size");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5519,7 +5519,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2 || operands.Count > 3) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_get(hash,key[,defval])");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_get(hash,key[,defval])");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5551,7 +5551,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_set(hash,key,val)");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_set(hash,key,val)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5578,7 +5578,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_add(hash,key,val)");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_add(hash,key,val)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5605,7 +5605,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_remove(hash,key)");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_remove(hash,key)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5630,7 +5630,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_clear(hash)");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_clear(hash)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5648,7 +5648,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_keys(hash)");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_keys(hash)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5677,7 +5677,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_values(hash)");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_values(hash)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5706,7 +5706,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: list_hashtable(hash) api, return list of pair");
+                    ApiTextInfo.Error.AppendLine("Expected: list_hashtable(hash) api, return list of pair");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5728,7 +5728,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: hashtable_split(hash,ct) api, return list of hashtable");
+                    ApiTextInfo.Error.AppendLine("Expected: hashtable_split(hash,ct) api, return list of hashtable");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5799,7 +5799,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: peek(queue_or_stack)");
+                    ApiTextInfo.Error.AppendLine("Expected: peek(queue_or_stack)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5821,7 +5821,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: stack_count(stack), aliased as stack_get_count|get_stack_count|stack_size");
+                    ApiTextInfo.Error.AppendLine("Expected: stack_count(stack), aliased as stack_get_count|get_stack_count|stack_size");
                     return BoxedValue.NullObject;
                 }
                 int r = 0;
@@ -5852,7 +5852,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: push(stack,v)");
+                    ApiTextInfo.Error.AppendLine("Expected: push(stack,v)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5871,7 +5871,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: pop(stack)");
+                    ApiTextInfo.Error.AppendLine("Expected: pop(stack)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5889,7 +5889,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: stack_clear(stack)");
+                    ApiTextInfo.Error.AppendLine("Expected: stack_clear(stack)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5907,7 +5907,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: queue_count(queue), aliased as queue_get_count|get_queue_count|queue_size");
+                    ApiTextInfo.Error.AppendLine("Expected: queue_count(queue), aliased as queue_get_count|get_queue_count|queue_size");
                     return BoxedValue.NullObject;
                 }
                 int r = 0;
@@ -5938,7 +5938,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: enqueue(queue,v)");
+                    ApiTextInfo.Error.AppendLine("Expected: enqueue(queue,v)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5957,7 +5957,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: dequeue(queue)");
+                    ApiTextInfo.Error.AppendLine("Expected: dequeue(queue)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5975,7 +5975,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: queue_clear(queue)");
+                    ApiTextInfo.Error.AppendLine("Expected: queue_clear(queue)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -5993,7 +5993,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: set_env(k,v)");
+                    ApiTextInfo.Error.AppendLine("Expected: set_env(k,v)");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -6011,7 +6011,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_env(k)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_env(k)");
                     return BoxedValue.NullObject;
                 }
                 string ret = string.Empty;
@@ -6027,7 +6027,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: expand(str)");
+                    ApiTextInfo.Error.AppendLine("Expected: expand(str)");
                     return BoxedValue.NullObject;
                 }
                 string ret = string.Empty;
@@ -6050,7 +6050,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: cd(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: cd(path)");
                     return BoxedValue.NullObject;
                 }
                 string ret = string.Empty;
@@ -6080,7 +6080,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: cmd_line()");
+                    ApiTextInfo.Error.AppendLine("Expected: cmd_line()");
                     return BoxedValue.NullObject;
                 }
                 return Environment.CommandLine;
@@ -6091,7 +6091,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: cmd_line_args(prev_arg) or cmdlineargs() api, first return next arg, second return array of arg");
+                    ApiTextInfo.Error.AppendLine("Expected: cmd_line_args(prev_arg) or cmdlineargs() api, first return next arg, second return array of arg");
                     return BoxedValue.NullObject;
                 }
                 if (operands.Count >= 1) {
@@ -6122,7 +6122,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: os_platform()");
+                    ApiTextInfo.Error.AppendLine("Expected: os_platform()");
                     return BoxedValue.NullObject;
                 }
                 return Environment.OSVersion.Platform.ToString();
@@ -6133,7 +6133,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: os_version()");
+                    ApiTextInfo.Error.AppendLine("Expected: os_version()");
                     return BoxedValue.NullObject;
                 }
                 return Environment.OSVersion.Version.ToString();
@@ -6144,7 +6144,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_full_path(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_full_path(path)");
                     return BoxedValue.NullObject;
                 }
                 string ret = string.Empty;
@@ -6163,7 +6163,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_path_root(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_path_root(path)");
                     return BoxedValue.NullObject;
                 }
                 string ret = string.Empty;
@@ -6182,7 +6182,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: get_random_file_name()");
+                    ApiTextInfo.Error.AppendLine("Expected: get_random_file_name()");
                     return BoxedValue.NullObject;
                 }
                 return Path.GetRandomFileName();
@@ -6193,7 +6193,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: get_temp_file_name()");
+                    ApiTextInfo.Error.AppendLine("Expected: get_temp_file_name()");
                     return BoxedValue.NullObject;
                 }
                 return Path.GetTempFileName();
@@ -6204,7 +6204,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: get_temp_path()");
+                    ApiTextInfo.Error.AppendLine("Expected: get_temp_path()");
                     return BoxedValue.NullObject;
                 }
                 return Path.GetTempPath();
@@ -6215,7 +6215,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: has_extension(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: has_extension(path)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -6234,7 +6234,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: is_path_rooted(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: is_path_rooted(path)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -6253,7 +6253,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_file_name(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_file_name(path)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -6272,7 +6272,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_file_name_without_extension(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_file_name_without_extension(path)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -6291,7 +6291,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_extension(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_extension(path)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -6310,7 +6310,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_directory_name(path)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_directory_name(path)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -6329,7 +6329,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
-                    ApiErrorInfo.AppendLine("Expected: combine_path(path1,path2,...)");
+                    ApiTextInfo.Error.AppendLine("Expected: combine_path(path1,path2,...)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -6339,7 +6339,7 @@ namespace BatchCommand.Api
                         var v = operands[ix];
                         var str = v.AsString;
                         if (string.IsNullOrEmpty(str)) {
-                            ApiErrorInfo.AppendLine(string.Format("Path {0} is null or empty", ix));
+                            ApiTextInfo.Error.AppendLine(string.Format("Path {0} is null or empty", ix));
                             return BoxedValue.NullObject;
                         }
                         list.Add(str);
@@ -6356,7 +6356,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: change_extension(path,ext)");
+                    ApiTextInfo.Error.AppendLine("Expected: change_extension(path,ext)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -6376,7 +6376,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1 || operands.Count > 3) {
-                    ApiErrorInfo.AppendLine("Expected: quote_path(path[,only_needed,single_quote])");
+                    ApiTextInfo.Error.AppendLine("Expected: quote_path(path[,only_needed,single_quote])");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -6443,7 +6443,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
-                    ApiErrorInfo.AppendLine("Expected: echo(fmt,arg1,arg2,...) api, Console.WriteLine");
+                    ApiTextInfo.Error.AppendLine("Expected: echo(fmt,arg1,arg2,...) api, Console.WriteLine");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;
@@ -6477,7 +6477,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count > 1) {
-                    ApiErrorInfo.AppendLine("Expected: file_echo(bool) or file_echo()");
+                    ApiTextInfo.Error.AppendLine("Expected: file_echo(bool) or file_echo()");
                     return BoxedValue.NullObject;
                 }
                 if (operands.Count >= 1) {
@@ -6491,7 +6491,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: dir_exists(dir), aliased as direxists");
+                    ApiTextInfo.Error.AppendLine("Expected: dir_exists(dir), aliased as direxists");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -6508,7 +6508,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: file_exists(file), aliased as fileexists");
+                    ApiTextInfo.Error.AppendLine("Expected: file_exists(file), aliased as fileexists");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -6525,7 +6525,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
-                    ApiErrorInfo.AppendLine("Expected: list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -6570,7 +6570,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
-                    ApiErrorInfo.AppendLine("Expected: list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -6615,7 +6615,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
-                    ApiErrorInfo.AppendLine("Expected: list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -6660,7 +6660,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
-                    ApiErrorInfo.AppendLine("Expected: list_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
+                    ApiTextInfo.Error.AppendLine("Expected: list_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -6705,7 +6705,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: create_dir(dir), aliased as make_dir");
+                    ApiTextInfo.Error.AppendLine("Expected: create_dir(dir), aliased as make_dir");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -6729,7 +6729,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
-                    ApiErrorInfo.AppendLine("Expected: copy_dir(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir");
+                    ApiTextInfo.Error.AppendLine("Expected: copy_dir(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir");
                     return BoxedValue.NullObject;
                 }
                 int ct = 0;
@@ -6811,7 +6811,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: move_dir(dir1,dir2)");
+                    ApiTextInfo.Error.AppendLine("Expected: move_dir(dir1,dir2)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -6840,7 +6840,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: delete_dir(dir)");
+                    ApiTextInfo.Error.AppendLine("Expected: delete_dir(dir)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -6864,7 +6864,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: copy_file(file1,file2)");
+                    ApiTextInfo.Error.AppendLine("Expected: copy_file(file1,file2)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -6894,7 +6894,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
-                    ApiErrorInfo.AppendLine("Expected: copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir");
+                    ApiTextInfo.Error.AppendLine("Expected: copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir");
                     return BoxedValue.NullObject;
                 }
                 int ct = 0;
@@ -6961,7 +6961,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiErrorInfo.AppendLine("Expected: move_file(file1,file2)");
+                    ApiTextInfo.Error.AppendLine("Expected: move_file(file1,file2)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -6994,7 +6994,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: delete_file(file)");
+                    ApiTextInfo.Error.AppendLine("Expected: delete_file(file)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -7018,7 +7018,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
-                    ApiErrorInfo.AppendLine("Expected: delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir");
+                    ApiTextInfo.Error.AppendLine("Expected: delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir");
                     return BoxedValue.NullObject;
                 }
                 int ct = 0;
@@ -7066,7 +7066,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
-                    ApiErrorInfo.AppendLine("Expected: delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir");
+                    ApiTextInfo.Error.AppendLine("Expected: delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir");
                     return BoxedValue.NullObject;
                 }
                 int ct = 0;
@@ -7114,7 +7114,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_file_info(file)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_file_info(file)");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -7133,7 +7133,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_dir_info(dir)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_dir_info(dir)");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -7152,7 +7152,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: get_drive_info(drive)");
+                    ApiTextInfo.Error.AppendLine("Expected: get_drive_info(drive)");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -7168,7 +7168,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
-                    ApiErrorInfo.AppendLine("Expected: get_drives_info()");
+                    ApiTextInfo.Error.AppendLine("Expected: get_drives_info()");
                     return BoxedValue.NullObject;
                 }
                 var ret = DriveInfo.GetDrives();
@@ -7180,7 +7180,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1 || operands.Count > 2) {
-                    ApiErrorInfo.AppendLine("Expected: read_all_lines(file[,encoding])");
+                    ApiTextInfo.Error.AppendLine("Expected: read_all_lines(file[,encoding])");
                     return BoxedValue.NullObject;
                 }
                 if (operands.Count >= 1) {
@@ -7203,7 +7203,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2 || operands.Count > 3) {
-                    ApiErrorInfo.AppendLine("Expected: write_all_lines(file,lines[,encoding])");
+                    ApiTextInfo.Error.AppendLine("Expected: write_all_lines(file,lines[,encoding])");
                     return BoxedValue.NullObject;
                 }
                 if (operands.Count >= 2) {
@@ -7223,7 +7223,7 @@ namespace BatchCommand.Api
                             strs.Add(line.ToString() ?? string.Empty);
                         }
                         if (strs.Count == 0) {
-                            ApiErrorInfo.AppendLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");
+                            ApiTextInfo.Error.AppendLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");
                             return BoxedValue.From(false);
                         }
                         string ext = Path.GetExtension(path).ToLower();
@@ -7231,7 +7231,7 @@ namespace BatchCommand.Api
                             var lineCount = SafeFileReader.ReadAllLines(path).Length;
                             var newLineCount = path.Split('\n').Length;
                             if (lineCount > newLineCount + MaxLinesDeletedByWriteFile) {
-                                ApiErrorInfo.AppendLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
+                                ApiTextInfo.Error.AppendLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
                                 return BoxedValue.From(false);
                             }
                         }
@@ -7247,7 +7247,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 1 || operands.Count > 2) {
-                    ApiErrorInfo.AppendLine("Expected: read_all_text(file[,encoding])");
+                    ApiTextInfo.Error.AppendLine("Expected: read_all_text(file[,encoding])");
                     return BoxedValue.NullObject;
                 }
                 if (operands.Count >= 1) {
@@ -7270,7 +7270,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count < 2 || operands.Count > 3) {
-                    ApiErrorInfo.AppendLine("Expected: write_all_text(file,txt[,encoding])");
+                    ApiTextInfo.Error.AppendLine("Expected: write_all_text(file,txt[,encoding])");
                     return BoxedValue.NullObject;
                 }
                 if (operands.Count >= 2) {
@@ -7286,7 +7286,7 @@ namespace BatchCommand.Api
                             encoding = BatchCommand.Utils.BomHelper.GetEncodingForWrite(v, path);
                         }
                         if (string.IsNullOrEmpty(text)) {
-                            ApiErrorInfo.AppendLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");
+                            ApiTextInfo.Error.AppendLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");
                             return BoxedValue.From(false);
                         }
                         string ext = Path.GetExtension(path).ToLower();
@@ -7294,7 +7294,7 @@ namespace BatchCommand.Api
                             var lineCount = SafeFileReader.ReadAllLines(path).Length;
                             var newLineCount = path.Split('\n').Length;
                             if (lineCount > newLineCount + MaxLinesDeletedByWriteFile) {
-                                ApiErrorInfo.AppendLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
+                                ApiTextInfo.Error.AppendLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
                                 return BoxedValue.From(false);
                             }
                         }
@@ -7310,7 +7310,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiErrorInfo.AppendLine("Expected: calc_md5(file)");
+                    ApiTextInfo.Error.AppendLine("Expected: calc_md5(file)");
                     return BoxedValue.NullObject;
                 }
                 BoxedValue r = BoxedValue.NullObject;

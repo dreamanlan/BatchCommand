@@ -18,7 +18,7 @@ namespace BatchCommand.Api
     /// Shared dsl script host for all dotnet hosts (AgentCore, CefDotnetApp, ...):
     /// per-thread interpreter init + api/doc registration, timestamp based script
     /// hot reload, script/function execution with unified error collection
-    /// (api errors + dsl errors, see ApiErrorInfo), result size truncation, and
+    /// (api errors + dsl errors, see ApiTextInfo.Error), result size truncation, and
     /// the call_metadsl_task worker pool.
     ///
     /// One instance per process: the BatchScript interpreter state is [ThreadStatic]
@@ -169,7 +169,8 @@ namespace BatchCommand.Api
                 Log?.Invoke("[csharp] Can't find dsl script: " + fi.FullName);
             }
             RefreshGlobalVars();
-            ApiErrorInfo.Clear();
+            ApiTextInfo.Error.Clear();
+            ApiTextInfo.Tip.Clear();
             if (loaded) {
                 // Optional entry point: only call it when the script defines
                 // it (e.g. monitor.dsl does not).
@@ -200,7 +201,7 @@ namespace BatchCommand.Api
 
         // Execute a dsl code snippet and return its text result; on error
         // hasError is set and the error text (api errors + dsl errors, see
-        // ApiErrorInfo) is appended to the result after truncation.
+        // ApiTextInfo.Error) is appended to the result after truncation.
         public string ExecuteScript(string script, int maxResultSize, out bool hasError)
         {
             try {
@@ -219,11 +220,18 @@ namespace BatchCommand.Api
                     }
                     resSb.AppendLine(resultStr);
                 }
+                // Api tips are hints, not errors: append them to the normal
+                // result so hasError stays false and the text still reaches
+                // the caller (through the same truncation path).
+                if (ApiTextInfo.Tip.HasContent) {
+                    resSb.AppendLine();
+                    resSb.AppendLine(ApiTextInfo.Tip.GetText());
+                }
                 var errSb = new StringBuilder();
-                if (ApiErrorInfo.HasInfo) {
+                if (ApiTextInfo.Error.HasContent) {
                     hasError = true;
                     errSb.AppendLine();
-                    errSb.AppendLine(ApiErrorInfo.GetInfo());
+                    errSb.AppendLine(ApiTextInfo.Error.GetText());
                 }
                 if (BatchScript.HasDslErrors) {
                     hasError = true;
@@ -533,15 +541,16 @@ namespace BatchCommand.Api
                     // executed file, before running the entry.
                     tls_ScriptPath = job.Path;
                     RefreshGlobalVars();
-                    ApiErrorInfo.Clear();
+                    ApiTextInfo.Error.Clear();
+                    ApiTextInfo.Tip.Clear();
                     BatchScript.ClearDslErrors();
                     // The return value is passed through AS IS (object
                     // references included): the caller decides how to
                     // interpret it, never a string conversion.
                     value = BatchScript.Call(job.Func, job.Args);
-                    if (ApiErrorInfo.HasInfo) {
+                    if (ApiTextInfo.Error.HasContent) {
                         hasError = true;
-                        errSb.AppendLine(ApiErrorInfo.GetInfo());
+                        errSb.AppendLine(ApiTextInfo.Error.GetText());
                     }
                     if (BatchScript.HasDslErrors) {
                         hasError = true;
@@ -979,7 +988,7 @@ namespace BatchCommand.Api
                 lock (s_MetaDslTaskLock) {
                     if (task_index >= s_MetaDslTaskNum + c_MetaDslTaskIndexSlack) {
                         string err = string.Format("call_metadsl_task: task_index {0} is more than {1} past the current task num {2}, looks like a typo, func:{3}", task_index, c_MetaDslTaskIndexSlack, s_MetaDslTaskNum, func_name);
-                        ApiErrorInfo.AppendLine(err);
+                        ApiTextInfo.Error.AppendLine(err);
                         Log?.Invoke("[csharp] " + err);
                         return false;
                     }

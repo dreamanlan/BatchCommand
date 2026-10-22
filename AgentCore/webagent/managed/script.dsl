@@ -696,7 +696,13 @@ script(on_before_child_process_launch)params($processType, $cmdLine)
 {
     // $cmdLine is the child process command line (passed as parameter)
     nativelog("[dsl] on_before_child_process_launch {0}", $processType);
-    //debuggerbreak();
+    // Suppress the DCHECK_IS_ON paint property tree dumps: with VLOG level >= 1
+    // pre_paint_tree_walk.cc prints 4 full property trees via LOG(INFO) on
+    // every paint update, flooding chrome_debug.log (~1.4GB/h). vmodule
+    // overrides the per-module VLOG level downward, silencing only this file.
+    // Appended here because this callback runs browser-side before the child
+    // process starts, so the child consumes the switch at its logging init.
+    $cmdLine.AppendSwitchWithValue("vmodule", "pre_paint_tree_walk=0");
 };
 
 script(on_already_running_app_relaunch)params($cmdLine, $curDir)

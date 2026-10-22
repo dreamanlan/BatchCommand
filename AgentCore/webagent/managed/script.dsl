@@ -645,6 +645,15 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         // propagate to child processes automatically.
         $cmdLine.AppendSwitchWithValue("fake-vsync-rate", "60");
         $cmdLine.AppendSwitchWithValue("enable-features", "UseCompositorClockVSyncInterval");
+        // Tab discard guard: at night the system hits memory pressure and the
+        // urgent page discarding policy (feature UrgentPageDiscarding, enabled
+        // by default) unloads the only background tab candidate - ChatRoom -
+        // via DiscardAPage(URGENT) ("Discarding multiple pages" in the log).
+        // The hot-reload snapshot then sees url=[empty] and cannot rebuild
+        // the page. We run our own per-renderer memory guard, so Chromium's
+        // urgent tab reclamation is redundant here. Memory Saver proactive
+        // discards stay unaffected (pref-gated, default off).
+        $cmdLine.AppendSwitchWithValue("disable-features", "UrgentPageDiscarding");
     };
 
     // Add command line switches here

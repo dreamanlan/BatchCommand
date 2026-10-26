@@ -16,7 +16,7 @@ namespace BatchCommand.Utils
 
         /// <summary>Process-wide shared instance (one per host).</summary>
         public static HttpClientOperations Shared { get; } = new HttpClientOperations();
-        private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36";
+        private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.48 Safari/537.36";
 
         private readonly HttpClient _httpClient;
         private readonly Dictionary<string, string> _defaultHeaders;

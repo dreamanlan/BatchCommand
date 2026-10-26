@@ -63,6 +63,16 @@ class UIController {
             imageUrlsList: document.getElementById('image-urls-list'),
             addImageUrlBtn: document.getElementById('add-image-url-btn'),
             clearImageUrlsBtn: document.getElementById('clear-image-urls-btn'),
+            uploadImageBtn: document.getElementById('upload-image-btn'),
+            imageFileInput: document.getElementById('image-file-input'),
+            imgbbUploadToggle: document.getElementById('imgbb-upload-toggle'),
+            imgbbTimeSelect: document.getElementById('imgbb-time-select'),
+            imgbbKeyBtn: document.getElementById('imgbb-key-btn'),
+            imgbbKeyRow: document.getElementById('imgbb-key-row'),
+            imgbbKeyInput: document.getElementById('imgbb-key-input'),
+            imgbbKeySaveBtn: document.getElementById('imgbb-key-save-btn'),
+            imgbbKeyCancelBtn: document.getElementById('imgbb-key-cancel-btn'),
+            imageUploadStatus: document.getElementById('image-upload-status'),
             modelQuickBar: document.getElementById('model-quick-bar'),
             modelQuickBtn: document.getElementById('model-quick-btn'),
             modelQuickPanel: document.getElementById('model-quick-panel'),
@@ -374,6 +384,78 @@ class UIController {
             });
         }
 
+        // Local image upload: pick files, read as base64 data URIs
+        if (this.elements.uploadImageBtn && this.elements.imageFileInput) {
+            this.elements.uploadImageBtn.addEventListener('click', () => {
+                this.elements.imageFileInput.click();
+            });
+            this.elements.imageFileInput.addEventListener('change', (e) => {
+                this.addImageFiles(e.target.files);
+                e.target.value = '';
+            });
+        }
+
+        // ImgBB upload: toggle + auto-delete duration + API key management
+        if (this.elements.imgbbUploadToggle) {
+            this.elements.imgbbUploadToggle.addEventListener('change', () => {
+                if (this.elements.imgbbUploadToggle.checked && !this.getImgbbApiKey()) {
+                    this.showImgbbKeyInput();
+                    this.showUploadStatus('ImgBB API key is required', true);
+                }
+                this.persistImgbbSettings();
+            });
+        }
+        if (this.elements.imgbbTimeSelect) {
+            this.elements.imgbbTimeSelect.addEventListener('change', () => {
+                this.persistImgbbSettings();
+            });
+        }
+        if (this.elements.imgbbKeyBtn) {
+            this.elements.imgbbKeyBtn.addEventListener('click', () => {
+                this.showImgbbKeyInput();
+            });
+        }
+        if (this.elements.imgbbKeySaveBtn) {
+            this.elements.imgbbKeySaveBtn.addEventListener('click', () => {
+                this.saveImgbbKey();
+            });
+        }
+        if (this.elements.imgbbKeyCancelBtn) {
+            this.elements.imgbbKeyCancelBtn.addEventListener('click', () => {
+                this.hideImgbbKeyInput();
+            });
+        }
+        if (this.elements.imgbbKeyInput) {
+            this.elements.imgbbKeyInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.saveImgbbKey();
+                } else if (e.key === 'Escape') {
+                    this.hideImgbbKeyInput();
+                }
+            });
+        }
+        this.restoreImgbbSettings();
+
+        // Paste image (e.g. screenshot) into the message box: attach as base64
+        if (this.elements.editableContent) {
+            this.elements.editableContent.addEventListener('paste', (e) => {
+                const files = [];
+                if (e.clipboardData && e.clipboardData.items) {
+                    for (const item of e.clipboardData.items) {
+                        if (item.kind === 'file' && item.type.startsWith('image/')) {
+                            const f = item.getAsFile();
+                            if (f) files.push(f);
+                        }
+                    }
+                }
+                if (files.length > 0) {
+                    e.preventDefault();
+                    this.addImageFiles(files);
+                }
+            });
+        }
+
         // Quick model settings panel (chat area)
         this.elements.modelQuickBtn.addEventListener('click', () => {
             this.toggleModelQuickPanel();
@@ -419,14 +501,33 @@ class UIController {
         this.elements.apiTypeSelect.value = config.apiType;
     }
 
-    addImageUrlRow(initialValue = '') {
+    addImageUrlRow(initialValue = '', imageUrl = null) {
         if (!this.elements.imageUrlsList) return;
         const row = document.createElement('div');
         row.className = 'image-url-row';
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = 'https://... or data:image/png;base64,...';
-        input.value = initialValue;
+        if (imageUrl) {
+            this.setImageRowUploaded(input, initialValue, imageUrl);
+        } else {
+            input.value = initialValue;
+        }
+        // Manual edit drops a stored uploaded data URI so the typed text
+        // becomes the source of truth again (e.g. pasted base64 string).
+        input.addEventListener('input', () => {
+            if (input.dataset.imageUrl) {
+                delete input.dataset.imageUrl;
+                input.classList.remove('uploaded-image');
+                input.title = '';
+            }
+            // ImgBB mode: auto-upload a pasted/typed data URI and replace
+            // the row value with the returned public URL.
+            if (this.elements.imgbbUploadToggle && this.elements.imgbbUploadToggle.checked
+                && this.isImageDataUri(input.value)) {
+                this.convertRowDataUriToImgbb(input);
+            }
+        });
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.className = 'remove-btn';
@@ -438,6 +539,9 @@ class UIController {
                 row.remove();
             } else {
                 input.value = '';
+                delete input.dataset.imageUrl;
+                input.classList.remove('uploaded-image');
+                input.title = '';
             }
         });
         row.appendChild(input);
@@ -445,12 +549,228 @@ class UIController {
         this.elements.imageUrlsList.appendChild(row);
     }
 
+    /**
+     * Fill an image row input with an uploaded local file: the input shows
+     * the file name while the real data URI is kept in data-image-url.
+     */
+    setImageRowUploaded(input, fileName, dataUrl) {
+        input.value = fileName;
+        input.dataset.imageUrl = dataUrl;
+        input.classList.add('uploaded-image');
+        input.title = dataUrl.substring(0, 96) + (dataUrl.length > 96 ? '...' : '');
+    }
+
+    /**
+     * Read local image files as base64 data URIs and attach them as image
+     * rows. Non-image files are ignored.
+     */
+    addImageFiles(files) {
+        if (!files || !files.length || !this.elements.imageUrlsList) return;
+        const images = Array.from(files).filter((f) => f && f.type && f.type.startsWith('image/'));
+        if (images.length === 0) return;
+        // ImgBB mode: upload to get a public URL (for APIs that cannot
+        // fetch base64 data, e.g. knot). Otherwise inline as data URI.
+        if (this.elements.imgbbUploadToggle && this.elements.imgbbUploadToggle.checked) {
+            this.uploadImagesToImgbb(images);
+            return;
+        }
+        for (const file of images) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                if (reader.result) this.addUploadedImageRow(file.name, String(reader.result));
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    getImgbbApiKey() {
+        return (localStorage.getItem('imgbb_api_key') || '').trim();
+    }
+
+    showImgbbKeyInput() {
+        if (!this.elements.imgbbKeyRow || !this.elements.imgbbKeyInput) return;
+        this.elements.imgbbKeyInput.value = this.getImgbbApiKey();
+        this.elements.imgbbKeyRow.hidden = false;
+        this.elements.imgbbKeyInput.focus();
+    }
+
+    hideImgbbKeyInput() {
+        if (!this.elements.imgbbKeyRow) return;
+        this.elements.imgbbKeyRow.hidden = true;
+        if (this.elements.imgbbKeyInput) this.elements.imgbbKeyInput.value = '';
+    }
+
+    saveImgbbKey() {
+        if (!this.elements.imgbbKeyInput) return;
+        const key = this.elements.imgbbKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem('imgbb_api_key', key);
+            this.showUploadStatus('ImgBB API key saved');
+        }
+        this.hideImgbbKeyInput();
+    }
+
+    persistImgbbSettings() {
+        const settings = {
+            enabled: !!(this.elements.imgbbUploadToggle && this.elements.imgbbUploadToggle.checked),
+            hours: this.elements.imgbbTimeSelect ? this.elements.imgbbTimeSelect.value : '3600'
+        };
+        localStorage.setItem('imgbb_settings', JSON.stringify(settings));
+    }
+
+    restoreImgbbSettings() {
+        let settings = null;
+        try {
+            settings = JSON.parse(localStorage.getItem('imgbb_settings') || 'null');
+        } catch (e) {
+            settings = null;
+        }
+        if (!settings) {
+            // Default: ImgBB upload enabled for all API types (URL-only
+            // APIs like knot cannot fetch base64 image data).
+            if (this.elements.imgbbUploadToggle) {
+                this.elements.imgbbUploadToggle.checked = true;
+            }
+            return;
+        }
+        if (this.elements.imgbbUploadToggle) {
+            this.elements.imgbbUploadToggle.checked = !!settings.enabled;
+        }
+        if (this.elements.imgbbTimeSelect && settings.hours) {
+            this.elements.imgbbTimeSelect.value = String(settings.hours);
+        }
+    }
+
+    showUploadStatus(message, isError) {
+        if (!this.elements.imageUploadStatus) return;
+        this.elements.imageUploadStatus.textContent = message;
+        this.elements.imageUploadStatus.classList.toggle('error', !!isError);
+        clearTimeout(this._uploadStatusTimer);
+        this._uploadStatusTimer = setTimeout(() => {
+            this.elements.imageUploadStatus.textContent = '';
+        }, isError ? 8000 : 4000);
+    }
+
+    /**
+     * Upload local images to ImgBB and attach the returned public URLs as
+     * image rows. Uploaded files are auto-deleted after the selected
+     * duration (expiration parameter).
+     */
+    async uploadImagesToImgbb(files) {
+        const apiKey = this.getImgbbApiKey();
+        if (!apiKey) {
+            this.showUploadStatus('ImgBB API key is not set (click Key)', true);
+            return;
+        }
+        const expiration = this.elements.imgbbTimeSelect
+            ? parseInt(this.elements.imgbbTimeSelect.value, 10) : 3600;
+        let ok = 0;
+        for (const file of files) {
+            this.showUploadStatus('Uploading ' + file.name + ' to ImgBB...');
+            try {
+                const url = await this.uploadToImgbb(file, apiKey, expiration);
+                this.addUploadedImageRow(file.name, url);
+                ok++;
+            } catch (e) {
+                if (uiLogger) uiLogger.error('ImgBB upload failed:', e);
+                this.showUploadStatus('ImgBB upload failed (' + file.name + '): ' + e.message, true);
+            }
+        }
+        if (ok > 0) {
+            this.showUploadStatus(ok + ' image(s) uploaded to ImgBB');
+        }
+    }
+
+    /**
+     * Upload one image to ImgBB. The payload is either a File/Blob from a
+     * local pick/paste, or a raw base64 string extracted from a data URI
+     * (the API accepts both).
+     */
+    async uploadToImgbb(payload, apiKey, expiration) {
+        const form = new FormData();
+        if (typeof payload === 'string') {
+            form.append('image', payload);
+        } else {
+            form.append('image', payload, payload.name || 'image');
+        }
+        form.append('expiration', String(expiration || 3600));
+        const resp = await fetch('https://api.imgbb.com/1/upload?key=' + encodeURIComponent(apiKey), {
+            method: 'POST',
+            body: form
+        });
+        let data = null;
+        try {
+            data = await resp.json();
+        } catch (e) {
+            data = null;
+        }
+        if (!resp.ok || !data || !data.success) {
+            const msg = data && data.error && data.error.message ? data.error.message : ('HTTP ' + resp.status);
+            throw new Error(msg);
+        }
+        return data.data.url;
+    }
+
+    isImageDataUri(value) {
+        return /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+$/i.test((value || '').trim());
+    }
+
+    /**
+     * ImgBB mode: upload the data URI currently in the given image row and
+     * replace it with the returned public URL (the row then shows the file
+     * name like other uploaded rows).
+     */
+    async convertRowDataUriToImgbb(input) {
+        const apiKey = this.getImgbbApiKey();
+        if (!apiKey) {
+            this.showUploadStatus('ImgBB API key is not set (click Key)', true);
+            return;
+        }
+        const dataUri = input.value.trim();
+        const comma = dataUri.indexOf(',');
+        const base64 = dataUri.substring(comma + 1);
+        const mime = dataUri.substring(5, dataUri.indexOf(';'));
+        const ext = (mime.split('/')[1] || 'png').replace(/[^a-z0-9]/gi, '') || 'png';
+        const fileName = 'pasted.' + ext;
+        const expiration = this.elements.imgbbTimeSelect
+            ? parseInt(this.elements.imgbbTimeSelect.value, 10) : 3600;
+        this.showUploadStatus('Uploading pasted image data to ImgBB...');
+        try {
+            const url = await this.uploadToImgbb(base64, apiKey, expiration);
+            // Replace only if the user did not edit the row meanwhile.
+            if (input.value.trim() === dataUri) {
+                this.setImageRowUploaded(input, fileName, url);
+                this.showUploadStatus('Image data uploaded to ImgBB');
+            }
+        } catch (e) {
+            if (uiLogger) uiLogger.error('ImgBB upload failed:', e);
+            this.showUploadStatus('ImgBB upload failed: ' + e.message, true);
+        }
+    }
+
+    /**
+     * Append an uploaded image row, reusing the trailing empty row if any.
+     */
+    addUploadedImageRow(fileName, dataUrl) {
+        const rows = this.elements.imageUrlsList.children;
+        if (rows.length > 0) {
+            const lastInput = rows[rows.length - 1].querySelector('input');
+            if (lastInput && !lastInput.value && !lastInput.dataset.imageUrl) {
+                this.setImageRowUploaded(lastInput, fileName, dataUrl);
+                return;
+            }
+        }
+        this.addImageUrlRow(fileName, dataUrl);
+    }
+
     getImageUrls() {
         if (!this.elements.imageUrlsList) return [];
         const inputs = this.elements.imageUrlsList.querySelectorAll('input');
         const urls = [];
         inputs.forEach((el) => {
-            const v = (el.value || '').trim();
+            // Uploaded rows keep the data URI in data-image-url; manual rows
+            // (typed or pasted base64/URL text) use the input text itself.
+            const v = (el.dataset && el.dataset.imageUrl) || (el.value || '').trim();
             if (v) urls.push(v);
         });
         return urls;

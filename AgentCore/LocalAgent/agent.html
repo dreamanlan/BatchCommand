@@ -532,6 +532,78 @@
             border-color: #3498db;
         }
 
+        .image-url-row input.uploaded-image {
+            color: #16a085;
+        }
+
+        .image-urls-header .imgbb-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #7f8c8d;
+            cursor: pointer;
+        }
+
+        .image-urls-header select {
+            padding: 3px 4px;
+            font-size: 12px;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+            background: #fff;
+            color: #3498db;
+        }
+
+        .image-upload-status {
+            font-size: 11px;
+            color: #16a085;
+            margin-top: 4px;
+            min-height: 14px;
+        }
+
+        .image-upload-status.error {
+            color: #e74c3c;
+        }
+
+        .imgbb-key-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .imgbb-key-row[hidden] {
+            display: none;
+        }
+
+        .imgbb-key-row input {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            outline: none;
+        }
+
+        .imgbb-key-row input:focus {
+            border-color: #3498db;
+        }
+
+        .imgbb-key-row button {
+            padding: 4px 10px;
+            font-size: 12px;
+            border: 1px solid #3498db;
+            background: #fff;
+            color: #3498db;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .imgbb-key-row button:hover {
+            background: #3498db;
+            color: #fff;
+        }
+
         .image-url-row .remove-btn {
             padding: 4px 10px;
             font-size: 14px;
@@ -929,10 +1001,45 @@
             <div class="image-urls-container" id="image-urls-container">
                 <div class="image-urls-header">
                     <span class="title">Image URLs (attached_images)</span>
+                    <label class="imgbb-toggle"><input type="checkbox" id="imgbb-upload-toggle" checked>ImgBB</label>
+                    <select id="imgbb-time-select" title="Auto-delete after">
+                        <option value="300">5min</option>
+                        <option value="900">15min</option>
+                        <option value="1800">30min</option>
+                        <option value="3600" selected>1h</option>
+                        <option value="10800">3h</option>
+                        <option value="21600">6h</option>
+                        <option value="43200">12h</option>
+                        <option value="86400">1d</option>
+                        <option value="172800">2d</option>
+                        <option value="259200">3d</option>
+                        <option value="345600">4d</option>
+                        <option value="432000">5d</option>
+                        <option value="518400">6d</option>
+                        <option value="604800">1w</option>
+                        <option value="1209600">2w</option>
+                        <option value="1814400">3w</option>
+                        <option value="2592000">1mo</option>
+                        <option value="5184000">2mo</option>
+                        <option value="7776000">3mo</option>
+                        <option value="10368000">4mo</option>
+                        <option value="12960000">5mo</option>
+                        <option value="15552000">6mo</option>
+                    </select>
+                    <button type="button" id="imgbb-key-btn" title="Set ImgBB API key">Key</button>
+                    <button type="button" id="upload-image-btn">Upload</button>
                     <button type="button" id="add-image-url-btn">+ Add</button>
                     <button type="button" class="clear" id="clear-image-urls-btn">Clear All</button>
                 </div>
                 <div id="image-urls-list"></div>
+                <div class="image-upload-status" id="image-upload-status"></div>
+                <div class="imgbb-key-row" id="imgbb-key-row" hidden>
+                    <input type="password" id="imgbb-key-input" placeholder="ImgBB API key"
+                        autocomplete="off" spellcheck="false">
+                    <button type="button" id="imgbb-key-save-btn">Save</button>
+                    <button type="button" id="imgbb-key-cancel-btn">Cancel</button>
+                </div>
+                <input type="file" id="image-file-input" accept="image/*" multiple hidden>
             </div>
             <div class="input-container">
                 <div class="vac-textarea">

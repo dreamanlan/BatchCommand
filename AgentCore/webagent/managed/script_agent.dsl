@@ -430,6 +430,29 @@ script(js_llm_category)params($agentId)
     return(dict_or_json_get($v, "llmCategory"));
 };
 
+// conversationMode (0/1) of the main page from the js state cache: 1 when the
+// local-agent page talks to knot in conversation_id mode (the server keeps
+// the conversation, the system prompt is only sent when a session opens).
+script(js_conversation_mode)params($agentId)
+{
+    return(js_queue_count($agentId, "conversationMode"));
+};
+
+// local-agent knot conversation mode: the page system prompt is frozen per
+// session, so the fast-changing plan/context must be injected (P1 result
+// prefix + P2 send_message); History is redundant because the server keeps
+// the whole session. Other page types / modes keep injection off as before.
+script(sync_local_agent_injection)params($pageType)
+{
+    if ($pageType == "local-agent" && js_conversation_mode("") != 0) {
+        agent_enable_context_injection(@AgentId, true);
+        agent_enable_history_injection(@AgentId, false);
+    } else {
+        agent_enable_context_injection(@AgentId, false);
+        agent_enable_history_injection(@AgentId, true);
+    };
+};
+
 // ----------------------------------------------------------------------------
 // js command / notification dispatch (ported from script_renderer.dsl)
 // ----------------------------------------------------------------------------
@@ -1381,14 +1404,33 @@ script(get_plan)params($agentId)
 // all file reads live in this process now.
 // ----------------------------------------------------------------------------
 
+// Emphasize + soul are no longer part of the context injection (only plan /
+// context / history are injected), so the single-page system prompts carry
+// them: append both to the site prompt, skipping empty parts.
+script(append_emphasize_and_soul)params($prompt, $agentId)
+{
+    $emphasize = read_file(combine_path(basepath, "docs/emphasize.txt"));
+    if (!isnullorempty($emphasize)) {
+        $prompt = format("{0}\n\n{1}", $prompt, $emphasize);
+    };
+    $dir = agent_get_project_dir($agentId);
+    if (!isnullorempty($dir)) {
+        $soul = read_file(combine_path($dir, "docs/soul.md"));
+        if (!isnullorempty($soul)) {
+            $prompt = format("{0}\n\n{1}", $prompt, $soul);
+        };
+    };
+    return($prompt);
+};
+
 script(get_arena_system_prompt)params()
 {
-    return(read_file(combine_path(basepath, "docs/arena_prompt.txt")));
+    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/arena_prompt.txt")), "hyarena"));
 };
 
 script(get_venus_system_prompt)params()
 {
-    $prompt = read_file(combine_path(basepath, "docs/venus_prompt.txt"));
+    $prompt = append_emphasize_and_soul(read_file(combine_path(basepath, "docs/venus_prompt.txt")), "venus");
 
     // Dynamic part: current plan + induction context from the venus project
     // dir. Context injection is disabled for venus (page message size limit),
@@ -1425,27 +1467,29 @@ script(get_google_prompt_2)params()
 
 script(get_google_prompt_3)params()
 {
-    return(read_file(combine_path(basepath, "docs/google_prompt_3.txt")));
+    // Last part of the split google prompt: emphasize + soul go here only,
+    // so sending all three parts carries them exactly once.
+    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/google_prompt_3.txt")), "google"));
 };
 
 script(get_google_prompt)params()
 {
-    return(read_file(combine_path(basepath, "docs/google_prompt.txt")));
+    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/google_prompt.txt")), "gemini"));
 };
 
 script(get_openai_prompt)params()
 {
-    return(read_file(combine_path(basepath, "docs/openai_prompt.txt")));
+    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/openai_prompt.txt")), "openai"));
 };
 
 script(get_imate_prompt)params()
 {
-    return(read_file(combine_path(basepath, "docs/imate_prompt.txt")));
+    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/imate_prompt.txt")), "imate"));
 };
 
 script(get_with_prompt)params()
 {
-    return(read_file(combine_path(basepath, "docs/with_prompt.txt")));
+    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/with_prompt.txt")), "with"));
 };
 
 // ----------------------------------------------------------------------------
@@ -1480,7 +1524,7 @@ script(handle_agent_notification)params($jsonData)
         nativelog("[agent] Agent initialized on page type: {0}, url: {1}", $pageType, $url);
 
         agent_set_max_result_size(@AgentId, 80*1024);
-        agent_enable_context_injection(@AgentId, false);
+        sync_local_agent_injection($pageType);
         // RSI: resume after an upgrade restart (stage=verify_pending). This
         // notification itself is the smoke proof - the relay round trip
         // through the freshly deployed agent build - so the resume only has
@@ -1621,7 +1665,10 @@ script(handle_agent_notification)params($jsonData)
             // (reserve 500 for the page-side fence wrapper and queue notes).
             $maxLen = agent_get_max_result_size($agentId) - 500;
             if ($maxLen > 0) {
-                $prompt = format("【计划】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_plan($agentId), agent_get_context($agentId), agent_get_history($agentId));
+                $prompt = format("【计划】:{0}\n\n【上下文信息】:{1}", agent_get_plan($agentId), agent_get_context($agentId));
+                if (agent_is_history_injection_enabled($agentId)) {
+                    $prompt = format("{0}\n\n【最近会话】:{1}", $prompt, agent_get_history($agentId));
+                };
                 send_command_to_inject("send_message", to_json({text: get_string_in_length($prompt, $maxLen, 1)}));
             };
         };
@@ -1729,8 +1776,12 @@ script(handle_agent_notification)params($jsonData)
             $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限{3}条、总量控制在{4}字节内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId), @AgentId, get_patterns_max_count(), get_patterns_max_size());
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
+        sync_local_agent_injection($pageType);
         if (agent_is_context_injection_enabled(@AgentId) && agent_add_cur_context_rounds(@AgentId) == 0) {
-            $prompt = format("【plan】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_plan(@AgentId), agent_get_context(@AgentId), agent_get_history(@AgentId));
+            $prompt = format("【plan】:{0}\n\n【上下文信息】:{1}", agent_get_plan(@AgentId), agent_get_context(@AgentId));
+            if (agent_is_history_injection_enabled(@AgentId)) {
+                $prompt = format("{0}\n\n【最近会话】:{1}", $prompt, agent_get_history(@AgentId));
+            };
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
 

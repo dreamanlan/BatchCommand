@@ -275,6 +275,11 @@
             margin-top: 4px;
         }
 
+        .message-run-info {
+            cursor: help;
+            white-space: nowrap;
+        }
+
         /* Reasoning ("thinking") block - rendered as plain text inside <details>
            so it never interferes with Markdown / code-block detection in the
            main answer area. */
@@ -1101,6 +1106,25 @@
                     <input type="number" id="max-history-messages" min="10" max="200" value="64" placeholder="64">
                     <small style="color: #7f8c8d; font-size: 12px;">Maximum messages to keep in memory and localStorage
                         (default: 64)</small>
+                </div>
+
+                <div class="config-group" id="conversation-mode-group" style="display: none;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="conversation-mode" style="margin: 0; width: auto;" checked>
+                        Conversation Mode (knot)
+                    </label>
+                    <small style="color: #7f8c8d; font-size: 12px;">Keep the session on the server (conversation_id)
+                        so the prompt cache hits; the system prompt is sent when a session opens (default: on)</small>
+                </div>
+
+                <div class="config-group" id="conversation-reset-tokens-group" style="display: none;">
+                    <label for="conversation-reset-tokens">Session Reset Prompt Tokens (knot):</label>
+                    <input type="number" id="conversation-reset-tokens" min="0" max="1000000" value="0"
+                        placeholder="0">
+                    <small style="color: #7f8c8d; font-size: 12px;">Open a new session when prompt_tokens reaches
+                        this value. 0 = auto (default): claude models 40% of the context window, others 80%;
+                        without a context window setting claude 80000, others 160000. <span
+                            id="conversation-reset-tokens-effective"></span></small>
                 </div>
             </div>
 

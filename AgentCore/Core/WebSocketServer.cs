@@ -654,14 +654,6 @@ namespace AgentCore.Core
                             prefixBudget = inst.MaxResultSize - overhead;
                             if (prefixBudget < 0) prefixBudget = 0;
                         }
-                        if (!string.IsNullOrEmpty(inst.Emphasize)) {
-                            sb.AppendLine(inst.Emphasize);
-                            sb.AppendLine();
-                        }
-                        if (!string.IsNullOrEmpty(inst.Soul)) {
-                            sb.AppendLine(inst.Soul);
-                            sb.AppendLine();
-                        }
                         if (!string.IsNullOrEmpty(inst.Plan)) {
                             sb.AppendLine(inst.Plan);
                             sb.AppendLine();
@@ -670,11 +662,11 @@ namespace AgentCore.Core
                             sb.AppendLine(inst.Context);
                             sb.AppendLine();
                         }
-                        if (!string.IsNullOrEmpty(inst.History)) {
+                        if (inst.HistoryInjectionEnabled && !string.IsNullOrEmpty(inst.History)) {
                             sb.AppendLine(inst.History);
                             sb.AppendLine();
                         }
-                        // Keep the head (Emphasize/Soul/Plan first, History is
+                        // Keep the head (Plan first, History is
                         // cut first at the tail): the induction in Context
                         // already summarizes what History would lose.
                         if (budgeted && sb.Length > prefixBudget) {

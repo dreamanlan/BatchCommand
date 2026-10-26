@@ -578,6 +578,40 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// agent_enable_history_injection(agentId, value) - enable/disable History in the injected context
+    /// </summary>
+    sealed class AgentEnableHistoryInjectionExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_enable_history_injection requires (agentId, value)");
+                return BoxedValue.From(false);
+            }
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
+            var val = operands[1].GetString();
+            inst.HistoryInjectionEnabled = val == "true" || val == "1" || val == "True";
+            return BoxedValue.From(true);
+        }
+    }
+
+    /// <summary>
+    /// agent_is_history_injection_enabled(agentId) - check if History is included in the injected context
+    /// </summary>
+    sealed class AgentIsHistoryInjectionEnabledExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_is_history_injection_enabled requires (agentId)");
+                return BoxedValue.From(true);
+            }
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(operands[0]));
+            return BoxedValue.From(inst.HistoryInjectionEnabled);
+        }
+    }
+
+    /// <summary>
     /// agent_set_max_worker_concurrency(agentId, value)
     /// </summary>
     sealed class AgentSetMaxWorkerConcurrencyExp : SimpleExpressionBase
@@ -867,6 +901,14 @@ namespace AgentCore.ScriptApi
                 "agent_is_context_injection_enabled(agentId) - check if context injection is enabled, returns true/false",
                 false,
                 new ExpressionFactoryHelper<AgentIsContextInjectionEnabledExp>());
+            BatchCommand.BatchScript.Register("agent_enable_history_injection",
+                "agent_enable_history_injection(agentId, value) - enable/disable History in the injected context (true/false/1/0, default true)",
+                false,
+                new ExpressionFactoryHelper<AgentEnableHistoryInjectionExp>());
+            BatchCommand.BatchScript.Register("agent_is_history_injection_enabled",
+                "agent_is_history_injection_enabled(agentId) - check if History is included in the injected context, returns true/false",
+                false,
+                new ExpressionFactoryHelper<AgentIsHistoryInjectionEnabledExp>());
             BatchCommand.BatchScript.Register("agent_set_max_worker_concurrency",
                 "agent_set_max_worker_concurrency(agentId, value) - set max concurrent MetaDSL worker tasks (min 1, default 16)",
                 false,

@@ -971,6 +971,19 @@ class LLMPageAdapter extends PageAdapter {
     }
   }
 
+  // local-agent only: true when the page talks to knot in conversation_id
+  // mode (server-side session, system prompt sent only when a session opens).
+  getConversationMode() {
+    try {
+      if (this.pageType === 'local-agent' && typeof window.getConversationMode === 'function') {
+        return !!window.getConversationMode();
+      }
+    } catch (e) {
+      this.logger.error('Failed to get conversation mode', { error: e.toString() });
+    }
+    return false;
+  }
+
   getLLMCategory() {
     try {
       if (this.pageType === 'local-agent') {

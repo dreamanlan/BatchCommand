@@ -192,10 +192,11 @@ class AgentBridge {
           metaDslOperationCount: (api && api.getMetaDslOperationCount) ? api.getMetaDslOperationCount() : 0,
           sendQueueCount: (api && api.getSendQueueCount) ? api.getSendQueueCount() : 0,
           receiveQueueCount: (api && api.getReceiveQueueCount) ? api.getReceiveQueueCount() : 0,
-          llmCategory: (api && api.getLLMCategory) ? api.getLLMCategory() : ''
+          llmCategory: (api && api.getLLMCategory) ? api.getLLMCategory() : '',
+          conversationMode: (api && api.getConversationMode && api.getConversationMode()) ? 1 : 0
         };
       } catch (e) {
-        data.jsState = { metaDslOperationCount: 0, sendQueueCount: 0, receiveQueueCount: 0, llmCategory: '' };
+        data.jsState = { metaDslOperationCount: 0, sendQueueCount: 0, receiveQueueCount: 0, llmCategory: '', conversationMode: 0 };
       }
     }
 

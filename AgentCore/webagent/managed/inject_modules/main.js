@@ -181,6 +181,7 @@ window.AgentAPI = {
   sendMessage: (text) => pageAdapter && pageAdapter.sendMessage(text),
   setSystemPrompt: (text) => pageAdapter && pageAdapter.setSystemPrompt(text),
   getLLMCategory: () => pageAdapter && pageAdapter.getLLMCategory(),
+  getConversationMode: () => !!(pageAdapter && pageAdapter.getConversationMode()),
   getResponse: () => pageAdapter && pageAdapter.getLastScannedResponse(),
   getHistory: (count) => pageAdapter && pageAdapter.getHistory(count || 5),
   isLastMessageFromLLM: () => pageAdapter && pageAdapter.isLastMessageFromLLM(),

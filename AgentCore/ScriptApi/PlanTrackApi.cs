@@ -84,7 +84,7 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// add_plan_item(agentId, content) - append an item (planned state only),
+    /// add_plan_item(agentId, content) - append an item (any plan state),
     /// returns the 0-based index of the new item (int), -1 on error (details
     /// in the api error info).
     /// </summary>
@@ -113,9 +113,11 @@ namespace AgentCore.ScriptApi
 
     /// <summary>
     /// delete_plan_items(agentId, idx[, idx2, ...]) - delete one or more items
-    /// by 0-based index (planned state only); remaining items are renumbered
-    /// implicitly. All indexes are validated first; any out-of-range index
-    /// rejects the whole call without deleting anything.
+    /// by 0-based index (any plan state); remaining items are renumbered
+    /// implicitly. Only items in state 0/2/3 can be deleted, items in progress(1)
+    /// are frozen. All indexes are validated first; any out-of-range index or
+    /// in-progress item rejects the whole call without deleting anything.
+    /// Persisted via PersistPlan when the plan state is in progress(1) or done(2).
     /// </summary>
     sealed class PlanDeleteItemsExp : SimpleExpressionBase
     {
@@ -130,21 +132,30 @@ namespace AgentCore.ScriptApi
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items rejected: no plan");
                 return BoxedValue.From(-1);
             }
-            if (inst.PlanTrack.PlanState != (int)PlanStateEnum.Planned) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items rejected: items frozen after start_plan");
-                return BoxedValue.From(-1);
-            }
             List<int> indexes;
             if (!PlanNoteUtil.CollectIndexes(operands, 1, inst.PlanTrack.Items.Count, "delete_plan_items", "item", out indexes))
                 return BoxedValue.From(-1);
+            foreach (int idx in indexes) {
+                if (inst.PlanTrack.Items[idx].State == (int)PlayItemStateEnum.InProgress) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items rejected: item " + idx + " is in progress(1), change its state to 0/2/3 first");
+                    return BoxedValue.From(-1);
+                }
+            }
             foreach (int idx in indexes)
                 inst.PlanTrack.Items.RemoveAt(idx);
+            if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
+                PlanTrackHelper.PersistPlan(inst);
+            }
+            AgentCore.Core.MetaDslExecutor.AppendApiTipInfoLine("delete_plan_items succeeded (notice): items renumbered, view the plan again before using item indexes");
             return BoxedValue.From(indexes.Count);
         }
     }
 
     /// <summary>
-    /// modify_plan_item(agentId, idx, content) - modify item content (planned state only).
+    /// modify_plan_item(agentId, idx, content) - modify item content (any plan
+    /// state); only items in state 0/2 can be modified, items in progress(1) or
+    /// done(3) are frozen. Persisted via PersistPlan when the plan state is in
+    /// progress(1) or done(2).
     /// </summary>
     sealed class PlanModifyItemExp : SimpleExpressionBase
     {
@@ -159,16 +170,20 @@ namespace AgentCore.ScriptApi
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item rejected: no plan");
                 return BoxedValue.From(false);
             }
-            if (inst.PlanTrack.PlanState != (int)PlanStateEnum.Planned) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item rejected: items frozen after start_plan");
-                return BoxedValue.From(false);
-            }
             int idx = (int)operands[1].GetInt();
             if (idx < 0 || idx >= inst.PlanTrack.Items.Count) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item rejected: index out of range");
                 return BoxedValue.From(false);
             }
-            inst.PlanTrack.Items[idx].Content = operands[2].AsString ?? string.Empty;
+            var it = inst.PlanTrack.Items[idx];
+            if (it.State == (int)PlayItemStateEnum.InProgress || it.State == (int)PlayItemStateEnum.Done) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item rejected: item is in progress(1) or done(3), only state 0/2 items can be modified");
+                return BoxedValue.From(false);
+            }
+            it.Content = operands[2].AsString ?? string.Empty;
+            if (inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress || inst.PlanTrack.PlanState == (int)PlanStateEnum.Done) {
+                PlanTrackHelper.PersistPlan(inst);
+            }
             return BoxedValue.From(true);
         }
     }
@@ -204,7 +219,8 @@ namespace AgentCore.ScriptApi
 
     /// <summary>
     /// start_plan(agentId) - move the plan from planned(0) to in progress(1).
-    /// After start, items freeze: only change_plan_item_state may operate.
+    /// After start, items in progress(1) are frozen for modify/delete, done(3)
+    /// items are frozen for modify; clear_plan is rejected.
     /// </summary>
     sealed class PlanStartExp : SimpleExpressionBase
     {

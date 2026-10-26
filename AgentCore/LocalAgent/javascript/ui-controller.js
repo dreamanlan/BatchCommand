@@ -43,6 +43,11 @@ class UIController {
             streamGroup: document.getElementById('stream-group'),
             enableWebSearchCheckbox: document.getElementById('enable-web-search'),
             webSearchGroup: document.getElementById('web-search-group'),
+            conversationModeCheckbox: document.getElementById('conversation-mode'),
+            conversationResetTokensInput: document.getElementById('conversation-reset-tokens'),
+            conversationModeGroup: document.getElementById('conversation-mode-group'),
+            conversationResetTokensGroup: document.getElementById('conversation-reset-tokens-group'),
+            conversationResetTokensEffective: document.getElementById('conversation-reset-tokens-effective'),
             enableThinkingCheckbox: document.getElementById('enable-thinking'),
             thinkingGroup: document.getElementById('thinking-group'),
             reasoningEffortSelect: document.getElementById('reasoning-effort'),
@@ -544,6 +549,7 @@ class UIController {
 
             // Finalize: full Markdown render + code blocks after streaming is done
             this.finalizeAssistantMessage(assistantMessageId, fullResponse);
+            this.updateAssistantRunInfo(assistantMessageId, this.apiClient.lastRunInfo);
 
             // Save assistant response
             this.messageHandler.addMessage('assistant', fullResponse);
@@ -700,6 +706,56 @@ class UIController {
         }
     }
 
+    /**
+     * Append the knot session / token usage summary after the message time:
+     * a short form inline, the full breakdown in the tooltip.
+     */
+    updateAssistantRunInfo(messageId, info) {
+        if (!messageId || !info) return;
+        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+        if (!wrapper) return;
+        const messageTime = wrapper.querySelector('.message-time');
+        if (!messageTime) return;
+
+        const k = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n || 0));
+        const num = (n) => (n || 0).toLocaleString();
+        const hitPct = info.promptTokens > 0 ? Math.round((info.cachedTokens || 0) * 100 / info.promptTokens) : 0;
+
+        const parts = [];
+        if (info.conversationMode) {
+            parts.push(info.continueSession ? `S#${info.sessionRound}` : `S#1 new`);
+        }
+        parts.push(`in ${k(info.promptTokens)}`);
+        parts.push(`hit ${hitPct}%`);
+        if (info.runError) parts.push('ERR');
+
+        const lines = [];
+        if (info.conversationMode) {
+            lines.push(`Session: ${info.conversationId || '(none)'}`);
+            lines.push(`Round in session: ${info.sessionRound}` + (info.continueSession ? '' : ` (opened: ${info.reopenReason || 'new'})`));
+            lines.push(`Reset threshold: ${num(info.resetTokens)} prompt tokens`);
+        } else {
+            lines.push('Session: off (full context each round)');
+        }
+        lines.push(`Prompt tokens: ${num(info.promptTokens)}`);
+        lines.push(`Cache read: ${num(info.cachedTokens)} (${hitPct}%)`);
+        lines.push(`Cache write: ${num(info.cacheWriteTokens)}`);
+        if (info.steps > 1) {
+            lines.push(`LLM steps: ${info.steps} (total prompt ${num(info.totalPromptTokens)}, read ${num(info.totalCachedTokens)}, write ${num(info.totalCacheWriteTokens)})`);
+        }
+        lines.push(`Completion tokens: ${num(info.completionTokens)}`);
+        if (info.runError) lines.push('Run error: yes (session will reopen)');
+
+        let span = messageTime.querySelector('.message-run-info');
+        if (!span) {
+            span = document.createElement('span');
+            span.className = 'message-run-info';
+            messageTime.appendChild(span);
+        }
+        span.textContent = ' · ' + parts.join(' · ');
+        span.title = lines.join('\n');
+    }
+
     showLoading() {
         this.elements.loadingIndicator.classList.add('active');
     }
@@ -740,6 +796,15 @@ class UIController {
         this.elements.contextRoundsInput.value = contextConfig.contextRounds;
         this.elements.maxContextCharsInput.value = contextConfig.maxContextChars;
         this.elements.maxHistoryMessagesInput.value = contextConfig.maxHistoryMessages;
+
+        // Load knot conversation runtime configuration (not persisted)
+        const runtimeConfig = this.apiClient.getRuntimeConfig();
+        this.elements.conversationModeCheckbox.checked = !!runtimeConfig.conversationMode;
+        this.elements.conversationResetTokensInput.value = runtimeConfig.conversationResetTokens;
+        if (this.elements.conversationResetTokensEffective) {
+            this.elements.conversationResetTokensEffective.textContent =
+                '(current effective: ' + this.apiClient.getConversationResetTokens().toLocaleString() + ')';
+        }
 
         this.elements.configModal.classList.add('active');
         this.hideError();
@@ -1356,6 +1421,8 @@ class UIController {
             this.elements.agentIdGroup.style.display = 'block';
             this.elements.streamGroup.style.display = 'block';
             this.elements.webSearchGroup.style.display = 'block';
+            this.elements.conversationModeGroup.style.display = 'block';
+            this.elements.conversationResetTokensGroup.style.display = 'block';
             this.elements.thinkingGroup.style.display = 'block';
             this.elements.reasoningEffortGroup.style.display = 'block';
             this.elements.maxContextTokensGroup.style.display = 'block';
@@ -1365,6 +1432,8 @@ class UIController {
             this.elements.agentIdGroup.style.display = 'none';
             this.elements.streamGroup.style.display = 'none';
             this.elements.webSearchGroup.style.display = 'none';
+            this.elements.conversationModeGroup.style.display = 'none';
+            this.elements.conversationResetTokensGroup.style.display = 'none';
             this.elements.thinkingGroup.style.display = 'none';
             this.elements.reasoningEffortGroup.style.display = 'none';
             this.elements.maxContextTokensGroup.style.display = 'none';
@@ -1496,6 +1565,15 @@ class UIController {
 
         const stream = this.elements.streamCheckbox.checked;
         const enableWebSearch = this.elements.enableWebSearchCheckbox.checked;
+        const conversationMode = this.elements.conversationModeCheckbox.checked;
+        const conversationResetTokensRaw = parseInt(this.elements.conversationResetTokensInput.value, 10);
+        // 0 = auto threshold from the model context window, otherwise 10000..1000000
+        if (apiType === 'knot' && (isNaN(conversationResetTokensRaw) || (conversationResetTokensRaw !== 0
+            && (conversationResetTokensRaw < 10000 || conversationResetTokensRaw > 1000000)))) {
+            this.showError('Session reset prompt tokens must be 0 (auto) or between 10000 and 1000000');
+            return;
+        }
+        const conversationResetTokens = isNaN(conversationResetTokensRaw) ? 0 : conversationResetTokensRaw;
         const enableThinking = this.elements.enableThinkingCheckbox.checked;
         const reasoningEffort = this.elements.reasoningEffortSelect.value;
         const maxContextTokensRaw = parseInt(this.elements.maxContextTokensSelect.value, 10);
@@ -1525,9 +1603,16 @@ class UIController {
             maxHistoryMessages: maxHistoryMessages
         });
 
+        // Save knot conversation runtime configuration (not persisted)
+        this.apiClient.setRuntimeConfig({
+            conversationMode: conversationMode,
+            conversationResetTokens: conversationResetTokens
+        });
+
         if (uiLogger) uiLogger.info('Configuration saved:', {
             api: config,
-            context: { contextRounds, maxContextChars, maxHistoryMessages }
+            context: { contextRounds, maxContextChars, maxHistoryMessages },
+            runtime: { conversationMode, conversationResetTokens }
         });
 
         this.hideConfigModal();

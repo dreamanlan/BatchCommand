@@ -39,6 +39,9 @@ namespace AgentCore.Core
 
         // Whether to inject context info into MetaDSL results at specified rounds
         public bool ContextInjectionEnabled { get; set; } = false;
+        // Whether the injected context carries History (off when the page keeps
+        // the full conversation itself, e.g. local-agent knot conversation mode)
+        public bool HistoryInjectionEnabled { get; set; } = true;
         // How often to append context info in WebSocket responses (0 = every round)
         public int MaxContextRounds { get; set; } = 6;
         // Current context round counter (atomic via Interlocked)

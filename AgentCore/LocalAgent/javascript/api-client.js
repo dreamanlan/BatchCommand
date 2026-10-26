@@ -11,11 +11,76 @@ class APIClient {
         this.loadConfig();
         this.abortController = null;
         this.conversationId = ''; // For knot conversation management
+        // knot conversation mode state: the settings key the current session
+        // was opened with, and the largest prompt_tokens seen in it.
+        this.conversationKey = '';
+        this.conversationPromptTokens = 0;
+        this.conversationRound = 0;
+        this.knotRunInfo = null;
+        this.lastRunInfo = null;
+        // knot conversation mode settings: runtime only (NOT persisted, reset
+        // to these defaults after page reload, same as the context config).
+        // A session is reopened once prompt_tokens reaches the reset
+        // threshold; conversationResetTokens 0 = auto (see
+        // getConversationResetTokens), a positive value overrides it.
+        this.runtimeConfig = { conversationMode: true, conversationResetTokens: 0 };
+    }
+
+    getRuntimeConfig() {
+        return { ...this.runtimeConfig };
+    }
+
+    setRuntimeConfig(patch) {
+        if (patch.conversationMode !== undefined) {
+            this.runtimeConfig.conversationMode = !!patch.conversationMode;
+        }
+        if (patch.conversationResetTokens !== undefined && patch.conversationResetTokens >= 0) {
+            this.runtimeConfig.conversationResetTokens = patch.conversationResetTokens;
+        }
+        if (apiLogger) apiLogger.info('Updated runtime config:', this.runtimeConfig);
+    }
+
+    /**
+     * Session reset threshold (prompt tokens) for knot conversation mode.
+     * Auto mode derives it from the model context window: claude models
+     * (all Anthropic models: opus/sonnet/haiku) use 40% (expensive on a
+     * cache miss and knot compresses the context early), other models 80%.
+     * Without a context window setting the defaults are 80000 for claude
+     * and 160000 for the others.
+     */
+    getConversationResetTokens() {
+        const manual = this.runtimeConfig.conversationResetTokens;
+        if (manual > 0) return manual;
+        const isClaude = /claude/i.test(this.config.model || '');
+        const window = this.config.maxContextTokens || 0;
+        if (window > 0) {
+            return Math.floor(window * (isClaude ? 0.4 : 0.8));
+        }
+        return isClaude ? 80000 : 160000;
     }
 
     resetConversation() {
         this.conversationId = '';
+        this.conversationKey = '';
+        this.conversationPromptTokens = 0;
+        this.conversationRound = 0;
         if (apiLogger) apiLogger.info('Conversation reset');
+    }
+
+    /**
+     * knot conversation mode: the server keeps the session (conversation_id),
+     * only the first message of a session carries the system prompt and the
+     * recent history; later rounds send just the new message so the prompt
+     * cache prefix only grows.
+     */
+    isConversationMode() {
+        return this.config.apiType === 'knot' && !!this.runtimeConfig.conversationMode;
+    }
+
+    getConversationSettingsKey() {
+        const c = this.config;
+        return [c.apiEndpoint, c.agentId, c.model, c.enableThinking ? 1 : 0,
+            c.reasoningEffort || '', c.maxContextTokens || 0].join('|');
     }
 
     /**
@@ -438,6 +503,8 @@ class APIClient {
 
         // Create new abort controller for this request
         this.abortController = new AbortController();
+        // Run summary is knot-only; clear it so other API types show nothing.
+        this.lastRunInfo = null;
 
         if (this.config.apiType === 'openai' || this.config.apiType === 'local_openai') {
             return await this.sendOpenAIMessage(messages, onChunk, imageUrls);
@@ -754,21 +821,60 @@ class APIClient {
     async sendKnotMessage(messages, onChunk, imageUrls) {
         const endpoint = this.getEndpoint();
 
+        // Conversation mode: continue the server-side session with only the
+        // current message while the session settings are unchanged and the
+        // prompt stays under the reset threshold; otherwise (re)open a session
+        // whose first message carries the latest system prompt + history.
+        const conversationMode = this.isConversationMode();
+        const settingsKey = this.getConversationSettingsKey();
+        const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+        let continueSession = false;
+        let reopenReason = '';
+        const resetTokens = this.getConversationResetTokens();
+        if (conversationMode) {
+            continueSession = !!this.conversationId
+                && this.conversationKey === settingsKey
+                && this.conversationPromptTokens < resetTokens
+                && !!lastMsg && lastMsg.role === 'user';
+            if (!continueSession) {
+                if (!this.conversationId) reopenReason = 'new';
+                else if (this.conversationKey !== settingsKey) reopenReason = 'settings changed';
+                else if (this.conversationPromptTokens >= resetTokens) reopenReason = 'token limit';
+                else reopenReason = 'other';
+            }
+            if (!continueSession && this.conversationId) {
+                if (apiLogger) apiLogger.info('Reopening knot conversation:', {
+                    settingsChanged: this.conversationKey !== settingsKey,
+                    promptTokens: this.conversationPromptTokens,
+                    resetTokens: resetTokens
+                });
+            }
+            if (!continueSession) {
+                this.resetConversation();
+            }
+        } else if (this.conversationId) {
+            this.resetConversation();
+        }
+
         // Build full context message in the same format as C# KnotProvider
         // Format: [role]: content\n for each message
         let messageContent = '';
 
-        // Always prepend system prompt (frontend manages context, server is stateless)
-        const systemMessages = messages.filter(m => m.role === 'system');
-        if (systemMessages.length > 0) {
-            const systemContext = systemMessages.map(m => m.content).join('\n\n');
-            messageContent += '[system]: ' + systemContext + '\n';
-        }
+        if (continueSession) {
+            messageContent = lastMsg.content || '';
+        } else {
+            // New request/session: prepend system prompt (frontend manages context)
+            const systemMessages = messages.filter(m => m.role === 'system');
+            if (systemMessages.length > 0) {
+                const systemContext = systemMessages.map(m => m.content).join('\n\n');
+                messageContent += '[system]: ' + systemContext + '\n';
+            }
 
-        // Append all user/assistant history messages (already cleaned by getConversationContext)
-        const conversationMessages = messages.filter(m => m.role !== 'system');
-        for (const m of conversationMessages) {
-            messageContent += '[' + m.role + ']: ' + m.content + '\n';
+            // Append all user/assistant history messages (already cleaned by getConversationContext)
+            const conversationMessages = messages.filter(m => m.role !== 'system');
+            for (const m of conversationMessages) {
+                messageContent += '[' + m.role + ']: ' + m.content + '\n';
+            }
         }
 
         if (!messageContent.trim()) {
@@ -791,13 +897,14 @@ class APIClient {
             chatExtra.max_context_tokens = this.config.maxContextTokens;
         }
 
-        // Build request body in knot format
-        // Note: conversation_id is intentionally not used to avoid server-side context accumulation
-        // Frontend manages all conversation context to prevent MetaDSL execution result bloat
+        // Build request body in knot format.
+        // Conversation mode keeps the session on the server (conversation_id)
+        // so the prompt cache prefix only grows; otherwise conversation_id
+        // stays empty and the frontend sends the full context every round.
         const requestBody = {
             input: {
                 message: messageContent,
-                conversation_id: '', // Always empty - frontend manages context
+                conversation_id: continueSession ? this.conversationId : '',
                 model: this.config.model || 'deepseek-v3.1',
                 stream: !!this.config.stream,
                 enable_web_search: !!this.config.enableWebSearch,
@@ -846,6 +953,54 @@ class APIClient {
             'Content-Type': headers['Content-Type']
         });
 
+        this.knotRunInfo = {
+            conversationId: '', promptTokens: 0, cachedTokens: 0, cacheWriteTokens: 0, runError: false,
+            steps: 0, totalPromptTokens: 0, totalCachedTokens: 0, totalCacheWriteTokens: 0, completionTokens: 0
+        };
+        // Per-run summary for the UI (message footer): filled after the run.
+        this.lastRunInfo = null;
+        const sessionRound = continueSession ? this.conversationRound + 1 : 1;
+        try {
+            const fullResponse = await this.sendKnotRequest(endpoint, headers, requestBody, onChunk);
+            const info = this.knotRunInfo;
+            if (apiLogger) apiLogger.info('Knot run usage:', {
+                continueSession: continueSession,
+                promptTokens: info.promptTokens,
+                cachedTokens: info.cachedTokens,
+                cacheWriteTokens: info.cacheWriteTokens
+            });
+            this.lastRunInfo = {
+                conversationMode: conversationMode,
+                continueSession: continueSession,
+                reopenReason: reopenReason,
+                sessionRound: conversationMode ? sessionRound : 0,
+                conversationId: info.conversationId,
+                resetTokens: conversationMode ? resetTokens : 0,
+                ...info
+            };
+            if (conversationMode) {
+                if (info.runError || !info.conversationId) {
+                    // A failed run may leave a half-written round in the
+                    // server session: start over on the next request.
+                    this.resetConversation();
+                } else {
+                    this.conversationId = info.conversationId;
+                    this.conversationKey = settingsKey;
+                    this.conversationRound = sessionRound;
+                    if (info.promptTokens > this.conversationPromptTokens) {
+                        this.conversationPromptTokens = info.promptTokens;
+                    }
+                }
+            }
+            return fullResponse;
+        } catch (error) {
+            // Error or user abort: the server session state is unknown.
+            if (conversationMode) this.resetConversation();
+            throw error;
+        }
+    }
+
+    async sendKnotRequest(endpoint, headers, requestBody, onChunk) {
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: headers,
@@ -1011,10 +1166,32 @@ class APIClient {
                                 // (TEXT_MESSAGE_CONTENT / THINKING_TEXT_MESSAGE_CONTENT);
                                 // normalize case for defensive matching.
                                 const eventType = String(data.type || '').toUpperCase();
+                                const runInfo = this.knotRunInfo;
+                                if (runInfo) {
+                                    const raw = data.rawEvent || {};
+                                    if (raw.conversation_id) runInfo.conversationId = raw.conversation_id;
+                                    if (eventType === 'STEP_FINISHED' && raw.token_usage) {
+                                        // Several call_llm steps per run (tool use): the
+                                        // largest prompt is the session size to watch.
+                                        const u = raw.token_usage;
+                                        const d = u.prompt_tokens_details || {};
+                                        runInfo.steps++;
+                                        runInfo.totalPromptTokens += u.prompt_tokens || 0;
+                                        runInfo.totalCachedTokens += d.cached_tokens || 0;
+                                        runInfo.totalCacheWriteTokens += d.cache_write_tokens || 0;
+                                        runInfo.completionTokens += u.completion_tokens || 0;
+                                        if ((u.prompt_tokens || 0) >= runInfo.promptTokens) {
+                                            runInfo.promptTokens = u.prompt_tokens || 0;
+                                            runInfo.cachedTokens = d.cached_tokens || 0;
+                                            runInfo.cacheWriteTokens = d.cache_write_tokens || 0;
+                                        }
+                                    } else if (eventType === 'RUN_ERROR') {
+                                        runInfo.runError = true;
+                                    }
+                                }
                                 if (eventType === 'TEXT_MESSAGE_CONTENT') {
                                     content = data.rawEvent?.content || '';
                                     if (apiLogger) apiLogger.debug('Text content:', { content });
-                                    // conversation_id not saved - frontend manages context independently
                                 } else if (eventType === 'THINKING_TEXT_MESSAGE_CONTENT') {
                                     // Thinking stream: same rawEvent.content field,
                                     // emitted as reasoning so it never mixes into
@@ -1236,10 +1413,11 @@ class APIClient {
                 { value: 'gpt-5.4', label: 'GPT-5.4', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh'], contextWindows: [] },
                 { value: 'gpt-5.5', label: 'GPT-5.5', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh'], contextWindows: [] },
                 { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro (Ext)', thinking: false, reasoningEfforts: ['high', 'max'], contextWindows: [] },
-                { value: 'tokenhub_deepseek-v4-flash', label: 'DeepSeek-V4-Flash (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'tokenhub_deepseek-v4.1-flash', label: 'DeepSeek-V4.1-Flash (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'ext-glm-5.3', label: 'GLM-5.3 (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'tokenhub_glm-5.3-flash', label: 'GLM-5.3-Flash (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'tokenhub_kimi-k3', label: 'Kimi-K3', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'gemini-4-argon', label: 'Gemini-4-Argon', thinking: false, reasoningEfforts: ['low', 'medium', 'high'], contextWindows: [] },
                 { value: 'gemini-3.8-flash', label: 'Gemini-3.8-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'gemini-3.5-flash', label: 'Gemini-3.5-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'hy4-preview', label: 'HY-4', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },

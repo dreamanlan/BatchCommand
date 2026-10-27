@@ -595,7 +595,7 @@ class AgentExecutingState extends State {
           if (item.channelId && window.Relay && window.Relay.ws) { window.Relay.ws._lastChannelId = item.channelId; }
           this.monitor.handleExecutionReply(item.rawMessage);
           // Send result directly to LLM, respecting noAgentMarker flag
-          this.monitor.sendResultToLLM(item.message, item.noAgentMarker);
+          this.monitor.sendResultToLLM(item.message, item.noAgentMarker, item.images);
           continue; // Continue processing more results
         }
       }

@@ -94,6 +94,16 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
             clearDialogPrompt: function () {
                 messageHandler.clearDialogPrompt();
                 if (mainLogger) mainLogger.info('Cleared dialog prompt via window API');
+            },
+
+            // Image attachments for inject.js agent pushes (send_message
+            // with an images array of data URIs / URLs)
+            addImageAttachments: async function (images) {
+                return await uiController.addImageAttachments(images);
+            },
+
+            clearAgentAttachments: function () {
+                uiController.clearAgentAttachments();
             }
         };
 
@@ -113,6 +123,15 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
         // agent turns on plan/context injection for this page.
         window.getConversationMode = function () {
             return apiClient.isConversationMode();
+        };
+
+        // Image attachment API for inject.js page_adapter (agent send_message
+        // with images): add rows now, clear them after the message is sent.
+        window.addImageAttachments = async function (images) {
+            return await uiController.addImageAttachments(images);
+        };
+        window.clearAgentAttachments = function () {
+            uiController.clearAgentAttachments();
         };
 
         if (mainLogger) mainLogger.info('Initialization complete');

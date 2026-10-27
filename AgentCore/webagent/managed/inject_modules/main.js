@@ -362,8 +362,11 @@ window.onAgentCommand = function (commandJson) {
     if (cmd.command === 'send_message') {
       if (cmd.params && cmd.params.text) {
         // DSL pushes land in the relay reply queue (the state machine drains
-        // the relay transport now, not the old worker).
-        relayTransport.queueReply(cmd.params.text);
+        // the relay transport now, not the old worker). Optional images
+        // (array of data URIs / URLs) are attached to the outgoing message
+        // by local-agent style pages with image attachment support.
+        const images = Array.isArray(cmd.params.images) ? cmd.params.images : null;
+        relayTransport.queueReply(cmd.params.text, false, null, images);
       }
       return;
     }

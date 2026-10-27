@@ -544,16 +544,16 @@ class LLMPageAdapter extends PageAdapter {
     return this.getInputDraft().length > 0;
   }
 
-  sendMessage(text) {
+  sendMessage(text, images) {
     // One choke point for every path that pushes text to the LLM (execution
     // results, decider replies, continue nudges): hold it while the user is
     // composing, so their input is not wiped.
     if (this.hasUserDraft()) {
       if (this.pendingSends.length >= this.maxPendingSends) {
         const dropped = this.pendingSends.shift();
-        this.logger.warn('Pending agent sends full, dropped oldest', { text: String(dropped).substring(0, 80) });
+        this.logger.warn('Pending agent sends full, dropped oldest', { text: String(dropped.text).substring(0, 80) });
       }
-      this.pendingSends.push(String(text));
+      this.pendingSends.push({ text: String(text), images: images || null });
       this.logger.info('User draft in input, holding agent message', {
         held: this.pendingSends.length,
         draftLength: this.getInputDraft().length
@@ -561,17 +561,17 @@ class LLMPageAdapter extends PageAdapter {
       this.schedulePendingSends();
       return false;
     }
-    this.dispatchMessage(text);
+    this.dispatchMessage(text, images);
     return true;
   }
 
-  dispatchMessage(text) {
+  dispatchMessage(text, images) {
     switch (this.pageType) {
       case 'local-agent':
-        this.sendLocalAgentMessage(text);
+        this.sendLocalAgentMessage(text, images);
         break;
       case 'custom-llm':
-        this.sendCustomLLMMessage(text);
+        this.sendCustomLLMMessage(text, images);
         break;
       case 'test':
         this.sendTestMessage(text);
@@ -600,7 +600,7 @@ class LLMPageAdapter extends PageAdapter {
     }
     const next = this.pendingSends.shift();
     this.logger.info('User draft cleared, sending held agent message', { remaining: this.pendingSends.length });
-    this.dispatchMessage(next);
+    this.dispatchMessage(next.text, next.images);
     if (this.pendingSends.length > 0) this.schedulePendingSends();
   }
 
@@ -623,52 +623,90 @@ class LLMPageAdapter extends PageAdapter {
     }
   }
 
-  sendLocalAgentMessage(text) {
+  sendLocalAgentMessage(text, images) {
     const input = document.getElementById('editable-content');
     if (!input) {
       this.logger.warn('Local Agent input element #editable-content not found');
       return;
     }
 
-    // Set message content
-    input.textContent = text;
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // Attach images (data URIs / URLs) before typing the text; the page API
+    // handles ImgBB upload for data URIs, so it must finish before the send
+    // click reads the image rows.
+    this.addPageAttachments(images).then(() => {
+      // Set message content
+      input.textContent = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
 
-    // Click send button after a short delay
-    setTimeout(() => {
-      const btn = document.querySelector('.vac-icon-textarea .vac-svg-button:last-child');
-      if (btn) {
-        btn.classList.remove('vac-send-disabled');
-        btn.click();
-        this.logger.debug('Local Agent message sent', { text });
-      } else {
-        this.logger.warn('Send button not found');
-      }
-    }, CONFIG.sendMessageDelay);
+      // Click send button after a short delay
+      setTimeout(() => {
+        const btn = document.querySelector('.vac-icon-textarea .vac-svg-button:last-child');
+        if (btn) {
+          btn.classList.remove('vac-send-disabled');
+          btn.click();
+          this.logger.debug('Local Agent message sent', { text });
+          // The page reads image rows synchronously during the click, so the
+          // agent-added rows can be removed right away (later pushes must
+          // not resend stale images).
+          this.clearPageAttachments(images);
+        } else {
+          this.logger.warn('Send button not found');
+        }
+      }, CONFIG.sendMessageDelay);
+    });
   }
 
-  sendCustomLLMMessage(text) {
+  sendCustomLLMMessage(text, images) {
     const input = document.getElementById('editable-content');
     if (!input) {
       this.logger.warn('Custom LLM input element #editable-content not found');
       return;
     }
 
-    // Set message content
-    input.textContent = text;
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    this.addPageAttachments(images).then(() => {
+      // Set message content
+      input.textContent = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
 
-    // Click send button after a short delay
-    setTimeout(() => {
-      const btn = document.querySelector('.vac-icon-textarea .vac-svg-button:last-child');
-      if (btn) {
-        btn.classList.remove('vac-send-disabled');
-        btn.click();
-        this.logger.debug('Custom LLM message sent', { text });
-      } else {
-        this.logger.warn('Send button not found');
-      }
-    }, CONFIG.sendMessageDelay);
+      // Click send button after a short delay
+      setTimeout(() => {
+        const btn = document.querySelector('.vac-icon-textarea .vac-svg-button:last-child');
+        if (btn) {
+          btn.classList.remove('vac-send-disabled');
+          btn.click();
+          this.logger.debug('Custom LLM message sent', { text });
+          this.clearPageAttachments(images);
+        } else {
+          this.logger.warn('Send button not found');
+        }
+      }, CONFIG.sendMessageDelay);
+    });
+  }
+
+  // Attach images through the page's program API (local-agent style pages
+  // expose window.addImageAttachments). No-op when the page has no support.
+  async addPageAttachments(images) {
+    if (!Array.isArray(images) || images.length === 0) return;
+    if (typeof window.addImageAttachments !== 'function') {
+      this.logger.warn('Page has no addImageAttachments API, dropping images', { count: images.length });
+      return;
+    }
+    try {
+      await window.addImageAttachments(images);
+    } catch (e) {
+      this.logger.warn('addImageAttachments failed', { error: e.toString() });
+    }
+  }
+
+  // Remove the agent-added attachment rows after the message was sent.
+  clearPageAttachments(images) {
+    if (!Array.isArray(images) || images.length === 0) return;
+    if (typeof window.clearAgentAttachments !== 'function') return;
+    try {
+      window.clearAgentAttachments();
+    } catch (e) {
+      this.logger.warn('clearAgentAttachments failed', { error: e.toString() });
+    }
   }
 
   observeResponseChanges(callback) {

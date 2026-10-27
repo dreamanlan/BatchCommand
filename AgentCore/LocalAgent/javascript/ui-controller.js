@@ -763,6 +763,90 @@ class UIController {
         this.addImageUrlRow(fileName, dataUrl);
     }
 
+    /**
+     * Program API for inject.js: attach images to the next outgoing message
+     * (send_message with an images array). Each entry is a data URI or an
+     * http(s) URL. Data URIs go through ImgBB when the toggle is on and a
+     * key is set (raw value kept on upload error); URLs are attached
+     * as-is. Rows carry the 'agent-attachment' class so they can be
+     * removed after the message is sent.
+     */
+    async addImageAttachments(images) {
+        if (!Array.isArray(images) || images.length === 0 || !this.elements.imageUrlsList) return 0;
+        let added = 0;
+        for (const entry of images) {
+            const value = typeof entry === 'string' ? entry.trim() : '';
+            if (!value) continue;
+            let rowValue = value;
+            const rowLabel = this.attachmentLabel(value);
+            if (this.elements.imgbbUploadToggle && this.elements.imgbbUploadToggle.checked
+                && this.isImageDataUri(value) && this.getImgbbApiKey()) {
+                try {
+                    const comma = value.indexOf(',');
+                    const expiration = this.elements.imgbbTimeSelect
+                        ? parseInt(this.elements.imgbbTimeSelect.value, 10) : 3600;
+                    const url = await this.uploadToImgbb(value.substring(comma + 1), this.getImgbbApiKey(), expiration);
+                    rowValue = url;
+                } catch (e) {
+                    if (uiLogger) uiLogger.error('ImgBB attachment upload failed:', e);
+                    // Keep the raw data URI so the message still carries the image.
+                }
+            }
+            this.addAgentAttachmentRow(rowLabel, rowValue);
+            added++;
+        }
+        return added;
+    }
+
+    attachmentLabel(value) {
+        if (this.isImageDataUri(value)) {
+            const semi = value.indexOf(';');
+            const mime = value.substring(5, semi > 5 ? semi : 5);
+            const ext = (mime.split('/')[1] || 'png').replace(/[^a-z0-9]/gi, '') || 'png';
+            return 'attachment.' + ext;
+        }
+        try {
+            const u = new URL(value);
+            const seg = decodeURIComponent(u.pathname.split('/').pop() || '');
+            if (seg && seg.length <= 40) return seg;
+        } catch (e) {
+            // not a URL
+        }
+        return 'attachment';
+    }
+
+    /**
+     * Append one attachment row marked 'agent-attachment' (display: label,
+     * real value in data-image-url). Reuses the trailing empty row if any.
+     */
+    addAgentAttachmentRow(label, value) {
+        if (!this.elements.imageUrlsList) return;
+        const rows = this.elements.imageUrlsList.children;
+        if (rows.length > 0) {
+            const lastInput = rows[rows.length - 1].querySelector('input');
+            if (lastInput && !lastInput.value && !lastInput.dataset.imageUrl) {
+                this.setImageRowUploaded(lastInput, label, value);
+                rows[rows.length - 1].classList.add('agent-attachment');
+                return;
+            }
+        }
+        this.addImageUrlRow(label, value);
+        const all = this.elements.imageUrlsList.children;
+        if (all.length > 0) all[all.length - 1].classList.add('agent-attachment');
+    }
+
+    /**
+     * Program API for inject.js: remove all agent-added attachment rows so
+     * later pushes do not resend stale images.
+     */
+    clearAgentAttachments() {
+        if (!this.elements.imageUrlsList) return;
+        this.elements.imageUrlsList.querySelectorAll('.agent-attachment').forEach((row) => row.remove());
+        if (this.elements.imageUrlsList.children.length === 0) {
+            this.addImageUrlRow();
+        }
+    }
+
     getImageUrls() {
         if (!this.elements.imageUrlsList) return [];
         const inputs = this.elements.imageUrlsList.querySelectorAll('input');

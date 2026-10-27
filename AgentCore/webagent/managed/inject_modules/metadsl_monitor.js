@@ -2351,7 +2351,7 @@ class MetaDSLMonitor {
       return null;
     }
   }
-  sendResultToLLM(message, noAgentMarker = false) {
+  sendResultToLLM(message, noAgentMarker = false, images = null) {
     if (!this.pageAdapter) {
       this.warn('PageAdapter not available');
       return;
@@ -2379,9 +2379,10 @@ class MetaDSLMonitor {
     }
 
     this.info('Sending result to LLM (noAgentMarker=' + noAgentMarker + ')', getStringInLength(messageStr, 100));
-    // Send message through page adapter
+    // Send message through page adapter (images: optional attachments from
+    // send_message, forwarded to pages that support image attachments)
     try {
-      this.pageAdapter.sendMessage(messageStr);
+      this.pageAdapter.sendMessage(messageStr, images);
     } catch (err) {
       this.error('Failed to send result to LLM:', err);
     }

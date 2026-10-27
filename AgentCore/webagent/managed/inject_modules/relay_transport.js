@@ -284,8 +284,8 @@ class RelayTransport {
 
   // ---- reply queue (metadslWorker compatible surface) ------------------
 
-  queueReply(message, noAgentMarker = false, channelId = null) {
-    this._pushReply({ message: message, noAgentMarker: noAgentMarker, channelId: channelId });
+  queueReply(message, noAgentMarker = false, channelId = null, images = null) {
+    this._pushReply({ message: message, noAgentMarker: noAgentMarker, channelId: channelId, images: images });
     return true;
   }
 

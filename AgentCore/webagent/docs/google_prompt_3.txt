@@ -2,6 +2,11 @@
 有几个api用来访问web或搜索web：fetch/http_get、http_post、donwload_file、web_search、everything_search
 write_file写入的文本文件会带BOM头，需要写入无BOM的文本文件使用write_file_no_bom
 二进制文件读写api：read_file_bytes、write_file_bytes、hex_to_bytes、bytes_to_hex、string_to_bytes、bytes_to_string、base64_to_bytes、bytes_to_base64
+send_message支持图片附件：send_command_to_inject("send_message", to_json({text: "消息文本", images: [图片1, 图片2]}));
+images数组每项为data URI（"data:image/png;base64,..."）或http(s)图片URL，可多张，图片会随消息一起发给LLM
+结合截图api可以把屏幕截图发给自己看，示例：
+playwright_screenshot($page_id, "d:/tmp/shot.png");
+send_command_to_inject("send_message", to_json({text: "请看这张截图", images: ["data:image/png;base64," + bytes_to_base64(read_file_bytes("d:/tmp/shot.png"))]}));
 
 **Playwright API**
 - playwright_is_running() - returns bool indicating whether playwright is started.

@@ -96,7 +96,6 @@ namespace AgentCore.ScriptApi
             string cdpEndpoint = operands[0].AsString;
             if (string.IsNullOrEmpty(cdpEndpoint)) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_start: cdp_endpoint is empty");
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_start: cdp_endpoint is empty");
                 return BoxedValue.From(false);
             }
             try {
@@ -104,7 +103,7 @@ namespace AgentCore.ScriptApi
                 return PwApi.Bool(result);
             }
             catch (System.Exception ex) {
-                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_start error: {ex.Message}");
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"playwright_cdp_start error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }

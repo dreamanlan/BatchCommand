@@ -319,13 +319,13 @@ namespace AgentCore.Core
         public Task<string> GetUrlAsync(string pageId)
         {
             if (!TryGetPage(pageId, out var page, out var err)) return Task.FromResult(err);
-            return Task.FromResult(page!.Url);
+            return Task.FromResult("ok:" + page!.Url);
         }
 
         public async Task<string> GetTitleAsync(string pageId)
         {
             if (!TryGetPage(pageId, out var page, out var err)) return err;
-            try { return await page!.TitleAsync(); }
+            try { return "ok:" + await page!.TitleAsync(); }
             catch (Exception ex) { return $"error: {ex.Message}"; }
         }
 
@@ -334,8 +334,8 @@ namespace AgentCore.Core
             if (!TryGetPage(pageId, out var page, out var err)) return err;
             try {
                 if (string.IsNullOrEmpty(selector))
-                    return await page!.ContentAsync();
-                return await page!.Locator(selector).InnerHTMLAsync();
+                    return "ok:" + await page!.ContentAsync();
+                return "ok:" + await page!.Locator(selector).InnerHTMLAsync();
             }
             catch (Exception ex) {
                 return $"error: {ex.Message}";
@@ -347,7 +347,7 @@ namespace AgentCore.Core
             if (!TryGetPage(pageId, out var page, out var err)) return err;
             if (string.IsNullOrEmpty(selector)) return "error: selector required";
             try {
-                return await page!.Locator(selector).InnerTextAsync();
+                return "ok:" + await page!.Locator(selector).InnerTextAsync();
             }
             catch (Exception ex) {
                 return $"error: {ex.Message}";
@@ -375,7 +375,7 @@ namespace AgentCore.Core
             if (!TryGetPage(pageId, out var page, out var err)) return err;
             try {
                 var result = await page!.EvaluateAsync<object?>(script);
-                return result?.ToString() ?? "";
+                return "ok:" + (result?.ToString() ?? "");
             }
             catch (Exception ex) {
                 return $"error: {ex.Message}";

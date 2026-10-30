@@ -27,11 +27,28 @@ namespace BatchCommand.Utils
         private readonly Timer _watchdogTimer;
         private const int c_watchdogIntervalMs = 30000;
         private const int c_defaultCommandTimeoutLogSeconds = 300;
+        // How long to wait for stdout/stderr EOF after the process exited.
+        // A grandchild that inherits the pipes can keep them open forever,
+        // so the drain wait is bounded (except for an explicit infinite
+        // timeoutMs, i.e. -1); on expiry the process tree is killed.
+        private const int c_outputDrainTimeoutMs = 5000;
 
         public ProcessOperations()
         {
             _processes = new Dictionary<string, Process>();
             _watchdogTimer = new Timer(WatchdogCallback, null, c_watchdogIntervalMs, c_watchdogIntervalMs);
+        }
+
+        // Kill the process and its children. Falls back to killing just the
+        // process when tree kill is unsupported or the tree is partially gone.
+        private static void KillTree(Process process)
+        {
+            try {
+                process.Kill(entireProcessTree: true);
+            }
+            catch {
+                try { process.Kill(); } catch { }
+            }
         }
 
         public ProcessResult ExecuteCommand(string command, string? arguments = null, string? workingDirectory = null, int timeoutMs = 30000)
@@ -56,14 +73,22 @@ namespace BatchCommand.Utils
                 var errorBuilder = new StringBuilder();
 
                 using (var process = new Process { StartInfo = processInfo }) {
+                    // e.Data == null fires once per redirected stream at EOF; a
+                    // timed WaitForExit does NOT wait for the async readers.
+                    var outputEof = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    var errorEof = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     process.OutputDataReceived += (sender, e) => {
                         if (e.Data != null)
                             outputBuilder.AppendLine(e.Data);
+                        else
+                            outputEof.TrySetResult(true);
                     };
 
                     process.ErrorDataReceived += (sender, e) => {
                         if (e.Data != null)
                             errorBuilder.AppendLine(e.Data);
+                        else
+                            errorEof.TrySetResult(true);
                     };
 
                     var startTime = DateTime.Now;
@@ -75,7 +100,7 @@ namespace BatchCommand.Utils
                     var endTime = DateTime.Now;
 
                     if (!exited) {
-                        process.Kill();
+                        KillTree(process);
                         return new ProcessResult {
                             Success = false,
                             ExitCode = -1,
@@ -85,7 +110,21 @@ namespace BatchCommand.Utils
                         };
                     }
 
-                    process.WaitForExit();
+                    // Wait for the async output readers to reach EOF (a timed
+                    // WaitForExit returns as soon as the process exits and does
+                    // NOT wait for them). Bounded (except for an explicit
+                    // infinite timeoutMs, i.e. -1) so a grandchild holding the
+                    // pipes open cannot hang forever.
+                    int drainMs = timeoutMs <= 0 ? timeoutMs : Math.Min(timeoutMs, c_outputDrainTimeoutMs);
+                    if (drainMs != 0) {
+                        var drainTask = Task.WhenAll(outputEof.Task, errorEof.Task);
+                        if (drainMs < 0) {
+                            drainTask.Wait();
+                        }
+                        else if (!drainTask.Wait(drainMs)) {
+                            KillTree(process);
+                        }
+                    }
                     endTime = DateTime.Now;
                     return new ProcessResult {
                         Success = process.ExitCode == 0,
@@ -156,13 +195,13 @@ namespace BatchCommand.Utils
 
                     using (cancellationToken.Register(() => {
                         exitedTcs.TrySetCanceled();
-                        try { process.Kill(); } catch { }
+                        KillTree(process);
                     })) {
                         var completedTask = await Task.WhenAny(exitedTcs.Task, Task.Delay(timeoutMs, cancellationToken));
                         var endTime = DateTime.Now;
 
                         if (completedTask != exitedTcs.Task || exitedTcs.Task.IsCanceled) {
-                            try { process.Kill(); } catch { }
+                            KillTree(process);
                             return new ProcessResult {
                                 Success = false,
                                 ExitCode = -1,
@@ -172,7 +211,16 @@ namespace BatchCommand.Utils
                             };
                         }
 
-                        await Task.WhenAll(outputCompletedTcs.Task, errorCompletedTcs.Task);
+                        // Wait for the async output readers to reach EOF. Bounded
+                        // (except for an explicit infinite timeoutMs, i.e. -1) so a
+                        // grandchild holding the pipes open cannot hang forever.
+                        int drainMs = timeoutMs <= 0 ? timeoutMs : Math.Min(timeoutMs, c_outputDrainTimeoutMs);
+                        if (drainMs != 0) {
+                            var drainTask = Task.WhenAll(outputCompletedTcs.Task, errorCompletedTcs.Task);
+                            if (await Task.WhenAny(drainTask, Task.Delay(drainMs, cancellationToken)) != drainTask) {
+                                KillTree(process);
+                            }
+                        }
                         endTime = DateTime.Now;
                         return new ProcessResult {
                             Success = process.ExitCode == 0,

@@ -1,17 +1,25 @@
 ﻿  DebugScriptExternApiAndEntry.cpp
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(835,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(840,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(849,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(860,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(867,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(875,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(881,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(900,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(835,1): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(840,1): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(849,1): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(860,1): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(867,1): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(875,1): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(881,1): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(900,1): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
   DebugScriptVM.cpp
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(507,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(529,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(551,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2732,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(507,5): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(529,5): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(551,5): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2732,5): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4608,13): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4622,13): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5059,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5067,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5074,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5078,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5085,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5089,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
   DllMain.cpp
   GpuCaptureManager_HuaweiSquid.cpp
   GpuCaptureManager_RenderDoc.cpp

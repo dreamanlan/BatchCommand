@@ -767,20 +767,30 @@ class UIController {
      * Program API for inject.js: attach images to the next outgoing message
      * (send_message with an images array). Each entry is a data URI or an
      * http(s) URL. Data URIs go through ImgBB when the toggle is on and a
-     * key is set (raw value kept on upload error); URLs are attached
-     * as-is. Rows carry the 'agent-attachment' class so they can be
-     * removed after the message is sent.
+     * key is set (raw value kept on upload error); for knot the upload is
+     * forced whenever a key exists and failed/unkeyed data URIs are dropped
+     * (knot rejects them server-side). URLs are attached as-is. Rows carry
+     * the 'agent-attachment' class so they can be removed after the message
+     * is sent.
      */
     async addImageAttachments(images) {
         if (!Array.isArray(images) || images.length === 0 || !this.elements.imageUrlsList) return 0;
+        // knot cannot fetch base64 data URIs (the server rejects the whole
+        // request with "附加图片处理失败"): for knot, force an ImgBB upload
+        // for data URIs when a key exists (toggle-independent), and drop the
+        // image instead of attaching a guaranteed-to-fail value.
+        const isKnot = !!(this.apiClient && this.apiClient.getConfig()
+            && this.apiClient.getConfig().apiType === 'knot');
         let added = 0;
         for (const entry of images) {
             const value = typeof entry === 'string' ? entry.trim() : '';
             if (!value) continue;
             let rowValue = value;
             const rowLabel = this.attachmentLabel(value);
-            if (this.elements.imgbbUploadToggle && this.elements.imgbbUploadToggle.checked
-                && this.isImageDataUri(value) && this.getImgbbApiKey()) {
+            const dataUri = this.isImageDataUri(value);
+            const tryUpload = dataUri
+                && (isKnot || (this.elements.imgbbUploadToggle && this.elements.imgbbUploadToggle.checked));
+            if (tryUpload && this.getImgbbApiKey()) {
                 try {
                     const comma = value.indexOf(',');
                     const expiration = this.elements.imgbbTimeSelect
@@ -789,8 +799,18 @@ class UIController {
                     rowValue = url;
                 } catch (e) {
                     if (uiLogger) uiLogger.error('ImgBB attachment upload failed:', e);
+                    if (isKnot) {
+                        // A raw data URI would fail the whole knot request:
+                        // drop the image instead of keeping it.
+                        this.showUploadStatus('Image attachment dropped (ImgBB failed, knot cannot take base64 data)', true);
+                        continue;
+                    }
                     // Keep the raw data URI so the message still carries the image.
                 }
+            } else if (isKnot && dataUri) {
+                // No ImgBB key: the data URI cannot reach knot either way.
+                this.showUploadStatus('Image attachment dropped (no ImgBB key, knot cannot take base64 data)', true);
+                continue;
             }
             this.addAgentAttachmentRow(rowLabel, rowValue);
             added++;

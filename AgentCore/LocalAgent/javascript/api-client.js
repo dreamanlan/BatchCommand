@@ -881,10 +881,21 @@ class APIClient {
             throw new Error('No message content to send');
         }
 
+        // knot cannot fetch base64 data URIs (the server rejects the whole
+        // request with "附加图片处理失败"): drop them instead of failing the
+        // round, and tell the model why so it can self-correct.
+        let attachedImages = Array.isArray(imageUrls) ? imageUrls.slice() : [];
+        const dataUriImages = attachedImages.filter((u) => typeof u === 'string' && u.startsWith('data:'));
+        if (dataUriImages.length > 0) {
+            attachedImages = attachedImages.filter((u) => !(typeof u === 'string' && u.startsWith('data:')));
+            messageContent = '【注意】' + dataUriImages.length + ' 张图片因 Knot 不支持 base64 数据 URI 未随消息发送，'
+                + '请改用可公网访问的图片 URL，或先在页面配置 ImgBB。\n' + messageContent;
+        }
+
         // Build chat_extra dynamically so optional fields are omitted when not
         // enabled (AGUI protocol: do not send fields the model does not support).
         const chatExtra = {
-            attached_images: Array.isArray(imageUrls) ? imageUrls.slice() : [],
+            attached_images: attachedImages,
             extra_headers: {}
         };
         if (this.config.enableThinking) {

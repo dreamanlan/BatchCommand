@@ -589,11 +589,20 @@ class AgentExecutingState extends State {
 
       // 3. Check MetaDSL Worker receive queue for execution results
       if (this.monitor.metadslWorker && this.monitor.metadslWorker.isRunning) {
-        const item = this.monitor.metadslWorker.dequeueMessage();
+        const worker = this.monitor.metadslWorker;
+        // Merge drain: consecutive queued replies within the length budget
+        // go out as one LLM round instead of a burst of rounds (see
+        // RelayTransport.dequeueMergedMessage).
+        const item = typeof worker.dequeueMergedMessage === 'function'
+          ? worker.dequeueMergedMessage(CONFIG.maxMergedMessageLen)
+          : worker.dequeueMessage();
         if (item) {
-          this.info('Received MetaDSL execution result from C#');
+          this.info('Received MetaDSL execution result from C# (merged: ' + (item.mergedCount || 1) + ')');
           if (item.channelId && window.Relay && window.Relay.ws) { window.Relay.ws._lastChannelId = item.channelId; }
-          this.monitor.handleExecutionReply(item.rawMessage);
+          const rawMessages = item.rawMessages || [item.rawMessage];
+          for (const raw of rawMessages) {
+            this.monitor.handleExecutionReply(raw);
+          }
           // Send result directly to LLM, respecting noAgentMarker flag
           this.monitor.sendResultToLLM(item.message, item.noAgentMarker, item.images);
           continue; // Continue processing more results

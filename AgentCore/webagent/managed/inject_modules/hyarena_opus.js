@@ -18,6 +18,11 @@
     MAX_RECONNECT: 50,
     DEBOUNCE_MS: 1200,
     RESULT_FLUSH_MS: 2000,
+    // Merge budget for flushResults: characters of queued results allowed
+    // in one outgoing message. Aligned with this site's agent-side
+    // MaxResultSize (SiteMaxSize), minus the usual 500-char reserve for
+    // wrappers and queue notes.
+    MAX_MERGE_LEN: 50 * 1024 - 500,
     POLL_MS: 3000,
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
@@ -534,34 +539,37 @@
       lines.push('');
     }
 
-    // Queued dispatch: when more than one result is pending, only emit the
-    // first one and keep the rest queued, so that the model focuses on
-    // previous results one at a time instead of being flooded.
-    if (total > 1) {
+    // Merge dispatch: emit every queued result that fits the per-site
+    // length budget as one message (one model round instead of a burst of
+    // consecutive rounds), taking the oldest entry across slots in slot
+    // order. The first entry always goes out; whole entries only, leftovers
+    // stay queued with the remaining-count note.
+    let merged = 0;
+    let budget = CFG.MAX_MERGE_LEN;
+    while (merged < total) {
       let pickedSlot = null;
       for (const id of slots) {
         const bucket = ST.pendingResults[id] || [];
         if (bucket.length > 0) { pickedSlot = id; break; }
       }
+      if (!pickedSlot) break;
       const bucket = ST.pendingResults[pickedSlot];
-      const raw = bucket.shift();
+      const raw = bucket[0];
       const name = displayName(pickedSlot);
+      // Reserve for the heading and the fenced wrapper around this entry.
+      const cost = raw.length + 60;
+      if (merged > 0 && budget < cost) break;
+      bucket.shift();
+      if (merged > 0) lines.push('');
       lines.push(`### ${name} exec result`);
       lines.push('```\n' + raw.replace(/```/g, '`\u200b``').trimEnd() + '\n```');
-      const remaining = total - 1;
+      budget -= cost;
+      merged++;
+    }
+    const remaining = total - merged;
+    if (remaining > 0) {
       lines.push('');
       lines.push(`> 还有 ${remaining} 个代码结果在排队输出，不要再发新代码，回复继续即可`);
-    } else {
-      for (const id of slots) {
-        const bucket = ST.pendingResults[id] || [];
-        if (!bucket.length) continue;
-        const name = displayName(id);
-        lines.push(`### ${name} exec result`);
-        for (const raw of bucket) {
-          lines.push('```\n' + raw.replace(/```/g, '`\u200b``').trimEnd() + '\n```');
-        }
-        ST.pendingResults[id] = [];
-      }
     }
 
     // Drop-notice: warn non-executor slots that produced executable code

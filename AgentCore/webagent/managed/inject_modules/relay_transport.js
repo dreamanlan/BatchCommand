@@ -307,6 +307,55 @@ class RelayTransport {
     return null;
   }
 
+  // Merge drain: dequeue queued replies merged into one item, so the state
+  // machine delivers one LLM round instead of a burst of consecutive rounds
+  // (each item sent alone piles up the conversation). Whole entries only:
+  // an entry that alone exceeds maxLen is still delivered alone (never
+  // truncated, never held back). The merge stops at an entry with a
+  // different channelId (remote-mode routing) or once the budget is spent;
+  // how many entries merge is therefore decided by the length limit alone.
+  dequeueMergedMessage(maxLen) {
+    if (this.fromWorkerQueue.length === 0) {
+      return null;
+    }
+    const first = this.fromWorkerQueue.shift();
+    const parts = [first];
+    let total = String(first.message || '').length;
+    while (this.fromWorkerQueue.length > 0) {
+      const next = this.fromWorkerQueue[0];
+      const nextLen = String(next.message || '').length;
+      if (total + nextLen + 2 > maxLen) {
+        break;
+      }
+      if ((next.channelId || null) !== (first.channelId || null)) {
+        break;
+      }
+      this.fromWorkerQueue.shift();
+      parts.push(next);
+      total += nextLen + 2;
+    }
+    const messages = parts.map((p) => String(p.message || ''));
+    const images = [];
+    for (const p of parts) {
+      if (Array.isArray(p.images)) {
+        for (const img of p.images) {
+          if (img) images.push(img);
+        }
+      }
+    }
+    return {
+      message: messages.join('\n\n'),
+      // Any entry that wants the agent reply marker makes the merged
+      // message carry it once.
+      noAgentMarker: parts.every((p) => p.noAgentMarker),
+      channelId: first.channelId || null,
+      images: images.length > 0 ? images : null,
+      rawMessage: first.rawMessage,
+      rawMessages: parts.map((p) => p.rawMessage),
+      mergedCount: parts.length
+    };
+  }
+
   getReceiveQueueCount() {
     return this.fromWorkerQueue.length;
   }

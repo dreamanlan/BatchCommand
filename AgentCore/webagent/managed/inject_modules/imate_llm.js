@@ -18,6 +18,11 @@
     MAX_RECONNECT: 50,
     DEBOUNCE_MS: 1200,
     RESULT_FLUSH_MS: 2000,
+    // Merge budget for flushResults: characters of queued results allowed
+    // in one outgoing message. Aligned with this site's agent-side
+    // MaxResultSize (SiteMaxSize), minus the usual 500-char reserve for
+    // wrappers and queue notes.
+    MAX_MERGE_LEN: 40 * 1024 - 500,
     POLL_MS: 3000,
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
@@ -461,22 +466,30 @@
       log('[rounds] idle timeout, reset to 0');
     }
 
-    const total = ST.pendingResults.length;
     const lines = [];
 
-    // Queued dispatch: when more than one result is pending, only emit the
-    // first one and keep the rest queued.
-    if (total > 1) {
-      const raw = ST.pendingResults.shift();
+    // Merge dispatch: emit every queued result that fits the per-site
+    // length budget as one message (one model round instead of a burst of
+    // consecutive rounds). The first entry always goes out; whole entries
+    // only, leftovers stay queued with the remaining-count note.
+    let merged = 0;
+    let budget = CFG.MAX_MERGE_LEN;
+    while (ST.pendingResults.length > 0) {
+      const raw = ST.pendingResults[0];
+      // Reserve for the heading and the fenced wrapper around this entry.
+      const cost = raw.length + 40;
+      if (merged > 0 && budget < cost) break;
+      ST.pendingResults.shift();
+      if (merged > 0) lines.push('');
       lines.push('### exec result');
       lines.push('```\n' + raw.replace(/```/g, '`\u200b``').trimEnd() + '\n```');
-      const remaining = total - 1;
+      budget -= cost;
+      merged++;
+    }
+    const remaining = ST.pendingResults.length;
+    if (remaining > 0) {
       lines.push('');
       lines.push(`> 还有 ${remaining} 个代码结果在排队输出，不要再发新代码，回复继续即可`);
-    } else {
-      const raw = ST.pendingResults.shift();
-      lines.push('### exec result');
-      lines.push('```\n' + raw.replace(/```/g, '`\u200b``').trimEnd() + '\n```');
     }
 
     if (lines.length) {

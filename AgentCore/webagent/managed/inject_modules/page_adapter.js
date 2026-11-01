@@ -637,22 +637,7 @@ class LLMPageAdapter extends PageAdapter {
       // Set message content
       input.textContent = text;
       input.dispatchEvent(new Event('input', { bubbles: true }));
-
-      // Click send button after a short delay
-      setTimeout(() => {
-        const btn = document.querySelector('.vac-icon-textarea .vac-svg-button:last-child');
-        if (btn) {
-          btn.classList.remove('vac-send-disabled');
-          btn.click();
-          this.logger.debug('Local Agent message sent', { text });
-          // The page reads image rows synchronously during the click, so the
-          // agent-added rows can be removed right away (later pushes must
-          // not resend stale images).
-          this.clearPageAttachments(images);
-        } else {
-          this.logger.warn('Send button not found');
-        }
-      }, CONFIG.sendMessageDelay);
+      this._sendWithDeliveryRetry(input, String(text), images, 0, Date.now());
     });
   }
 
@@ -667,20 +652,52 @@ class LLMPageAdapter extends PageAdapter {
       // Set message content
       input.textContent = text;
       input.dispatchEvent(new Event('input', { bubbles: true }));
-
-      // Click send button after a short delay
-      setTimeout(() => {
-        const btn = document.querySelector('.vac-icon-textarea .vac-svg-button:last-child');
-        if (btn) {
-          btn.classList.remove('vac-send-disabled');
-          btn.click();
-          this.logger.debug('Custom LLM message sent', { text });
-          this.clearPageAttachments(images);
-        } else {
-          this.logger.warn('Send button not found');
-        }
-      }, CONFIG.sendMessageDelay);
+      this._sendWithDeliveryRetry(input, String(text), images, 0, Date.now());
     });
+  }
+
+  // Click the send button and verify the message actually went out. The page
+  // click handler returns silently while a previous LLM round is still being
+  // processed, and on success it clears the input synchronously, so text left
+  // in the box right after the click means the click was a no-op. Retry until
+  // the input clears, bounded by llmResponseTimeoutMin. The agent-added image
+  // rows are kept until delivery, so the images ride the message whenever it
+  // finally goes out (auto retry or a manual click on the leftover text).
+  _sendWithDeliveryRetry(input, text, images, attempt, startedAt) {
+    const self = this;
+    const delay = attempt === 0 ? CONFIG.sendMessageDelay : CONFIG.sendRetryDelay;
+    setTimeout(() => {
+      const btn = document.querySelector('.vac-icon-textarea .vac-svg-button:last-child');
+      if (btn) {
+        btn.classList.remove('vac-send-disabled');
+        btn.click();
+        // The page clears the input synchronously when the send is accepted.
+        if (!(input.textContent || '').trim()) {
+          self.logger.debug('Message sent', { attempt: attempt + 1 });
+          self.clearPageAttachments(images);
+          return;
+        }
+      } else {
+        self.logger.warn('Send button not found');
+      }
+      // Not delivered. The user edited the box meanwhile: it is their draft
+      // now, stop retrying and drop the agent-added rows so the images cannot
+      // ride a user-authored message.
+      const current = (input.textContent || '').trim();
+      if (current !== text.trim()) {
+        self.logger.warn('Input text changed during send retry, giving up', { attempt });
+        self.clearPageAttachments(images);
+        return;
+      }
+      if (Date.now() - startedAt >= CONFIG.llmResponseTimeoutMin * 60000) {
+        // Keep the text and the rows: a manual click on the leftover message
+        // still sends it with the images attached.
+        self.logger.warn('Send retry timed out, message left in input for manual send');
+        return;
+      }
+      self.logger.debug('Send click was a no-op (page busy), retrying', { attempt });
+      self._sendWithDeliveryRetry(input, text, images, attempt + 1, startedAt);
+    }, delay);
   }
 
   // Attach images through the page's program API (local-agent style pages

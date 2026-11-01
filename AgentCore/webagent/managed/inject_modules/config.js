@@ -53,6 +53,11 @@ class ConfigManager {
         markers: ['// @execute', '# @execute'],
         maxProcessedBlocks: 1000,
         maxSendRetries: 5,
+        // Budget for merging queued replies into one outgoing message
+        // (dequeueMergedMessage): aligned with the main agent MaxResultSize
+        // (80KB), minus the same 500-char reserve the dsl side keeps for the
+        // reply marker, queue notes and page-side wrappers.
+        maxMergedMessageLen: 80 * 1024 - 500,
         llmContextCountModuloForKeep: 16,
         llmContextCountModuloForAlign: 8,
         // When true, validate the latest LLM response for MetaDSL formatting
@@ -280,6 +285,7 @@ class ConfigManager {
   get pageStableDelay() { return this.config.timing.pageStableDelay; }
   get maxProcessedBlocks() { return this.config.metadsl.maxProcessedBlocks; }
   get maxSendRetries() { return this.config.metadsl.maxSendRetries; }
+  get maxMergedMessageLen() { return this.config.metadsl.maxMergedMessageLen; }
   get sendRetryDelay() { return this.config.timing.sendRetryDelay; }
   get operationExecuteTimeout() { return this.config.timing.operationExecuteTimeout; }
   get userTypingDelay() { return this.config.timing.userTypingDelay; }

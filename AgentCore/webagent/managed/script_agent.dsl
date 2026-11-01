@@ -1492,6 +1492,22 @@ script(get_with_prompt)params()
     return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/with_prompt.txt")), "with"));
 };
 
+// plan.txt size guard: when the notes grow past 100KB, nudge the LLM to
+// archive the finished parts and trim the file, keeping whatever notes
+// are still necessary to continue the plan. Returns true when the reminder
+// was pushed, so the caller can suppress other LLM-bound pushes (one
+// message per notification keeps the page reply queue from piling up).
+script(remind_plan_size)params($planFile)
+{
+    $planSize = get_file_size($planFile);
+    if ($planSize < 0 || $planSize <= 100*1024) {
+        return(false);
+    };
+    $prompt = format("注意：plan.txt当前大小约{0}字节，已超过100KB。请对笔记进行归档后精简笔记，但保留继续计划所必需的笔记。", $planSize);
+    send_command_to_inject("send_message", to_json({text: $prompt}));
+    return(true);
+};
+
 // ----------------------------------------------------------------------------
 // Notification dispatch (bundle 3): agent_ready (main page relay), <site>_ready
 // for every single-page agent (data driven via the site table), and the
@@ -1572,7 +1588,7 @@ script(handle_agent_notification)params($jsonData)
         $agentId = dict_or_json_get($data, "agentId");
         $count = dict_or_json_get($data, "count");
 
-            $projectDirectory = agent_get_project_dir($agentId);
+        $projectDirectory = agent_get_project_dir($agentId);
         $projectIdentity = agent_get_project_identity($agentId);
 
         nativelog("[agent] freebie_context_count_down, agent: {0}, count: {1}", $agentId, $count);
@@ -1593,6 +1609,11 @@ script(handle_agent_notification)params($jsonData)
         if ($seconds > 1800) {
             $prompt = "记得使用change_plan_item_state更新状态或用append_plan_item_note/append_plan_note添加笔记";
             send_command_to_inject("send_message", to_json({text: $prompt}));
+        }
+        else {
+            // Only when no reminder was just sent: one LLM-bound push per
+            // countdown keeps the page reply queue from piling up.
+            remind_plan_size($planFile);
         };
     }
     elif ($type == "freebie_save_conversation_history") {
@@ -1700,6 +1721,11 @@ script(handle_agent_notification)params($jsonData)
         if ($seconds > 1800) {
             $prompt = "记得使用change_plan_item_state更新状态或用append_plan_item_note/append_plan_note添加笔记（不要停自动计划!）";
             send_command_to_inject("send_message", to_json({text: $prompt}));
+        }
+        else {
+            // Only when no reminder was just sent: one LLM-bound push per
+            // countdown keeps the page reply queue from piling up.
+            remind_plan_size($planFile);
         };
     }
     elif ($type == "llm_align_target") {
@@ -1720,6 +1746,11 @@ script(handle_agent_notification)params($jsonData)
                 write_file($planFile, $planText);
                 update_system_prompt($pageType, false);
             };
+        };
+        if (remind_plan_size($planFile)) {
+            // The size reminder already pushed a message: skip reflection so
+            // its reply does not queue another one behind it.
+            return;
         };
         nativelog("[agent] episodic_reflection notification received");
         trigger_reflection();

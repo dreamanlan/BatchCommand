@@ -356,37 +356,6 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// change_action_item_state(agentId, channelId, idx, state) - update an
-    /// action item's state (0=open 1=in progress 2=done).
-    /// </summary>
-    sealed class MeetingActionStateExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 4) {
-                Core.MetaDslExecutor.AppendApiErrorInfoLine("change_action_item_state requires (agentId, channelId, idx, state)");
-                return BoxedValue.From(false);
-            }
-            var inst = MeetingTrackUtil.ResolveInstance(operands[0]);
-            string channelId = MeetingTrackUtil.ResolveChannelId(operands[1]);
-            var st = MeetingTrackUtil.GetMeeting(inst, channelId, "change_action_item_state");
-            if (st == null)
-                return BoxedValue.From(false);
-            int idx = (int)operands[2].GetInt();
-            if (idx < 0 || idx >= st.ActionItems.Count) {
-                Core.MetaDslExecutor.AppendApiErrorInfoLine("change_action_item_state rejected: index out of range (" + idx + ")");
-                return BoxedValue.From(false);
-            }
-            int state = (int)operands[3].GetInt();
-            if (!MeetingTrackUtil.ValidateItemState(state, (int)Core.ActionItemStateEnum.Done, "change_action_item_state"))
-                return BoxedValue.From(false);
-            st.ActionItems[idx].State = state;
-            Core.MeetingTrackHelper.PersistMeeting(inst, channelId, st);
-            return BoxedValue.From(true);
-        }
-    }
-
-    /// <summary>
     /// append_minutes(agentId, channelId, text) - append a timestamped
     /// minutes entry (host PM's summary). Host PM's job.
     /// </summary>
@@ -489,9 +458,6 @@ namespace AgentCore.ScriptApi
             BatchCommand.BatchScript.Register("add_action_item",
                 "add_action_item(agentId, channelId, owner, task[, deadline]) - register a decision's action item, returns its index or -1 on error",
                 new ExpressionFactoryHelper<MeetingActionAddExp>());
-            BatchCommand.BatchScript.Register("change_action_item_state",
-                "change_action_item_state(agentId, channelId, idx, state) - action item state: 0=open 1=in progress 2=done, returns true/false",
-                new ExpressionFactoryHelper<MeetingActionStateExp>());
             BatchCommand.BatchScript.Register("append_minutes",
                 "append_minutes(agentId, channelId, text) - append a timestamped minutes entry, returns true/false",
                 new ExpressionFactoryHelper<MeetingMinutesExp>());

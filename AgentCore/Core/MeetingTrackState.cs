@@ -17,12 +17,6 @@ namespace AgentCore.Core
         Skipped,
         Done
     }
-    public enum ActionItemStateEnum
-    {
-        Open = 0,
-        InProgress,
-        Done
-    }
     /// <summary>
     /// In-memory meeting tracking state for one meeting room (channelId).
     /// Meeting state: 0=planned 1=in progress 2=done.
@@ -49,7 +43,6 @@ namespace AgentCore.Core
 
         public sealed class ActionItem
         {
-            public int State;
             public string Owner = string.Empty;
             public string Task = string.Empty;
             public string Deadline = string.Empty;
@@ -76,7 +69,7 @@ namespace AgentCore.Core
     /// +    continuation text (plus followed by the first line's indentation)
     /// action_items.txt format:
     /// # [ACTIONS]
-    /// -[0] state=0 owner=someone deadline=2026-11-05 | task text
+    /// -[0] owner=someone deadline=2026-11-05 | task text
     ///     [0] note text
     /// minutes.txt format:
     /// # [MINUTES]
@@ -95,7 +88,7 @@ namespace AgentCore.Core
         private static readonly Regex ItemLineRegex = new Regex(
             @"^-\[(\d+)\]\s*state=(\d+)\s+(.*)$", RegexOptions.Compiled);
         private static readonly Regex ActionLineRegex = new Regex(
-            @"^-\[(\d+)\]\s*state=(\d+)\s+owner=(.*?)\s+deadline=(\S+)\s*\|\s*(.*)$", RegexOptions.Compiled);
+            @"^-\[(\d+)\]\s+owner=(.*?)\s+deadline=(\S+)\s*\|\s*(.*)$", RegexOptions.Compiled);
         private static readonly Regex NoteLineRegex = new Regex(
             @"^([ \t]+)\[(\d+)\]\s+(.*)$", RegexOptions.Compiled);
         private static readonly Regex MinutesLineRegex = new Regex(
@@ -251,8 +244,7 @@ namespace AgentCore.Core
             sb.AppendLine("# [ACTIONS]");
             for (int i = 0; i < st.ActionItems.Count; i++) {
                 var it = st.ActionItems[i];
-                sb.Append("-[").Append(i).Append("] state=").Append(it.State)
-                    .Append(" owner=").Append(it.Owner.Length > 0 ? it.Owner : "-")
+                sb.Append("-[").Append(i).Append("] owner=").Append(it.Owner.Length > 0 ? it.Owner : "-")
                     .Append(" deadline=").Append(it.Deadline.Length > 0 ? it.Deadline : "-")
                     .Append(" | ").AppendLine(EncodeContinuationLines(it.Task));
                 for (int r = 0; r < it.Notes.Count; r++)
@@ -287,15 +279,11 @@ namespace AgentCore.Core
                     }
                     var am = ActionLineRegex.Match(line);
                     if (am.Success) {
-                        int state;
-                        if (!int.TryParse(am.Groups[2].Value, out state))
-                            state = (int)ActionItemStateEnum.Open;
                         currentItem = new MeetingTrackState.ActionItem();
-                        currentItem.State = state;
-                        currentItem.Owner = am.Groups[3].Value.Trim();
-                        string deadline = am.Groups[4].Value.Trim();
+                        currentItem.Owner = am.Groups[2].Value.Trim();
+                        string deadline = am.Groups[3].Value.Trim();
                         currentItem.Deadline = deadline == "-" ? string.Empty : deadline;
-                        currentItem.Task = am.Groups[5].Value.Trim();
+                        currentItem.Task = am.Groups[4].Value.Trim();
                         st.ActionItems.Add(currentItem);
                         currentNotes = currentItem.Notes;
                         currentIndentation = 0;
@@ -379,8 +367,7 @@ namespace AgentCore.Core
             else {
                 for (int i = 0; i < st.ActionItems.Count; i++) {
                     var it = st.ActionItems[i];
-                    sb.Append("-[").Append(i).Append("] state=").Append(it.State)
-                        .Append(" (0=待办 1=进行中 2=完成) 负责人: ")
+                    sb.Append("-[").Append(i).Append("] 负责人: ")
                         .Append(it.Owner.Length > 0 ? it.Owner : "-");
                     if (it.Deadline.Length > 0)
                         sb.Append(" 期限: ").Append(it.Deadline);

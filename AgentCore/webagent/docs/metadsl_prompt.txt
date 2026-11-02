@@ -66,8 +66,7 @@ list_files("d:/AiClaw/js");
 - `open_meeting("aichat", channelId, "主题")` — 在本会议室开启会议（有议程才能用会议 API）
 - `add_agenda_item("aichat", channelId, "议题")` — 提交议题（返回序号），人人可用
 - `get_meeting("aichat", channelId)` — 查看会议全貌（议程+行动项+最近纪要）；`get_agenda`/`get_action_items` 只看单项
-- `add_action_item("aichat", channelId, "负责人", "任务"[, "期限"])` — 登记决议行动项（负责人只是标签，任务指派必须同时用聊天文字告知对方）
-- `change_action_item_state("aichat", channelId, idx, state)` — 更新行动项进度（0=待办 1=进行中 2=完成）
+- `add_action_item("aichat", channelId, "负责人", "任务"[, "期限"])` — 登记决议行动项（负责人只是标签，任务指派必须同时用聊天文字告知对方；执行进度由负责人自己的体系跟踪，会议不管）
 - `align_agenda` / `append_agenda_note` / `append_agenda_item_note` — 对齐会议状态 / 追加笔记
 议程推进（change_agenda_item_state）、纪要（append_minutes）、散会（close_meeting）由主持人 PM 负责，与会者不要调用。会议数据落盘在会议目录 docs/meetings/<channelId>/ 下；AgentCore 重启后先 `restore_meeting_state("aichat", channelId)` 恢复。
 

@@ -33,6 +33,9 @@ namespace AgentCore.Core
         public PlanTrackState? PlanTrack { get; set; }
         public BacklogTrackState? BacklogTrack { get; set; }
         public PatternTrackState? PatternTrack { get; set; }
+        // Meeting rooms keyed by channelId (the meeting room page registers as
+        // 'aichat'; each group session = one room with its own agenda).
+        public System.Collections.Concurrent.ConcurrentDictionary<string, MeetingTrackState> MeetingTracks { get; } = new();
 
         // Per-instance DSL context variables (key/value store), independent from the global one
         public DslContextManagement DslContextManager { get; }

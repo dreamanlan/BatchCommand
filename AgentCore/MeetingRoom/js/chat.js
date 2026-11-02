@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// ChatRoom - Chat UI logic for AiClaw
+// MeetingRoom - Chat UI logic for AiClaw
 // ============================================================================
 
 function getStringInLength(str, length, getTheEnd) {
@@ -14,7 +14,7 @@ function getStringInLength(str, length, getTheEnd) {
   return str.substring(0, length) + '...';
 }
 
-class ChatRoom {
+class MeetingRoom {
   constructor(relay) {
     this.relay = relay;
     this.wxBridge = new WxBridge();
@@ -828,10 +828,10 @@ class ChatRoom {
 
     if (type === 'connection') {
       const status = data.status || 'unknown';
-      console.log('[ChatRoom] WxBridge connection:', status);
+      console.log('[MeetingRoom] WxBridge connection:', status);
       this._addSystemMessage('WeChat bridge: ' + status);
     } else if (type === 'qrcode') {
-      console.log('[ChatRoom] WxBridge QR code received');
+      console.log('[MeetingRoom] WxBridge QR code received');
       this._addSystemMessage('WeChat QR code ready - scan to login');
       if (data.qrcode_img) {
         let imgSrc = data.qrcode_img;
@@ -850,10 +850,10 @@ class ChatRoom {
     } else if (type === 'status') {
 
       const wxStatus = data.status || data;
-      console.log('[ChatRoom] WxBridge status:', wxStatus);
+      console.log('[MeetingRoom] WxBridge status:', wxStatus);
       this._addSystemMessage('WeChat: ' + (typeof wxStatus === 'string' ? wxStatus : JSON.stringify(wxStatus)));
     } else if (type === 'sendresult') {
-      console.log('[ChatRoom] WxBridge send result:', data);
+      console.log('[MeetingRoom] WxBridge send result:', data);
     }
   }
 
@@ -1976,6 +1976,11 @@ class ChatRoom {
     if (!hasUser) {
       prompt.push({ role: 'user', content: '[' + (senderName || 'user') + '] ' + text });
     }
+    // Group session: announce the room's channelId so attendees can call the
+    // meeting apis (open_meeting / add_agenda_item / get_meeting / ...).
+    if (capturedChannelId && this.contactManager && this.contactManager.isGroupSession(capturedChannelId)) {
+      prompt.unshift({ role: 'system', content: 'Current meeting room channelId: ' + capturedChannelId + ' (meeting apis take agentId "aichat" and this channelId).' });
+    }
     console.log('[chat] forwarding to LLM, messages count:', prompt.length);
 
     this.llmManager.clients.forEach(function (client) {
@@ -2116,10 +2121,54 @@ class ChatRoom {
       this._addSystemMessage('[Host] PM not configured, skipping host turn');
       return;
     }
+    // Pull the meeting view (agenda / action items / minutes) for the
+    // current room first: the PM hosts against the agenda. Any failure
+    // (no meeting opened, executor offline, timeout) degrades to the
+    // free-form hosting mode - the old behavior keeps working.
+    const self = this;
+    this._fetchMeetingView().then(function (meetingView) {
+      self._requestPmHostTurn(meetingView);
+    });
+  }
+
+  // Fetch the combined meeting view over the MetaDSL channel. Resolves with
+  // '' when there is no open meeting or anything goes wrong.
+  _fetchMeetingView() {
+    const channelId = this._hostChannelId;
+    if (!channelId || typeof metadslExecutor === 'undefined') {
+      return Promise.resolve('');
+    }
+    if (!metadslExecutor.isReady()) {
+      metadslExecutor.connect();
+    }
+    const safeChannel = String(channelId).replace(/"/g, '\\"');
+    const code = 'get_meeting("aichat", "' + safeChannel + '")';
+    return metadslExecutor.execute(code, channelId, 'PM')
+      .then(function (result) {
+        return (typeof result === 'string' && result.indexOf('会议状态:') === 0) ? result : '';
+      })
+      .catch(function () {
+        return '';
+      });
+  }
+
+  _requestPmHostTurn(meetingView) {
+    if (!this.pmClient) {
+      return;
+    }
     const self = this;
     // Build PM prompt from private chat history
     const pmChatHistory = this.pmPanel.messages;
     let pmSysPrompt = 'You are the meeting host/moderator. ';
+    if (meetingView) {
+      pmSysPrompt += 'The current meeting state (agenda / action items / recent minutes):\n'
+        + meetingView + '\n'
+        + 'Meeting api calls use agentId "aichat" and channelId "' + (this._hostChannelId || '') + '".\n'
+        + 'Hosting duties: open the next item with change_agenda_item_state (state 1=discussing), close it with 3=done or 2=skipped, '
+        + 'register decisions with add_action_item, record round summaries with append_minutes, and close_meeting when everything is settled. '
+        + 'Meeting api calls go into your reply as MetaDSL code blocks; assignments must ALSO be stated in plain text, '
+        + 'because attendees not connected to this AgentCore can only be reached through the chat.\n';
+    }
     if (pmChatHistory.length > 0) {
       pmSysPrompt += 'The user gave you these instructions:\n';
       pmChatHistory.forEach(function (msg) {
@@ -2127,7 +2176,7 @@ class ChatRoom {
       });
     }
     pmSysPrompt += 'As the host, please provide your moderation comment, summary, or guide the discussion. Keep it concise.';
-    // Build context using chat room messages with PM-specific system prompt
+    // Build context using meeting room messages with PM-specific system prompt
     const hostPrompt = this._buildLlmMessages(pmSysPrompt, true);
     console.log('[Host] PM request, messages count:', hostPrompt.length);
     this.pmClient.chat(hostPrompt)
@@ -2138,6 +2187,9 @@ class ChatRoom {
           return;
         }
         console.log('[Host] PM reply: ' + reply.substring(0, 300));
+        // Execute MetaDSL embedded in the PM reply (agenda advancement,
+        // action items, minutes) and keep the clean text for display.
+        reply = self._handleMetaDSL(reply, 'PM', self._hostChannelId);
         // Enqueue PM message for delayed processing
         self._enqueueMessage('PM', reply, 'claw', { forward: true, pmTrigger: true, isAiClawMessage: true, channelId: self._hostChannelId });
       })

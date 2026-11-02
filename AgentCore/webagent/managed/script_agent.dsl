@@ -102,7 +102,7 @@ script(on_init)
     $ok = httpproxy_start_server(httpproxyport);
     nativelog("[agent] httpproxy_start_server({0}) = {1}", httpproxyport, $ok);
     // Static web servers (Windows only, see Core/WebServer.cs):
-    // 8080 -> AiFreebie/LocalAgent, 8082 -> AiFreebie/ChatRoom.
+    // 8080 -> AiFreebie/LocalAgent, 8082 -> AiFreebie/MeetingRoom.
     // Cache-Control: no-cache on every response: without it Chromium applies
     // heuristic freshness to the Last-Modified-only responses, so a stale
     // agent.html can come straight from the disk cache while a just-edited
@@ -114,8 +114,8 @@ script(on_init)
     if (!ismac) {
         $ok = webserver_start_server(8080, combine_path(basepath, "../AiFreebie/LocalAgent/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
         nativelog("[agent] webserver_start_server(8080, LocalAgent) = {0}", $ok);
-        $ok = webserver_start_server(8082, combine_path(basepath, "../AiFreebie/ChatRoom/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
-        nativelog("[agent] webserver_start_server(8082, ChatRoom) = {0}", $ok);
+        $ok = webserver_start_server(8082, combine_path(basepath, "../AiFreebie/MeetingRoom/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
+        nativelog("[agent] webserver_start_server(8082, MeetingRoom) = {0}", $ok);
     };
     // Site ports retired: every page (main + single-page agents) reaches this
     // process through the relay port; per-agent resolution is the agent_bind

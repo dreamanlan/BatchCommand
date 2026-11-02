@@ -30,7 +30,7 @@ script(init_global_consts)
     // routing by registered connection name, zero bridge changes).
     @LiteBridgeUrl = "ws://localhost:3000";
     // Local page retry: the standalone AgentCore opens its site ports
-    // (8080 -> LocalAgent, 8082 -> ChatRoom) after its own startup, so the
+    // (8080 -> LocalAgent, 8082 -> MeetingRoom) after its own startup, so the
     // first navigation here can hit ERR_CONNECTION_REFUSED (see
     // arm_local_page_retry / tick_local_page_retry).
     @LocalPageRetrySeconds = 60;
@@ -647,7 +647,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         $cmdLine.AppendSwitchWithValue("enable-features", "UseCompositorClockVSyncInterval");
         // Tab discard guard: at night the system hits memory pressure and the
         // urgent page discarding policy (feature UrgentPageDiscarding, enabled
-        // by default) unloads the only background tab candidate - ChatRoom -
+        // by default) unloads the only background tab candidate - MeetingRoom -
         // via DiscardAPage(URGENT) ("Discarding multiple pages" in the log).
         // The hot-reload snapshot then sees url=[empty] and cannot rebuild
         // the page. We run our own per-renderer memory guard, so Chromium's

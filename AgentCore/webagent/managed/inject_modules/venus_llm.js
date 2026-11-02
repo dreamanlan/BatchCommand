@@ -1268,11 +1268,6 @@
    */
   /* Vedas bridge: fetch full code from the vedas preview iframe when the
      chat body code block is truncated (pending hold + prefix refill). */
-  function fencesOdd(s) {
-    const f = String.fromCharCode(96, 96, 96);
-    return (String(s).split(f).length - 1) % 2 === 1;
-  }
-
   function requestVedasCode() {
     try {
       const reqId = 'req' + Date.now();

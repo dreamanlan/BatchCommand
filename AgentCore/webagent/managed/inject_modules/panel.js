@@ -524,10 +524,10 @@ class AgentPanel {
       `;
     this.autoPlanButton.onclick = () => this.toggleAutoPlan();
 
-    // ChatRoom button - open chat room in new window
-    const chatRoomBtn = document.createElement('button');
-    chatRoomBtn.textContent = 'ChatRoom';
-    chatRoomBtn.style.cssText = `
+    // MeetingRoom button - open meeting room in new window
+    const meetingRoomBtn = document.createElement('button');
+    meetingRoomBtn.textContent = 'MeetingRoom';
+    meetingRoomBtn.style.cssText = `
         padding: 3px 7px;
         background: #00897b;
         color: white;
@@ -536,7 +536,7 @@ class AgentPanel {
         cursor: pointer;
         font-size: 11px;
       `;
-    chatRoomBtn.onclick = () => this.openChatRoom();
+    meetingRoomBtn.onclick = () => this.openMeetingRoom();
 
     // Proxy button - open Online Proxy in new window
     const proxyBtn = document.createElement('button');
@@ -687,7 +687,7 @@ class AgentPanel {
 
     buttonBar.appendChild(testBtn);
     if (itsMe) {
-      buttonBar.appendChild(chatRoomBtn);
+      buttonBar.appendChild(meetingRoomBtn);
       buttonBar.appendChild(proxyBtn);
     }
     buttonBar.appendChild(this.metadslButton);
@@ -1388,13 +1388,13 @@ class AgentPanel {
     this._logLineCount = 0;
   }
 
-  openChatRoom() {
-    if (!chatRoomWindow || chatRoomWindow.closed) {
-      this.log('Opening ChatRoom...');
-      chatRoomWindow = window.open('http://localhost:8082', '_blank');
+  openMeetingRoom() {
+    if (!meetingRoomWindow || meetingRoomWindow.closed) {
+      this.log('Opening MeetingRoom...');
+      meetingRoomWindow = window.open('http://localhost:8082', '_blank');
     } else {
-      this.log('ChatRoom already open, focusing...');
-      chatRoomWindow.focus();
+      this.log('MeetingRoom already open, focusing...');
+      meetingRoomWindow.focus();
     }
   }
 

@@ -194,7 +194,7 @@ class RelayWs {
   // When the relay connection is down the push is queued (bounded) and
   // flushed after reconnect + auth instead of being silently dropped.
   // No inbound gate: LLM replies are always forwarded. With no channelId
-  // the relay server path is routed by the chatroom (contact_claw_<sender>),
+  // the relay server path is routed by the meeting room (contact_claw_<sender>),
   // and the wechat bridges fall back to the most recent wechat session.
   pushMessage(text, opts) {
     opts = opts || {};

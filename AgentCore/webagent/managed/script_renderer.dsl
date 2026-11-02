@@ -193,7 +193,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         append_line($sb, "  let pageAdapter = null;");
         append_line($sb, "  let metadslMonitor = null;");
         append_line($sb, "  let panel = null;");
-        append_line($sb, "  let chatRoomWindow = null;");
+        append_line($sb, "  let meetingRoomWindow = null;");
         append_line($sb, inj_read("config.js"));
         append_line($sb, inj_read("logger.js"));
         append_line($sb, inj_read("js_dialog.js"));

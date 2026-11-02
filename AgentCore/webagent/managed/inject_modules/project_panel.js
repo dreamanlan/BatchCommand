@@ -333,13 +333,6 @@ class ProjectPanel {
     this._dirCheckTimer = setInterval(() => this._checkProjectConfig(), 10000);
   }
 
-  stopDirCheck() {
-    if (this._dirCheckTimer) {
-      clearInterval(this._dirCheckTimer);
-      this._dirCheckTimer = null;
-    }
-  }
-
   _checkProjectConfig() {
     if (!this._initialized) {
       // Pre-init window: report a waiting state once, non-error (mirrors

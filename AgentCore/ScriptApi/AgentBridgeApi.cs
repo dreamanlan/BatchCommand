@@ -214,4 +214,67 @@ namespace AgentCore.ScriptApi
             }
         }
     }
+
+    // Start the auto plan loop on the main page. The toggle itself lives in
+    // the page (panel/bridge state), so the api pushes a start_auto_plan
+    // agent_command to the requesting connection (main.js onAgentCommand),
+    // reusing the same path and guards as the former js_request handling.
+    sealed class StartAutoPlanExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 0) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: start_auto_plan()");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                if (!Core.AgentCore.IsInitialized) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("AgentCore not initialized");
+                    return BoxedValue.From(false);
+                }
+
+                Core.AgentPush.SendCommandToInject("start_auto_plan", "{}");
+
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                if (Core.AgentCore.IsInitialized) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"start_auto_plan error: {ex.Message}");
+                }
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // Stop the auto plan loop on the main page (Lock Agent guard stays on the
+    // page side: the pushed command is refused there when the user has set
+    // long-term development mode).
+    sealed class StopAutoPlanExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 0) {
+                AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: stop_auto_plan()");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                if (!Core.AgentCore.IsInitialized) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("AgentCore not initialized");
+                    return BoxedValue.From(false);
+                }
+
+                Core.AgentPush.SendCommandToInject("stop_auto_plan", "{}");
+
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                if (Core.AgentCore.IsInitialized) {
+                    AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine($"stop_auto_plan error: {ex.Message}");
+                }
+                return BoxedValue.From(false);
+            }
+        }
+    }
 }

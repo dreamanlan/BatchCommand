@@ -363,28 +363,6 @@ class MetaDSLMonitor {
     }
   }
 
-  extractMetaDSLCommand(text) {
-    if (!text) return null;
-
-    // Check for command markers
-    for (const marker of CONFIG.metadslMarkers) {
-      const markerIndex = text.indexOf(marker);
-      if (markerIndex !== -1) {
-        // Extract command after marker
-        const startIndex = markerIndex + marker.length;
-        const endIndex = text.indexOf('\n', startIndex);
-
-        if (endIndex !== -1) {
-          return text.substring(startIndex, endIndex).trim();
-        } else {
-          return text.substring(startIndex).trim();
-        }
-      }
-    }
-
-    return null;
-  }
-
   alignTarget(count) {
     const operation = {
       type: 'send_notification',
@@ -531,45 +509,6 @@ class MetaDSLMonitor {
       this.canExecuteNewCommands = true;
       this.info('Flag updated: canExecuteNewCommands = true');
       this.info('From now on, all new code blocks will be executed');
-    }
-  }
-
-  // ========================================================================
-  // User Input Detection
-  // ========================================================================
-
-  getLLMInputContent() {
-    // Get LLM input control content based on page type
-    if (!this.pageAdapter) {
-      return null;
-    }
-
-    const pageType = this.pageAdapter.pageType;
-
-    try {
-      switch (pageType) {
-        case 'local-agent':
-          const localAgentInput = document.querySelector('#editable-content[contenteditable="true"]') ||
-            document.querySelector('#editable-content.editable-content') ||
-            document.querySelector('.editable-content[contenteditable="true"]');
-          return localAgentInput ? localAgentInput.textContent : null;
-
-        case 'custom-llm':
-          const customInput = document.querySelector('#editable-content[contenteditable="true"]') ||
-            document.querySelector('#editable-content.editable-content') ||
-            document.querySelector('.editable-content[contenteditable="true"]');
-          return customInput ? customInput.textContent : null;
-
-        case 'test':
-          const testTextarea = document.querySelector('textarea');
-          return testTextarea ? testTextarea.value : null;
-
-        default:
-          return null;
-      }
-    } catch (error) {
-      this.warn('Error getting LLM input content:', error);
-      return null;
     }
   }
 
@@ -2249,45 +2188,9 @@ class MetaDSLMonitor {
 
   executeCommand(command, blocks = []) {
     try {
-      // Check if this is a JavaScript request (not MetaDSL)
-      const js_request_prefix = "js_request:";
-      const trimedCommand = command.trim();
-      if (trimedCommand.startsWith(js_request_prefix)) {
-        let jsRequest = trimedCommand.substring(js_request_prefix.length).trim();
-        if (jsRequest.length > 0 && jsRequest[jsRequest.length - 1] === ';') {
-          jsRequest = jsRequest.substring(0, jsRequest.length - 1);
-        }
-        this.info('JavaScript request detected:', jsRequest);
-
-        if (jsRequest === "start_auto_plan") {
-          this.startAutoPlan();
-          return;
-        }
-        else if (jsRequest === "stop_auto_plan") {
-          this.stopAutoPlan();
-          return;
-        }
-        else if (jsRequest === "keep_llm_context") {
-          if (this.keepContext(CONFIG.llmContextCountModuloForKeep) === false) {
-            this.sendResultToLLM("Context notification not enqueued: operation queue full. No automatic retry.");
-          }
-          return;
-        }
-        else if (jsRequest === "reflect") {
-          if (this.triggerReflection() === false) {
-            this.sendResultToLLM("Reflection notification not enqueued: operation queue full. No automatic retry.");
-          } else {
-            this.sendResultToLLM("Reflection triggered, episodic_reflection notification enqueued.");
-          }
-          return;
-        }
-
-        this.sendResultToLLM("unknown request: " + jsRequest);
-        return; // Don't send to C#
-      }
-
       // Check for local_js: prefix - execute in current window and report result
       const local_js_prefix = "local_js:";
+      const trimedCommand = command.trim();
       if (trimedCommand.startsWith(local_js_prefix)) {
         const jsCode = trimedCommand.substring(local_js_prefix.length).trim();
         this.info('Local JS eval detected:', jsCode.length <= 100 ? jsCode : jsCode.substring(0, 100) + '...');
@@ -2342,8 +2245,8 @@ class MetaDSLMonitor {
       }
       // Returns false only when the command did not reach the transport, so
       // the state machine can retry instead of waiting for a reply that will
-      // never arrive. js_request / local_js paths return undefined (= handled
-      // locally, no transport involved).
+      // never arrive. The local_js path returns undefined (= handled locally,
+      // no transport involved).
       return success;
     } catch (error) {
       this.error('Error in executeCommand:', error);

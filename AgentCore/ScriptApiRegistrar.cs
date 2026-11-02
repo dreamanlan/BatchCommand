@@ -125,6 +125,8 @@ namespace AgentCore
             BatchCommand.BatchScript.Register("send_command_to_inject", "send_command_to_inject(command, paramsJson)", new ExpressionFactoryHelper<SendCommandToInjectExp>());
             BatchCommand.BatchScript.Register("build_agent_response", "build_agent_response(messageId, success, data, error)", new ExpressionFactoryHelper<BuildAgentResponseExp>());
             BatchCommand.BatchScript.Register("send_response_to_inject", "send_response_to_inject(responseJson)", new ExpressionFactoryHelper<SendResponseToInjectExp>());
+            BatchCommand.BatchScript.Register("start_auto_plan", "start_auto_plan() - start the auto plan loop (planning reminders) on the main page", new ExpressionFactoryHelper<StartAutoPlanExp>());
+            BatchCommand.BatchScript.Register("stop_auto_plan", "stop_auto_plan() - stop the auto plan loop (planning reminders) on the main page", new ExpressionFactoryHelper<StopAutoPlanExp>());
 
             BatchCommand.BatchScript.Register("hot_reload", "hot_reload()", new ExpressionFactoryHelper<HotReloadExp>());
             BatchCommand.BatchScript.Register("reopen_browser", "reopen_browser() - reopen the browser: close all pages, then reopen them. (no dll update)", new ExpressionFactoryHelper<ReopenBrowserExp>());
@@ -278,6 +280,9 @@ namespace AgentCore
 
             // PatternTrack API
             PatternTrackApi.RegisterApis();
+
+            // MeetingTrack API (agenda / action items / minutes per meeting room)
+            MeetingTrackApi.RegisterApis();
 
             // Web Search API (Brave + SearXNG)
             WebSearchApi.RegisterApis();

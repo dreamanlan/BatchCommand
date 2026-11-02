@@ -199,18 +199,6 @@ class ResponseDecider {
         };
       }
       else if (hasMetaDsl) {
-        if (this.containsAll(msg, 'js_request', 'reflect')) {
-          if (this.enableLlmPM) {
-            return {
-              action: 'reply',
-              text: `ref <{:>\n${msg}\n<:}>;\n\n已提交反思请求`,
-            };
-          }
-          return { action: 'skip', reason: 'reflect without LlmPM' };
-        }
-        if (this.containsAny(msg, 'js_request')) {
-          return { action: 'skip', reason: 'js_request submitted' };
-        }
         if (this.containsAny(msg, 'sleep(')) {
           return { action: 'skip', reason: 'sleep submitted' };
         }

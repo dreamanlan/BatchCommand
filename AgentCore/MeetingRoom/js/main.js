@@ -40,13 +40,13 @@ function create() {
 function update() {
 }
 
-// Initialize chat room after DOM is ready
+// Initialize meeting room after DOM is ready
 const relay = new RelayClient();
-const chatRoom = new ChatRoom(relay);
+const meetingRoom = new MeetingRoom(relay);
 
 // Load encrypted secrets (apiKeys) after SecretStore is ready
-if (chatRoom.llmManager) {
-    chatRoom.llmManager._loadSecrets().then(function () {
+if (meetingRoom.llmManager) {
+    meetingRoom.llmManager._loadSecrets().then(function () {
         console.log('[main] LLM secrets loaded');
     }).catch(function (e) {
         console.warn('[main] Failed to load LLM secrets: ' + e.message);

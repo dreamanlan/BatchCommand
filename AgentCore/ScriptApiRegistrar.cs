@@ -284,6 +284,9 @@ namespace AgentCore
             // MeetingTrack API (agenda / action items / minutes per meeting room)
             MeetingTrackApi.RegisterApis();
 
+            // Meeting schedule API (recurring meeting times, PM reminders)
+            ScheduleTrackApi.RegisterApis();
+
             // Web Search API (Brave + SearXNG)
             WebSearchApi.RegisterApis();
 

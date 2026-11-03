@@ -88,6 +88,9 @@ namespace AgentCore.Core
 
         // PersistPatterns: regenerate pattern text and write docs/patterns.txt
         // under inst.ProjectDir (UTF-8 no BOM, temp file + replace).
+        // Backups are NOT made here: backup policy is a workflow-level
+        // decision and lives in script_agent.dsl (rolling backup when the
+        // pattern-update reminder fires).
         internal static string PersistPatterns(AgentInstance inst)
         {
             if (inst.PatternTrack == null)

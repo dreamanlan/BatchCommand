@@ -36,6 +36,8 @@ namespace AgentCore.Core
         // Meeting rooms keyed by channelId (the meeting room page registers as
         // 'aichat'; each group session = one room with its own agenda).
         public System.Collections.Concurrent.ConcurrentDictionary<string, MeetingTrackState> MeetingTracks { get; } = new();
+        // Meeting schedule (recurring meeting times, global across rooms).
+        public ScheduleTrackState? ScheduleTrack { get; set; }
 
         // Per-instance DSL context variables (key/value store), independent from the global one
         public DslContextManagement DslContextManager { get; }

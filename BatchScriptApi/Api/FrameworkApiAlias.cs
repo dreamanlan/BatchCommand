@@ -568,9 +568,9 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("move_directory", "move_directory(dir1,dir2)", new ExpressionFactoryHelper<MoveDirectoryExp>());
             BatchCommand.BatchScript.Register("delete_dir", "delete_dir(dir)", new ExpressionFactoryHelper<DeleteDirectoryExp>());
             BatchCommand.BatchScript.Register("delete_directory", "delete_directory(dir)", false, new ExpressionFactoryHelper<DeleteDirectoryExp>());
-            //BatchCommand.BatchScript.Register("copy_file", "copy_file(file1,file2)", new ExpressionFactoryHelper<CopyFileExp>());
+            //BatchCommand.BatchScript.Register("copyfile", "copyfile(file1,file2)", new ExpressionFactoryHelper<CopyFileExp>());
             BatchCommand.BatchScript.Register("copy_files", "copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<CopyFilesExp>());
-            //BatchCommand.BatchScript.Register("move_file", "move_file(file1,file2)", new ExpressionFactoryHelper<MoveFileExp>());
+            //BatchCommand.BatchScript.Register("movefile", "movefile(file1,file2)", new ExpressionFactoryHelper<MoveFileExp>());
             BatchCommand.BatchScript.Register("delete_file", "delete_file(file)", new ExpressionFactoryHelper<DeleteFileExp>());
             BatchCommand.BatchScript.Register("delete_files", "delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<DeleteFilesExp>());
             BatchCommand.BatchScript.Register("delete_all_files", "delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<DeleteAllFilesExp>());
@@ -7033,7 +7033,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiTextInfo.Error.AppendLine("Expected: copy_file(file1,file2)");
+                    ApiTextInfo.Error.AppendLine("Expected: copyfile(file1,file2)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -7130,7 +7130,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiTextInfo.Error.AppendLine("Expected: move_file(file1,file2)");
+                    ApiTextInfo.Error.AppendLine("Expected: movefile(file1,file2)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;

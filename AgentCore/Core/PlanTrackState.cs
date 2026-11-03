@@ -133,6 +133,48 @@ namespace AgentCore.Core
             return text;
         }
 
+        // Backup the current plan.txt into docs/history_plan/ right before a
+        // new plan (create_plan) eventually overwrites it - the backup holds
+        // the previous plan's FINAL text, including notes appended after it
+        // was done. Skips silently when there is nothing to back up or the
+        // content already matches the newest backup (dedup: a restored state
+        // or an abandoned never-persisted new plan must not spam copies).
+        internal static void BackupPlan(AgentInstance inst)
+        {
+            try {
+                if (string.IsNullOrEmpty(inst.ProjectDir))
+                    return;
+                string docsDir = System.IO.Path.Combine(inst.ProjectDir, "docs");
+                string planPath = System.IO.Path.Combine(docsDir, "plan.txt");
+                if (!System.IO.File.Exists(planPath))
+                    return;
+                string text = System.IO.File.ReadAllText(planPath);
+                if (string.IsNullOrWhiteSpace(text))
+                    return;
+                string histDir = System.IO.Path.Combine(docsDir, "history_plan");
+                if (!System.IO.Directory.Exists(histDir))
+                    System.IO.Directory.CreateDirectory(histDir);
+                // Dedup against the newest existing backup (largest name =
+                // newest: the timestamp prefix keeps names sortable).
+                var backups = System.IO.Directory.GetFiles(histDir, "plan_*.txt");
+                if (backups.Length > 0) {
+                    System.Array.Sort(backups, (a, b) => string.CompareOrdinal(b, a));
+                    if (System.IO.File.ReadAllText(backups[0]) == text)
+                        return;
+                }
+                string backupName = "plan_" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".txt";
+                string backupPath = System.IO.Path.Combine(histDir, backupName);
+                while (System.IO.File.Exists(backupPath)) {
+                    backupName = "plan_" + DateTime.Now.ToString("yyyyMMdd-HHmmssfff") + ".txt";
+                    backupPath = System.IO.Path.Combine(histDir, backupName);
+                }
+                System.IO.File.Copy(planPath, backupPath);
+            }
+            catch (Exception ex) {
+                MetaDslExecutor.AppendApiErrorInfoLine("plan backup failed: " + ex.Message);
+            }
+        }
+
         // Returns null when no [PLAN] line is found.
         internal static PlanTrackState? ParsePlanText(string text)
         {

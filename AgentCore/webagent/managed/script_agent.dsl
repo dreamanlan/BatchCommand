@@ -1347,11 +1347,28 @@ script(freebie_get_reflection_prompt)params($agentId)
     return($prompt);
 };
 
+script(backup_patterns_file)params($agentId)
+{
+    // Rolling backup before a pattern-update session: snapshots the library
+    // as it was BEFORE this round of edits, so the later edit chain (add /
+    // merge / rewrite / delete) cannot dilute the backup. Backup policy is
+    // a workflow-level decision and lives here, not in the pattern apis.
+    $patternsFile = combine_path(agent_get_project_dir($agentId), "docs/patterns.txt");
+    if (!file_exists($patternsFile)) {
+        return(false);
+    };
+    $bakFile = combine_path(agent_get_project_dir($agentId), "docs/patterns.txt.bak");
+    copy_file($patternsFile, $bakFile, true);
+    nativelog("[agent] patterns.txt rolled into patterns.txt.bak before pattern update");
+    return(true);
+};
+
 script(freebie_get_pattern_prompt)params($agentId)
 {
     if (isnullorempty($agentId)) {
         $agentId = "webagent";
     };
+    backup_patterns_file($agentId);
     nativelog("[agent] freebie_get_pattern_prompt, agent: {0}", $agentId);
     $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限{3}条、总量控制在{4}字节内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir($agentId), agent_get_project_identity($agentId), $agentId, get_patterns_max_count(), get_patterns_max_size());
     return($prompt);
@@ -1804,6 +1821,7 @@ script(handle_agent_notification)params($jsonData)
         if ($episodicCount - $lastPatternEpisodicCount >= 30) {
             agent_set_context_var(@AgentId, "LastPatternEpisodicCount", $episodicCount);
             nativelog("[agent] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
+            backup_patterns_file(@AgentId);
             $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限{3}条、总量控制在{4}字节内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId), @AgentId, get_patterns_max_count(), get_patterns_max_size());
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };

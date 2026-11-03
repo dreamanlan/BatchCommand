@@ -12,7 +12,9 @@ namespace AgentCore.Core
     }
     /// <summary>
     /// In-memory backlog tracking state for one agent.
-    /// Item state: 0=active 1=suspended 2=done (done is dropped on align).
+    /// Item state: 0=active 1=suspended 2=done. A change_backlog_item_state
+    /// call with done removes the item immediately after appending it to the
+    /// monthly archive docs/history_backlog/done_backlog_yyyyMM.txt.
     /// At most one item is active at any time.
     /// Stored in AgentInstance.BacklogTrack.
     /// </summary>
@@ -116,6 +118,35 @@ namespace AgentCore.Core
             sb.AppendLine(EncodeContinuationLines(it.Title));
             for (int n = 0; n < it.Clauses.Count; n++)
                 sb.Append(' ', ClauseIndentation).Append('[').Append(n).Append("] ").AppendLine(EncodeContinuationLines(it.Clauses[n], ClauseIndentation));
+        }
+
+        // Archive a finished (done) backlog item into the monthly file
+        // docs/history_backlog/done_backlog_yyyyMM.txt before it is removed
+        // from the in-memory list: timestamped append, one entry per done
+        // item (title + clauses), no full-file snapshots - the backlog pool
+        // evolves continuously and has no version boundaries to snapshot.
+        internal static void ArchiveDoneItem(AgentInstance inst, BacklogTrackState.BacklogItem it)
+        {
+            try {
+                if (string.IsNullOrEmpty(inst.ProjectDir))
+                    return;
+                string histDir = System.IO.Path.Combine(inst.ProjectDir, "docs", "history_backlog");
+                if (!System.IO.Directory.Exists(histDir))
+                    System.IO.Directory.CreateDirectory(histDir);
+                string path = System.IO.Path.Combine(histDir, "done_backlog_" + DateTime.Now.ToString("yyyyMM") + ".txt");
+                var sb = new System.Text.StringBuilder();
+                if (!System.IO.File.Exists(path))
+                    sb.AppendLine("# [DONE BACKLOG]");
+                sb.Append('[').Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm")).Append("] ")
+                    .AppendLine(EncodeContinuationLines("-" + it.Title));
+                for (int n = 0; n < it.Clauses.Count; n++)
+                    sb.Append(' ', ClauseIndentation).Append('[').Append(n).Append("] ")
+                        .AppendLine(EncodeContinuationLines(it.Clauses[n], ClauseIndentation));
+                System.IO.File.AppendAllText(path, sb.ToString(), new System.Text.UTF8Encoding(false));
+            }
+            catch (Exception ex) {
+                MetaDslExecutor.AppendApiErrorInfoLine("done backlog archive failed: " + ex.Message);
+            }
         }
 
         // PersistBacklog: regenerate backlog text into AgentInstance.Backlog and write

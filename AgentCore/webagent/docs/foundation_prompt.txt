@@ -66,7 +66,7 @@
 状态机（整型）：计划状态 0=计划、1=进行、2=完成；条目状态 0=计划、1=进行、2=废弃、3=完成。
 冻结规则：按条目状态冻结而非按计划状态；进行中(1)条目不可改不可删，完成(3)条目不可改但可删，clear_plan 仅计划态(0)可用。计划需要调整时优先修改/删除未开始、废弃或已完成且无需关注的条目，不要为此新建计划；完成条目删除前如有需保留的结论先写入计划笔记。
 align_plan 推导：任一条目=1 -> 计划=1；全部条目为 2 或 3 -> 计划=2；全部条目=0 -> 计划=0；混合 -> 计划=1。
-典型链路：create_plan -> add_plan_item -> append_plan_note -> start_plan -> change_plan_item_state -> append_plan_item_note-> align_plan -> 落盘 plan.txt；重启后先读 plan.txt 再 restore_plan_state。
+典型链路：create_plan -> add_plan_item -> append_plan_note -> start_plan -> change_plan_item_state -> append_plan_item_note-> align_plan -> 落盘 plan.txt；重启后先读 plan.txt 再 restore_plan_state。create_plan 时会自动把现有 plan.txt 备份到 docs/history_plan/（内容有变化才会生成新备份），无需手动管理。
 提醒：要用好计划笔记与条目笔记，计划内容会注入系统提示词，需要反复使用的信息可以放到笔记里避免重复查找
 
 **需求库 API (backlogtrack)**
@@ -75,7 +75,7 @@ align_plan 推导：任一条目=1 -> 计划=1；全部条目为 2 或 3 -> 计�
 - `add_backlog_item("webagent", title[, state])`：追加条目，返回 0 基序号（出错返回 -1，原因见错误信息）；state 取 0=激活或 1=挂起，缺省 1，不能为 2=完成（报错）。
 - `modify_backlog_item("webagent", idx, title)`：修改条目标题。
 - `move_backlog_item("webagent", idx, newIdx)`：把条目移到 newIdx 位置以调整优先级（序号越小越优先），两者之间的条目序号顺移 1，状态不变。
-- `change_backlog_item_state("webagent", idx, state)`：修改条目状态，state 取 0=激活、1=挂起、2=完成；置为完成即从列表删除该条目及其条款，后续条目序号减 1。
+- `change_backlog_item_state("webagent", idx, state)`：修改条目状态，state 取 0=激活、1=挂起、2=完成；置为完成即从列表删除该条目及其条款（先按月归档到 docs/history_backlog/done_backlog_年月.txt 保留交付记录），后续条目序号减 1。
 - `add_backlog_clause("webagent", itemIdx, content)`：往条目追加条款，返回 0 基序号（出错返回 -1）。
 - `modify_backlog_clause("webagent", itemIdx, clauseIdx, content)`：修改指定条款。
 - `delete_backlog_clauses("webagent", itemIdx, clauseIdx[, clauseIdx2, ...])`：按序号删除一条或多条条款，其后条款序号减 1；可任意顺序传入，任一序号越界则整体报错。

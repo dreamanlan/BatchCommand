@@ -68,7 +68,15 @@ list_files("d:/AiClaw/js");
 - `get_meeting("aichat", channelId)` — 查看会议全貌（议程+行动项+最近纪要）；`get_agenda`/`get_action_items` 只看单项
 - `add_action_item("aichat", channelId, "负责人", "任务"[, "期限"])` — 登记决议行动项（负责人只是标签，任务指派必须同时用聊天文字告知对方；执行进度由负责人自己的体系跟踪，会议不管）
 - `align_agenda` / `append_agenda_note` / `append_agenda_item_note` — 对齐会议状态 / 追加笔记
-议程推进（change_agenda_item_state）、纪要（append_minutes）、散会（close_meeting）由主持人 PM 负责，与会者不要调用。会议数据落盘在会议目录 docs/meetings/<channelId>/ 下；AgentCore 重启后先 `restore_meeting_state("aichat", channelId)` 恢复。
+议程推进（change_agenda_item_state）、纪要（append_minutes）、散会（close_meeting）由主持人 PM 负责，与会者不要调用。每场会议独立落盘在 docs/meetings/<channelId>_<title>_<时间>/ 下（周期会议不会互相覆盖）；AgentCore 重启后会议 API 会自动恢复该房间最近一场未结束的会议，已结束的会议归档在磁盘，重开新会即可。
+
+**会议日程API（meeting schedule，主要供PM使用）**
+
+定期会议的日程表，全局一份，落地在 docs/meeting_schedule.txt，会议室页面会按时自动提醒 PM 主持：
+- `add_schedule_item("aichat", channelId, "标题", "daily"或"weekly", 星期几, "HH:mm")` — 登记定期会议（weekly 时星期几为 1=周一...7=周日），返回序号
+- `delete_schedule_items("aichat", idx[, idx2, ...])` — 删除日程
+- `set_schedule_item_enabled("aichat", idx, enabled)` — 暂停/恢复某条日程（不删除）
+- `get_schedule("aichat")` — 查看日程表
 
 ## 会议室内MetaDSL示例
 

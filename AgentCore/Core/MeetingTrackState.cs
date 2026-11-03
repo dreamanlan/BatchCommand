@@ -29,6 +29,10 @@ namespace AgentCore.Core
     {
         public string Title = string.Empty;
         public int MeetingState;
+        // Meeting dir name under docs/meetings/ (channelId_title_yyyyMMdd-HHmm,
+        // built at open_meeting time): one dir per meeting so recurring
+        // meetings with the same title never overwrite each other.
+        public string DirName = string.Empty;
         public readonly List<string> Notes = new List<string>();
         public readonly List<AgendaItem> AgendaItems = new List<AgendaItem>();
         public readonly List<ActionItem> ActionItems = new List<ActionItem>();
@@ -57,10 +61,12 @@ namespace AgentCore.Core
     }
 
     /// <summary>
-    /// State derivation and meetings/&lt;channelId&gt; text generation/parsing
-    /// for MeetingTrack. Files under ProjectDir/docs/meetings/&lt;channelId&gt;/:
-    /// agenda.txt, action_items.txt, minutes.txt (all UTF-8 no BOM,
-    /// temp file + replace, same write pattern as PlanTrackHelper.PersistPlan).
+    /// State derivation and meetings/&lt;channelId&gt;_&lt;title&gt;_&lt;yyyyMMdd-HHmm&gt;/
+    /// text generation/parsing for MeetingTrack. One dir per meeting (the
+    /// timestamp suffix separates recurring meetings sharing channelId and
+    /// title), each holding agenda.txt, action_items.txt, minutes.txt
+    /// (all UTF-8 no BOM, temp file + replace, same write pattern as
+    /// PlanTrackHelper.PersistPlan).
     /// agenda.txt format (line by line with regexes):
     /// # [MEETING] state=1 title
     ///     [0] meeting-level note text
@@ -107,12 +113,35 @@ namespace AgentCore.Core
             return s;
         }
 
-        // Meeting docs dir: <ProjectDir or default>/docs/meetings/<channelId>.
+        // Meeting titles are free text: strip path-illegal characters only,
+        // keep CJK letters so the dir stays readable.
+        internal static string SanitizeTitle(string title)
+        {
+            char[] invalid = System.IO.Path.GetInvalidFileNameChars();
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in title.Trim()) {
+                sb.Append(Array.IndexOf(invalid, c) >= 0 ? '_' : c);
+            }
+            string s = sb.ToString().Trim();
+            if (string.IsNullOrEmpty(s))
+                s = "untitled";
+            return s;
+        }
+
+        // One dir per meeting: channelId_title_yyyyMMdd-HHmm (the timestamp
+        // separates recurring meetings that share the channelId and title).
+        internal static string BuildMeetingDirName(string channelId, string title)
+        {
+            return SanitizeChannelId(channelId) + "_" + SanitizeTitle(title)
+                + "_" + DateTime.Now.ToString("yyyyMMdd-HHmm");
+        }
+
+        // Meeting docs dir: <ProjectDir or default>/docs/meetings/<dirName>.
         // Does NOT mutate inst.ProjectDir - the fallback is per-call only.
-        internal static string GetMeetingDir(AgentInstance inst, string channelId)
+        internal static string GetMeetingDir(AgentInstance inst, string dirName)
         {
             string projectDir = string.IsNullOrEmpty(inst.ProjectDir) ? DefaultProjectDir : inst.ProjectDir;
-            return System.IO.Path.Combine(projectDir, "docs", "meetings", SanitizeChannelId(channelId));
+            return System.IO.Path.Combine(projectDir, "docs", "meetings", dirName);
         }
 
         internal static int DeriveMeetingState(int current, List<MeetingTrackState.AgendaItem> items)
@@ -387,13 +416,17 @@ namespace AgentCore.Core
             return sb.ToString();
         }
 
-        // Write agenda.txt / action_items.txt / minutes.txt under the meeting
-        // dir (UTF-8 no BOM, temp file + replace). Missing ProjectDir falls
-        // back to DefaultProjectDir without mutating the instance.
+        // Write agenda.txt / action_items.txt / minutes.txt under the
+        // meeting dir (UTF-8 no BOM, temp file + replace). Missing ProjectDir
+        // falls back to DefaultProjectDir without mutating the instance.
+        // st.DirName is built on the fly when empty (defensive, should be
+        // set by open_meeting).
         internal static void PersistMeeting(AgentInstance inst, string channelId, MeetingTrackState st)
         {
             try {
-                string dir = GetMeetingDir(inst, channelId);
+                if (string.IsNullOrEmpty(st.DirName))
+                    st.DirName = BuildMeetingDirName(channelId, st.Title);
+                string dir = GetMeetingDir(inst, st.DirName);
                 if (!System.IO.Directory.Exists(dir))
                     System.IO.Directory.CreateDirectory(dir);
                 WriteFileAtomic(System.IO.Path.Combine(dir, "agenda.txt"), GenerateAgendaText(st));
@@ -405,27 +438,44 @@ namespace AgentCore.Core
             }
         }
 
-        // Read the three files back into a fresh state. Returns false when
-        // no agenda.txt exists (meeting never opened / never persisted).
-        internal static bool RestoreMeeting(AgentInstance inst, string channelId, out MeetingTrackState st)
+        // Restore the room's latest UNFINISHED meeting: scan docs/meetings/
+        // for dirs named <channelId>_*, newest first (the trailing timestamp
+        // makes lexicographic order chronological), and return the first one
+        // whose meeting state is not done. Finished meetings stay archived -
+        // a new one opens with open_meeting instead. st.DirName is set to the
+        // found dir so subsequent persists keep using it.
+        internal static bool RestoreLatestMeeting(AgentInstance inst, string channelId, out MeetingTrackState st)
         {
             st = new MeetingTrackState();
             try {
-                string dir = GetMeetingDir(inst, channelId);
-                string agendaPath = System.IO.Path.Combine(dir, "agenda.txt");
-                if (!System.IO.File.Exists(agendaPath))
+                string projectDir = string.IsNullOrEmpty(inst.ProjectDir) ? DefaultProjectDir : inst.ProjectDir;
+                string root = System.IO.Path.Combine(projectDir, "docs", "meetings");
+                if (!System.IO.Directory.Exists(root))
                     return false;
-                var parsed = ParseAgendaText(System.IO.File.ReadAllText(agendaPath));
-                if (parsed == null)
-                    return false;
-                st = parsed;
-                string actionsPath = System.IO.Path.Combine(dir, "action_items.txt");
-                if (System.IO.File.Exists(actionsPath))
-                    ParseActionItemsText(st, System.IO.File.ReadAllText(actionsPath));
-                string minutesPath = System.IO.Path.Combine(dir, "minutes.txt");
-                if (System.IO.File.Exists(minutesPath))
-                    ParseMinutesText(st, System.IO.File.ReadAllText(minutesPath));
-                return true;
+                string prefix = SanitizeChannelId(channelId) + "_";
+                var dirs = System.IO.Directory.GetDirectories(root, prefix + "*");
+                // Descending: newest (largest timestamp suffix) first.
+                System.Array.Sort(dirs, (a, b) => string.CompareOrdinal(b, a));
+                foreach (string dir in dirs) {
+                    string agendaPath = System.IO.Path.Combine(dir, "agenda.txt");
+                    if (!System.IO.File.Exists(agendaPath))
+                        continue;
+                    var parsed = ParseAgendaText(System.IO.File.ReadAllText(agendaPath));
+                    if (parsed == null)
+                        continue;
+                    if (parsed.MeetingState == (int)MeetingStateEnum.Done)
+                        continue;
+                    st = parsed;
+                    st.DirName = System.IO.Path.GetFileName(dir);
+                    string actionsPath = System.IO.Path.Combine(dir, "action_items.txt");
+                    if (System.IO.File.Exists(actionsPath))
+                        ParseActionItemsText(st, System.IO.File.ReadAllText(actionsPath));
+                    string minutesPath = System.IO.Path.Combine(dir, "minutes.txt");
+                    if (System.IO.File.Exists(minutesPath))
+                        ParseMinutesText(st, System.IO.File.ReadAllText(minutesPath));
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex) {
                 MetaDslExecutor.AppendApiErrorInfoLine("meeting restore failed: " + ex.Message);

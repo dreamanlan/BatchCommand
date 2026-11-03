@@ -33,8 +33,9 @@ namespace AgentCore.ScriptApi
             return (v.AsString ?? string.Empty).Trim();
         }
 
-        // Fetch the in-memory state; null + error line when the meeting is
-        // not open in this process yet (restore_meeting_state first).
+        // Fetch the in-memory state; on a miss (e.g. after an AgentCore
+        // restart) auto-restore the room's latest unfinished meeting from
+        // disk. Null + error line only when the room has no active meeting.
         internal static Core.MeetingTrackState? GetMeeting(Core.AgentInstance inst, string channelId, string api)
         {
             if (channelId.Length == 0) {
@@ -42,8 +43,14 @@ namespace AgentCore.ScriptApi
                 return null;
             }
             if (!inst.MeetingTracks.TryGetValue(channelId, out var st)) {
-                Core.MetaDslExecutor.AppendApiErrorInfoLine(api + " rejected: no meeting in this room, open_meeting first (or restore_meeting_state after a restart)");
-                return null;
+                if (Core.MeetingTrackHelper.RestoreLatestMeeting(inst, channelId, out st)) {
+                    inst.MeetingTracks[channelId] = st;
+                    Core.MetaDslExecutor.AppendApiTipInfoLine("auto-restored the latest unfinished meeting in this room (dir " + st.DirName + ")");
+                }
+                else {
+                    Core.MetaDslExecutor.AppendApiErrorInfoLine(api + " rejected: no active meeting in this room, open_meeting first");
+                    return null;
+                }
             }
             return st;
         }
@@ -85,6 +92,7 @@ namespace AgentCore.ScriptApi
             var st = new Core.MeetingTrackState();
             st.Title = operands[2].AsString ?? string.Empty;
             st.MeetingState = (int)Core.MeetingStateEnum.Planned;
+            st.DirName = Core.MeetingTrackHelper.BuildMeetingDirName(channelId, st.Title);
             inst.MeetingTracks[channelId] = st;
             Core.MeetingTrackHelper.PersistMeeting(inst, channelId, st);
             return BoxedValue.From(true);
@@ -296,9 +304,12 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// restore_meeting_state(agentId, channelId) - reload the room's meeting
-    /// from disk after an AgentCore restart. Only takes effect when the
-    /// in-memory state is empty (same semantics as restore_plan_state).
+    /// restore_meeting_state(agentId, channelId) - explicitly reload the
+    /// room's latest unfinished meeting from disk after an AgentCore
+    /// restart. Usually unnecessary: get_* apis auto-restore on a miss. Only
+    /// takes effect when the in-memory state is empty (same semantics as
+    /// restore_plan_state); finished meetings stay archived, open a new one
+    /// with open_meeting instead.
     /// </summary>
     sealed class MeetingRestoreExp : SimpleExpressionBase
     {
@@ -318,7 +329,7 @@ namespace AgentCore.ScriptApi
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_meeting_state skipped: in-memory state already exists");
                 return BoxedValue.From(false);
             }
-            if (!Core.MeetingTrackHelper.RestoreMeeting(inst, channelId, out var st))
+            if (!Core.MeetingTrackHelper.RestoreLatestMeeting(inst, channelId, out var st))
                 return BoxedValue.From(false);
             inst.MeetingTracks[channelId] = st;
             return BoxedValue.From(true);

@@ -93,6 +93,10 @@ class MeetingRoom {
     this.muted = true;    // Message queue
     this._messageQueue = [];
     this._queueTimer = setInterval(this._processQueue.bind(this), 5000);
+    // Meeting schedule: poll every 60s and remind the PM when a scheduled
+    // meeting time is reached (see _checkSchedule).
+    this._scheduleCheckBusy = false;
+    this._scheduleTimer = setInterval(this._checkSchedule.bind(this), 60000);
 
     // ContactManager for multi-session support
     console.log('[chat] creating ContactManager...');
@@ -2152,7 +2156,7 @@ class MeetingRoom {
       });
   }
 
-  _requestPmHostTurn(meetingView) {
+  _requestPmHostTurn(meetingView, reminder) {
     if (!this.pmClient) {
       return;
     }
@@ -2160,6 +2164,11 @@ class MeetingRoom {
     // Build PM prompt from private chat history
     const pmChatHistory = this.pmPanel.messages;
     let pmSysPrompt = 'You are the meeting host/moderator. ';
+    if (reminder) {
+      // Scheduled-meeting reminder: the PM decides how to react (announce
+      // the meeting, open/restore it, or call it off).
+      pmSysPrompt += 'SCHEDULE REMINDER: ' + reminder + '\n';
+    }
     if (meetingView) {
       pmSysPrompt += 'The current meeting state (agenda / action items / recent minutes):\n'
         + meetingView + '\n'
@@ -2196,5 +2205,94 @@ class MeetingRoom {
       .catch(function (err) {
         self._addSystemMessage('[PM Host error] ' + err.message);
       });
+  }
+
+  // ---- meeting schedule reminders ---------------------------------------
+
+  // Poll the schedule over the MetaDSL channel (get_schedule, one line per
+  // entry) and remind the PM when a scheduled time is reached today.
+  // Fire-once per entry per day (localStorage), skipped entirely in Mute
+  // mode or while a host round is running.
+  _checkSchedule() {
+    if (this.muted || !this.pmClient || this._scheduleCheckBusy) {
+      return;
+    }
+    if (typeof metadslExecutor === 'undefined' || !metadslExecutor.isReady()) {
+      return;
+    }
+    const self = this;
+    this._scheduleCheckBusy = true;
+    metadslExecutor.execute('get_schedule("aichat")', null, 'schedule')
+      .then(function (result) {
+        self._scheduleCheckBusy = false;
+        if (typeof result !== 'string' || result.indexOf('# [SCHEDULE]') < 0) {
+          return;
+        }
+        const item = self._findDueScheduleItem(result);
+        if (item) {
+          self._fireScheduleReminder(item);
+        }
+      })
+      .catch(function () {
+        self._scheduleCheckBusy = false;
+      });
+  }
+
+  // Parse the schedule text and return the first enabled entry whose time
+  // is due today and not fired yet. Line format (see ScheduleTrackHelper):
+  // -[idx] enabled=1 repeat=weekly weekday=3 time=14:00 channel=group_xxx | title
+  _findDueScheduleItem(text) {
+    const now = new Date();
+    const today = now.getFullYear() + ('0' + (now.getMonth() + 1)).slice(-2) + ('0' + now.getDate()).slice(-2);
+    const ourWeekday = now.getDay() === 0 ? 7 : now.getDay();
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^-\[(\d+)\]\s+enabled=(\d+)\s+repeat=(\S+)\s+weekday=(\d+)\s+time=(\S+)\s+channel=(\S+)\s*\|\s*(.*)$/);
+      if (!m) continue;
+      const idx = m[1];
+      if (m[2] === '0') continue;
+      if (m[3] === 'weekly' && parseInt(m[4], 10) !== ourWeekday) continue;
+      const parts = m[5].split(':');
+      const dueHour = parseInt(parts[0], 10);
+      const dueMin = parseInt(parts[1], 10);
+      if (now.getHours() < dueHour || (now.getHours() === dueHour && now.getMinutes() < dueMin)) continue;
+      if (this._scheduleFiredToday(idx, today)) continue;
+      return { idx: idx, channel: m[6], title: m[7].trim() };
+    }
+    return null;
+  }
+
+  _scheduleFiredToday(idx, today) {
+    try {
+      return localStorage.getItem('aiclaw_schedule_fired_' + idx + '_' + today) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Wake the PM with the reminder (and the room's meeting view when it has
+  // one). The PM decides how to react: announce, open_meeting / restore the
+  // unfinished meeting, or call it off. Its reply carries pmTrigger, so a
+  // full attendee round starts naturally when the PM speaks.
+  _fireScheduleReminder(item) {
+    const today = (function (d) {
+      return d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2);
+    })(new Date());
+    try {
+      localStorage.setItem('aiclaw_schedule_fired_' + item.idx + '_' + today, '1');
+    } catch (e) { /* storage unavailable */ }
+    // Never interrupt a running host round: mark fired and skip.
+    if (this._hostActive) {
+      console.log('[schedule] host round running, reminder for "' + item.title + '" skipped');
+      return;
+    }
+    console.log('[schedule] firing reminder for "' + item.title + '" in ' + item.channel);
+    this._hostChannelId = item.channel;
+    const reminder = 'scheduled meeting "' + item.title + '" is due now in room '
+      + item.channel + '. Announce and host it (open_meeting for a new one, or continue the unfinished one).';
+    const self = this;
+    this._fetchMeetingView().then(function (meetingView) {
+      self._requestPmHostTurn(meetingView, reminder);
+    });
   }
 }

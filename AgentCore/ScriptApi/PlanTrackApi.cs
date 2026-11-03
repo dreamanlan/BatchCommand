@@ -73,6 +73,10 @@ namespace AgentCore.ScriptApi
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("create_plan rejected: a plan is in progress, align or finish it first");
                 return BoxedValue.From(false);
             }
+            // The new plan eventually overwrites plan.txt: preserve the
+            // previous plan's final text first (dedup inside, no-op when
+            // nothing changed since the newest backup).
+            PlanTrackHelper.BackupPlan(inst);
             inst.PlanTrack = new PlanTrackState();
             inst.PlanTrack.Title = m_TitleExp.Calc().AsString ?? string.Empty;
             inst.PlanTrack.PlanState = (int)PlanStateEnum.Planned;

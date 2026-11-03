@@ -161,8 +161,12 @@ namespace AgentCore.ScriptApi
             }
             if (state == (int)BacklogItemStateEnum.Active)
                 BacklogTrackHelper.SetActive(st, idx);
-            else if (state == (int)BacklogItemStateEnum.Done)
+            else if (state == (int)BacklogItemStateEnum.Done) {
+                // Preserve the finished item in the monthly archive before
+                // removing it from the pool.
+                BacklogTrackHelper.ArchiveDoneItem(inst, st.Items[idx]);
                 st.Items.RemoveAt(idx);
+            }
             else
                 st.Items[idx].State = state;
             BacklogTrackHelper.PersistBacklog(inst);

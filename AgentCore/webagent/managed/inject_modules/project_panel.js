@@ -279,28 +279,20 @@ class ProjectPanel {
     this._startDirCheck();
   }
 
-  // Query C# for initial project identity via bridge command
+  // Query the renderer process dsl for the initial project identity (the
+  // command line --projectidentity value) via the synchronous callMetaDSL
+  // bridge. Returns null when unavailable (e.g. outside webagent) so the
+  // caller keeps the last-used project.
   _queryInitialProjectIdentity() {
-    return new Promise((resolve) => {
-      if (!this.bridge) {
-        resolve(null);
-        return;
-      }
-      this.bridge.sendCommand('get_initial_project_identity', {}, (success, data, error) => {
-        if (success && data) {
-          try {
-            const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-            resolve(parsed);
-          } catch (_) {
-            resolve(null);
-          }
-        } else {
-          resolve(null);
-        }
-      });
-      // Timeout fallback
-      setTimeout(() => resolve(null), 3000);
-    });
+    if (typeof callMetaDSL !== 'function') {
+      return Promise.resolve(null);
+    }
+    try {
+      const identity = callMetaDSL('get_initial_project_identity') || '';
+      return Promise.resolve({ projectIdentity: String(identity) });
+    } catch (_) {
+      return Promise.resolve(null);
+    }
   }
 
   _persistData() {

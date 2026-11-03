@@ -490,9 +490,6 @@ script(handle_agent_command)params($jsonData)
     elif ($command == "update_agent_configs") {
         handle_update_agent_configs_command($id, $params);
     }
-    elif ($command == "get_initial_project_identity") {
-        handle_get_initial_project_identity_command($id, $params);
-    }
     elif ($command == "update_project_config") {
         handle_update_project_config_command($id, $params);
     }
@@ -605,25 +602,6 @@ script(handle_update_agent_configs_command)params($id, $params)
     searxng_set_url("https://www.gamexyz.net:8090");
 };
 
-// P1a: the renderer host's initialprojectidentity global does not exist in the
-// agent process; the initial identity is stored here (context var) when the js
-// project panel sends update_project_config, and this getter returns it.
-script(handle_get_initial_project_identity_command)params($id, $params)
-{
-    nativelog("[agent] Handling get_initial_project_identity command, ID: {0}", $id);
-
-    $projectIdentity = get_context_var("InitialProjectIdentity");
-    if (isnull($projectIdentity)) {
-        $projectIdentity = "";
-    };
-
-    nativelog("[agent] get_initial_project_identity: identity={0}", $projectIdentity);
-
-    $result = to_json({projectIdentity: $projectIdentity});
-    $response = build_agent_response($id, true, $result, "");
-    send_response_to_inject($response);
-};
-
 // P1a: update the agent-side project state from the js project panel.
 // params: projectDir, projectIdentity
 script(handle_update_project_config_command)params($id, $params)
@@ -643,7 +621,6 @@ script(handle_update_project_config_command)params($id, $params)
 
     agent_set_project_dir(@AgentId, $projectDir);
     agent_set_project_identity(@AgentId, $projectIdentity);
-    set_context_var("InitialProjectIdentity", $projectIdentity);
     // The page synced its project config at least once; the project dir
     // watchdog gates its checks on this flag to avoid pre-init false alarms.
     set_context_var("ProjectDirSynced", true);

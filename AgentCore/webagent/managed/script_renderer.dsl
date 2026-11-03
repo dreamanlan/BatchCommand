@@ -60,6 +60,19 @@ script(get_self_pid)
     return(pid());
 };
 
+// The command line --projectidentity value for the js project panel. Browser
+// switches propagate to child processes, so the renderer process sees the
+// same initial identity the browser process parsed. The actual project
+// identity may later be changed by the user in the panel; this getter only
+// reports the initial command line value (sync call from js via callMetaDSL).
+script(get_initial_project_identity)
+{
+    if (isnullorempty(initialprojectidentity)) {
+        return("");
+    };
+    return(initialprojectidentity);
+};
+
 script(on_heartbeat)params($processType,$deltaTime)
 {
     // Renderer process: ensure context points to the correct browser/frame

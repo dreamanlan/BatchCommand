@@ -1433,7 +1433,7 @@ class APIClient {
                 { value: 'gemini-4-argon', label: 'Gemini-4-Argon', thinking: false, reasoningEfforts: ['low', 'medium', 'high'], contextWindows: [] },
                 { value: 'gemini-3.8-flash', label: 'Gemini-3.8-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'gemini-3.5-flash', label: 'Gemini-3.5-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'hy4-preview', label: 'HY-4', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
+                { value: 'hy4', label: 'HY-4', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
                 { value: 'hy3', label: 'HY-3', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
                 { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'glm-5.3-flash', label: 'GLM-5.3-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },

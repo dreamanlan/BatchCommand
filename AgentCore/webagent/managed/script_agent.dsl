@@ -38,7 +38,12 @@ script(init_global_consts)
     // --httpproxyport (exposed to dsl as the httpproxyport global).
 
     @SiteIdentity = hashtable("webagent":"webagent","hyarena":"hyarena","venus":"venus","aichat":"aichat","gemini":"gemini","openai":"openai","imate":"imate","with":"with","google":"google");
-    @SiteDir = hashtable("webagent":"", "hyarena":"../AiFreebie/AiArena", "venus":"../AiFreebie/AiVenus", "aichat":"../AiFreebie/AiChat", "gemini":"../AiFreebie/AiGemini", "openai":"../AiFreebie/AiOpenai", "imate":"../AiFreebie/AiImate", "with":"../AiFreebie/AiWith", "google":"../AiFreebie/AiGoogle");
+    // mac: AiFreebie sits in the app dir (./AiFreebie), not above it
+    $baseRelativeDir = "../AiFreebie";
+    if (ismac) {
+        $baseRelativeDir = "./AiFreebie";
+    };
+    @SiteDir = hashtable("webagent":"", "hyarena":$baseRelativeDir + "/AiArena", "venus":$baseRelativeDir + "/AiVenus", "aichat":$baseRelativeDir + "/AiChat", "gemini":$baseRelativeDir + "/AiGemini", "openai":$baseRelativeDir + "/AiOpenai", "imate":$baseRelativeDir + "/AiImate", "with":$baseRelativeDir + "/AiWith", "google":$baseRelativeDir + "/AiGoogle");
     @SiteMaxSize = hashtable("webagent":50*1024,"hyarena":50*1024,"venus":8*1024,"aichat":50*1024,"gemini":40*1024,"openai":40*1024,"imate":40*1024,"with":40*1024,"google":7*1024);
     @SiteContextInjection = hashtable("webagent":false,"hyarena":false,"venus":false,"aichat":false,"gemini":true,"openai":true,"imate":false,"with":false,"google":false);
 

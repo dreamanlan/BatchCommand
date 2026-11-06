@@ -24,9 +24,12 @@
     // wrappers and queue notes.
     MAX_MERGE_LEN: 40 * 1024 - 500,
     POLL_MS: 3000,
+    // Delayed history baseline: poll interval and total wait cap used when
+    // the chat list is not rendered yet at injection time (load race).
+    HISTORY_BASELINE_POLL_MS: 1000,
+    HISTORY_BASELINE_TIMEOUT_MS: 15000,
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
-    KEEP_ROUNDS: 6,
     RESET_TIMEOUT_MS: 30000,
     // Fire freebie_context_count_down every N conversation rounds (0 disables).
     LLM_CONTEXT_COUNT_MODULO: 16,
@@ -155,6 +158,10 @@
     flushTimer: null,
     // Per-message text-stability bookkeeping for empty-confirm path.
     emptyAt: new Map(),
+
+    // True while the delayed history baseline is waiting for the chat list
+    // to render (load race guard); processMessages stays idle meanwhile.
+    historyPending: false,
 
     roundCount: 0,
     lastFlushTs: 0,
@@ -671,28 +678,6 @@
     row2.appendChild(btnClear);
     body.appendChild(row2);
 
-    // Button row 3: history settings
-    const row3 = document.createElement('div');
-    row3.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap; align-items:center;';
-    const btnTrim = mkBtn('trim', () => trimHistory(CFG.KEEP_ROUNDS));
-    const keepLabel = document.createElement('label');
-    keepLabel.style.cssText = 'font-size:10px; display:inline-flex; align-items:center; gap:2px;';
-    const keepInput = document.createElement('input');
-    keepInput.type = 'number';
-    keepInput.min = '1';
-    keepInput.max = '99';
-    keepInput.value = String(CFG.KEEP_ROUNDS);
-    keepInput.style.cssText = 'width:36px; background:#111; color:#fff; border:1px solid #444; padding:1px 3px;';
-    keepInput.addEventListener('change', () => {
-      const v = parseInt(keepInput.value, 10);
-      if (v >= 1 && v <= 99) CFG.KEEP_ROUNDS = v;
-    });
-    keepLabel.appendChild(document.createTextNode('keep'));
-    keepLabel.appendChild(keepInput);
-    row3.appendChild(keepLabel);
-    row3.appendChild(btnTrim);
-    body.appendChild(row3);
-
     // Button row 4: prompt
     const row4 = document.createElement('div');
     row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
@@ -854,35 +839,6 @@ get_openai_prompt}
     setButtonState('break', ST.breakerOn, '#c62828');
     setButtonState('long', ST.longRunMode, '#ef6c00');
     setButtonState('auto', ST.autoSendOn, '#00838f');
-  }
-
-  /* ===========================================
-     Section 8  History Trimming
-     =========================================== */
-  function trimHistory(keepRounds) {
-    const root = getChatRoot();
-    if (!root) { warn('[trim] no chat root'); return; }
-    // Treat each AI message as one round; keep last N AI messages and their
-    // preceding siblings up to the previous AI message.
-    const aiMsgs = pickAllVisibleMessages(root);
-    const total = aiMsgs.length;
-    if (total <= keepRounds) {
-      log(`[trim] nothing to do (${total} <= keep=${keepRounds})`);
-      return;
-    }
-    const cutoffAi = aiMsgs[total - keepRounds];
-    let removed = 0;
-    // Walk siblings of root: remove everything before cutoffAi.
-    let node = root.firstElementChild;
-    while (node && node !== cutoffAi) {
-      const next = node.nextElementSibling;
-      // Skip removing the cutoff itself's prior user message - keep it as
-      // context. Heuristic: stop at the closest user msg before cutoff.
-      // For simplicity remove all earlier siblings.
-      try { node.remove(); removed++; } catch (_) { }
-      node = next;
-    }
-    log(`[trim] removed ${removed} nodes, kept last ${keepRounds} rounds`);
   }
 
   /* ===========================================
@@ -1251,6 +1207,10 @@ get_openai_prompt}
      =========================================== */
   function processMessages() {
     if (ST.paused) return;
+    // Load-race guard: while the history baseline is still waiting for the
+    // chat list to render, stay idle so late-rendering history code blocks
+    // cannot be treated as new and executed.
+    if (ST.historyPending) return;
     // Try to cache the real chatList parent now that DOM may have AI msgs.
     tryCacheChatList();
 
@@ -1334,6 +1294,45 @@ get_openai_prompt}
     log(`[init] markHistory: ${nMsg} ai msgs, ${nBlk} code blocks marked as processed`);
   }
 
+  /**
+   * History baseline with load-race protection. At injection time the chat
+   * list is often not rendered yet (the page loads conversation history
+   * from the server after page load), so an immediate markHistory() marks
+   * nothing and any later-rendered history code blocks get treated as new
+   * and re-executed. Poll until the list is non-empty and the message
+   * count is stable across two consecutive checks, then mark once. While
+   * waiting, processMessages stays idle (ST.historyPending).
+   */
+  function scheduleHistoryBaseline() {
+    const rootNow = getChatRoot();
+    if (rootNow && pickAllVisibleMessages(rootNow).length > 0) {
+      markHistory();
+      return;
+    }
+    ST.historyPending = true;
+    log('[init] chat list empty, deferring history baseline');
+    const startedAt = Date.now();
+    let lastCount = 0;
+    const tick = () => {
+      const root = getChatRoot();
+      const count = root ? pickAllVisibleMessages(root).length : 0;
+      if (count > 0 && count === lastCount) {
+        ST.historyPending = false;
+        markHistory();
+        log('[init] history baseline done after deferred wait (msgs=' + count + ')');
+        return;
+      }
+      if (Date.now() - startedAt >= CFG.HISTORY_BASELINE_TIMEOUT_MS) {
+        ST.historyPending = false;
+        log('[init] history baseline wait timed out (msgs=' + count + '), nothing marked');
+        return;
+      }
+      lastCount = count;
+      setTimeout(tick, CFG.HISTORY_BASELINE_POLL_MS);
+    };
+    setTimeout(tick, CFG.HISTORY_BASELINE_POLL_MS);
+  }
+
   /* ===========================================
      Section 15  Mutation Observer + Polling
      =========================================== */
@@ -1359,8 +1358,9 @@ get_openai_prompt}
     log('[init] start, url=' + location.href);
     // Cache chatList parent if any AI msg already on page.
     tryCacheChatList();
-    // All currently-visible messages and code blocks are considered history.
-    markHistory();
+    // All currently-visible messages and code blocks are considered history
+    // (delayed until the chat list is rendered, see scheduleHistoryBaseline).
+    scheduleHistoryBaseline();
     startObserver();
     createPanel();
     // Notify DSL side that the bridge is ready. Keep the legacy name

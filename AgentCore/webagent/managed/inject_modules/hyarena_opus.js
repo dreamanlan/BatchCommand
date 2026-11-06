@@ -31,7 +31,10 @@
     POLL_MS: 3000,
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
-    KEEP_ROUNDS: 6,
+    // Delayed history baseline: poll interval and total wait cap used when
+    // the chat list is not rendered yet at injection time (load race).
+    HISTORY_BASELINE_POLL_MS: 1000,
+    HISTORY_BASELINE_TIMEOUT_MS: 15000,
     RESET_TIMEOUT_MS: 30000,
     // Fire freebie_context_count_down every N conversation rounds (0 disables).
     LLM_CONTEXT_COUNT_MODULO: 16,
@@ -90,6 +93,10 @@
     flushTimer: null,
     emptyAt: new Map(),
 
+    // True while the delayed history baseline is waiting for the chat list
+    // to render (load race guard); processMessages stays idle meanwhile.
+    historyPending: false,
+
     roundCount: 0,
     lastFlushTs: 0,
     breakerOn: false,
@@ -143,6 +150,13 @@
     // only newly appeared model replies are included in the next flush.
     flushedReplyLen: new WeakMap(),
 
+    // Content-identity trackers that survive React full re-renders (which
+    // replace DOM elements and orphan the WeakSet/WeakMap trackers above):
+    // hashes of recently executed executor code, and reply texts already
+    // collected for echoing.
+    executedCodeHashes: [],
+    collectedReplyKeys: new Set(),
+
     // Slots (non-executor) that have produced executable code which got
     // dropped. A reminder line will be prepended to the next real flush
     // so that those models stop writing code.
@@ -186,6 +200,30 @@
     const n = displayName(slotId);
     if (n.length <= max) return n;
     return n.slice(0, max) + '...';
+  }
+
+  /** Simple string hash (djb2-style) for content-identity keys. */
+  function hashStr(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) {
+      h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    }
+    return String(h);
+  }
+
+  // Recently executed executor code hashes (bounded LRU). Guards against
+  // duplicate execution when React re-renders replace the code block
+  // elements and processedCodes (a WeakSet) loses track of them.
+  function isCodeExecuted(code) {
+    return ST.executedCodeHashes.indexOf(hashStr(code)) >= 0;
+  }
+  function markCodeExecuted(code) {
+    const h = hashStr(code);
+    const arr = ST.executedCodeHashes;
+    const idx = arr.indexOf(h);
+    if (idx >= 0) arr.splice(idx, 1);
+    arr.push(h);
+    if (arr.length > 50) arr.shift();
   }
 
   /** Detect blind-compare mode by the root container class. */
@@ -676,7 +714,11 @@
       ST.lastAutoSentText = text;
       chatSend(text, true);
     }
-    trimHistory(CFG.KEEP_ROUNDS);
+    // History trimming removed entirely (auto path and panel button):
+    // direct DOM removal does not stick (React restores the removed rounds
+    // on its next full render), and full re-renders orphan the
+    // WeakSet/WeakMap trackers, causing duplicate executions and
+    // misaligned re-deliveries.
     updatePanel();
   }
 
@@ -887,12 +929,6 @@
         <button data-act="resume" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#388e3c; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? '' : 'disabled'}>resume</button>
         <button data-act="clear"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#546e7a; color:#fff; border:none; border-radius:3px;">clear</button>
       </div>
-      <div style="margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-        <span style="opacity:0.8;">keep:</span>
-        <input class="metadsl-keep-input" type="number" min="1" max="99" value="${CFG.KEEP_ROUNDS}" style="width:44px; padding:2px 4px; font-size:11px; background:#263238; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:3px; text-align:center;">
-        <span style="opacity:0.8;">rounds</span>
-        <button data-act="trim" style="padding:4px 8px; font-size:11px; cursor:pointer; background:#546e7a; color:#fff; border:none; border-radius:3px;">trim</button>
-      </div>
       <div style="display:flex; gap:4px;">
         <button data-act="identity" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#1976d2; color:#fff; border:none; border-radius:3px;" ${blind ? '' : 'disabled'}>identity</button>
         <button data-act="prompt"   style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#7b1fa2; color:#fff; border:none; border-radius:3px;">prompt</button>
@@ -951,9 +987,6 @@
           log(`[discuss] ${ST.discussMode ? 'enabled' : 'disabled'}`);
           updatePanel();
         }
-        else if (act === 'trim') {
-          trimHistory(CFG.KEEP_ROUNDS);
-        }
         else if (act === 'keepdsl') {
           const next = localStorage.getItem('metadsl_keep_dsl_lines') !== 'true';
           localStorage.setItem('metadsl_keep_dsl_lines', String(next));
@@ -962,25 +995,8 @@
         }
       };
     });
-    const keepInput = body.querySelector('.metadsl-keep-input');
-    if (keepInput) {
-      keepInput.onchange = (ev) => {
-        ev.stopPropagation();
-        const v = parseInt(keepInput.value, 10);
-        if (v > 0) {
-          CFG.KEEP_ROUNDS = v;
-          log('[trim] keep rounds set to ' + v);
-        }
-      };
-      keepInput.onclick = (ev) => ev.stopPropagation();
-    }
   }
 
-  /**
-   * Remove old conversation rounds from the DOM, keeping only the last
-   * `keepRounds` rounds. A round is one userMsg + one aiMsg pair.
-   * Works for both explicit-compare and blind-compare page layouts.
-   */
   function sendInduce() {
     if (typeof relayTransport !== 'undefined' && relayTransport) {
       relayTransport.callAgent('freebie_get_induction_prompt', [AGENT_ID], 8000)
@@ -1027,32 +1043,6 @@
       return;
     }
     log('[pattern] relay transport unavailable, skip');
-  }
-
-  function trimHistory(keepRounds) {
-    const chatList = document.querySelector(SEL.chatList);
-    if (!chatList) return;
-    // Collect paired rounds: each round = [userMsgEl, aiMsgEl]
-    const rounds = [];
-    let pendingUser = null;
-    for (const child of Array.from(chatList.children)) {
-      if (child.matches(SEL.userMsg)) {
-        pendingUser = child;
-      } else if (child.matches(SEL.aiMsg) && pendingUser) {
-        rounds.push([pendingUser, child]);
-        pendingUser = null;
-      }
-    }
-    const toRemove = rounds.length - keepRounds;
-    if (toRemove <= 0) return;
-    log(`[trim] removing ${toRemove} old round(s), keeping ${keepRounds}`);
-    for (let i = 0; i < toRemove; i++) {
-      const [uEl, aEl] = rounds[i];
-      // Clean up emptyAt map entry to avoid memory leak.
-      ST.emptyAt.delete(aEl);
-      uEl.remove();
-      aEl.remove();
-    }
   }
 
   function startAutoSend() {
@@ -1320,6 +1310,12 @@
       items.forEach((it, i) => {
         const id = slotIdOf(i);
         const text = readSlotReplyText(it);
+        // Content-identity guard: React full re-renders replace message
+        // elements, which orphans flushedReplyLen (WeakMap) and made the
+        // same replies get re-collected and re-delivered as "new". Keying
+        // by the reply text itself survives re-renders.
+        const rkey = id + ':' + hashStr(text);
+        if (text && ST.collectedReplyKeys.has(rkey)) return;
         const prevLen = ST.flushedReplyLen.get(it) || 0;
         if (text.length > prevLen) {
           const delta = text.slice(prevLen).trim();
@@ -1328,7 +1324,10 @@
             if (result[id]) result[id] += '\n';
             result[id] += delta;
           }
-          if (commit) ST.flushedReplyLen.set(it, text.length);
+          if (commit) {
+            ST.flushedReplyLen.set(it, text.length);
+            if (text) ST.collectedReplyKeys.add(rkey);
+          }
         }
       });
     });
@@ -1350,6 +1349,38 @@
   }
 
   function isSideComplete(contentItem) {
+    // Authoritative completion marker: the page renders a
+    // .hy-collapse-header containing "处理完成" only after the slot has
+    // truly finished streaming. While a slot is thinking/streaming the
+    // header is absent entirely (verified live: it stays null through the
+    // whole streaming phase and pops in at completion). The legacy
+    // dot-gap heuristic below false-positives during slow-thinking pauses
+    // (dots hidden >=3s while think-block markdown already carries
+    // data-sign), which extracted code mid-stream and misaligned rounds.
+    const header = contentItem.querySelector('.hy-collapse-header');
+    if (header) {
+      return (header.textContent || '').includes('处理完成');
+    }
+    // Secondary completion marker: each slot renders a stop control
+    // (.stop-btn inside .multimodel-type-content-item-header-right) for the
+    // whole streaming phase and swaps it for a dropdown menu button on
+    // completion. A slot without the "处理完成" header but with no stop-btn
+    // therefore finished generating (observed live on Hy4 slow-thinking
+    // slots whose collapse header never rendered; without this fallback the
+    // round gate would wait forever and the executor code would never be
+    // extracted).
+    const headerRight = contentItem.querySelector('.multimodel-type-content-item-header-right');
+    if (headerRight && !headerRight.querySelector('.stop-btn')) {
+      return true;
+    }
+    // No header on this slot: if the page renders headers at all (any
+    // message in the list carries one), a missing header means the slot
+    // is still streaming.
+    const markerList = document.querySelector(SEL.chatList);
+    if (markerList && markerList.querySelector('.hy-collapse-header')) {
+      return false;
+    }
+    // Page variant without collapse headers at all: legacy heuristics.
     const dots = contentItem.querySelectorAll(SEL.loadingDot);
     let anyVisible = false;
     for (const d of dots) {
@@ -1552,6 +1583,10 @@
      =========================================== */
   function processMessages() {
     if (ST.paused) return;
+    // Load-race guard: while the history baseline is still waiting for the
+    // chat list to render, stay idle so late-rendering history code blocks
+    // cannot slip through the armed path and get re-executed.
+    if (ST.historyPending) return;
 
     const chatList = document.querySelector(SEL.chatList);
     if (!chatList) return;
@@ -1675,7 +1710,15 @@
           log(`[drop] [${b.slotId}] ${b.id} (${b.lang}, ${b.code.length}B) - not executor (${ST.executorSlot})`);
           return;
         }
+        // Duplicate-execution guard: React full re-renders replace code
+        // block elements, which orphans processedCodes (WeakSet) and made
+        // already-executed code run a second time. Key by code text.
+        if (isCodeExecuted(b.code)) {
+          log(`[dedup] [${b.slotId}] ${b.id} skipped, identical code already executed`);
+          return;
+        }
         const ok = wsSend(b.slotId, b.code);
+        if (ok) markCodeExecuted(b.code);
         log(ok
           ? `[send] [${b.slotId}] ${b.id} (${b.lang}, ${b.code.length}B)`
           : `[send] [${b.slotId}] failed ${b.id}`);
@@ -1698,6 +1741,48 @@
       });
     });
     return n;
+  }
+
+  /**
+   * History baseline with load-race protection. At injection time the chat
+   * list is often not rendered yet (React loads conversation history from
+   * the server after page load), so an immediate markHistory() marks
+   * nothing and any later-rendered history code blocks get treated as new
+   * and re-executed after arming. Poll until the list is non-empty and the
+   * message count is stable across two consecutive checks, then mark once.
+   * While waiting, processMessages stays idle (ST.historyPending) so
+   * history blocks cannot slip through the armed path.
+   */
+  function scheduleHistoryBaseline() {
+    const listNow = document.querySelector(SEL.chatList);
+    const countNow = listNow ? listNow.querySelectorAll(SEL.aiMsg).length : 0;
+    if (countNow > 0) {
+      const n = markHistory();
+      log(`[history] marked ${n} code blocks`);
+      return;
+    }
+    ST.historyPending = true;
+    log('[history] chat list empty at init, deferring baseline');
+    const startedAt = Date.now();
+    let lastCount = 0;
+    const tick = () => {
+      const list = document.querySelector(SEL.chatList);
+      const count = list ? list.querySelectorAll(SEL.aiMsg).length : 0;
+      if (count > 0 && count === lastCount) {
+        ST.historyPending = false;
+        const n = markHistory();
+        log(`[history] marked ${n} code blocks after delayed baseline (msgs=${count})`);
+        return;
+      }
+      if (Date.now() - startedAt >= CFG.HISTORY_BASELINE_TIMEOUT_MS) {
+        ST.historyPending = false;
+        log(`[history] baseline wait timed out (msgs=${count}), nothing marked`);
+        return;
+      }
+      lastCount = count;
+      setTimeout(tick, CFG.HISTORY_BASELINE_POLL_MS);
+    };
+    setTimeout(tick, CFG.HISTORY_BASELINE_POLL_MS);
   }
 
   /* ===========================================
@@ -1844,9 +1929,7 @@
   function init() {
     console.group(`${T} init`);
 
-    const n = markHistory();
-    log(`[history] marked ${n} code blocks`);
-
+    scheduleHistoryBaseline();
     const initCount = probeInitialSlotCount();
     ensureSlots(initCount);
     log(`[slots] initial count=${initCount}`);

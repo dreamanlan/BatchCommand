@@ -25,14 +25,12 @@
     // wrappers and queue notes.
     MAX_MERGE_LEN: 8 * 1024 - 500,
     POLL_MS: 3000,
+    // Delayed history baseline: poll interval and total wait cap used when
+    // the chat list is not rendered yet at injection time (load race).
+    HISTORY_BASELINE_POLL_MS: 1000,
+    HISTORY_BASELINE_TIMEOUT_MS: 15000,
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
-    KEEP_ROUNDS: 6,
-    // Auto trim via venus backend delete API when rounds exceed KEEP_ROUNDS.
-    // Off by default: clearing history moves the window cursor off the last
-    // message position.
-    AUTO_TRIM_ON: false,
-    TRIM_COOLDOWN_MS: 30000,
     RESET_TIMEOUT_MS: 30000,
     // Fire freebie_context_count_down every N conversation rounds (0 disables).
     LLM_CONTEXT_COUNT_MODULO: 16,
@@ -99,6 +97,10 @@
     flushTimer: null,
     // Per-message text-stability bookkeeping for empty-confirm path.
     emptyAt: new Map(),
+
+    // True while the delayed history baseline is waiting for the chat list
+    // to render (load race guard); processMessages stays idle meanwhile.
+    historyPending: false,
 
     roundCount: 0,
     lastFlushTs: 0,
@@ -629,38 +631,6 @@
     row2.appendChild(btnClear);
     body.appendChild(row2);
 
-    // Button row 3: history settings
-    const row3 = document.createElement('div');
-    row3.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap; align-items:center;';
-    const btnTrim = mkBtn('trim', () => trimHistoryBackend(CFG.KEEP_ROUNDS));
-    const keepLabel = document.createElement('label');
-    keepLabel.style.cssText = 'font-size:10px; display:inline-flex; align-items:center; gap:2px;';
-    const keepInput = document.createElement('input');
-    keepInput.type = 'number';
-    keepInput.min = '1';
-    keepInput.max = '99';
-    keepInput.value = String(CFG.KEEP_ROUNDS);
-    keepInput.style.cssText = 'width:36px; background:#111; color:#fff; border:1px solid #444; padding:1px 3px;';
-    keepInput.addEventListener('change', () => {
-      const v = parseInt(keepInput.value, 10);
-      if (v >= 1 && v <= 99) CFG.KEEP_ROUNDS = v;
-    });
-    keepLabel.appendChild(document.createTextNode('keep'));
-    keepLabel.appendChild(keepInput);
-    row3.appendChild(keepLabel);
-    row3.appendChild(btnTrim);
-    const btnAutoTrim = mkBtn('auto', () => {
-      CFG.AUTO_TRIM_ON = !CFG.AUTO_TRIM_ON;
-      log('[trim] auto trim ' + (CFG.AUTO_TRIM_ON ? 'on' : 'off'));
-      btnAutoTrim.textContent = 'auto:' + (CFG.AUTO_TRIM_ON ? 'on' : 'off');
-      btnAutoTrim.style.background = CFG.AUTO_TRIM_ON ? '#2e7d32' : '#3a4a6b';
-    });
-    row3.appendChild(btnAutoTrim);
-    // Sync initial visual state with CFG.AUTO_TRIM_ON (venustrimautovisual20261006)
-    btnAutoTrim.textContent = 'auto:' + (CFG.AUTO_TRIM_ON ? 'on' : 'off');
-    btnAutoTrim.style.background = CFG.AUTO_TRIM_ON ? '#2e7d32' : '#3a4a6b';
-    body.appendChild(row3);
-
     // Button row 4: prompt
     const row4 = document.createElement('div');
     row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
@@ -862,77 +832,6 @@
 
     status.innerHTML = `${armTag} ${brkTag} ${autoTag} ${queueTag} ${wsTag} ${failTag}
       <br>rounds: ${ST.roundCount}/${CFG.MAX_ROUNDS}`;
-  }
-
-  /* ===========================================
-     Section 8  History Trimming
-     =========================================== */
-  /* Lowest common ancestor of two elements (null when unreachable). */
-  function commonAncestor(a, b) {
-    const seen = new Set();
-    for (let n = a; n; n = n.parentElement) seen.add(n);
-    for (let n = b; n; n = n.parentElement) if (seen.has(n)) return n;
-    return null;
-  }
-
-  function trimHistory(keepRounds) {
-    const root = getChatRoot();
-    if (!root) { warn('[trim] no chat root'); return; }
-    if (!Number.isFinite(keepRounds) || keepRounds < 1) keepRounds = 1;
-    // Treat each AI message as one round; keep last N AI messages.
-    const aiMsgs = pickAllVisible(SEL.aiMsg, root);
-    const total = aiMsgs.length;
-    if (total <= keepRounds) {
-      log(`[trim] nothing to do (${total} <= keep=${keepRounds})`);
-      return;
-    }
-    // Trim whole message units INSIDE the conversation list only. Never walk
-    // root siblings: getChatRoot() returns document.body and messages are
-    // nested deeper (message-wrapper < message-top-wrap < single-model <
-    // ... < vue-advanced-chat), so the old sibling loop deleted ALL direct
-    // body children (whole page wipe incl. injected panel). The conversation
-    // container is the lowest common ancestor of the first and last visible
-    // AI messages. Removing the whole unit (user + AI wrapper pair) also
-    // clears the paired user message - removing just the AI wrapper would
-    // orphan it on screen.
-    const listEl = commonAncestor(aiMsgs[0], aiMsgs[total - 1]);
-    if (!listEl || listEl === document.body || listEl === document.documentElement) {
-      warn('[trim] conversation container not found, skip');
-      return;
-    }
-    // The direct child of the container that holds the first kept AI message.
-    let keepUnit = aiMsgs[total - keepRounds];
-    while (keepUnit && keepUnit.parentElement !== listEl) keepUnit = keepUnit.parentElement;
-    if (!keepUnit) { warn('[trim] cutoff unit not found, skip'); return; }
-    let removed = 0;
-    let node = listEl.firstElementChild;
-    while (node && node !== keepUnit) {
-      const next = node.nextElementSibling;
-      // Only remove message units - non-message siblings (image viewer,
-      // control bars, etc.) stay untouched.
-      if (node.querySelector('.message-top-wrap')) {
-        try { node.remove(); removed++; } catch (_) { }
-      }
-      node = next;
-    }
-    log(`[trim] removed ${removed} units, kept last ${keepRounds} rounds`);
-  }
-
-  /* Frontend-only trim: clear page dialog display via trimHistory.
-   * Backend history records are kept untouched (requirement 20261006). */
-  function trimHistoryBackend(keepRounds) {
-    trimHistory(keepRounds);
-  }
-
-    
-    function maybeAutoTrim() {
-    try {
-      if (!CFG.AUTO_TRIM_ON) return;
-      const now = Date.now();
-      if (ST.lastAutoTrimTs && now - ST.lastAutoTrimTs < CFG.TRIM_COOLDOWN_MS) return;
-      ST.lastAutoTrimTs = now;
-      trimHistoryBackend(CFG.KEEP_ROUNDS);
-    } catch (_) { }
   }
 
   /* ===========================================
@@ -1456,6 +1355,10 @@
 
   function processMessages() {
     if (ST.paused) return;
+    // Load-race guard: while the history baseline is still waiting for the
+    // chat list to render, stay idle so late-rendering history code blocks
+    // cannot be treated as new and executed.
+    if (ST.historyPending) return;
     // Try to cache the real chatList parent now that DOM may have AI msgs.
     tryCacheChatList();
 
@@ -1496,7 +1399,6 @@
         ST.notifiedMsgs.add(msg);
         if (!detectTruncation(msg)) ST.continueRounds = 0;
         notifyConversationHistory(msg);
-        maybeAutoTrim();
       }
 
       const blocks = extractBlocks(msg);
@@ -1542,6 +1444,45 @@
     log(`[init] markHistory: ${nMsg} ai msgs, ${nBlk} code blocks marked as processed`);
   }
 
+  /**
+   * History baseline with load-race protection. At injection time the chat
+   * list is often not rendered yet (the page loads conversation history
+   * from the server after page load), so an immediate markHistory() marks
+   * nothing and any later-rendered history code blocks get treated as new
+   * and re-executed. Poll until the list is non-empty and the message
+   * count is stable across two consecutive checks, then mark once. While
+   * waiting, processMessages stays idle (ST.historyPending).
+   */
+  function scheduleHistoryBaseline() {
+    const rootNow = getChatRoot();
+    if (rootNow && pickAllVisible(SEL.aiMsg, rootNow).length > 0) {
+      markHistory();
+      return;
+    }
+    ST.historyPending = true;
+    log('[init] chat list empty, deferring history baseline');
+    const startedAt = Date.now();
+    let lastCount = 0;
+    const tick = () => {
+      const root = getChatRoot();
+      const count = root ? pickAllVisible(SEL.aiMsg, root).length : 0;
+      if (count > 0 && count === lastCount) {
+        ST.historyPending = false;
+        markHistory();
+        log('[init] history baseline done after deferred wait (msgs=' + count + ')');
+        return;
+      }
+      if (Date.now() - startedAt >= CFG.HISTORY_BASELINE_TIMEOUT_MS) {
+        ST.historyPending = false;
+        log('[init] history baseline wait timed out (msgs=' + count + '), nothing marked');
+        return;
+      }
+      lastCount = count;
+      setTimeout(tick, CFG.HISTORY_BASELINE_POLL_MS);
+    };
+    setTimeout(tick, CFG.HISTORY_BASELINE_POLL_MS);
+  }
+
   /* ===========================================
      Section 15  Mutation Observer + Polling
      =========================================== */
@@ -1582,8 +1523,9 @@
     log('[init] start, url=' + location.href);
     // Cache chatList parent if any AI msg already on page.
     tryCacheChatList();
-    // All currently-visible messages and code blocks are considered history.
-    markHistory();
+    // All currently-visible messages and code blocks are considered history
+    // (delayed until the chat list is rendered, see scheduleHistoryBaseline).
+    scheduleHistoryBaseline();
     startObserver();
     createPanel();
     // Notify DSL side that the bridge is ready. Keep the legacy name

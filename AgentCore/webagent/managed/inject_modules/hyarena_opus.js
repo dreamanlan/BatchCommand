@@ -578,7 +578,7 @@
     if (ST.pendingDropNotice.size > 0) {
       for (const id of ST.pendingDropNotice) {
         lines.push(``);
-        lines.push(`** ${displayName(id)}，你不要写任何代码！！！ **`);
+        lines.push(`** ${displayName(id)}，你不要写代码，根据另一模型代码结果进行分析即可！！！ **`);
       }
       ST.pendingDropNotice.clear();
     }

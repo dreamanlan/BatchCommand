@@ -23,6 +23,11 @@
     // MaxResultSize (SiteMaxSize), minus the usual 500-char reserve for
     // wrappers and queue notes.
     MAX_MERGE_LEN: 50 * 1024 - 500,
+    // Round-based flush: when the current round included executed code,
+    // hold replies plus already-arrived results until all in-flight
+    // executions finish (or this timeout, counted from the first deferred
+    // flush) so the whole round is delivered as ONE merged message.
+    EXEC_WAIT_TIMEOUT_MS: 60000,
     POLL_MS: 3000,
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
@@ -108,6 +113,15 @@
     deferTimer: null,
     // Throttle for deferred-flush diagnostic log.
     deferLastLogTs: 0,
+
+    // Send serialization: true while a chatSend text is pending in the
+    // input box. Concurrent chatSend calls would overwrite each other's
+    // text, so callers retry until the in-flight send finishes.
+    chatSendBusy: false,
+    chatSendBusyAt: 0,
+    // Timestamp when flushResults first deferred waiting for in-flight
+    // exec results of the current round; 0 when not waiting.
+    execWaitStart: 0,
 
     // Executor slot selector: only code blocks from this slot are actually
     // sent over WebSocket for execution. Blocks from other slots are still
@@ -477,7 +491,11 @@
   function flushResults() {
     const slots = activeSlotIds();
     const nonEmpty = slots.filter(id => (ST.pendingResults[id] || []).length > 0);
-    if (nonEmpty.length === 0) return;
+    // A flush is meaningful when results are queued, or (discuss mode)
+    // when completed model replies are waiting to be broadcast.
+    const hasNewReplies = ST.discussMode
+      && Object.keys(collectNewReplies(false)).length > 0;
+    if (nonEmpty.length === 0 && !hasNewReplies) return;
 
     // Not armed yet: keep queue, do not flush.
     if (!ST.armed) {
@@ -510,6 +528,43 @@
       return;
     }
 
+    // Send-busy guard: a previous chatSend text is still pending in the
+    // input box. Keep the queue (results stay queued, replies stay
+    // uncollected) and retry, so everything merges into the next single
+    // send instead of overwriting the pending text.
+    if (ST.chatSendBusy) {
+      log('[flush] previous send still in flight, defer');
+      clearTimeout(ST.flushTimer);
+      ST.flushTimer = setTimeout(flushResults, 2000);
+      updatePanel();
+      return;
+    }
+
+    // Round-based wait: code from the current round is still executing.
+    // Hold replies and already-arrived results so the whole round is
+    // delivered as one merged message. The timeout guards against an
+    // executor that never answers; after it fires, late results simply
+    // merge into the next flush.
+    let execTimedOut = 0;
+    const inflight = slots.reduce((n, id) => n + ((ST.execInflight || {})[id] || 0), 0);
+    if (inflight > 0) {
+      if (!ST.execWaitStart) {
+        ST.execWaitStart = Date.now();
+        log('[flush] exec in flight (' + inflight + '), holding round for merged send');
+      }
+      if (Date.now() - ST.execWaitStart < CFG.EXEC_WAIT_TIMEOUT_MS) {
+        clearTimeout(ST.flushTimer);
+        ST.flushTimer = setTimeout(flushResults, 2000);
+        updatePanel();
+        return;
+      }
+      warn('[flush] exec wait timeout, sending what we have');
+      execTimedOut = inflight;
+      ST.execWaitStart = 0;
+    } else {
+      ST.execWaitStart = 0;
+    }
+
     const now = Date.now();
     if (!ST.longRunMode && ST.lastFlushTs && now - ST.lastFlushTs > CFG.RESET_TIMEOUT_MS) {
       ST.roundCount = 0;
@@ -529,7 +584,7 @@
     }
 
     // Collect new model replies that appeared since last flush.
-    const newReplies = collectNewReplies();
+    const newReplies = collectNewReplies(true);
     const replySlots = slots.filter(id => newReplies[id]);
     if (replySlots.length > 0) {
       for (const id of replySlots) {
@@ -570,6 +625,13 @@
     if (remaining > 0) {
       lines.push('');
       lines.push(`> 还有 ${remaining} 个代码结果在排队输出，不要再发新代码，回复继续即可`);
+    }
+    // Exec-wait timeout note: these results are still in flight (not in
+    // the queue) and will be delivered by the next flush once they arrive.
+    // Tell the models to just reply "continue" instead of writing new code.
+    if (execTimedOut > 0) {
+      lines.push('');
+      lines.push(`> 还有 ${execTimedOut} 个代码结果仍在执行中未发出，稍后会自动送达，不要再发新代码，回复"继续"即可`);
     }
 
     // Drop-notice: warn non-executor slots that produced executable code
@@ -1035,14 +1097,39 @@
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  function chatSend(text, isAgentResult) {
+  function chatSend(text, isAgentResult, _attempt) {
+    // Serialize sends: while another chatSend text is pending in the input
+    // box, retry instead of overwriting it. An in-flight send always ends
+    // within its 30s deadline, so a busy flag older than that is stale
+    // and force-cleared.
+    if (ST.chatSendBusy) {
+      if (Date.now() - (ST.chatSendBusyAt || 0) > 35000) {
+        warn('[chat] stale busy flag, force clear');
+        ST.chatSendBusy = false;
+      } else {
+        const attempt = _attempt || 0;
+        if (attempt < 30) {
+          setTimeout(() => chatSend(text, isAgentResult, attempt + 1), 2000);
+          return;
+        }
+        err('[chat] send busy for too long, drop text');
+        return;
+      }
+    }
+    ST.chatSendBusy = true;
+    ST.chatSendBusyAt = Date.now();
+    // Release the busy flag at every exit. Deferred flushes retry on their
+    // own 2s timer, so no re-scheduling is needed here.
+    const done = () => {
+      ST.chatSendBusy = false;
+    };
     // Remember the prompt for freebie_save_conversation_history.
     // Agent-injected messages (exec results, identity/system prompt, discuss
     // broadcasts) use the [Agent reply omitted] placeholder, mirroring the main
     // agent's agentCollapsed handling in page_adapter.extractNewConversations.
     ST.lastSentPrompt = isAgentResult ? '[Agent reply omitted]' : String(text || '');
     const ta = document.querySelector(SEL.inputTA);
-    if (!ta) { err('input textarea not found'); markSendFail('no textarea'); return; }
+    if (!ta) { err('input textarea not found'); markSendFail('no textarea'); done(); return; }
 
     setReactValue(ta, text);
     ta.style.height = 'auto';
@@ -1082,6 +1169,7 @@
           } else {
             log('[chat] send confirmed, ta.len', taLenBefore, '->', taLenAfter);
           }
+          done();
         }, 300);
         log('[chat] sent');
         return;
@@ -1126,6 +1214,7 @@
         err('send button not usable, give up. ta.value[0..40]=', taVal,
           ' btn=', btnHtml);
         markSendFail('btn not usable');
+        done();
         return;
       }
       setTimeout(tick, 200);
@@ -1211,9 +1300,13 @@
   /**
    * Collect new (not yet flushed) model reply text from completed AI
    * messages. Returns an object like { slot0: 'new text', slot1: '...' }.
-   * Updates flushedReplyLen so the same text is not collected again.
+   * Only rounds whose sides are all complete are collected, so a still
+   * streaming message is never partially echoed mid-generation. In commit
+   * mode (commit=true) flushedReplyLen is advanced so the same text is not
+   * collected again; peek mode (commit=false) has no side effects and is
+   * used by guards to decide without consuming replies on a later defer.
    */
-  function collectNewReplies() {
+  function collectNewReplies(commit) {
     const result = {};
     const chatList = document.querySelector(SEL.chatList);
     if (!chatList) return result;
@@ -1221,6 +1314,9 @@
       const mc = aiMsg.querySelector(SEL.multiContent);
       if (!mc) return;
       const items = Array.from(mc.children);
+      for (const it of items) {
+        if (!isSideComplete(it)) return;
+      }
       items.forEach((it, i) => {
         const id = slotIdOf(i);
         const text = readSlotReplyText(it);
@@ -1232,7 +1328,7 @@
             if (result[id]) result[id] += '\n';
             result[id] += delta;
           }
-          ST.flushedReplyLen.set(it, text.length);
+          if (commit) ST.flushedReplyLen.set(it, text.length);
         }
       });
     });
@@ -1556,26 +1652,11 @@
           ST.processedMsgs.add(aiMsg);
           ST.emptyAt.delete(aiMsg);
           log('[msg] confirmed no code, marked. slots=' + items.length + ' textLen=' + curLen);
-          // Discuss mode: broadcast model replies even without code results.
-          if (ST.discussMode) {
-            const discReplies = collectNewReplies();
-            const discSlots = activeSlotIds().filter(id => discReplies[id]);
-            if (discSlots.length > 0) {
-              const discLines = [];
-              for (const id of discSlots) {
-                discLines.push(`\u3010${displayName(id)}\u3011\uFF1A${discReplies[id]}`);
-              }
-              const discText = discLines.join('\n');
-              log('[discuss] broadcast replies:', discText.slice(0, 120));
-              ST.lastAutoSentText = discText;
-              chatSend(discText, true);
-            }
-          }
-          // If there are queued results waiting (e.g. after a "continue"
-          // reply from the model), proactively schedule a flush so the
-          // next queued result can be delivered.
-          const hasPending = activeSlotIds().some(id => (ST.pendingResults[id] || []).length > 0);
-          if (hasPending) scheduleFlush();
+          // Round finished with no new code: a discuss round. Route the
+          // replies (and any queued results) through the single flush
+          // pipeline so the round is delivered as one message;
+          // flushResults applies the discussMode gate and merged send.
+          scheduleFlush();
         }
         return;
       }

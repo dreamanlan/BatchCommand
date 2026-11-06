@@ -257,6 +257,10 @@ class PageAdapter {
       if (node.nodeType !== Node.ELEMENT_NODE) continue;
       if (node.style && node.style.display === 'none') continue;
       if (node.style && node.style.visibility === 'hidden') continue;
+      // The reasoning block (model thinking) lives in a <details> whose
+      // closed state is NOT style.display:none, so exclude it explicitly -
+      // thinking must never leak into history records.
+      if (node.classList && node.classList.contains('reasoning-block')) continue;
       const tag = node.tagName;
       const isMetadslCode = tag === 'CODE' && node.dataset && node.dataset.metadslStatus;
       const isMetadslPre = tag === 'PRE' && node.querySelector('code[data-metadsl-status]');
@@ -868,6 +872,10 @@ class LLMPageAdapter extends PageAdapter {
       if (!n) return '';
       if (n.nodeType === 3) return n.nodeValue || '';
       if (n.nodeType !== 1) return '';
+      // Model thinking rendered in a collapsed <details>.reasoning-block is
+      // never part of the answer; callers may convert a whole message
+      // wrapper, so skip it here as well.
+      if (n.classList && n.classList.contains('reasoning-block')) return '';
       const tag = n.tagName ? n.tagName.toLowerCase() : '';
       const inner = () => Array.from(n.childNodes).map(walk).join('');
       switch (tag) {

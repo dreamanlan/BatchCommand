@@ -41,6 +41,8 @@ class UIController {
             configModelDetectBtn: document.getElementById('config-model-detect-btn'),
             streamCheckbox: document.getElementById('stream-enabled'),
             streamGroup: document.getElementById('stream-group'),
+            numCtxInput: document.getElementById('num-ctx'),
+            numCtxGroup: document.getElementById('num-ctx-group'),
             enableWebSearchCheckbox: document.getElementById('enable-web-search'),
             webSearchGroup: document.getElementById('web-search-group'),
             conversationModeCheckbox: document.getElementById('conversation-mode'),
@@ -1247,6 +1249,7 @@ class UIController {
         this.elements.enableWebSearchCheckbox.checked = !!t.enableWebSearch;
         this.elements.apiEndpointInput.value = t.apiEndpoint || '';
         this.elements.agentIdInput.value = t.agentId || '';
+        this.elements.numCtxInput.value = t.numCtx || APIClient.DEFAULT_OLLAMA_NUM_CTX;
         this.updateUsernameFieldVisibility(t.authMode || 'personal');
         this.updateModelOptions(apiType);
         // Model list manage area: only for types with runtime model lists
@@ -1850,6 +1853,7 @@ class UIController {
             this.elements.thinkingGroup.style.display = 'block';
             this.elements.reasoningEffortGroup.style.display = 'block';
             this.elements.maxContextTokensGroup.style.display = 'block';
+            this.elements.numCtxGroup.style.display = 'none';
         } else {
             this.elements.authModeGroup.style.display = 'none';
             this.elements.usernameGroup.style.display = 'none';
@@ -1861,6 +1865,7 @@ class UIController {
             this.elements.thinkingGroup.style.display = 'none';
             this.elements.reasoningEffortGroup.style.display = 'none';
             this.elements.maxContextTokensGroup.style.display = 'none';
+            this.elements.numCtxGroup.style.display = (apiType === 'ollama') ? 'block' : 'none';
         }
     }
 
@@ -2016,6 +2021,17 @@ class UIController {
             agentId: agentId,
             model: model
         };
+
+        // Ollama context window: sent as options.num_ctx so long system
+        // prompts are not truncated by Ollama's small default window.
+        if (apiType === 'ollama') {
+            const numCtxRaw = parseInt(this.elements.numCtxInput.value, 10);
+            if (isNaN(numCtxRaw) || numCtxRaw < 1024 || numCtxRaw > 1048576) {
+                this.showError('Context window must be between 1024 and 1048576');
+                return;
+            }
+            config.numCtx = numCtxRaw;
+        }
 
         this.apiClient.saveConfig(config);
         this.elements.apiTypeSelect.value = apiType;

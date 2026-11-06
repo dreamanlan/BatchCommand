@@ -103,11 +103,26 @@ class APIClient {
      * model's settings) so senders/validators need no changes.
      */
     static get TYPE_LEVEL_KEYS() {
-        return ['apiKey', 'apiEndpoint', 'model', 'agentId', 'authMode', 'username', 'stream', 'enableWebSearch'];
+        return ['apiKey', 'apiEndpoint', 'model', 'agentId', 'authMode', 'username', 'stream', 'enableWebSearch', 'numCtx'];
     }
 
     static get MODEL_LEVEL_KEYS() {
         return ['enableThinking', 'reasoningEffort', 'maxContextTokens'];
+    }
+
+    static get DEFAULT_OLLAMA_NUM_CTX() {
+        // Default ollama context window (tokens), sent as options.num_ctx.
+        // Ollama's built-in default window is far smaller and truncates the
+        // input prompt from the front, silently dropping the system prompt.
+        return 65536;
+    }
+
+    static get DEFAULT_AUTH_MODE() {
+        return 'personal';
+    }
+
+    static get DEFAULT_STREAM() {
+        return true;
     }
 
     loadConfig() {
@@ -134,9 +149,9 @@ class APIClient {
             t.apiEndpoint = parsed.apiEndpoint || '';
             t.model = parsed.model || '';
             t.agentId = parsed.agentId || '';
-            t.authMode = parsed.authMode || 'personal';
+            t.authMode = parsed.authMode || APIClient.DEFAULT_AUTH_MODE;
             t.username = parsed.username || '';
-            t.stream = parsed.stream !== undefined ? parsed.stream : true;
+            t.stream = parsed.stream !== undefined ? parsed.stream : APIClient.DEFAULT_STREAM;
             t.enableWebSearch = !!parsed.enableWebSearch;
             if (t.model) {
                 t.modelSettings[t.model] = {
@@ -168,9 +183,9 @@ class APIClient {
                 apiEndpoint: '',
                 model: '',
                 agentId: '',
-                authMode: 'personal',
+                authMode: APIClient.DEFAULT_AUTH_MODE,
                 username: '',
-                stream: true,
+                stream: APIClient.DEFAULT_STREAM,
                 enableWebSearch: false,
                 modelSettings: {}
             };
@@ -242,10 +257,11 @@ class APIClient {
             apiEndpoint: t.apiEndpoint || '',
             model: t.model || '',
             agentId: t.agentId || '',
-            authMode: t.authMode || 'personal',
+            authMode: t.authMode || APIClient.DEFAULT_AUTH_MODE,
             username: t.username || '',
-            stream: t.stream !== undefined ? t.stream : true,
-            enableWebSearch: !!t.enableWebSearch
+            stream: t.stream !== undefined ? t.stream : APIClient.DEFAULT_STREAM,
+            enableWebSearch: !!t.enableWebSearch,
+            numCtx: t.numCtx || APIClient.DEFAULT_OLLAMA_NUM_CTX
         };
     }
 
@@ -662,11 +678,16 @@ class APIClient {
         const outMessages = this.attachImagesToLastUserMessage(messages, imageUrls, 'ollama');
 
         // Ollama's /api/chat accepts the same role/content shape used by
-        // OpenAI, so we can pass the messages array directly.
+        // OpenAI, so we can pass the messages array directly. options.num_ctx
+        // raises the context window (Ollama default 4096 truncates the input
+        // prompt from the front, silently dropping the system prompt).
         const requestBody = {
             model: this.config.model || 'llama3',
             messages: outMessages,
-            stream: true
+            stream: true,
+            options: {
+                num_ctx: this.config.numCtx || APIClient.DEFAULT_OLLAMA_NUM_CTX
+            }
         };
 
         const headers = {
@@ -930,7 +951,7 @@ class APIClient {
 
         // Add authentication headers
         if (this.config.apiKey) {
-            const authMode = this.config.authMode || 'personal';
+            const authMode = this.config.authMode || APIClient.DEFAULT_AUTH_MODE;
 
             if (authMode === 'agent') {
                 // Agent token mode: requires x-knot-token + X-Username

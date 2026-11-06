@@ -1188,6 +1188,14 @@
                     window in tokens, options depend on selected model)</small>
             </div>
 
+            <div class="config-group" id="num-ctx-group" style="display: none;">
+                <label for="num-ctx">Context Window (num_ctx):</label>
+                <input type="number" id="num-ctx" min="1024" max="1048576" value="65536" placeholder="65536">
+                <small style="color: #7f8c8d; font-size: 12px;">Ollama only: options.num_ctx in tokens (default:
+                    65536 = 64K). Without it Ollama uses its small default window and truncates the input from the
+                    front (dropping the system prompt). Larger windows use more VRAM.</small>
+            </div>
+
             <div class="context-config-section" style="border-top: 1px solid #ddd; margin-top: 4px; padding-top: 12px;">
                 <div style="font-weight: 600; color: #2c3e50; margin-bottom: 4px;">Context Configuration</div>
                 <small style="display: block; color: #e67e22; font-size: 12px; margin-bottom: 12px;">Runtime only -
@@ -1229,9 +1237,9 @@
                     <input type="number" id="conversation-reset-tokens" min="0" max="1000000" value="0"
                         placeholder="0">
                     <small style="color: #7f8c8d; font-size: 12px;">Open a new session when prompt_tokens reaches
-                        this value. 0 = auto (default): claude models 40% of the context window, others 80%;
-                        without a context window setting claude 80000, others 160000. <span
-                            id="conversation-reset-tokens-effective"></span></small>
+                        this value. 0 = auto (default): derived from the model context window (claude models use a
+                        lower share). The exact value is computed in api-client.js, see the effective value below. <span
+                        id="conversation-reset-tokens-effective"></span></small>
                 </div>
             </div>
 

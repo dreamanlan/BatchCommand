@@ -401,7 +401,7 @@ script(cache_js_state)params($data, $agentId)
         return;
     };
     if (isnullorempty($agentId)) {
-        $agentId = "main";
+        $agentId = "webagent";
     };
     set_context_var("jsState_" + $agentId, to_json($jsState));
 };
@@ -409,7 +409,7 @@ script(cache_js_state)params($data, $agentId)
 script(js_queue_count)params($agentId, $kind)
 {
     if (isnullorempty($agentId)) {
-        $agentId = "main";
+        $agentId = "webagent";
     };
     $s = get_context_var("jsState_" + $agentId);
     if (isnull($s)) {
@@ -425,7 +425,7 @@ script(js_queue_count)params($agentId, $kind)
 script(js_llm_category)params($agentId)
 {
     if (isnullorempty($agentId)) {
-        $agentId = "main";
+        $agentId = "webagent";
     };
     $s = get_context_var("jsState_" + $agentId);
     if (isnull($s)) {
@@ -822,7 +822,10 @@ script(update_system_prompt)params($pageType,$isFirst)
     nativelog("[agent] prompt lengths: foundation={0} rules={1} emphasize={2} soul={3} project={4} backlog={5} plan={6} context={7} history={8}", strlen($foundationPrompt), strlen($toplevelRules), strlen($emphasize), strlen($soul), strlen($projectMemory), strlen($backlog), strlen($plan), strlen($context), strlen($history));
 
     // P2: llm category from the js state cache instead of CallJavascriptFuncInRenderer.
-    $llmCategory = js_llm_category("");
+    $llmCategory = js_llm_category(@AgentId);
+
+    nativelog("[agent] page_type={0} is_first={1} llm_category={2}", $pageType, $isFirst, $llmCategory);
+    
     //now we use dynamic system prompts
     if ($pageType == "local-agent") {
         $prompt = $emphasize + "\n\n" + $soul + "\n\n" + $projectMemory + "\n\n" + $plan + "\n\n" + $context;
@@ -848,6 +851,7 @@ script(update_system_prompt)params($pageType,$isFirst)
     };
 
     send_command_to_inject("update_system_prompt", to_json({prompt: $prompt}));
+    nativelog("[agent] system prompt: {0}", get_string_in_length($prompt,500));
 
     if (@EnableLlmPM) {
         $note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
@@ -1516,7 +1520,7 @@ script(remind_plan_size)params($planFile)
 
 script(handle_agent_notification)params($jsonData)
 {
-    nativelog("[agent] handle_agent_notification: {0}", get_string_in_length($jsonData, 100));
+    nativelog("[agent] handle_agent_notification: {0}", get_string_in_length($jsonData,100));
 
     // RSI: any notification counts as activity - the idle self-check gate
     // (idle_selfcheck_tick) measures silence from this timestamp.
@@ -1536,7 +1540,7 @@ script(handle_agent_notification)params($jsonData)
         $pageType = dict_or_json_get($data, "pageType");
         $url = dict_or_json_get($data, "url");
 
-        nativelog("[agent] Agent initialized on page type: {0}, url: {1}", $pageType, $url);
+        nativelog("[agent] Agent initialized on page type: {0}, url: {1} agentId: {2}", $pageType, $url, $agentIdForKey);
 
         agent_set_max_result_size(@AgentId, 80*1024);
         sync_local_agent_injection($pageType);

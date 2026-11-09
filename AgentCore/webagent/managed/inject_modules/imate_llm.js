@@ -31,6 +31,13 @@
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
     RESET_TIMEOUT_MS: 30000,
+    // Hard cap for one chatSend while the model is streaming (send button
+    // hidden/disabled). The 30s send deadline keeps refreshing while the
+    // input still retains our text, up to this total cap, so a pending
+    // text is never abandoned mid-generation. On cap hit the text stays in
+    // the input box and is merged into the next flush (residual merge in
+    // flushResults) instead of being overwritten.
+    SEND_STREAM_CAP_MS: 600000,
     // Fire freebie_context_count_down every N conversation rounds (0 disables).
     LLM_CONTEXT_COUNT_MODULO: 16,
     DEBUG: true,
@@ -166,6 +173,11 @@
     // Last text auto-written to chat input by flushResults; used to
     // distinguish our own residual input from genuine user typing.
     lastAutoSentText: '',
+    // Send serialization: true while a chatSend text is pending in the
+    // input box. Concurrent chatSend calls would overwrite each other's
+    // text, so callers retry until the in-flight send finishes.
+    chatSendBusy: false,
+    chatSendBusyAt: 0,
     deferTimer: null,
     deferLastLogTs: 0,
 
@@ -434,7 +446,15 @@
   }
 
   function flushResults() {
-    if (ST.pendingResults.length === 0) return;
+    // Residual unsent text: a previous chatSend left our own text in the
+    // input box (handed control back for merge-before-send, or gave up on
+    // the streaming hard cap). It equals lastAutoSentText, which is how we
+    // tell it apart from genuine user typing. A flush carrying only the
+    // residual is still meaningful.
+    const taRes = pickVisible(SEL.inputTA);
+    const resVal = getInputText(taRes);
+    const residual = (resVal && resVal === ST.lastAutoSentText) ? resVal : '';
+    if (ST.pendingResults.length === 0 && !residual) return;
 
     // Not armed: keep queue, do not flush.
     if (!ST.armed) {
@@ -467,6 +487,17 @@
       return;
     }
 
+    // Send-busy guard: a previous chatSend text is still pending in the
+    // input box. Keep the queue and retry, so everything merges into the
+    // next single send instead of overwriting the pending text.
+    if (ST.chatSendBusy) {
+      log('[flush] previous send still in flight, defer');
+      clearTimeout(ST.flushTimer);
+      ST.flushTimer = setTimeout(flushResults, 2000);
+      updatePanel();
+      return;
+    }
+
     const now = Date.now();
     if (!ST.longRunMode && ST.lastFlushTs && now - ST.lastFlushTs > CFG.RESET_TIMEOUT_MS) {
       ST.roundCount = 0;
@@ -475,12 +506,18 @@
 
     const lines = [];
 
+    // Residual (oldest content) goes first: queued results follow below.
+    if (residual) {
+      lines.push(residual);
+      lines.push('');
+    }
+
     // Merge dispatch: emit every queued result that fits the per-site
     // length budget as one message (one model round instead of a burst of
     // consecutive rounds). The first entry always goes out; whole entries
     // only, leftovers stay queued with the remaining-count note.
     let merged = 0;
-    let budget = CFG.MAX_MERGE_LEN;
+    let budget = CFG.MAX_MERGE_LEN - residual.length;
     while (ST.pendingResults.length > 0) {
       const raw = ST.pendingResults[0];
       // Reserve for the heading and the fenced wrapper around this entry.
@@ -916,29 +953,66 @@ get_imate_prompt}
    * Uses a tick loop with 30s deadline. Detects 'generating' state on the
    * button (stop-icon swap) to know when send finished.
    */
-  function chatSend(text, isAgentResult) {
+  function chatSend(text, isAgentResult, _attempt) {
+    // Serialize sends: while another chatSend text is pending in the input
+    // box, retry instead of overwriting it. An in-flight send may wait
+    // through a long model generation (SEND_STREAM_CAP_MS), so a busy flag
+    // is only stale after that cap plus the normal 30s deadline.
+    if (ST.chatSendBusy) {
+      if (Date.now() - (ST.chatSendBusyAt || 0) > CFG.SEND_STREAM_CAP_MS + 35000) {
+        warn('[chat] stale busy flag, force clear');
+        ST.chatSendBusy = false;
+      } else {
+        const attempt = _attempt || 0;
+        if (attempt < 320) {
+          setTimeout(() => chatSend(text, isAgentResult, attempt + 1), 2000);
+          return;
+        }
+        err('[chat] send busy for too long, drop text');
+        return;
+      }
+    }
+    ST.chatSendBusy = true;
+    ST.chatSendBusyAt = Date.now();
+    // Release the busy flag at every exit. Deferred flushes retry on their
+    // own 2s timer, so no re-scheduling is needed here.
+    const done = () => {
+      ST.chatSendBusy = false;
+    };
     // Remember the prompt for freebie_save_conversation_history.
     // Agent-injected messages (exec results) use the [Agent reply omitted]
     // placeholder, mirroring the main agent's agentCollapsed handling in
     // page_adapter.extractNewConversations.
     ST.lastSentPrompt = isAgentResult ? '[Agent reply omitted]' : String(text || '');
     const ta = pickVisible(SEL.inputTA);
-    if (!ta) { markSendFail('chat input not found'); return; }
+    if (!ta) { markSendFail('chat input not found'); done(); return; }
     try { setReactValue(ta, text); }
-    catch (e) { markSendFail('setReactValue threw: ' + e.message); return; }
+    catch (e) { markSendFail('setReactValue threw: ' + e.message); done(); return; }
 
-    const deadline = Date.now() + 30000;
+    let deadline = Date.now() + 30000;
+    const hardCap = Date.now() + CFG.SEND_STREAM_CAP_MS;
     const tick = () => {
       if (Date.now() > deadline) {
-        // Dump candidate buttons to help diagnose selector drift.
-        const all = document.querySelectorAll('button');
-        const dump = [];
-        for (let i = 0; i < Math.min(all.length, 8); i++) {
-          const b = all[i];
-          dump.push(`${i}:${(b.getAttribute('data-testid') || '').slice(0, 40)}|${(b.getAttribute('aria-label') || '').slice(0, 20)}|d=${b.disabled}`);
+        // While the input still retains our text (model streaming: send
+        // button hidden or disabled), refresh the deadline instead of
+        // giving up: abandoning the text here would strand it in the box.
+        // hardCap bounds the total wait.
+        const taW = pickVisible(SEL.inputTA);
+        const retained = taW && getInputText(taW) === text;
+        if (isAgentResult && retained && Date.now() < hardCap) {
+          deadline = Date.now() + 30000;
+        } else {
+          // Dump candidate buttons to help diagnose selector drift.
+          const all = document.querySelectorAll('button');
+          const dump = [];
+          for (let i = 0; i < Math.min(all.length, 8); i++) {
+            const b = all[i];
+            dump.push(`${i}:${(b.getAttribute('data-testid') || '').slice(0, 40)}|${(b.getAttribute('aria-label') || '').slice(0, 20)}|d=${b.disabled}`);
+          }
+          markSendFail('send button never enabled. input.len=' + getInputText(ta).length + ' btns=' + dump.join(';'));
+          done();
+          return;
         }
-        markSendFail('send button never enabled. input.len=' + getInputText(ta).length + ' btns=' + dump.join(';'));
-        return;
       }
       const btn = pickSendButton();
       const ta2 = pickVisible(SEL.inputTA);
@@ -946,6 +1020,15 @@ get_imate_prompt}
       // value in the visible input (defends against framework rollback).
       if (!btn || btn.disabled || !ta2 || !getInputText(ta2).trim()) {
         setTimeout(tick, 200);
+        return;
+      }
+      // Merge-before-send: while we waited, more results may have queued
+      // up. Hand control back to flushResults, which merges the residual
+      // box text with everything queued and sends ONE message.
+      if (isAgentResult && ST.pendingResults.length > 0) {
+        log('[chatSend] sendable, merging queued results before send');
+        done();
+        flushResults();
         return;
       }
       // Throttled progress log.
@@ -960,6 +1043,9 @@ get_imate_prompt}
       } catch (e) {
         markSendFail('btn.click threw: ' + e.message);
       }
+      // Release busy slightly after the click so React has time to clear
+      // the input before the next flush could re-collect it as residual.
+      setTimeout(done, 300);
     };
     setTimeout(tick, 100);
   }

@@ -36,6 +36,13 @@
     HISTORY_BASELINE_POLL_MS: 1000,
     HISTORY_BASELINE_TIMEOUT_MS: 15000,
     RESET_TIMEOUT_MS: 30000,
+    // Hard cap for one chatSend while the model is streaming (the send
+    // button is swapped to a stop button). The 30s send deadline keeps
+    // refreshing while the stop icon is present, up to this total cap, so
+    // a pending text is never abandoned mid-generation. On cap hit the
+    // text stays in the input box and is merged into the next flush
+    // (residual merge in flushResults) instead of being overwritten.
+    SEND_STREAM_CAP_MS: 600000,
     // Fire freebie_context_count_down every N conversation rounds (0 disables).
     LLM_CONTEXT_COUNT_MODULO: 16,
     DEBUG: true,
@@ -533,7 +540,15 @@
     // when completed model replies are waiting to be broadcast.
     const hasNewReplies = ST.discussMode
       && Object.keys(collectNewReplies(false)).length > 0;
-    if (nonEmpty.length === 0 && !hasNewReplies) return;
+    // Residual unsent text: a previous chatSend left our own text in the
+    // input box (handed control back for merge-before-send, or gave up on
+    // the streaming hard cap). It equals lastAutoSentText, which is how we
+    // tell it apart from genuine user typing. A flush carrying only the
+    // residual is still meaningful.
+    const taNow = document.querySelector(SEL.inputTA);
+    const curVal = taNow ? taNow.value : '';
+    const residual = (curVal && curVal === ST.lastAutoSentText) ? curVal : '';
+    if (nonEmpty.length === 0 && !hasNewReplies && !residual) return;
 
     // Not armed yet: keep queue, do not flush.
     if (!ST.armed) {
@@ -551,9 +566,7 @@
 
     // User-typing guard: if chat input currently holds text that we did
     // NOT auto-write ourselves, the user is composing a message. Defer the
-    // flush (keep queue intact) and retry in 2s.
-    const taNow = document.querySelector(SEL.inputTA);
-    const curVal = taNow ? taNow.value : '';
+    // flush (keep queue intact) and retry in 2s. (curVal was read above.)
     if (curVal && curVal !== ST.lastAutoSentText) {
       const nowTs = Date.now();
       if (nowTs - ST.deferLastLogTs > 1000) {
@@ -621,6 +634,13 @@
       lines.push('> Note: blind mode, model names (Model A/B) are anonymous placeholders.');
     }
 
+    // Residual (oldest content) goes first: replies and exec results that
+    // queued after it follow below.
+    if (residual) {
+      lines.push(residual);
+      lines.push('');
+    }
+
     // Collect new model replies that appeared since last flush.
     const newReplies = collectNewReplies(true);
     const replySlots = slots.filter(id => newReplies[id]);
@@ -638,7 +658,7 @@
     // order. The first entry always goes out; whole entries only, leftovers
     // stay queued with the remaining-count note.
     let merged = 0;
-    let budget = CFG.MAX_MERGE_LEN;
+    let budget = CFG.MAX_MERGE_LEN - residual.length;
     while (merged < total) {
       let pickedSlot = null;
       for (const id of slots) {
@@ -1089,16 +1109,16 @@
 
   function chatSend(text, isAgentResult, _attempt) {
     // Serialize sends: while another chatSend text is pending in the input
-    // box, retry instead of overwriting it. An in-flight send always ends
-    // within its 30s deadline, so a busy flag older than that is stale
-    // and force-cleared.
+    // box, retry instead of overwriting it. An in-flight send may wait
+    // through a long model generation (SEND_STREAM_CAP_MS), so a busy flag
+    // is only stale after that cap plus the normal 30s deadline.
     if (ST.chatSendBusy) {
-      if (Date.now() - (ST.chatSendBusyAt || 0) > 35000) {
+      if (Date.now() - (ST.chatSendBusyAt || 0) > CFG.SEND_STREAM_CAP_MS + 35000) {
         warn('[chat] stale busy flag, force clear');
         ST.chatSendBusy = false;
       } else {
         const attempt = _attempt || 0;
-        if (attempt < 30) {
+        if (attempt < 320) {
           setTimeout(() => chatSend(text, isAgentResult, attempt + 1), 2000);
           return;
         }
@@ -1125,7 +1145,8 @@
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 400) + 'px';
 
-    const deadline = Date.now() + 30000;
+    let deadline = Date.now() + 30000;
+    const hardCap = Date.now() + CFG.SEND_STREAM_CAP_MS;
     ST.chatSendLastLogTs = 0;
     let firstFailLogged = false;
     const tick = () => {
@@ -1143,6 +1164,26 @@
         && btnPE !== 'none'
         && !hasStopIcon;
       if (ok) {
+        // User-modified input: the box no longer holds our text. Abort
+        // instead of clicking send on the user's draft.
+        if (ta.value && ta.value !== text) {
+          warn('[chat] input modified by user, abort send');
+          done();
+          return;
+        }
+        // Merge-before-send: while we waited (model streaming), exec
+        // results or completed replies may have queued up. Hand control
+        // back to flushResults, which merges the residual box text with
+        // everything queued and sends ONE message.
+        const mergeable = isAgentResult
+          && (totalPending() > 0
+            || (ST.discussMode && Object.keys(collectNewReplies(false)).length > 0));
+        if (mergeable) {
+          log('[chat] sendable, merging queued content before send');
+          done();
+          flushResults();
+          return;
+        }
         if (!ta.value) setReactValue(ta, text);
         const btnHtmlBefore = (btn.outerHTML || '').slice(0, 200);
         const taLenBefore = ta.value.length;
@@ -1199,13 +1240,20 @@
           'stopIcon=' + hasStopIcon);
       }
       if (now > deadline) {
-        const taVal = (ta.value || '').slice(0, 40);
-        const btnHtml = btn ? (btn.outerHTML || '').slice(0, 160) : '(null)';
-        err('send button not usable, give up. ta.value[0..40]=', taVal,
-          ' btn=', btnHtml);
-        markSendFail('btn not usable');
-        done();
-        return;
+        if (hasStopIcon && now < hardCap) {
+          // Model still streaming (send button swapped to a stop button).
+          // Refresh the deadline instead of giving up: abandoning the text
+          // here would strand it in the input box. hardCap bounds the wait.
+          deadline = Date.now() + 30000;
+        } else {
+          const taVal = (ta.value || '').slice(0, 40);
+          const btnHtml = btn ? (btn.outerHTML || '').slice(0, 160) : '(null)';
+          err('send button not usable, give up. ta.value[0..40]=', taVal,
+            ' btn=', btnHtml);
+          markSendFail('btn not usable');
+          done();
+          return;
+        }
       }
       setTimeout(tick, 200);
     };

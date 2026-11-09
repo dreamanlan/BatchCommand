@@ -106,8 +106,11 @@ script(on_init)
     nativelog("[agent] ws_start_server({0}, {1}) = {2}", agentport, @AgentId, $ok);
     $ok = httpproxy_start_server(httpproxyport);
     nativelog("[agent] httpproxy_start_server({0}) = {1}", httpproxyport, $ok);
-    // Static web servers (Windows only, see Core/WebServer.cs):
-    // 8080 -> AiFreebie/LocalAgent, 8082 -> AiFreebie/MeetingRoom.
+    // Static web servers (HTTP on all platforms; only https is Windows-only
+    // in Core/WebServer.cs): 8080 -> AiFreebie/LocalAgent, 8082 ->
+    // AiFreebie/MeetingRoom. Windows layout: AiFreebie sits above the app
+    // dir (../AiFreebie); mac layout: inside the app dir (./AiFreebie), the
+    // same convention as the site table in init_global_consts.
     // Cache-Control: no-cache on every response: without it Chromium applies
     // heuristic freshness to the Last-Modified-only responses, so a stale
     // agent.html can come straight from the disk cache while a just-edited
@@ -116,12 +119,14 @@ script(on_init)
     // frame only), so the local page retry (script.dsl) stays unarmed and the
     // page is stuck half-loaded. no-cache makes the html revalidate too, so a
     // cold start fails on the main frame and the retry takes over.
-    if (!ismac) {
-        $ok = webserver_start_server(8080, combine_path(basepath, "../AiFreebie/LocalAgent/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
-        nativelog("[agent] webserver_start_server(8080, LocalAgent) = {0}", $ok);
-        $ok = webserver_start_server(8082, combine_path(basepath, "../AiFreebie/MeetingRoom/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
-        nativelog("[agent] webserver_start_server(8082, MeetingRoom) = {0}", $ok);
+    $webRoot = "../AiFreebie";
+    if (ismac) {
+        $webRoot = "./AiFreebie";
     };
+    $ok = webserver_start_server(8080, combine_path(basepath, $webRoot + "/LocalAgent/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
+    nativelog("[agent] webserver_start_server(8080, LocalAgent) = {0}", $ok);
+    $ok = webserver_start_server(8082, combine_path(basepath, $webRoot + "/MeetingRoom/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
+    nativelog("[agent] webserver_start_server(8082, MeetingRoom) = {0}", $ok);
     // Site ports retired: every page (main + single-page agents) reaches this
     // process through the relay port; per-agent resolution is the agent_bind
     // connection binding, see the raw MetaDSL path in WebSocketServer.
@@ -132,10 +137,8 @@ script(on_finalize)
     nativelog("[agent] on_finalize");
     ws_stop_server(agentport);
     httpproxy_stop_server(httpproxyport);
-    if (!ismac) {
-        webserver_stop_server(8080);
-        webserver_stop_server(8082);
-    };
+    webserver_stop_server(8080);
+    webserver_stop_server(8082);
 };
 
 script(on_tick)

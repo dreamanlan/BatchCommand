@@ -1431,7 +1431,29 @@ script(append_emphasize_and_soul)params($prompt, $agentId)
 
 script(get_arena_system_prompt)params()
 {
-    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/arena_prompt.txt")), "hyarena"));
+    $prompt = append_emphasize_and_soul(read_file(combine_path(basepath, "docs/arena_prompt.txt")), "hyarena");
+
+    // Dynamic part: current plan + induction context from the hyarena project
+    // dir. Context injection is disabled for hyarena (page message size limit),
+    // so the page system prompt carries this state instead, refreshed on
+    // ready and every context count down (main agent rhythm).
+    $projectDirectory = agent_get_project_dir("hyarena");
+    if (!isnullorempty($projectDirectory)) {
+        $plan = read_file(combine_path($projectDirectory, "docs/plan.txt"));
+        $context = read_file(combine_path($projectDirectory, "docs/context.txt"));
+        $history = read_file(combine_path($projectDirectory, "docs/history.txt"));
+        if (!isnullorempty($plan)) {
+            $prompt = format("{0}\n\n【当前计划】:\n{1}", $prompt, $plan);
+        };
+        if (!isnullorempty($context)) {
+            $prompt = format("{0}\n\n【上下文信息】:\n{1}", $prompt, $context);
+        };
+        if (!isnullorempty($history)) {
+            $prompt = format("{0}\n\n【上下文信息】:\n{1}", $prompt, $history);
+        };
+    };
+
+    return($prompt);
 };
 
 script(get_venus_system_prompt)params()

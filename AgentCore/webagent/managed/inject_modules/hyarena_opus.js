@@ -164,10 +164,6 @@
     executedCodeHashes: [],
     collectedReplyKeys: new Set(),
 
-    // Slots (non-executor) that have produced executable code which got
-    // dropped. A reminder line will be prepended to the next real flush
-    // so that those models stop writing code.
-    pendingDropNotice: new Set(),
   };
 
   /* ===========================================
@@ -692,15 +688,14 @@
       lines.push(`> 还有 ${execTimedOut} 个代码结果仍在执行中未发出，稍后会自动送达，不要再发新代码，回复"继续"即可`);
     }
 
-    // Drop-notice: warn non-executor slots that produced executable code
-    // (which was dropped) to stop writing code. Appended at the end
-    // so it follows other content.
-    if (ST.pendingDropNotice.size > 0) {
-      for (const id of ST.pendingDropNotice) {
-        lines.push(``);
-        lines.push(`** ${displayName(id)}，你不要写代码，根据另一模型代码结果进行分析即可！！！ **`);
-      }
-      ST.pendingDropNotice.clear();
+    // Non-executor reminder: EVERY flush warns all non-executor slots not
+    // to write code. The old mechanism (remind only after that model
+    // actually wrote code, once) was too late: without a reminder they
+    // keep writing code on the next round.
+    for (const id of slots) {
+      if (id === ST.executorSlot) continue;
+      lines.push('');
+      lines.push(`** ${displayName(id)}，你不要写代码，根据另一模型代码结果进行分析即可！！！ **`);
     }
 
     if (lines.length) {
@@ -757,7 +752,6 @@
   function manualClear() {
     const n = totalPending();
     for (const id of activeSlotIds()) ST.pendingResults[id] = [];
-    ST.pendingDropNotice.clear();
     log(`[manual] clear queue (${n} items)`);
     updatePanel();
   }
@@ -1754,7 +1748,6 @@
         const dropped = b.slotId !== ST.executorSlot;
         markVisual(b, dropped);
         if (dropped) {
-          ST.pendingDropNotice.add(b.slotId);
           log(`[drop] [${b.slotId}] ${b.id} (${b.lang}, ${b.code.length}B) - not executor (${ST.executorSlot})`);
           return;
         }

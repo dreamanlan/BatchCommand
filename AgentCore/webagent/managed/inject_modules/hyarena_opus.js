@@ -942,6 +942,7 @@
         <button data-act="break"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#d32f2f; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? 'disabled' : ''}>break</button>
         <button data-act="resume" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#388e3c; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? '' : 'disabled'}>resume</button>
         <button data-act="clear"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#546e7a; color:#fff; border:none; border-radius:3px;">clear</button>
+        <button data-act="reference" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#c2185b; color:#fff; border:none; border-radius:3px;">reference</button>
       </div>
       <div style="display:flex; gap:4px;">
         <button data-act="identity" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#1976d2; color:#fff; border:none; border-radius:3px;" ${blind ? '' : 'disabled'}>identity</button>
@@ -982,6 +983,7 @@
         else if (act === 'break') manualBreak();
         else if (act === 'clear') manualClear();
         else if (act === 'resume') manualResume();
+        else if (act === 'reference') referenceLastRound();
         else if (act === 'identity') sendIdentity();
         else if (act === 'prompt') sendPromptToChat();
         else if (act === 'plan') sendPlan();
@@ -999,6 +1001,12 @@
         else if (act === 'discuss') {
           ST.discussMode = !ST.discussMode;
           log(`[discuss] ${ST.discussMode ? 'enabled' : 'disabled'}`);
+          if (ST.discussMode) {
+            // Catch-up flush: replies that completed while DISC was OFF sit
+            // uncollected (the trigger gate needs discussMode); deliver them
+            // now instead of waiting for the next round/result to trigger.
+            scheduleFlush();
+          }
           updatePanel();
         }
         else if (act === 'keepdsl') {
@@ -1374,6 +1382,48 @@
       });
     });
     return result;
+  }
+
+  /**
+   * Panel [reference] action: write the LAST round's model replies into the
+   * chat input box WITHOUT sending - the same data collection as a
+   * discuss-mode flush (readSlotReplyText + the slot completion gate), but
+   * the text lands in the input for manual editing instead of going out.
+   * The referenced replies are committed (flushedReplyLen /
+   * collectedReplyKeys) so a later DISC ON flush never delivers them twice.
+   */
+  function referenceLastRound() {
+    const chatList = document.querySelector(SEL.chatList);
+    if (!chatList) { log('[reference] chat list not found'); return; }
+    if (ST.chatSendBusy) { log('[reference] previous send still in flight, try later'); return; }
+    const ta = document.querySelector(SEL.inputTA);
+    if (!ta) { log('[reference] input box not found'); return; }
+    if (ta.value) { log('[reference] input box not empty, clear it before reference'); return; }
+    const msgs = Array.from(chatList.querySelectorAll(SEL.aiMsg));
+    const aiMsg = msgs[msgs.length - 1];
+    const mc = aiMsg && aiMsg.querySelector(SEL.multiContent);
+    const items = mc ? Array.from(mc.children) : [];
+    if (!items.length) { log('[reference] no AI round found'); return; }
+    for (const it of items) {
+      if (!isSideComplete(it)) { log('[reference] last round still streaming, wait for it to finish'); return; }
+    }
+    const lines = [];
+    const commits = [];
+    items.forEach((it, i) => {
+      const id = slotIdOf(i);
+      const text = readSlotReplyText(it);
+      if (!text) return;
+      lines.push(`【${displayName(id)}】：${text}`);
+      commits.push([it, id, text]);
+    });
+    if (!lines.length) { log('[reference] last round has no readable reply text'); return; }
+    commits.forEach(([it, id, text]) => {
+      ST.flushedReplyLen.set(it, text.length);
+      ST.collectedReplyKeys.add(id + ':' + hashStr(text));
+    });
+    const out = lines.join('\n\n');
+    setReactValue(ta, out);
+    log(`[reference] wrote last round replies (${lines.length} slots, ${out.length}B) to input, not sent`);
   }
 
   function hasExecuteMarker(code) {

@@ -1151,6 +1151,28 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
             complete_native_callback($handle, true, $state);
             return((true, 0));
         }
+        elif ($action == "exec_bdsl") {
+            // { action, script } -> run the DSL snippet in this browser
+            // process (execute_metadsl, BatchScriptApi) and answer with the
+            // full result text; tips and errors are appended by
+            // DslHost.ExecuteScript, so the flag only drives the tag.
+            // CAVEAT: runs synchronously on this thread - keep snippets
+            // short, long work blocks the browser UI (panel.js Exec BDSL).
+            $code = dict_or_json_get($msg, "script");
+            if (isnullorempty($code)) {
+                complete_native_callback($handle, false, "empty script");
+                return((true, 0));
+            };
+            $hasError = false;
+            $res = "";
+            tuple_set(($hasError, $res), execute_metadsl($code));
+            $tag = "BDSL";
+            if ($hasError) {
+                $tag = "BDSL error";
+            };
+            complete_native_callback($handle, true, "[" + $tag + "] " + $res);
+            return((true, 0));
+        }
         elif ($action == "renderer_memory") {
             // { action, pid } -> "over,usedMB" / "ok,usedMB" for the memory
             // guard in metadsl_monitor.js. The sandboxed renderer cannot read

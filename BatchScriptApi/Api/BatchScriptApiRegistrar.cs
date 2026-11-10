@@ -186,9 +186,9 @@ namespace BatchCommand.Api
             BatchScript.Register("not_exists_path", "not_exists_path(path)", false, new ExpressionFactoryHelper<PathNotExistsExp>());
             BatchScript.Register("not_exist", "not_exist(path)", false, new ExpressionFactoryHelper<PathNotExistsExp>());
             BatchScript.Register("not_exists", "not_exists(path)", false, new ExpressionFactoryHelper<PathNotExistsExp>());
-            BatchScript.Register("list_dir_info", "list_dir_info(path[, glob_pattern, recursive]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<ListDirInfoExp>());
-            BatchScript.Register("find_files", "find_files(path, glob_pattern[, recursive]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFilesExp>());
-            BatchScript.Register("search_files", "search_files(glob_pattern, path) return List, use 'to_string' to convert to a string", false, new ExpressionFactoryHelper<SearchFilesExp>());
+            BatchScript.Register("list_dir_info", "list_dir_info(path[, glob_pattern, recursive]) return List of FileInfoModel(Path/Name/Extension/Size/CreationTime/LastWriteTime/LastAccessTime/IsDirectory/IsReadOnly/Exists), use 'to_string' to convert to a string", new ExpressionFactoryHelper<ListDirInfoExp>());
+            BatchScript.Register("find_files", "find_files(path, glob_pattern[, recursive]) return List<string>, use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFilesExp>());
+            BatchScript.Register("search_files", "search_files(glob_pattern, path) return List<string>, use 'to_string' to convert to a string", false, new ExpressionFactoryHelper<SearchFilesExp>());
             BatchScript.Register("get_file_size", "get_file_size(path)", new ExpressionFactoryHelper<GetFileSizeExp>());
             BatchScript.Register("file_size", "file_size(path)", false, new ExpressionFactoryHelper<GetFileSizeExp>());
             BatchScript.Register("get_file_length", "get_file_length(path)", false, new ExpressionFactoryHelper<GetFileSizeExp>());

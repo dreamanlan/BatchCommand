@@ -574,7 +574,7 @@ namespace BatchCommand.Api
                 var result = new List<BoxedValue>();
 
                 foreach (var file in files) {
-                    result.Add(BoxedValue.FromString(file.ToString()));
+                    result.Add(BoxedValue.FromObject(file));
                 }
 
                 return BoxedValue.FromObject(result);

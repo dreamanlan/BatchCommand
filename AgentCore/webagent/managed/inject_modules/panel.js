@@ -414,7 +414,7 @@ class AgentPanel {
 
     // MetaDSL toggle button
     this.metadslButton = document.createElement('button');
-    this.metadslButton.textContent = 'Start MetaDSL';
+    this.metadslButton.textContent = 'Start';
     this.metadslButton.style.cssText = `
         padding: 3px 7px;
         background: #4caf50;
@@ -425,6 +425,34 @@ class AgentPanel {
         font-size: 11px;
       `;
     this.metadslButton.onclick = () => this.toggleMetaDSL();
+
+    // MeetingRoom button - open meeting room in new window
+    const meetingRoomBtn = document.createElement('button');
+    meetingRoomBtn.textContent = 'Meeting';
+    meetingRoomBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00897b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    meetingRoomBtn.onclick = () => this.openMeetingRoom();
+
+    // Proxy button - open Online Proxy in new window
+    const proxyBtn = document.createElement('button');
+    proxyBtn.textContent = 'Proxy';
+    proxyBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00897b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    proxyBtn.onclick = () => window.open('https://www.gamexyz.net:8080');
 
     // Clear log button
     const clearBtn = document.createElement('button');
@@ -456,7 +484,7 @@ class AgentPanel {
 
     // Execute MetaDSL button
     const execMetaDslBtn = document.createElement('button');
-    execMetaDslBtn.textContent = 'Exec DSL';
+    execMetaDslBtn.textContent = 'Exec DSL(r)';
     execMetaDslBtn.style.cssText = `
         padding: 3px 7px;
         background: #673ab7;
@@ -468,9 +496,24 @@ class AgentPanel {
       `;
     execMetaDslBtn.onclick = () => this.runMetaDSL();
 
+    // Execute Browser-process DSL button (this one asks the browser process to run the snippet via the
+    // exec_bdsl cefQuery action, see script.dsl on_browser_cef_query).
+    const execBdslBtn = document.createElement('button');
+    execBdslBtn.textContent = 'Exec DSL(b)';
+    execBdslBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #e65100;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    execBdslBtn.onclick = () => this.runBrowserDSL();
+
     // Execute Agent MetaDSL button (standalone AgentCore via the relay)
     const execAgentMetaDslBtn = document.createElement('button');
-    execAgentMetaDslBtn.textContent = 'Exec AgentDSL';
+    execAgentMetaDslBtn.textContent = 'Exec DSL(a)';
     execAgentMetaDslBtn.style.cssText = `
         padding: 3px 7px;
         background: #009688;
@@ -523,34 +566,6 @@ class AgentPanel {
         font-size: 11px;
       `;
     this.autoPlanButton.onclick = () => this.toggleAutoPlan();
-
-    // MeetingRoom button - open meeting room in new window
-    const meetingRoomBtn = document.createElement('button');
-    meetingRoomBtn.textContent = 'MeetingRoom';
-    meetingRoomBtn.style.cssText = `
-        padding: 3px 7px;
-        background: #00897b;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 11px;
-      `;
-    meetingRoomBtn.onclick = () => this.openMeetingRoom();
-
-    // Proxy button - open Online Proxy in new window
-    const proxyBtn = document.createElement('button');
-    proxyBtn.textContent = 'Proxy';
-    proxyBtn.style.cssText = `
-        padding: 3px 7px;
-        background: #00897b;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 11px;
-      `;
-    proxyBtn.onclick = () => window.open('https://www.gamexyz.net:8080');
 
     // Hyarena button - open Hyarena chat in new window
     const hyarenaBtn = document.createElement('button');
@@ -686,15 +701,16 @@ class AgentPanel {
     aiBar.appendChild(googleAiBtn);
 
     buttonBar.appendChild(testBtn);
+    buttonBar.appendChild(this.metadslButton);
     if (itsMe) {
       buttonBar.appendChild(meetingRoomBtn);
       buttonBar.appendChild(proxyBtn);
     }
-    buttonBar.appendChild(this.metadslButton);
     buttonBar.appendChild(clearQueueBtn);
     buttonBar.appendChild(clearBtn);
     buttonBar.appendChild(copyHtmlBtn);
     buttonBar.appendChild(execMetaDslBtn);
+    buttonBar.appendChild(execBdslBtn);
     buttonBar.appendChild(execAgentMetaDslBtn);
     buttonBar.appendChild(execJsBtn);
 
@@ -1053,10 +1069,10 @@ class AgentPanel {
 
   updateMetaDSLButtonState() {
     if (this.metadslMonitor.started) {
-      this.metadslButton.textContent = 'Stop MetaDSL';
+      this.metadslButton.textContent = 'Stop';
       this.metadslButton.style.background = '#ff9800';
     } else {
-      this.metadslButton.textContent = 'Start MetaDSL';
+      this.metadslButton.textContent = 'Start';
       this.metadslButton.style.background = '#4caf50';
     }
   }
@@ -1413,13 +1429,13 @@ class AgentPanel {
     if (this.metadslMonitor.enabled) {
       this.log('Stopping MetaDSL monitor...');
       this.metadslMonitor.stop();
-      this.metadslButton.textContent = 'Start MetaDSL';
+      this.metadslButton.textContent = 'Start';
       this.metadslButton.style.background = '#4caf50';
       this.log('✓ MetaDSL monitor stopped');
     } else {
       this.log('Starting MetaDSL monitor...');
       this.metadslMonitor.start();
-      this.metadslButton.textContent = 'Stop MetaDSL';
+      this.metadslButton.textContent = 'Stop';
       this.metadslButton.style.background = '#ff9800';
       this.log('✓ MetaDSL monitor started');
       this.log('  Watching for // @execute or # @execute comment markers');
@@ -1766,6 +1782,40 @@ class AgentPanel {
     } catch (e) {
       this.log('✗ MetaDSL execution error: ' + e.message);
       this.log('  Stack: ' + e.stack);
+    }
+  }
+
+  // Execute the snippet in the browser process (script.dsl exec_bdsl action
+  // -> execute_metadsl). The answer comes back through the cefQuery callback
+  // and is shown in this panel log; errors are appended to the result text.
+  runBrowserDSL() {
+    try {
+      const script = this.scriptInput.value.trim();
+      if (!script) {
+        this.log('✗ Input is empty. Please enter DSL script first.');
+        return;
+      }
+      if (typeof window.cefQuery !== 'function') {
+        this.log('✗ window.cefQuery is not available');
+        return;
+      }
+      this.log('─'.repeat(50));
+      this.log('Executing DSL in the browser process:');
+      this.log(script.substring(0, 200) + (script.length > 200 ? '...' : ''));
+      this.log('─'.repeat(50));
+      window.cefQuery({
+        request: JSON.stringify({ action: 'exec_bdsl', script: script }),
+        onSuccess: (response) => {
+          this.log('✓ BDSL executed in the browser process');
+          this.log('Result:');
+          this.log(response);
+        },
+        onFailure: (code, msg) => {
+          this.log('✗ BDSL execution failed (' + code + '): ' + msg);
+        }
+      });
+    } catch (e) {
+      this.log('✗ BDSL error: ' + e.message);
     }
   }
 

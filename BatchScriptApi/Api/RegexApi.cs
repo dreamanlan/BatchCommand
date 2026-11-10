@@ -28,14 +28,14 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("regex_replace_string_with_count", "regex_replace_string_with_count(str, regex_pattern, replacement, count, [skipCount, [ignoreCase]]) - skip first skipCount matches, then replace next N matches", new ExpressionFactoryHelper<RegexReplaceWithCountExp>());
 
             // Regex find all matches
-            BatchCommand.BatchScript.Register("regex_find_all", "regex_find_all(str, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexFindAllExp>());
-            BatchCommand.BatchScript.Register("regex_matches", "regex_matches(str, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexFindAllExp>());
+            BatchCommand.BatchScript.Register("regex_find_all", "regex_find_all(str, regex_pattern, [ignoreCase]) return List<string>, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexFindAllExp>());
+            BatchCommand.BatchScript.Register("regex_matches", "regex_matches(str, regex_pattern, [ignoreCase]) return List<string>, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexFindAllExp>());
             BatchCommand.BatchScript.Register("regex_find_first", "regex_find_first(str, regex_pattern, [ignoreCase]) return first match string or null", new ExpressionFactoryHelper<RegexFindFirstExp>());
 
             // File-based regex operations
             BatchCommand.BatchScript.Register("regex_replace_in_file", "regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase[, encoding]])", new ExpressionFactoryHelper<RegexReplaceInFileExp>());
             BatchCommand.BatchScript.Register("regex_replace_in_file_with_count", "regex_replace_in_file_with_count(path, regex_pattern, replacement, count, [skipCount, [ignoreCase, [encoding]]]) - skip first skipCount matches, then replace next N matches in file", new ExpressionFactoryHelper<RegexReplaceInFileWithCountExp>());
-            BatchCommand.BatchScript.Register("regex_search_file", "regex_search_file(path, regex_pattern, [ignoreCase[, encoding]]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexSearchFileExp>());
+            BatchCommand.BatchScript.Register("regex_search_file", "regex_search_file(path, regex_pattern, [ignoreCase[, encoding]]) return List<string>, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexSearchFileExp>());
 
             // Regex capture group APIs
             BatchCommand.BatchScript.Register("regex_group", "regex_group(str, regex_pattern, group_index, [ignoreCase]) return the specified capture group (1-based) of the first match, or null", new ExpressionFactoryHelper<RegexGroupExp>());

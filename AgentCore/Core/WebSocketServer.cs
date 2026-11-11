@@ -662,17 +662,39 @@ namespace AgentCore.Core
                             sb.AppendLine(inst.Context);
                             sb.AppendLine();
                         }
-                        if (inst.HistoryInjectionEnabled && !string.IsNullOrEmpty(inst.History)) {
-                            sb.AppendLine(inst.History);
-                            sb.AppendLine();
-                        }
-                        // Keep the head (Plan first, History is
-                        // cut first at the tail): the induction in Context
-                        // already summarizes what History would lose.
+                        // Over budget before history: truncate what is already
+                        // written and do not append history at all.
                         if (budgeted && sb.Length > prefixBudget) {
                             sb.Length = prefixBudget;
                             sb.AppendLine();
                             sb.AppendLine("[context truncated]");
+                        }
+                        else if (inst.HistoryInjectionEnabled && !string.IsNullOrEmpty(inst.History)) {
+                            string history = inst.History;
+                            if (!budgeted) {
+                                sb.AppendLine(history);
+                                sb.AppendLine();
+                            }
+                            else {
+                                // The already written part fits (checked above):
+                                // take history's tail within the remaining
+                                // budget - the whole history when it fits, else
+                                // drop the overflow from the head so the newest
+                                // rounds survive (the induction in Context
+                                // already summarizes the older ones).
+                                int nlLen = Environment.NewLine.Length;
+                                int markerLen = "...".Length + "[oldest history truncated]".Length + nlLen * 3;
+                                int room = prefixBudget - sb.Length - markerLen;
+                                int keepLen = Math.Min(history.Length, room);
+                                if (keepLen > 0) {
+                                    int skip = history.Length - keepLen;
+                                    sb.AppendLine(skip > 0 ? "..." + history.Substring(skip) : history);
+                                    sb.AppendLine();
+                                    if (skip > 0) {
+                                        sb.AppendLine("[oldest history truncated]");
+                                    }
+                                }
+                            }
                         }
                     }
                 }

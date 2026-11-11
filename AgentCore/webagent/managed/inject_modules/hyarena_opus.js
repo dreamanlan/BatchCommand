@@ -86,6 +86,9 @@
     ws: {},               // { slot0: WebSocket, ... }
     reconCnt: {},         // { slot0: 0, ... }
     pendingResults: {},   // { slot0: [str, ...], ... }
+    // Collected model replies waiting to be merged into a flush message,
+    // same FIFO merge discipline as pendingResults.
+    replyQueue: [],       // [{ id: slotId, text: replyText }, ...]
     sysPrompt: {},        // { slot0: 'prompt text', ... }
     modelNames: {},       // { slot0: 'Hy3 preview...', ... }
     slotCount: 0,
@@ -524,7 +527,7 @@
   }
 
   function totalPending() {
-    let n = 0;
+    let n = ST.replyQueue.length;
     for (const id of activeSlotIds()) n += (ST.pendingResults[id] || []).length;
     return n;
   }
@@ -544,7 +547,7 @@
     const taNow = document.querySelector(SEL.inputTA);
     const curVal = taNow ? taNow.value : '';
     const residual = (curVal && curVal === ST.lastAutoSentText) ? curVal : '';
-    if (nonEmpty.length === 0 && !hasNewReplies && !residual) return;
+    if (nonEmpty.length === 0 && !hasNewReplies && !residual && ST.replyQueue.length === 0) return;
 
     // Not armed yet: keep queue, do not flush.
     if (!ST.armed) {
@@ -637,25 +640,38 @@
       lines.push('');
     }
 
-    // Collect new model replies that appeared since last flush.
+    // Collect new model replies into the reply queue (same FIFO merge
+    // discipline as exec results): collected text lives in the queue, so
+    // entries that do not fit the budget survive to the next flush.
     const newReplies = collectNewReplies(true);
-    const replySlots = slots.filter(id => newReplies[id]);
-    if (replySlots.length > 0) {
-      for (const id of replySlots) {
-        const name = displayName(id);
-        lines.push(`【${name}】：${newReplies[id]}`);
+    for (const id of slots) {
+      if (newReplies[id]) {
+        ST.replyQueue.push({ id: id, text: newReplies[id] });
       }
-      lines.push('');
     }
 
-    // Merge dispatch: emit every queued result that fits the per-site
-    // length budget as one message (one model round instead of a burst of
-    // consecutive rounds), taking the oldest entry across slots in slot
-    // order. The first entry always goes out; whole entries only, leftovers
-    // stay queued with the remaining-count note.
-    let merged = 0;
+    // Merge dispatch: emit queued replies (older) and exec results that fit
+    // the per-site length budget as one message (one model round instead of
+    // a burst of consecutive rounds), whole entries only, oldest first
+    // (replies in slot order, exec results across slots in slot order). The
+    // first entry always goes out; leftovers stay queued with the
+    // remaining-count note and are retried on the next flush.
+    let sent = 0;
+    let execSent = 0;
     let budget = CFG.MAX_MERGE_LEN - residual.length;
-    while (merged < total) {
+    while (ST.replyQueue.length > 0) {
+      const it = ST.replyQueue[0];
+      const name = displayName(it.id);
+      // Reserve for the "【name】：" wrapper.
+      const cost = it.text.length + name.length + 10;
+      if (sent > 0 && budget < cost) break;
+      ST.replyQueue.shift();
+      if (sent > 0) lines.push('');
+      lines.push(`【${name}】：${it.text}`);
+      budget -= cost;
+      sent++;
+    }
+    while (execSent < total) {
       let pickedSlot = null;
       for (const id of slots) {
         const bucket = ST.pendingResults[id] || [];
@@ -667,18 +683,21 @@
       const name = displayName(pickedSlot);
       // Reserve for the heading and the fenced wrapper around this entry.
       const cost = raw.length + 60;
-      if (merged > 0 && budget < cost) break;
+      if (sent > 0 && budget < cost) break;
       bucket.shift();
-      if (merged > 0) lines.push('');
+      if (sent > 0) lines.push('');
       lines.push(`### ${name} exec result`);
       lines.push('```\n' + raw.replace(/```/g, '`\u200b``').trimEnd() + '\n```');
       budget -= cost;
-      merged++;
+      sent++;
+      execSent++;
     }
-    const remaining = total - merged;
+    const remaining = (total - execSent) + ST.replyQueue.length;
     if (remaining > 0) {
       lines.push('');
-      lines.push(`> 还有 ${remaining} 个代码结果在排队输出，不要再发新代码，回复继续即可`);
+      lines.push(`> 还有 ${remaining} 条内容（会话与代码结果）在排队输出，不要再发新代码，回复继续即可`);
+      // Deferred entries: retry merging on the next flush.
+      scheduleFlush();
     }
     // Exec-wait timeout note: these results are still in flight (not in
     // the queue) and will be delivered by the next flush once they arrive.
@@ -752,6 +771,7 @@
   function manualClear() {
     const n = totalPending();
     for (const id of activeSlotIds()) ST.pendingResults[id] = [];
+    ST.replyQueue = [];
     log(`[manual] clear queue (${n} items)`);
     updatePanel();
   }

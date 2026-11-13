@@ -44,7 +44,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightInstallExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string browser = operands.Count > 0 ? operands[0].AsString : "chromium";
             try {
@@ -65,7 +65,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightStartExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             bool headless = operands.Count > 0 ? operands[0].GetBool() : false;
             string userDataDir = operands.Count > 1 ? operands[1].AsString : "";
@@ -87,7 +87,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightCdpStartExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: playwright_cdp_start(cdp_endpoint)");
@@ -114,7 +114,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightStopExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 string result = Core.PlaywrightService.Instance.StopAsync().GetAwaiter().GetResult();
@@ -132,7 +132,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightIsRunningExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.FromBool(Core.PlaywrightService.Instance.IsRunning());
         }
@@ -146,7 +146,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightNewPageExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_new_page requires (page_id)");
@@ -169,7 +169,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightClosePageExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_close_page requires (page_id)");
@@ -192,7 +192,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightGotoExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_goto requires (page_id, url)");
@@ -218,7 +218,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightGetUrlExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_url requires (page_id)");
@@ -241,7 +241,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightGetTitleExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_title requires (page_id)");
@@ -266,7 +266,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightGetHtmlExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_html requires (page_id [, selector])");
@@ -290,7 +290,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightGetTextExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_text requires (page_id, selector)");
@@ -314,7 +314,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightScreenshotExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_screenshot requires (page_id, save_path)");
@@ -338,7 +338,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightEvaluateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_evaluate requires (page_id, script)");
@@ -362,7 +362,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightClickExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_click requires (page_id, selector [, button, click_count])");
@@ -388,7 +388,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightTypeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_type requires (page_id, selector, text [, clear_first])");
@@ -414,7 +414,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightPressKeyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_press_key requires (page_id, key [, selector])");
@@ -439,7 +439,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightHoverExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_hover requires (page_id, selector)");
@@ -463,7 +463,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightSelectOptionExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_select_option requires (page_id, selector, value_or_json)");
@@ -488,7 +488,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightFillFormExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_fill_form requires (page_id, form_json)");
@@ -512,7 +512,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightWaitForExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for requires (page_id, selector [, state, timeout_ms])");
@@ -538,7 +538,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightNavigateBackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_navigate_back requires (page_id)");
@@ -561,7 +561,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightResizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_resize requires (page_id, width, height)");
@@ -586,7 +586,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightHandleDialogExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_handle_dialog requires (page_id, action [, prompt_text])");
@@ -611,7 +611,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightTabsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 bool refresh = operands.Count > 0 && operands[0].GetBool();
@@ -630,7 +630,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightConsoleMessagesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_console_messages requires (page_id [, max_count])");
@@ -655,7 +655,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightDragExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_drag requires (page_id, from_selector, to_selector)");
@@ -680,7 +680,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightFileUploadExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_file_upload requires (page_id, selector, paths_json)");
@@ -705,7 +705,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightDropExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_drop requires (page_id, selector, file_name, mime_type, content)");
@@ -732,7 +732,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightFindExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_find requires (page_id, selector [, max_count])");
@@ -757,7 +757,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightNetworkRequestsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_network_requests requires (page_id [, max_count])");
@@ -781,7 +781,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlaywrightNetworkRequestExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_network_request requires (page_id, url_substring)");
@@ -801,7 +801,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightCdpNewTabExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string url = operands.Count > 0 ? operands[0].AsString : "about:blank";
             try {
@@ -816,7 +816,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightCdpCloseTabExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_close_tab requires (target_id)");
@@ -835,7 +835,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightCdpListTargetsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 string result = Core.PlaywrightService.Instance.CdpListTargetsAsync().GetAwaiter().GetResult();
@@ -849,7 +849,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightCdpEvaluateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_evaluate requires (target_id, script [, timeout_ms])");
@@ -870,7 +870,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightFramesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frames requires (page_id)");
@@ -889,7 +889,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightFrameEvaluateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frame_evaluate requires (page_id, frame_url_regex, script)");
@@ -910,7 +910,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightInputValueExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_input_value requires (page_id, selector)");
@@ -930,7 +930,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightWaitForLoadStateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for_load_state requires (page_id [, state, timeout_ms])");
@@ -951,7 +951,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightBringToFrontExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_bring_to_front requires (page_id)");
@@ -970,7 +970,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetCookiesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string? urlFilter = operands.Count > 0 ? operands[0].AsString : null;
             try {
@@ -985,7 +985,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightSetCookiesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_set_cookies requires (cookies_json)");
@@ -1004,7 +1004,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetByRoleExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_role requires (page_id, role [, name, timeout_ms])");
@@ -1026,7 +1026,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightMouseWheelExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_wheel requires (page_id, dx, dy)");
@@ -1047,7 +1047,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightAddInitScriptExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_add_init_script requires (page_id, script)");
@@ -1067,7 +1067,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetByTextExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_text requires (page_id, text [, exact, timeout_ms])");
@@ -1089,7 +1089,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetByLabelExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_label requires (page_id, label [, exact, timeout_ms])");
@@ -1111,7 +1111,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetByPlaceholderExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_placeholder requires (page_id, placeholder [, exact, timeout_ms])");
@@ -1133,7 +1133,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetByTestIdExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_by_testid requires (page_id, testid [, timeout_ms])");
@@ -1154,7 +1154,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightFrameClickExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frame_click requires (page_id, frame_url_regex, selector [, button, click_count])");
@@ -1177,7 +1177,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightFrameTypeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frame_type requires (page_id, frame_url_regex, selector, text [, clear_first])");
@@ -1200,7 +1200,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightFrameFillExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_frame_fill requires (page_id, frame_url_regex, selector, value)");
@@ -1222,7 +1222,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightRouteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_route requires (page_id, url_pattern, action [, body])");
@@ -1244,7 +1244,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightUnrouteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_unroute requires (page_id, url_pattern)");
@@ -1264,7 +1264,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightClearCookiesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 var res = Core.PlaywrightService.Instance.ClearCookiesAsync().GetAwaiter().GetResult();
@@ -1278,7 +1278,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightKeyboardDownExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_keyboard_down requires (page_id, key)");
@@ -1298,7 +1298,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightKeyboardUpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_keyboard_up requires (page_id, key)");
@@ -1318,7 +1318,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightKeyboardPressExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_keyboard_press requires (page_id, key[, delay_ms])");
@@ -1339,7 +1339,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightKeyboardTypeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_keyboard_type requires (page_id, text[, delay_ms])");
@@ -1360,7 +1360,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetLocalStorageExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_local_storage requires (page_id)");
@@ -1379,7 +1379,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightSetLocalStorageExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_set_local_storage requires (page_id, key, value)");
@@ -1400,7 +1400,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightClearLocalStorageExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_clear_local_storage requires (page_id)");
@@ -1419,7 +1419,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetSessionStorageExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_session_storage requires (page_id)");
@@ -1438,7 +1438,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightClearSessionStorageExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_clear_session_storage requires (page_id)");
@@ -1457,7 +1457,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightMouseMoveExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_move requires (page_id, x, y)");
@@ -1478,7 +1478,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightMouseDownExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_down requires (page_id [, button])");
@@ -1498,7 +1498,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightMouseUpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_up requires (page_id [, button])");
@@ -1518,7 +1518,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightMouseClickExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_click requires (page_id, x, y [, button, click_count])");
@@ -1541,7 +1541,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightMouseDblclickExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_mouse_dblclick requires (page_id, x, y)");
@@ -1562,7 +1562,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightWaitForUrlExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for_url requires (page_id, url_regex [, timeout_ms])");
@@ -1583,7 +1583,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightWaitForTimeoutExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for_timeout requires (page_id, timeout_ms)");
@@ -1603,7 +1603,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightSetViewportSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_set_viewport_size requires (page_id, width, height)");
@@ -1624,7 +1624,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightGetViewportSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_get_viewport_size requires (page_id)");
@@ -1643,7 +1643,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightFocusExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_focus requires (page_id, selector)");
@@ -1663,7 +1663,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightBlurExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_blur requires (page_id, selector)");
@@ -1683,7 +1683,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightCdpSendExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_cdp_send requires (page_id, method [, params_json])");
@@ -1704,7 +1704,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightSessionStorageSetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_session_storage_set requires (page_id, key, value)");
@@ -1725,7 +1725,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightWaitForResponseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_wait_for_response requires (page_id, url_regex [, timeout_ms])");
@@ -1746,7 +1746,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightEmulateMediaExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_emulate_media requires (page_id [, media, color_scheme])");
@@ -1767,7 +1767,7 @@ namespace AgentCore.ScriptApi
     }
     sealed class PlaywrightScrollIntoViewExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_scroll_into_view requires (page_id, selector)");
@@ -1788,7 +1788,7 @@ namespace AgentCore.ScriptApi
 
     sealed class PlaywrightSearchWebExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_search_web error: need at least page_id and query");
@@ -1818,7 +1818,7 @@ namespace AgentCore.ScriptApi
 
     sealed class PlaywrightSearchSetOptionExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_search_set_option error: need key and val");
@@ -1839,7 +1839,7 @@ namespace AgentCore.ScriptApi
 
     sealed class PlaywrightSearchGetOptionExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("playwright_search_get_option error: need key");

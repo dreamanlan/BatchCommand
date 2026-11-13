@@ -66,7 +66,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientOpenExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: wsclient_open(url[, id[, reconnect_count]])");
@@ -82,7 +82,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientSendExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: wsclient_send(id, message)");
@@ -96,7 +96,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientDrainSendExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: wsclient_drain_send(id[, timeout_ms])");
@@ -110,7 +110,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientDrainSendStatusExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: wsclient_drain_send_status(id)");
@@ -123,7 +123,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientDrainWaitExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: wsclient_drain_wait(id[, wait_timeout_ms])");
@@ -137,7 +137,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientCloseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: wsclient_close(id)");
@@ -149,7 +149,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientCloseAllExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(WebSocketClientManager.CloseAll());
         }
@@ -157,7 +157,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(WebSocketClientManager.Count());
         }
@@ -165,7 +165,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientStateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: wsclient_state(id)");
@@ -177,7 +177,7 @@ namespace BatchCommand.Api
 
     internal sealed class WsClientListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.FromObject(WebSocketClientManager.List());
         }
@@ -185,7 +185,7 @@ namespace BatchCommand.Api
 
     internal sealed class HandleWsClientQueueExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             int maxCount = operands.Count > 0 ? operands[0].GetInt() : 100;
             return BoxedValue.From(WebSocketClientManager.DrainQueue(maxCount));

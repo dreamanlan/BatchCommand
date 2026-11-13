@@ -51,7 +51,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogAddItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2 && operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_backlog_item requires (agentId, title[, state])");
@@ -84,7 +84,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogModifyItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_backlog_item requires (agentId, idx, title)");
@@ -109,7 +109,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogMoveItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("move_backlog_item requires (agentId, idx, newIdx)");
@@ -141,7 +141,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogChangeItemStateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_backlog_item_state requires (agentId, idx, state)");
@@ -181,7 +181,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogAddClauseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_backlog_clause requires (agentId, itemIdx, content)");
@@ -209,7 +209,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogModifyClauseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_backlog_clause requires (agentId, itemIdx, clauseIdx, content)");
@@ -244,7 +244,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogDeleteClauseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_backlog_clauses requires (agentId, itemIdx, clauseIdx[, clauseIdx2, ...])");
@@ -273,7 +273,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogClearClausesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_backlog_clauses requires (agentId, itemIdx)");
@@ -298,7 +298,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogViewActiveItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("view_active_backlog_item requires (agentId)");
@@ -322,7 +322,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogAlignExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("align_backlog requires (agentId)");
@@ -343,7 +343,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogRestoreExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_backlog_state requires (agentId, backlog_text)");
@@ -364,7 +364,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogSetClauseMaxSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_backlog_clause_max_size requires (maxSize)");
@@ -385,7 +385,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BacklogGetClauseMaxSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(BacklogTrackHelper.MaxClauseBytes);
         }

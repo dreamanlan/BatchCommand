@@ -123,7 +123,7 @@ namespace AgentCore.ScriptApi
         // View file structure overview
         sealed class ViewFileStructureExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ViewFileStructure");
@@ -148,7 +148,7 @@ namespace AgentCore.ScriptApi
         // View code structure overview
         sealed class ViewCodeStructureExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ViewCodeStructure");
@@ -174,7 +174,7 @@ namespace AgentCore.ScriptApi
         // Find functions (formatted)
         sealed class FindFunctionsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFunctions");
@@ -200,7 +200,7 @@ namespace AgentCore.ScriptApi
         // Find functions in code (formatted)
         sealed class FindFunctionsInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFunctionsInCode");
@@ -227,7 +227,7 @@ namespace AgentCore.ScriptApi
         // Find function (formatted)
         sealed class FindFunctionExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFunction");
@@ -253,7 +253,7 @@ namespace AgentCore.ScriptApi
         // Find function in code (formatted)
         sealed class FindFunctionInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFunctionInCode");
@@ -280,7 +280,7 @@ namespace AgentCore.ScriptApi
         // Find types (formatted)
         sealed class FindTypesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindTypes");
@@ -306,7 +306,7 @@ namespace AgentCore.ScriptApi
         // Find types in code (formatted)
         sealed class FindTypesInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindTypesInCode");
@@ -333,7 +333,7 @@ namespace AgentCore.ScriptApi
         // Find type (formatted)
         sealed class FindTypeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindType");
@@ -359,7 +359,7 @@ namespace AgentCore.ScriptApi
         // Find type in code (formatted)
         sealed class FindTypeInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindTypeInCode");
@@ -387,7 +387,7 @@ namespace AgentCore.ScriptApi
         // Find variables (formatted)
         public sealed class FindVariablesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindVariables");
@@ -413,7 +413,7 @@ namespace AgentCore.ScriptApi
         // Find variables in code (formatted)
         public sealed class FindVariablesInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindVariablesInCode");
@@ -440,7 +440,7 @@ namespace AgentCore.ScriptApi
         // Find variable (formatted)
         public sealed class FindVariableExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindVariable");
@@ -466,7 +466,7 @@ namespace AgentCore.ScriptApi
         // Find variable in code (formatted)
         public sealed class FindVariableInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindVariableInCode");
@@ -493,7 +493,7 @@ namespace AgentCore.ScriptApi
         // Find global variables (formatted)
         public sealed class FindGlobalVariablesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindGlobalVariables");
@@ -519,7 +519,7 @@ namespace AgentCore.ScriptApi
         // Find global variables in code (formatted)
         public sealed class FindGlobalVariablesInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindGlobalVariablesInCode");
@@ -546,7 +546,7 @@ namespace AgentCore.ScriptApi
         // Find parameters (formatted)
         public sealed class FindParametersExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindParameters");
@@ -572,7 +572,7 @@ namespace AgentCore.ScriptApi
         // Find parameters in code (formatted)
         public sealed class FindParametersInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindParametersInCode");
@@ -601,7 +601,7 @@ namespace AgentCore.ScriptApi
         // Find class members (formatted)
         public sealed class FindClassMembersExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindClassMembers");
@@ -627,7 +627,7 @@ namespace AgentCore.ScriptApi
         // Find class members in code (formatted)
         public sealed class FindClassMembersInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindClassMembersInCode");
@@ -654,7 +654,7 @@ namespace AgentCore.ScriptApi
         // Find fields (formatted)
         public sealed class FindFieldsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFields");
@@ -681,7 +681,7 @@ namespace AgentCore.ScriptApi
         // Find fields in code (formatted)
         public sealed class FindFieldsInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFieldsInCode");
@@ -709,7 +709,7 @@ namespace AgentCore.ScriptApi
         // Find field (formatted)
         public sealed class FindFieldExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindField");
@@ -736,7 +736,7 @@ namespace AgentCore.ScriptApi
         // Find field in code (formatted)
         public sealed class FindFieldInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindFieldInCode");
@@ -764,7 +764,7 @@ namespace AgentCore.ScriptApi
         // Find properties (formatted)
         public sealed class FindPropertiesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindProperties");
@@ -791,7 +791,7 @@ namespace AgentCore.ScriptApi
         // Find properties in code (formatted)
         public sealed class FindPropertiesInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindPropertiesInCode");
@@ -819,7 +819,7 @@ namespace AgentCore.ScriptApi
         // Find property (formatted)
         public sealed class FindPropertyExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindProperty");
@@ -846,7 +846,7 @@ namespace AgentCore.ScriptApi
         // Find property in code (formatted)
         public sealed class FindPropertyInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindPropertyInCode");
@@ -874,7 +874,7 @@ namespace AgentCore.ScriptApi
         // Find methods (formatted)
         public sealed class FindMethodsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindMethods");
@@ -901,7 +901,7 @@ namespace AgentCore.ScriptApi
         // Find methods in code (formatted)
         public sealed class FindMethodsInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindMethodsInCode");
@@ -929,7 +929,7 @@ namespace AgentCore.ScriptApi
         // Find method (formatted)
         public sealed class FindMethodExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindMethod");
@@ -956,7 +956,7 @@ namespace AgentCore.ScriptApi
         // Find method in code (formatted)
         public sealed class FindMethodInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindMethodInCode");
@@ -984,7 +984,7 @@ namespace AgentCore.ScriptApi
         // Find constructors (formatted)
         public sealed class FindConstructorsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindConstructors");
@@ -1010,7 +1010,7 @@ namespace AgentCore.ScriptApi
         // Find constructors in code (formatted)
         public sealed class FindConstructorsInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindConstructorsInCode");
@@ -1037,7 +1037,7 @@ namespace AgentCore.ScriptApi
         // Find events (formatted)
         public sealed class FindEventsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEvents");
@@ -1064,7 +1064,7 @@ namespace AgentCore.ScriptApi
         // Find events in code (formatted)
         public sealed class FindEventsInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEventsInCode");
@@ -1092,7 +1092,7 @@ namespace AgentCore.ScriptApi
         // Find event (formatted)
         public sealed class FindEventExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEvent");
@@ -1119,7 +1119,7 @@ namespace AgentCore.ScriptApi
         // Find event in code (formatted)
         public sealed class FindEventInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEventInCode");
@@ -1147,7 +1147,7 @@ namespace AgentCore.ScriptApi
         // Find interfaces (formatted)
         public sealed class FindInterfacesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindInterfaces");
@@ -1173,7 +1173,7 @@ namespace AgentCore.ScriptApi
         // Find interfaces in code (formatted)
         public sealed class FindInterfacesInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindInterfacesInCode");
@@ -1200,7 +1200,7 @@ namespace AgentCore.ScriptApi
         // Find interface (formatted)
         public sealed class FindInterfaceExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindInterface");
@@ -1226,7 +1226,7 @@ namespace AgentCore.ScriptApi
         // Find interface in code (formatted)
         public sealed class FindInterfaceInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindInterfaceInCode");
@@ -1253,7 +1253,7 @@ namespace AgentCore.ScriptApi
         // Find structs (formatted)
         public sealed class FindStructsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindStructs");
@@ -1279,7 +1279,7 @@ namespace AgentCore.ScriptApi
         // Find structs in code (formatted)
         public sealed class FindStructsInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindStructsInCode");
@@ -1306,7 +1306,7 @@ namespace AgentCore.ScriptApi
         // Find struct (formatted)
         public sealed class FindStructExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindStruct");
@@ -1332,7 +1332,7 @@ namespace AgentCore.ScriptApi
         // Find struct in code (formatted)
         public sealed class FindStructInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindStructInCode");
@@ -1359,7 +1359,7 @@ namespace AgentCore.ScriptApi
         // Find enums (formatted)
         public sealed class FindEnumsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEnums");
@@ -1385,7 +1385,7 @@ namespace AgentCore.ScriptApi
         // Find enums in code (formatted)
         public sealed class FindEnumsInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEnumsInCode");
@@ -1412,7 +1412,7 @@ namespace AgentCore.ScriptApi
         // Find enum (formatted)
         public sealed class FindEnumExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEnum");
@@ -1438,7 +1438,7 @@ namespace AgentCore.ScriptApi
         // Find enum in code (formatted)
         public sealed class FindEnumInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: FindEnumInCode");
@@ -1467,7 +1467,7 @@ namespace AgentCore.ScriptApi
         // Find all AST nodes matching pattern in file
         public sealed class FindNodesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: find_nodes(filePath, language, nodeRegexPattern)");
@@ -1493,7 +1493,7 @@ namespace AgentCore.ScriptApi
         // Find all AST nodes matching pattern in code
         public sealed class FindNodesInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3 || operands.Count > 4) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: find_nodes_in_code(code, language, nodeRegexPattern, [fileName])");
@@ -1520,7 +1520,7 @@ namespace AgentCore.ScriptApi
         // Find first AST node matching pattern in file
         public sealed class FindNodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: find_node(filePath, language, nodeRegexPattern)");
@@ -1546,7 +1546,7 @@ namespace AgentCore.ScriptApi
         // Find first AST node matching pattern in code
         public sealed class FindNodeInCodeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3 || operands.Count > 4) {
                     AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: find_node_in_code(code, language, nodeRegexPattern, [fileName])");

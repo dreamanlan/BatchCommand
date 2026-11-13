@@ -22,16 +22,16 @@ namespace BatchCommand.Api
         // Usage hint for error messages
         protected abstract string UsageHint { get; }
 
-        protected override BoxedValue DoCalc()
+        protected override BoxedValue DoCalc(DslCalculator calculator)
         {
             var operands = new List<BoxedValue>();
             for (int i = 0; i < m_Expressions.Count; i++) {
-                operands.Add(m_Expressions[i].Calc());
+                operands.Add(m_Expressions[i].Calc(calculator));
             }
             var bindingVals = new Dictionary<string, string>();
             for (int i = 0; i < m_BindingNames.Count; i++) {
                 string bindingName = m_BindingNames[i];
-                if (Calculator.TryGetVariable(bindingName, out var value) && !value.IsNullObject) {
+                if (calculator.TryGetVariable(bindingName, out var value) && !value.IsNullObject) {
                     bindingVals[bindingName] = value.ToString();
                 }
                 else {
@@ -50,7 +50,7 @@ namespace BatchCommand.Api
             }
             for (int i = 0; i < callData.GetParamNum(); ++i) {
                 Dsl.ISyntaxComponent param = callData.GetParam(i);
-                m_Expressions.Add(Calculator.Load(param));
+                m_Expressions.Add(CodeStructure.Load(param));
             }
             return true;
         }
@@ -511,7 +511,7 @@ namespace BatchCommand.Api
     // Stop a background process
     sealed class StopProcessExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: stop_process(processId[, timeout_def_5000ms])");
@@ -535,7 +535,7 @@ namespace BatchCommand.Api
     // Check if process is running
     sealed class IsProcessRunningExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: is_process_running(processId)");
@@ -557,7 +557,7 @@ namespace BatchCommand.Api
     // Write to process input
     sealed class WriteProcessInputExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: write_process_input(processId, input)");
@@ -581,7 +581,7 @@ namespace BatchCommand.Api
     // Read process output
     sealed class ReadProcessOutputExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: read_process_output(processId)");
@@ -603,7 +603,7 @@ namespace BatchCommand.Api
     // Read process error
     sealed class ReadProcessErrorExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: read_process_error(processId)");
@@ -625,7 +625,7 @@ namespace BatchCommand.Api
     // Get active callback command status
     sealed class GetCommandStatusExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 return BoxedValue.FromString(ProcessOperations.Shared.GetActiveCommandStatus());
@@ -647,7 +647,7 @@ namespace BatchCommand.Api
     // so calling this with no argument reports the very process that is growing.
     sealed class GetProcessMemoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
                 ApiTextInfo.Error.AppendLine("Expected: get_process_memory([name_or_pid])");
@@ -717,7 +717,7 @@ namespace BatchCommand.Api
     // Launch an OS process, returns its pid (0 on error).
     sealed class LaunchProcessExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: launch_process(exe[, args, working_dir])");
@@ -759,7 +759,7 @@ namespace BatchCommand.Api
     // DetachedProcessLauncher below for what detachment means per platform.
     sealed class LaunchProcessDetachedExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: launch_process_detached(exe[, args, working_dir])");
@@ -983,7 +983,7 @@ namespace BatchCommand.Api
     // cancelled or the launch failed. Windows only.
     sealed class LaunchProcessWithAdminExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: launch_process_with_admin(exe[, args, working_dir])");
@@ -1143,7 +1143,7 @@ namespace BatchCommand.Api
     // Parent pid of a process (the current one when called without arguments).
     sealed class GetProcessParentIdExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
                 BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: get_process_parent_id([pid])");
@@ -1170,7 +1170,7 @@ namespace BatchCommand.Api
     // The process may exit immediately after this check.
     sealed class IsProcessAliveExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: is_process_alive(pid[, name_key])");
@@ -1220,7 +1220,7 @@ namespace BatchCommand.Api
     // never matches a non-empty command line key.
     sealed class SearchProcessExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var ids = new List<BoxedValue>();
             if (operands.Count > 2) {
@@ -1517,7 +1517,7 @@ namespace BatchCommand.Api
     // Returns the number of processes killed.
     sealed class KillProcessExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 BatchCommand.Utils.HostBridge.Log?.Invoke("Expected: kill_process(name_or_pid)");

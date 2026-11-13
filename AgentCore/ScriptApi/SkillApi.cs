@@ -11,7 +11,7 @@ namespace AgentCore.ScriptApi
     // refresh_embedding()
     sealed class RefreshEmbeddingExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 bool result = Core.AgentCore.Instance.RefreshEmbedding();
@@ -29,7 +29,7 @@ namespace AgentCore.ScriptApi
     // refresh_reranker()
     sealed class RefreshRerankExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 bool result = Core.AgentCore.Instance.RefreshReranker();
@@ -47,7 +47,7 @@ namespace AgentCore.ScriptApi
     // refresh_skills()
     sealed class RefreshSkillsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 bool result = Core.AgentCore.Instance.RefreshSkills(
@@ -64,7 +64,7 @@ namespace AgentCore.ScriptApi
     // call_skill(skill_name, arg1, arg2, ...)
     sealed class CallSkillExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: call_skill(skill_name, arg1, arg2, ...), aliased as callskill");
@@ -90,7 +90,7 @@ namespace AgentCore.ScriptApi
     // set_skill_env(key, value)
     sealed class SetSkillEnvExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_skill_env(key, value)");
@@ -111,7 +111,7 @@ namespace AgentCore.ScriptApi
     // get_skill_env(key[, defval])
     sealed class GetSkillEnvExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: get_skill_env(key[, defval])");
@@ -132,7 +132,7 @@ namespace AgentCore.ScriptApi
     // delete_skill_env(key)
     sealed class DeleteSkillEnvExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: delete_skill_env(key)");
@@ -152,7 +152,7 @@ namespace AgentCore.ScriptApi
     // clear_skill_envs([regexPattern])
     sealed class ClearSkillEnvsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: clear_skill_envs([regexPattern])");

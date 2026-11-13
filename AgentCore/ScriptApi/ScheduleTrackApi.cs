@@ -34,7 +34,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class ScheduleAddExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 6) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("add_schedule_item requires (agentId, channelId, title, repeat, weekday, time)");
@@ -83,7 +83,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class ScheduleDeleteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_schedule_items requires (agentId, idx[, idx2, ...])");
@@ -117,7 +117,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class ScheduleSetEnabledExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("set_schedule_item_enabled requires (agentId, idx, enabled)");
@@ -142,7 +142,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class ScheduleGetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("get_schedule requires (agentId)");

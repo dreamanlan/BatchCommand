@@ -13,7 +13,7 @@ namespace BatchCommand.Api
     // read_file(path[, encoding]) - read file content
     public sealed class ReadFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: read_file(path[, encoding])");
@@ -36,7 +36,7 @@ namespace BatchCommand.Api
     // write_file(path, content[, encoding]) - write file content; encoding supports -bom/-no-bom/-nobom suffixes
     public sealed class WriteFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: write_file(path, content[, encoding])");
@@ -74,7 +74,7 @@ namespace BatchCommand.Api
     // write_file_no_bom(path, content) - write file content without BOM
     public sealed class WriteFileNoBomExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: write_file_no_bom(path, content)");
@@ -110,7 +110,7 @@ namespace BatchCommand.Api
     // read_file_bytes(path) - read file as byte array
     public sealed class ReadFileBytesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: read_file_bytes(path)");
@@ -132,7 +132,7 @@ namespace BatchCommand.Api
     // write_file_bytes(path, bytes) - write byte array to file
     public sealed class WriteFileBytesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: write_file_bytes(path, bytes)");
@@ -165,7 +165,7 @@ namespace BatchCommand.Api
     // hex_to_bytes(hexString) - convert hex string to byte array
     public sealed class HexToBytesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: hex_to_bytes(hexString), aliased as hex_string_to_bytes");
@@ -196,7 +196,7 @@ namespace BatchCommand.Api
     // bytes_to_hex(bytes[, bytesPerLine]) - convert byte array to formatted hex string
     public sealed class BytesToHexExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: bytes_to_hex(bytes[, bytesPerLine]), aliased as bytes_to_hex_string");
@@ -233,7 +233,7 @@ namespace BatchCommand.Api
     // base64_to_bytes(base64String) - convert base64 string to byte array
     public sealed class Base64ToBytesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: base64_to_bytes(base64String)");
@@ -255,7 +255,7 @@ namespace BatchCommand.Api
     // bytes_to_base64(bytes) - convert byte array to base64 string
     public sealed class BytesToBase64Exp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: bytes_to_base64(bytes)");
@@ -285,7 +285,7 @@ namespace BatchCommand.Api
     // append_file(path, content[, encoding]) - append to file; encoding supports -bom/-no-bom/-nobom suffixes
     public sealed class AppendFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: append_file(path, content[, encoding])");
@@ -314,7 +314,7 @@ namespace BatchCommand.Api
     // copy_file(sourcePath, destPath, overwrite) - copy file
     public sealed class CopyFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: copy_file(sourcePath, destPath, overwrite)");
@@ -338,7 +338,7 @@ namespace BatchCommand.Api
     // move_file(sourcePath, destPath, overwrite) - move file
     public sealed class MoveFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: move_file(sourcePath, destPath, overwrite)");
@@ -362,7 +362,7 @@ namespace BatchCommand.Api
     // file_exists(path) - check if file exists
     public sealed class FileExistsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: file_exists(path), aliased as file_exist");
@@ -384,7 +384,7 @@ namespace BatchCommand.Api
     // file_not_exists(path) - check if file not exists
     public sealed class FileNotExistsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: file_not_exists(path), aliased as file_not_exist");
@@ -406,7 +406,7 @@ namespace BatchCommand.Api
     // file_has_bom(path) - check if file has BOM
     public sealed class FileHasBomExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: file_has_bom(path)");
@@ -428,7 +428,7 @@ namespace BatchCommand.Api
     // file_add_bom(path) - add BOM to file (skip if already has BOM)
     public sealed class FileAddBomExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: file_add_bom(path)");
@@ -450,7 +450,7 @@ namespace BatchCommand.Api
     // file_remove_bom(path) - remove BOM from file (skip if no BOM)
     public sealed class FileRemoveBomExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: file_remove_bom(path)");
@@ -472,7 +472,7 @@ namespace BatchCommand.Api
     // dir_exists(path) - check if directory exists
     public sealed class DirExistsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: dir_exists(path), aliased as dir_exist");
@@ -494,7 +494,7 @@ namespace BatchCommand.Api
     // dir_not_exists(path) - check if directory exists
     public sealed class DirNotExistsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: dir_not_exists(path), aliased as dir_not_exist");
@@ -516,7 +516,7 @@ namespace BatchCommand.Api
     // path_exists(path) - check if file or directory exists
     public sealed class PathExistsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: path_exists(path), aliased as path_exist");
@@ -537,7 +537,7 @@ namespace BatchCommand.Api
     // path_not_exists(path) - check if file or directory exists
     public sealed class PathNotExistsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: path_not_exists(path), aliased as path_not_exist");
@@ -558,7 +558,7 @@ namespace BatchCommand.Api
     // list_dir_info(path[, glob_pattern, recursive]) - list directory contents
     public sealed class ListDirInfoExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: list_dir_info(path[, glob_pattern, recursive])");
@@ -588,7 +588,7 @@ namespace BatchCommand.Api
 
     public sealed class EnsureDirectoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: ensure_directory(dir), aliased as ensure_dir");
@@ -601,7 +601,7 @@ namespace BatchCommand.Api
     }
     public sealed class RemoveDirectoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: remove_directory(dir), aliased as remove_dir");
@@ -615,7 +615,7 @@ namespace BatchCommand.Api
 
     public sealed class FindFilesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: find_files(path,glob_pattern[,recursive])");
@@ -630,7 +630,7 @@ namespace BatchCommand.Api
 
     public sealed class SearchFilesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: search_files(glob_pattern,path)");
@@ -645,7 +645,7 @@ namespace BatchCommand.Api
     // search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding]) - search log file with regex pattern
     public sealed class SearchLogFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 ApiTextInfo.Error.AppendLine("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file");
@@ -671,7 +671,7 @@ namespace BatchCommand.Api
     // search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before, encoding]) - return list of match blocks
     public sealed class SearchLogFileAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 ApiTextInfo.Error.AppendLine("Expected: search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file_as_list");
@@ -701,7 +701,7 @@ namespace BatchCommand.Api
     // tail_log_file(log_file, lines[, encoding]) - get last N lines from log file
     public sealed class TailLogFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: tail_log_file(log_file, lines[, encoding])");
@@ -725,7 +725,7 @@ namespace BatchCommand.Api
     // head_log_file(log_file, lines[, encoding]) - get first N lines from log file
     public sealed class HeadLogFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: head_log_file(log_file, lines[, encoding])");
@@ -749,7 +749,7 @@ namespace BatchCommand.Api
     // tail_file(file, lines[, encoding]) - get last N lines from file
     public sealed class TailFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: tail_file(file, lines[, encoding])");
@@ -773,7 +773,7 @@ namespace BatchCommand.Api
     // head_file(file, lines[, encoding]) - get first N lines from file
     public sealed class HeadFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: head_file(file, lines[, encoding])");
@@ -796,7 +796,7 @@ namespace BatchCommand.Api
     // csv_read(path[, encoding]) - read CSV file into List<List<string>>. minimal RFC4180 subset: comma delimiter, double-quoted fields, "" escape. no cross-line quoted fields.
     public sealed class CsvReadExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: csv_read(path[, encoding])");
@@ -858,7 +858,7 @@ namespace BatchCommand.Api
     // read_file_line_range(path, startLine, endLine[, encoding]) - read line range as concatenated string, preserving original newline style
     public sealed class ReadFileLineRangeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: read_file_line_range(path, startLine, endLine[, encoding])");

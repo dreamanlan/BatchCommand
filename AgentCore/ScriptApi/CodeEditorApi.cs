@@ -13,7 +13,7 @@ namespace AgentCore.ScriptApi
     // replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]) - replace string in file; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class ReplaceInFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]), aliased as string_replace_in_file");
@@ -50,7 +50,7 @@ namespace AgentCore.ScriptApi
     // it falls back to trimmed / normalized-whitespace match on the first occurrence.
     sealed class ReplaceInFileWithCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 7) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: replace_in_file_with_count(path, oldString, newString, count[, skipCount[, exactMatch[, encoding]]]), aliased as string_replace_in_file_with_count");
@@ -168,7 +168,7 @@ namespace AgentCore.ScriptApi
             public bool ExactMatch;
         }
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine(
@@ -374,7 +374,7 @@ namespace AgentCore.ScriptApi
     // replace_range(path, startLine, endLine, newContent[, encoding]) - replace line range; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class ReplaceRangeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: replace_range(path, startLine, endLine, newContent[, encoding])");
@@ -402,7 +402,7 @@ namespace AgentCore.ScriptApi
     // insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]]) - insert content after literal text; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class InsertAfterTextExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]])");
@@ -435,7 +435,7 @@ namespace AgentCore.ScriptApi
     // insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]]) - insert content before literal text; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class InsertBeforeTextExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]])");
@@ -468,7 +468,7 @@ namespace AgentCore.ScriptApi
     // delete_lines(path, startLine, endLine[, encoding]) - delete line range; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class DeleteLinesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: delete_lines(path, startLine, endLine[, encoding])");
@@ -495,7 +495,7 @@ namespace AgentCore.ScriptApi
     // search_lines_in_file(path, regex_pattern[, ignoreCase[, encoding]]) - search regex_pattern line number in file (auto fallback to substring if regex invalid)
     sealed class SearchLinesInFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_lines(path, regex_pattern, [ignoreCase[, encoding]]), aliased as search_lines_in_file");
@@ -527,7 +527,7 @@ namespace AgentCore.ScriptApi
     // read_lines(path, startLine, endLine[, encoding]) - read line range from file
     sealed class ReadLinesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: read_lines(path, startLine, endLine[, encoding])");
@@ -568,7 +568,7 @@ namespace AgentCore.ScriptApi
     // get_line_count(path[, encoding]) - get line count of file
     sealed class GetLineCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: get_line_count(path[, encoding]), aliased as get_file_line_count|line_count|file_line_count|count_lines");
@@ -591,7 +591,7 @@ namespace AgentCore.ScriptApi
     // search_in_file(path, regex_pattern[, context_lines_after, context_lines_before, encoding]) - search file with regex pattern and return matches with context
     sealed class SearchInFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_file(path, regex_pattern[, context_lines_after, context_lines_before, encoding]), aliased as grep_file|grepfile");
@@ -617,7 +617,7 @@ namespace AgentCore.ScriptApi
     // search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]) - search files with regex pattern and return matches with context
     sealed class SearchInFilesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files|grepfiles");
@@ -662,7 +662,7 @@ namespace AgentCore.ScriptApi
     // search_in_files_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]) - same as search_in_files but with explicit encoding
     sealed class SearchInFilesWithEncodingExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
@@ -708,7 +708,7 @@ namespace AgentCore.ScriptApi
     // search_in_file_as_list(path, regex_pattern[, context_lines_after, context_lines_before, encoding]) - return list of match blocks
     sealed class SearchInFileAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_file_as_list(path, regex_pattern[, context_lines_after, context_lines_before, encoding]), aliased as grep_file_as_list|grepfileaslist");
@@ -738,7 +738,7 @@ namespace AgentCore.ScriptApi
     // search_in_files_as_list(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]) - return list of per-file results
     sealed class SearchInFilesAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files_as_list(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files_as_list|grepfilesaslist");
@@ -787,7 +787,7 @@ namespace AgentCore.ScriptApi
     // search_in_files_as_list_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]) - same as search_in_files_as_list but with explicit encoding
     sealed class SearchInFilesAsListWithEncodingExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: search_in_files_as_list_with_encoding(path, regex_pattern, encoding[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
@@ -837,7 +837,7 @@ namespace AgentCore.ScriptApi
     // count_file_indentations(path[, startLine, endLine, encoding]) - display file lines with line number, indent info, and left-aligned content
     sealed class CountFileIndentationsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: count_file_indentations(path[, startLine, endLine, encoding])");
@@ -951,7 +951,7 @@ namespace AgentCore.ScriptApi
     // insert_after_line(path, line, insert_content[, encoding]) - insert content after specified line number (content starts on a new line); encoding supports -bom/-no-bom/-nobom suffixes
     sealed class InsertAfterLineExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: insert_after_line(path, line, insert_content[, encoding]), aliased as insert_after");
@@ -1001,7 +1001,7 @@ namespace AgentCore.ScriptApi
     // insert_before_line(path, line, insert_content[, encoding]) - insert content before specified line number (content starts on a new line); encoding supports -bom/-no-bom/-nobom suffixes
     sealed class InsertBeforeLineExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: insert_before_line(path, line, insert_content[, encoding]), aliased as insert_before");

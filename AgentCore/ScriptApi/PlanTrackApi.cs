@@ -52,23 +52,23 @@ namespace AgentCore.ScriptApi
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("create_plan requires (agentId, title)");
                 return false;
             }
-            m_AgentIdExp = Calculator.Load(callData.GetParam(0));
-            m_TitleExp = Calculator.Load(callData.GetParam(1));
+            m_AgentIdExp = CodeStructure.Load(callData.GetParam(0));
+            m_TitleExp = CodeStructure.Load(callData.GetParam(1));
             if (funcData.IsHighOrder) {
                 for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
-                    m_ItemExps.Add(Calculator.Load(funcData.GetParam(ix)));
+                    m_ItemExps.Add(CodeStructure.Load(funcData.GetParam(ix)));
                 }
             }
             return true;
         }
 
-        protected override BoxedValue DoCalc()
+        protected override BoxedValue DoCalc(DslCalculator calculator)
         {
             if (null == m_AgentIdExp || null == m_TitleExp) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("create_plan requires (agentId, title)");
                 return BoxedValue.From(false);
             }
-            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(m_AgentIdExp.Calc()));
+            var inst = AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(ResolveAgentId(m_AgentIdExp.Calc(calculator)));
             if (inst.PlanTrack != null && inst.PlanTrack.PlanState == (int)PlanStateEnum.InProgress) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("create_plan rejected: a plan is in progress, align or finish it first");
                 return BoxedValue.From(false);
@@ -78,10 +78,10 @@ namespace AgentCore.ScriptApi
             // nothing changed since the newest backup).
             PlanTrackHelper.BackupPlan(inst);
             inst.PlanTrack = new PlanTrackState();
-            inst.PlanTrack.Title = m_TitleExp.Calc().AsString ?? string.Empty;
+            inst.PlanTrack.Title = m_TitleExp.Calc(calculator).AsString ?? string.Empty;
             inst.PlanTrack.PlanState = (int)PlanStateEnum.Planned;
             foreach (var itemExp in m_ItemExps) {
-                inst.PlanTrack.Items.Add(new PlanTrackState.PlanItem { State = (int)PlayItemStateEnum.Planned, Content = itemExp.Calc().AsString ?? string.Empty });
+                inst.PlanTrack.Items.Add(new PlanTrackState.PlanItem { State = (int)PlayItemStateEnum.Planned, Content = itemExp.Calc(calculator).AsString ?? string.Empty });
             }
             return BoxedValue.From(true);
         }
@@ -94,7 +94,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanAddItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_plan_item requires (agentId, content)");
@@ -125,7 +125,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanDeleteItemsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_items requires (agentId, idx[, idx2, ...])");
@@ -163,7 +163,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanModifyItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_plan_item requires (agentId, idx, content)");
@@ -198,7 +198,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanClearExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_plan requires (agentId)");
@@ -228,7 +228,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanStartExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("start_plan requires (agentId)");
@@ -257,7 +257,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanChangeItemStateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3 && operands.Count != 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("change_plan_item_state requires (agentId, idx, state[, note])");
@@ -297,7 +297,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanAppendNoteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_note requires (agentId, note)");
@@ -328,7 +328,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanAppendItemNoteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("append_plan_item_note requires (agentId, itemIdx, note)");
@@ -365,7 +365,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanTrimNotesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_notes requires (agentId, keepCount)");
@@ -401,7 +401,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanTrimItemNotesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("trim_plan_item_notes requires (agentId, itemIdx, keepCount)");
@@ -442,7 +442,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanDeleteNotesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_notes requires (agentId, idx[, idx2, ...])");
@@ -473,7 +473,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanDeleteItemNotesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_plan_item_notes requires (agentId, itemIdx, idx[, idx2, ...])");
@@ -508,7 +508,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanAlignExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("align_plan requires (agentId)");
@@ -532,7 +532,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PlanRestoreExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_plan_state requires (agentId, plan_text)");

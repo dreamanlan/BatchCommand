@@ -19,7 +19,7 @@ namespace AgentCore.ScriptApi
     // Build query selector
     sealed class BuildQuerySelectorExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_query_selector(selector)");
@@ -44,7 +44,7 @@ namespace AgentCore.ScriptApi
     // Build click element script
     sealed class BuildClickElementExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_click_element(selector)");
@@ -69,7 +69,7 @@ namespace AgentCore.ScriptApi
     // Build set value script
     sealed class BuildSetValueExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_set_value(selector, value)");
@@ -95,7 +95,7 @@ namespace AgentCore.ScriptApi
     // Build get value script
     sealed class BuildGetValueExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_get_value(selector)");
@@ -120,7 +120,7 @@ namespace AgentCore.ScriptApi
     // Build get text script
     sealed class BuildGetTextExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_get_text(selector)");
@@ -145,7 +145,7 @@ namespace AgentCore.ScriptApi
     // Build set innerHTML script
     sealed class BuildSetInnerHTMLExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_set_innerhtml(selector, html)");
@@ -171,7 +171,7 @@ namespace AgentCore.ScriptApi
     // Build wait for element script
     sealed class BuildWaitForElementExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_wait_for_element(selector[, timeout_def_5000ms])");
@@ -197,7 +197,7 @@ namespace AgentCore.ScriptApi
     // Build scroll to element script
     sealed class BuildScrollToElementExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_scroll_to_element(selector)");
@@ -222,7 +222,7 @@ namespace AgentCore.ScriptApi
     // Build is visible script
     sealed class BuildIsVisibleExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_is_visible(selector)");
@@ -247,7 +247,7 @@ namespace AgentCore.ScriptApi
     // Build add class script
     sealed class BuildAddClassExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_add_class(selector, className)");
@@ -273,7 +273,7 @@ namespace AgentCore.ScriptApi
     // Build remove class script
     sealed class BuildRemoveClassExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_remove_class(selector, className)");
@@ -299,7 +299,7 @@ namespace AgentCore.ScriptApi
     // Build set style script
     sealed class BuildSetStyleExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_set_style(selector, property, value)");
@@ -326,7 +326,7 @@ namespace AgentCore.ScriptApi
     // Build inject CSS script
     sealed class BuildInjectCSSExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_inject_css(css)");
@@ -351,7 +351,7 @@ namespace AgentCore.ScriptApi
     // Build navigate to script
     sealed class BuildNavigateToExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_navigate_to(url)");
@@ -376,7 +376,7 @@ namespace AgentCore.ScriptApi
     // Send JavaScript code to the browser (async, no return value)
     sealed class SendJsCodeExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_js_code(jscode)");
@@ -401,7 +401,7 @@ namespace AgentCore.ScriptApi
     // Send JavaScript function call to the browser (async, no return value)
     sealed class SendJsCallExp : BrowserInteractionExpBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_js_call(jsfunc, arg1, arg2, ...)");

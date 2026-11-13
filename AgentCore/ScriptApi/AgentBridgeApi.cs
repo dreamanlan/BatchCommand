@@ -15,7 +15,7 @@ namespace AgentCore.ScriptApi
     // Parse agent command JSON
     sealed class ParseAgentCommandExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: parse_agent_command(jsonData)");
@@ -55,7 +55,7 @@ namespace AgentCore.ScriptApi
     // Parse agent notification JSON
     sealed class ParseAgentNotificationExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: parse_agent_notification(jsonData)");
@@ -93,7 +93,7 @@ namespace AgentCore.ScriptApi
     // Send command to inject.js
     sealed class SendCommandToInjectExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_command_to_inject(command, paramsJson)");
@@ -130,7 +130,7 @@ namespace AgentCore.ScriptApi
     // Build JSON response for inject.js
     sealed class BuildAgentResponseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: build_agent_response(messageId, success, data, error)");
@@ -185,7 +185,7 @@ namespace AgentCore.ScriptApi
     // Send response to inject.js
     sealed class SendResponseToInjectExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: send_response_to_inject(responseJson)");
@@ -221,7 +221,7 @@ namespace AgentCore.ScriptApi
     // reusing the same path and guards as the former js_request handling.
     sealed class StartAutoPlanExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: start_auto_plan()");
@@ -252,7 +252,7 @@ namespace AgentCore.ScriptApi
     // long-term development mode).
     sealed class StopAutoPlanExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: stop_auto_plan()");

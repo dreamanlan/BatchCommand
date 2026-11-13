@@ -76,7 +76,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetProjectDirExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_project_dir requires (agentId, value)");
@@ -93,7 +93,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetProjectDirExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_project_dir requires (agentId)");
@@ -109,7 +109,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetProjectIdentityExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_project_identity requires (agentId, value)");
@@ -126,7 +126,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetProjectIdentityExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_project_identity requires (agentId)");
@@ -142,7 +142,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetFoundationPromptExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_foundation_prompt requires (agentId, value)");
@@ -159,7 +159,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetFoundationPromptExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_foundation_prompt requires (agentId)");
@@ -175,7 +175,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetProjectMemoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_project_memory requires (agentId, value)");
@@ -192,7 +192,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetProjectMemoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_project_memory requires (agentId)");
@@ -208,7 +208,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetEmphasizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_emphasize requires (agentId, value)");
@@ -225,7 +225,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetEmphasizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_emphasize requires (agentId)");
@@ -241,7 +241,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetSoulExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_soul requires (agentId, value)");
@@ -258,7 +258,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetSoulExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_soul requires (agentId)");
@@ -274,7 +274,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetBacklogExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_backlog requires (agentId, value)");
@@ -291,7 +291,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetBacklogExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_backlog requires (agentId)");
@@ -307,7 +307,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetPlanExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_plan requires (agentId, value)");
@@ -324,7 +324,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetPlanExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_plan requires (agentId)");
@@ -340,7 +340,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetContextExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_context requires (agentId, value)");
@@ -357,7 +357,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetContextExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_context requires (agentId)");
@@ -373,7 +373,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetHistoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_history requires (agentId, value)");
@@ -390,7 +390,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetHistoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_history requires (agentId)");
@@ -406,7 +406,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class SetMaxLinesDeletedByWriteFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_max_lines_deleted_by_write_file requires (value)");
@@ -422,7 +422,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class GetMaxLinesDeletedByWriteFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(BatchCommand.Api.FrameworkApiAlias.MaxLinesDeletedByWriteFile);
         }
@@ -433,7 +433,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetMaxResultSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_max_result_size requires (agentId, value)");
@@ -450,7 +450,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetMaxResultSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_max_result_size requires (agentId)");
@@ -466,7 +466,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetMaxContextRoundsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_max_context_rounds requires (agentId, value)");
@@ -483,7 +483,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetMaxContextRoundsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_max_context_rounds requires (agentId)");
@@ -499,7 +499,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetCurContextRoundsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_cur_context_rounds requires (agentId, value)");
@@ -516,7 +516,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetCurContextRoundsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_cur_context_rounds requires (agentId)");
@@ -532,7 +532,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentAddCurContextRoundsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_add_cur_context_rounds requires (agentId)");
@@ -548,7 +548,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentEnableContextInjectionExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_enable_context_injection requires (agentId, value)");
@@ -566,7 +566,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentIsContextInjectionEnabledExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_is_context_injection_enabled requires (agentId)");
@@ -582,7 +582,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentEnableHistoryInjectionExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_enable_history_injection requires (agentId, value)");
@@ -600,7 +600,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentIsHistoryInjectionEnabledExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_is_history_injection_enabled requires (agentId)");
@@ -616,7 +616,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetMaxWorkerConcurrencyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_max_worker_concurrency requires (agentId, value)");
@@ -633,7 +633,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetMaxWorkerConcurrencyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_max_worker_concurrency requires (agentId)");
@@ -649,7 +649,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetActiveWorkersExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_active_workers requires (agentId)");
@@ -665,7 +665,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class SetAgentEnvironmentExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_agent_environment requires (category, group, key, value)");
@@ -685,7 +685,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class GetAgentEnvironmentLengthExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: get_agent_environment_length(category, group, key)");
@@ -704,7 +704,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class ApplyAgentEnvironmentExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("apply_agent_environment requires (category, group)");
@@ -722,7 +722,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class ClearAgentEnvironmentExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_agent_environment requires (category, group)");
@@ -740,7 +740,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentSetInjectJsCodeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_set_inject_js_code requires (agentId, value)");
@@ -757,7 +757,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetInjectJsCodeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_inject_js_code requires (agentId)");
@@ -773,7 +773,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class AgentGetInjectJsCodeSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("agent_get_inject_js_code_size requires (agentId)");

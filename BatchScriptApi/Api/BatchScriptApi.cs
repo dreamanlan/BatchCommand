@@ -23,7 +23,7 @@ namespace BatchCommand.Api
     // import(dsl_file, ...) - load additional dsl files (relative to managed/)
     public sealed class ImportExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var host = DslHost.Current;
             var files = new List<string>();
@@ -55,7 +55,7 @@ namespace BatchCommand.Api
     // redirectcall(func_name[, args[, extra...]]) - call a dsl func with an arg list
     public sealed class RedirectCallExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             int num = operands.Count;
             if (num < 1) {
@@ -92,7 +92,7 @@ namespace BatchCommand.Api
     // execute_metadsl(dsl_code) - run a dsl snippet, return (bool, result)
     public sealed class ExecuteMetaDslExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: execute_metadsl(dsl_code), aliased as executemetadsl");
@@ -109,7 +109,7 @@ namespace BatchCommand.Api
     // call_metadsl_task(task_index, func_name, args...) - queue a dsl func to a worker thread
     public sealed class CallMetaDslTaskExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var host = DslHost.Current;
             if (null == host) {
@@ -148,7 +148,7 @@ namespace BatchCommand.Api
     // set_metadsl_task_num(num) - set default worker count
     public sealed class SetMetaDslTaskNumExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 ApiTextInfo.Error.AppendLine("Expected: set_metadsl_task_num(num)");
@@ -161,7 +161,7 @@ namespace BatchCommand.Api
     // get_metadsl_task_num() - live worker count
     public sealed class GetMetaDslTaskNumExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(DslHost.Current!.GetMetaDslTaskNum());
         }
@@ -171,7 +171,7 @@ namespace BatchCommand.Api
     // dsl file execution pool (web pages / filter callbacks)
     public sealed class SetDslFileWorkerCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 ApiTextInfo.Error.AppendLine("Expected: set_dsl_file_worker_count(num)");
@@ -185,7 +185,7 @@ namespace BatchCommand.Api
     // execution pool
     public sealed class GetDslFileWorkerCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(DslHost.Current!.GetDslFileWorkerCount());
         }
@@ -198,7 +198,7 @@ namespace BatchCommand.Api
     {
         private const int c_DefaultTimeoutMs = 10_000;
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 string usage = "Expected: execute_dsl_file_in_worker(path, func [, args] [, timeout_ms] [, worker_index])";
@@ -247,7 +247,7 @@ namespace BatchCommand.Api
     // nativelog(fmt, ...) - log to the host log sink
     public sealed class NativeLogExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count == 0) {
                 return BoxedValue.EmptyString;
@@ -279,7 +279,7 @@ namespace BatchCommand.Api
     // quotestring(str) - quote a string for dsl code (numbers stay bare)
     public sealed class QuoteStringExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: quotestring(str)");
@@ -293,7 +293,7 @@ namespace BatchCommand.Api
     // stripquotes(str) - remove surrounding double/single quotes
     public sealed class StripQuotesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: stripquotes(str)");
@@ -307,7 +307,7 @@ namespace BatchCommand.Api
     // try_get_raw_command_line_switch(str) - read --switch=value, return (bool, str)
     public sealed class TryGetRawCommandLineSwitchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: try_get_raw_command_line_switch(str), return (bool, str)");
@@ -326,7 +326,7 @@ namespace BatchCommand.Api
     // getdotnetinfo() - dotnet runtime info
     public sealed class GetDotnetInfoExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var host = DslHost.Current;
             var sb = new StringBuilder();
@@ -352,7 +352,7 @@ namespace BatchCommand.Api
     // get_string_in_length(str, len[, begin0_end1_or_beginend2])
     public sealed class GetStringInLengthExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: get_string_in_length(str,len[,begin0_end1_or_beginend2])");
@@ -368,7 +368,7 @@ namespace BatchCommand.Api
     // help(pattern, ...) - regex search over user api docs
     public sealed class HelpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var sb = new StringBuilder();
             var regexes = new List<Regex>();
@@ -400,7 +400,7 @@ namespace BatchCommand.Api
     // helpall(pattern, ...) - regex search over all api docs
     public sealed class HelpAllExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var sb = new StringBuilder();
             var regexes = new List<Regex>();

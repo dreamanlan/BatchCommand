@@ -14,7 +14,7 @@ namespace BatchCommand.Api
     // set_context_var(key, value) - set a global context variable
     public sealed class SetContextVarExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: set_context_var(key, value)");
@@ -38,7 +38,7 @@ namespace BatchCommand.Api
     // get_context_var(key) - get a global context variable
     public sealed class GetContextVarExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: get_context_var(key)");
@@ -61,7 +61,7 @@ namespace BatchCommand.Api
     // remove_context_var(key) - remove a global context variable
     public sealed class RemoveContextVarExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: remove_context_var(key)");
@@ -84,7 +84,7 @@ namespace BatchCommand.Api
     // clear_context_vars() - clear all global context variables
     public sealed class ClearContextVarsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 0) {
                 ApiTextInfo.Error.AppendLine("Expected: clear_context_vars()");

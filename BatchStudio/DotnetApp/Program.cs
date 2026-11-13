@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -137,7 +138,7 @@ namespace DotNetLib
 {
     sealed class OutpuLogExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string fmt = string.Empty;
             var al = new System.Collections.ArrayList();
@@ -157,7 +158,7 @@ namespace DotNetLib
     }
     sealed class WriteFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             bool r = false;
             if (operands.Count >= 2) {
@@ -175,7 +176,7 @@ namespace DotNetLib
     }
     sealed class ClearScriptConsoleExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             bool r = false;
             Lib.ClearScriptConsole();
@@ -184,7 +185,7 @@ namespace DotNetLib
     }
     sealed class LogScriptConsoleExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             bool r = false;
             Lib.LogScriptConsole();
@@ -194,7 +195,7 @@ namespace DotNetLib
 
     internal sealed class BuildDbgScpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string scpFile = "hook.txt";
             string struFile = "struct.txt";

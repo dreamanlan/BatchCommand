@@ -39,7 +39,7 @@ namespace AgentCore.ScriptApi
     // and Url entries)
     sealed class HttpGetRequestHeadersExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: http_get_request_headers(request)");
@@ -62,7 +62,7 @@ namespace AgentCore.ScriptApi
     // filter passes the dictionary directly, it is returned as-is)
     sealed class HttpGetResponseHeadersExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: http_get_response_headers(response)");
@@ -83,7 +83,7 @@ namespace AgentCore.ScriptApi
     // new_web_result() - construct an empty web result object
     sealed class NewWebResultExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.FromObject(new Core.WebCallbacks.Result());
         }
@@ -92,7 +92,7 @@ namespace AgentCore.ScriptApi
     // set_web_result_status(result, status) - override the response status
     sealed class SetWebResultStatusExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_web_result_status(result, status)");
@@ -117,7 +117,7 @@ namespace AgentCore.ScriptApi
     // set_web_result_header(result, name, value) - add or override a header
     sealed class SetWebResultHeaderExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_web_result_header(result, name, value)");
@@ -141,7 +141,7 @@ namespace AgentCore.ScriptApi
     // del_web_result_header(result, name) - remove a header
     sealed class DelWebResultHeaderExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: del_web_result_header(result, name)");
@@ -165,7 +165,7 @@ namespace AgentCore.ScriptApi
     // set_web_result_body(result, bytes) - replace the body with a byte array
     sealed class SetWebResultBodyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_web_result_body(result, bytes)");
@@ -191,7 +191,7 @@ namespace AgentCore.ScriptApi
     // the manual redirect client (follow=false) for this request
     sealed class SetWebResultFollowRedirectsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_web_result_follow_redirects(result, follow)");
@@ -213,7 +213,7 @@ namespace AgentCore.ScriptApi
     // abort defaults to true
     sealed class SetWebResultAbortExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_web_result_abort(result [, abort])");

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using ScriptableFramework;
 using DotnetStoryScript;
@@ -12,7 +13,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class HotReloadExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 var agentCore = Core.AgentCore.Instance;
@@ -47,7 +48,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class ReopenBrowserExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 var agentCore = Core.AgentCore.Instance;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -69,7 +70,7 @@ namespace DotNetLib
     // wired to Program.NativeLogNoLock by the console host below.
     sealed class RedirectToPluginExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 throw new Exception("Expected: redirecttoplugin(dllpath[, init_cmdline]) api");
@@ -85,7 +86,7 @@ namespace DotNetLib
     }
     sealed class SetIntervalExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 throw new Exception("Expected: setinterval(ms) api");

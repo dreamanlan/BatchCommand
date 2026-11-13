@@ -600,7 +600,7 @@ namespace BatchCommand.Api
 
         internal sealed class CloneExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: clone(v), aliased as clone_array|clone_list|clone_hashtable|clone_queue|clone_stack|clone_tuple|copy|copy_array|copy_list|copy_hashtable|copy_queue|copy_stack|copy_tuple");
@@ -679,39 +679,39 @@ namespace BatchCommand.Api
         }
         internal sealed class IncExp : AbstractExpression
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 if (m_OpNum == 1) {
-                    if (Calculator.TryGetVariable(m_VarId, out var v)) {
+                    if (calculator.TryGetVariable(m_VarId, out var v)) {
                         if (v.IsUnsignedInteger) {
                             v = v.GetULong() + 1;
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                         else if (v.IsSignedInteger) {
                             v = v.GetLong() + 1;
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                         else if (v.IsNumber) {
                             v = v.GetDouble() + 1;
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                     }
                     return v;
                 }
                 else if (m_OpNum == 2) {
-                    var vv = m_Op.Calc();
-                    if (Calculator.TryGetVariable(m_VarId, out var v)) {
+                    var vv = m_Op.Calc(calculator);
+                    if (calculator.TryGetVariable(m_VarId, out var v)) {
                         if (v.IsUnsignedInteger) {
                             v = v.GetULong() + vv.GetULong();
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                         else if (v.IsSignedInteger) {
                             v = v.GetLong() + vv.GetLong();
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                         else if (v.IsNumber) {
                             v = v.GetDouble() + vv.GetDouble();
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                     }
                     return v;
@@ -727,7 +727,7 @@ namespace BatchCommand.Api
                 }
                 if (m_OpNum > 1) {
                     Dsl.ISyntaxComponent param = callData.GetParam(1);
-                    m_Op = Calculator.Load(param);
+                    m_Op = CodeStructure.Load(param);
                 }
                 return true;
             }
@@ -738,39 +738,39 @@ namespace BatchCommand.Api
         }
         internal sealed class DecExp : AbstractExpression
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 if (m_OpNum == 1) {
-                    if (Calculator.TryGetVariable(m_VarId, out var v)) {
+                    if (calculator.TryGetVariable(m_VarId, out var v)) {
                         if (v.IsUnsignedInteger) {
                             v = v.GetULong() - 1;
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                         else if (v.IsSignedInteger) {
                             v = v.GetLong() - 1;
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                         else if (v.IsNumber) {
                             v = v.GetDouble() - 1;
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                     }
                     return v;
                 }
                 else if (m_OpNum == 2) {
-                    var vv = m_Op.Calc();
-                    if (Calculator.TryGetVariable(m_VarId, out var v)) {
+                    var vv = m_Op.Calc(calculator);
+                    if (calculator.TryGetVariable(m_VarId, out var v)) {
                         if (v.IsUnsignedInteger) {
                             v = v.GetULong() - vv.GetULong();
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                         else if (v.IsSignedInteger) {
                             v = v.GetLong() - vv.GetLong();
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                         else if (v.IsNumber) {
                             v = v.GetDouble() - vv.GetDouble();
-                            Calculator.SetVariable(m_VarId, v);
+                            calculator.SetVariable(m_VarId, v);
                         }
                     }
                     return v;
@@ -786,7 +786,7 @@ namespace BatchCommand.Api
                 }
                 if (m_OpNum > 1) {
                     Dsl.ISyntaxComponent param = callData.GetParam(1);
-                    m_Op = Calculator.Load(param);
+                    m_Op = CodeStructure.Load(param);
                 }
                 return true;
             }
@@ -797,7 +797,7 @@ namespace BatchCommand.Api
         }
         internal sealed class AddExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count == 1) {
                     var v1 = operands[0];
@@ -840,7 +840,7 @@ namespace BatchCommand.Api
         }
         internal sealed class SubExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count == 1) {
                     var v1 = operands[0];
@@ -880,7 +880,7 @@ namespace BatchCommand.Api
         }
         internal sealed class MulExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -901,7 +901,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DivExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -922,7 +922,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ModExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -943,7 +943,7 @@ namespace BatchCommand.Api
         }
         internal sealed class BitAndExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -959,7 +959,7 @@ namespace BatchCommand.Api
         }
         internal sealed class BitOrExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -975,7 +975,7 @@ namespace BatchCommand.Api
         }
         internal sealed class BitXorExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -991,7 +991,7 @@ namespace BatchCommand.Api
         }
         internal sealed class BitNotExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 BoxedValue v;
@@ -1006,7 +1006,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LShiftExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -1022,7 +1022,7 @@ namespace BatchCommand.Api
         }
         internal sealed class RShiftExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -1038,7 +1038,7 @@ namespace BatchCommand.Api
         }
         internal sealed class MaxExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var opd1 = operands[0];
                 var opd2 = operands[1];
@@ -1065,7 +1065,7 @@ namespace BatchCommand.Api
         }
         internal sealed class MinExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var opd1 = operands[0];
                 var opd2 = operands[1];
@@ -1092,7 +1092,7 @@ namespace BatchCommand.Api
         }
         internal sealed class AbsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var opd = operands[0];
                 BoxedValue v;
@@ -1109,7 +1109,7 @@ namespace BatchCommand.Api
         }
         internal sealed class SinExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Sin(v1);
@@ -1118,7 +1118,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CosExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Cos(v1);
@@ -1127,7 +1127,7 @@ namespace BatchCommand.Api
         }
         internal sealed class TanExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Tan(v1);
@@ -1136,7 +1136,7 @@ namespace BatchCommand.Api
         }
         internal sealed class AsinExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Asin(v1);
@@ -1145,7 +1145,7 @@ namespace BatchCommand.Api
         }
         internal sealed class AcosExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Acos(v1);
@@ -1154,7 +1154,7 @@ namespace BatchCommand.Api
         }
         internal sealed class AtanExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Atan(v1);
@@ -1163,7 +1163,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Atan2Exp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 double v2 = operands[1].GetDouble();
@@ -1173,7 +1173,7 @@ namespace BatchCommand.Api
         }
         internal sealed class SinhExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Sinh(v1);
@@ -1182,7 +1182,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CoshExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Cosh(v1);
@@ -1191,7 +1191,7 @@ namespace BatchCommand.Api
         }
         internal sealed class TanhExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Tanh(v1);
@@ -1200,7 +1200,7 @@ namespace BatchCommand.Api
         }
         internal sealed class RndIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 int v1 = operands[0].GetInt();
                 int v2 = operands[1].GetInt();
@@ -1212,7 +1212,7 @@ namespace BatchCommand.Api
         }
         internal sealed class RndFloatExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 float v1 = operands[0].GetFloat();
                 float v2 = operands[1].GetFloat();
@@ -1224,7 +1224,7 @@ namespace BatchCommand.Api
         }
         internal sealed class PowExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 double v2 = operands[1].GetDouble();
@@ -1234,7 +1234,7 @@ namespace BatchCommand.Api
         }
         internal sealed class SqrtExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Sqrt(v1);
@@ -1243,7 +1243,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ExpExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Exp(v1);
@@ -1252,7 +1252,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Exp2Exp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Pow(2, v1);
@@ -1261,7 +1261,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LogExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 if (operands.Count == 1) {
@@ -1277,7 +1277,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Log2Exp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Log(v1) / Math.Log(2);
@@ -1286,7 +1286,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Log10Exp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Log10(v1);
@@ -1295,7 +1295,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FloorExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Floor(v1);
@@ -1304,7 +1304,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CeilingExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Ceiling(v1);
@@ -1313,7 +1313,7 @@ namespace BatchCommand.Api
         }
         internal sealed class RoundExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Round(v1);
@@ -1322,7 +1322,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FloorToIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = (int)Math.Floor(v1);
@@ -1331,7 +1331,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CeilingToIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = (int)Math.Ceiling(v1);
@@ -1340,7 +1340,7 @@ namespace BatchCommand.Api
         }
         internal sealed class RoundToIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = (int)Math.Round(v1);
@@ -1349,7 +1349,7 @@ namespace BatchCommand.Api
         }
         internal sealed class BoolExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 bool v1 = operands[0].GetBool();
                 BoxedValue v = v1;
@@ -1358,7 +1358,7 @@ namespace BatchCommand.Api
         }
         internal sealed class SByteExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 sbyte v1 = operands[0].GetSByte();
                 BoxedValue v = v1;
@@ -1367,7 +1367,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ByteExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 byte v1 = operands[0].GetByte();
                 BoxedValue v = v1;
@@ -1376,7 +1376,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CharExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 char v1 = operands[0].GetChar();
                 BoxedValue v = v1;
@@ -1385,7 +1385,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ShortExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 short v1 = operands[0].GetShort();
                 BoxedValue v = v1;
@@ -1394,7 +1394,7 @@ namespace BatchCommand.Api
         }
         internal sealed class UShortExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 ushort v1 = operands[0].GetUShort();
                 BoxedValue v = v1;
@@ -1403,7 +1403,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IntExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 int v1 = operands[0].GetInt();
                 BoxedValue v = v1;
@@ -1412,7 +1412,7 @@ namespace BatchCommand.Api
         }
         internal sealed class UIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 uint v1 = operands[0].GetUInt();
                 BoxedValue v = v1;
@@ -1421,7 +1421,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LongExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 long v1 = operands[0].GetLong();
                 BoxedValue v = v1;
@@ -1430,7 +1430,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ULongExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 ulong v1 = operands[0].GetULong();
                 BoxedValue v = v1;
@@ -1439,7 +1439,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FloatExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 float v1 = operands[0].GetFloat();
                 BoxedValue v = v1;
@@ -1448,7 +1448,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DoubleExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = v1;
@@ -1457,7 +1457,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DecimalExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 decimal v1 = operands[0].GetDecimal();
                 BoxedValue v = v1;
@@ -1466,7 +1466,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DateTimeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 DateTime v1 = operands[0].GetDateTime();
                 BoxedValue v = v1;
@@ -1475,7 +1475,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsObjectExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_object(v)");
@@ -1486,7 +1486,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsStringExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_string(v)");
@@ -1497,7 +1497,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsBooleanExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_boolean(v)");
@@ -1508,7 +1508,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsCharExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_char(v)");
@@ -1519,7 +1519,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsIntegerExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_integer(v)");
@@ -1530,7 +1530,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsSignedIntegerExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_signed_integer(v)");
@@ -1541,7 +1541,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsUnsignedIntegerExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_unsigned_integer(v)");
@@ -1552,7 +1552,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsNumberExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_number(v)");
@@ -1563,7 +1563,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsDateTimeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_date_time(v)");
@@ -1574,7 +1574,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsTupleExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_tuple(v)");
@@ -1585,7 +1585,7 @@ namespace BatchCommand.Api
         }
         internal sealed class BoxedValueTypeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: boxed_value_type(v)");
@@ -1596,7 +1596,7 @@ namespace BatchCommand.Api
         }
         internal sealed class BoxedValueTypeNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: boxed_value_type_name(v)");
@@ -1607,7 +1607,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ItofExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 int v1 = operands[0].GetInt();
                 float v2 = 0;
@@ -1620,7 +1620,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FtoiExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 float v1 = operands[0].GetFloat();
                 int v2 = 0;
@@ -1633,7 +1633,7 @@ namespace BatchCommand.Api
         }
         internal sealed class UtofExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 uint v1 = operands[0].GetUInt();
                 float v2 = 0;
@@ -1646,7 +1646,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FtouExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 float v1 = operands[0].GetFloat();
                 uint v2 = 0;
@@ -1659,7 +1659,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LtodExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 long v1 = operands[0].GetLong();
                 double v2 = 0;
@@ -1672,7 +1672,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DtolExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 long v2 = 0;
@@ -1685,7 +1685,7 @@ namespace BatchCommand.Api
         }
         internal sealed class UtodExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 ulong v1 = operands[0].GetULong();
                 double v2 = 0;
@@ -1698,7 +1698,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DtouExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 ulong v2 = 0;
@@ -1711,7 +1711,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LerpExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double a = operands[0].GetDouble();
                 double b = operands[1].GetDouble();
@@ -1723,7 +1723,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LerpUnclampedExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double a = operands[0].GetDouble();
                 double b = operands[1].GetDouble();
@@ -1734,7 +1734,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LerpAngleExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double a = operands[0].GetDouble();
                 double b = operands[1].GetDouble();
@@ -1754,7 +1754,7 @@ namespace BatchCommand.Api
         }
         internal sealed class SmoothStepExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double from = operands[0].GetDouble();
                 double to = operands[1].GetDouble();
@@ -1767,7 +1767,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Clamp01Exp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 BoxedValue v = ClampExp.Clamp01(v1);
@@ -1776,7 +1776,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ClampExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 double v2 = operands[1].GetDouble();
@@ -1824,7 +1824,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ApproximatelyExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 float v1 = operands[0].GetFloat();
                 float v2 = operands[1].GetFloat();
@@ -1839,7 +1839,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsPowerOfTwoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 int v1 = operands[0].GetInt();
                 int v = IsPowerOfTwo(v1) ? 1 : 0;
@@ -1854,7 +1854,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ClosestPowerOfTwoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 int v1 = operands[0].GetInt();
                 int v = ClosestPowerOfTwo(v1);
@@ -1869,7 +1869,7 @@ namespace BatchCommand.Api
         }
         internal sealed class NextPowerOfTwoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 int v1 = operands[0].GetInt();
                 int v = NextPowerOfTwo(v1);
@@ -1884,7 +1884,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DistExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 float x1 = (float)operands[0].GetDouble();
                 float y1 = (float)operands[1].GetDouble();
@@ -1896,7 +1896,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DistSqrExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 float x1 = (float)operands[0].GetDouble();
                 float y1 = (float)operands[1].GetDouble();
@@ -1908,7 +1908,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GreatExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 double v2 = operands[1].GetDouble();
@@ -1918,7 +1918,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GreatEqualExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 double v2 = operands[1].GetDouble();
@@ -1928,7 +1928,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LessExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 double v2 = operands[1].GetDouble();
@@ -1938,7 +1938,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LessEqualExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 double v1 = operands[0].GetDouble();
                 double v2 = operands[1].GetDouble();
@@ -1948,7 +1948,7 @@ namespace BatchCommand.Api
         }
         internal sealed class EqualExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -1958,7 +1958,7 @@ namespace BatchCommand.Api
         }
         internal sealed class NotEqualExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var v1 = operands[0];
                 var v2 = operands[1];
@@ -1968,11 +1968,11 @@ namespace BatchCommand.Api
         }
         internal sealed class AndExp : AbstractExpression
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
-                long v1 = m_Op1.Calc().GetLong();
+                long v1 = m_Op1.Calc(calculator).GetLong();
                 long v2 = 0;
-                BoxedValue v = v1 != 0 && (v2 = m_Op2.Calc().GetLong()) != 0 ? 1 : 0;
+                BoxedValue v = v1 != 0 && (v2 = m_Op2.Calc(calculator).GetLong()) != 0 ? 1 : 0;
                 return v;
             }
             protected override bool Load(IList<IExpression> exps)
@@ -1987,11 +1987,11 @@ namespace BatchCommand.Api
         }
         internal sealed class OrExp : AbstractExpression
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
-                long v1 = m_Op1.Calc().GetLong();
+                long v1 = m_Op1.Calc(calculator).GetLong();
                 long v2 = 0;
-                BoxedValue v = v1 != 0 || (v2 = m_Op2.Calc().GetLong()) != 0 ? 1 : 0;
+                BoxedValue v = v1 != 0 || (v2 = m_Op2.Calc(calculator).GetLong()) != 0 ? 1 : 0;
                 return v;
             }
             protected override bool Load(IList<IExpression> exps)
@@ -2006,7 +2006,7 @@ namespace BatchCommand.Api
         }
         internal sealed class NotExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 long val = operands[0].GetLong();
                 BoxedValue v = val == 0 ? 1 : 0;
@@ -2015,12 +2015,12 @@ namespace BatchCommand.Api
         }
         internal sealed class CondExp : AbstractExpression
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
-                var v1 = m_Op1.Calc();
+                var v1 = m_Op1.Calc(calculator);
                 var v2 = BoxedValue.NullObject;
                 BoxedValue v3 = BoxedValue.NullObject;
-                BoxedValue v = v1.GetLong() != 0 ? v2 = m_Op2.Calc() : v3 = m_Op3.Calc();
+                BoxedValue v = v1.GetLong() != 0 ? v2 = m_Op2.Calc(calculator) : v3 = m_Op3.Calc(calculator);
                 return v;
             }
             protected override bool Load(Dsl.FunctionData funcData)
@@ -2029,13 +2029,13 @@ namespace BatchCommand.Api
                     Dsl.ISyntaxComponent cond = funcData.GetParam(0);
                     Dsl.ISyntaxComponent op1 = funcData.GetParam(1);
                     Dsl.ISyntaxComponent op2 = funcData.GetParam(2);
-                    m_Op1 = Calculator.Load(cond);
-                    m_Op2 = Calculator.Load(op1);
-                    m_Op3 = Calculator.Load(op2);
+                    m_Op1 = CodeStructure.Load(cond);
+                    m_Op2 = CodeStructure.Load(op1);
+                    m_Op3 = CodeStructure.Load(op2);
                 }
                 else {
                     //error
-                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                    CodeStructure.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
                 }
                 return true;
             }
@@ -2047,13 +2047,13 @@ namespace BatchCommand.Api
                     Dsl.ISyntaxComponent cond = funcData1.LowerOrderFunction.GetParam(0);
                     Dsl.ISyntaxComponent op1 = funcData1.GetParam(0);
                     Dsl.ISyntaxComponent op2 = funcData2.GetParam(0);
-                    m_Op1 = Calculator.Load(cond);
-                    m_Op2 = Calculator.Load(op1);
-                    m_Op3 = Calculator.Load(op2);
+                    m_Op1 = CodeStructure.Load(cond);
+                    m_Op2 = CodeStructure.Load(op1);
+                    m_Op3 = CodeStructure.Load(op2);
                 }
                 else {
                     //error
-                    Calculator.Log("DslCalculator error, {0} line {1}", statementData.ToScriptString(false, Dsl.DelimiterInfo.Default), statementData.GetLine());
+                    CodeStructure.Log("DslCalculator error, {0} line {1}", statementData.ToScriptString(false, Dsl.DelimiterInfo.Default), statementData.GetLine());
                 }
                 return true;
             }
@@ -2065,18 +2065,18 @@ namespace BatchCommand.Api
         internal sealed class IfExp : AbstractExpression
         {
             public override bool IsAsync { get { return m_IsAsync; } }
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 BoxedValue v = 0;
                 for (int ix = 0; ix < m_Clauses.Count; ++ix) {
                     var clause = m_Clauses[ix];
                     if (null != clause.Condition) {
-                        var condVal = clause.Condition.Calc();
+                        var condVal = clause.Condition.Calc(calculator);
                         if (condVal.GetLong() != 0) {
                             for (int index = 0; index < clause.Expressions.Count; ++index) {
-                                BoxedValue tv = clause.Expressions[index].Calc();
-                                if (Calculator.RunState != RunStateEnum.Normal) {
-                                    if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                BoxedValue tv = clause.Expressions[index].Calc(calculator);
+                                if (calculator.RunState != RunStateEnum.Normal) {
+                                    if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                         v = tv;
                                     }
                                     return v;
@@ -2090,9 +2090,9 @@ namespace BatchCommand.Api
                     }
                     else if (ix == m_Clauses.Count - 1) {
                         for (int index = 0; index < clause.Expressions.Count; ++index) {
-                            BoxedValue tv = clause.Expressions[index].Calc();
-                            if (Calculator.RunState != RunStateEnum.Normal) {
-                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                            BoxedValue tv = clause.Expressions[index].Calc(calculator);
+                            if (calculator.RunState != RunStateEnum.Normal) {
+                                if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                     v = tv;
                                 }
                                 return v;
@@ -2106,7 +2106,7 @@ namespace BatchCommand.Api
                 }
                 return v;
             }
-            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            protected override IEnumerator DoCalc(DslCalculator calculator, AsyncCalcResult result)
             {
                 BoxedValue v = 0;
                 for (int ix = 0; ix < m_Clauses.Count; ++ix) {
@@ -2114,7 +2114,7 @@ namespace BatchCommand.Api
                     if (null != clause.Condition) {
                         BoxedValue condVal;
                         if (clause.Condition.IsAsync) {
-                            var _ei1 = clause.Condition.Calc(result);
+                            var _ei1 = clause.Condition.Calc(calculator, result);
                             try {
                                 while (_ei1.MoveNext()) { yield return _ei1.Current; }
                                 condVal = result.Value;
@@ -2124,14 +2124,14 @@ namespace BatchCommand.Api
                             }
                         }
                         else {
-                            condVal = clause.Condition.Calc();
+                            condVal = clause.Condition.Calc(calculator);
                         }
                         if (condVal.GetLong() != 0) {
                             for (int index = 0; index < clause.Expressions.Count; ++index) {
                                 var exp = clause.Expressions[index];
                                 BoxedValue tv;
                                 if (exp.IsAsync) {
-                                    var _ei2 = exp.Calc(result);
+                                    var _ei2 = exp.Calc(calculator, result);
                                     try {
                                         while (_ei2.MoveNext()) { yield return _ei2.Current; }
                                         tv = result.Value;
@@ -2141,10 +2141,10 @@ namespace BatchCommand.Api
                                     }
                                 }
                                 else {
-                                    tv = exp.Calc();
+                                    tv = exp.Calc(calculator);
                                 }
-                                if (Calculator.RunState != RunStateEnum.Normal) {
-                                    if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                if (calculator.RunState != RunStateEnum.Normal) {
+                                    if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                         v = tv;
                                     }
                                     result.Value = v;
@@ -2162,7 +2162,7 @@ namespace BatchCommand.Api
                             var exp = clause.Expressions[index];
                             BoxedValue tv;
                             if (exp.IsAsync) {
-                                var _ei3 = exp.Calc(result);
+                                var _ei3 = exp.Calc(calculator, result);
                                 try {
                                     while (_ei3.MoveNext()) { yield return _ei3.Current; }
                                     tv = result.Value;
@@ -2172,10 +2172,10 @@ namespace BatchCommand.Api
                                 }
                             }
                             else {
-                                tv = exp.Calc();
+                                tv = exp.Calc(calculator);
                             }
-                            if (Calculator.RunState != RunStateEnum.Normal) {
-                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                            if (calculator.RunState != RunStateEnum.Normal) {
+                                if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                     v = tv;
                                 }
                                 result.Value = v;
@@ -2195,16 +2195,16 @@ namespace BatchCommand.Api
                 if (funcData.IsHighOrder) {
                     Dsl.ISyntaxComponent cond = funcData.LowerOrderFunction.GetParam(0);
                     IfExp.Clause item = new IfExp.Clause();
-                    item.Condition = Calculator.Load(cond);
+                    item.Condition = CodeStructure.Load(cond);
                     for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
-                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        IExpression subExp = CodeStructure.Load(funcData.GetParam(ix));
                         item.Expressions.Add(subExp);
                     }
                     m_Clauses.Add(item);
                 }
                 else {
                     //error
-                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                    CodeStructure.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
                 }
                 UpdateIsAsync();
                 return true;
@@ -2224,13 +2224,13 @@ namespace BatchCommand.Api
                         IfExp.Clause item = new IfExp.Clause();
                         if (first.GetParamNum() > 0) {
                             Dsl.ISyntaxComponent cond = first.GetParam(0);
-                            item.Condition = Calculator.Load(cond);
+                            item.Condition = CodeStructure.Load(cond);
                         }
                         else {
                             //error
-                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                            CodeStructure.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
                         }
-                        IExpression subExp = Calculator.Load(statementData.Second);
+                        IExpression subExp = CodeStructure.Load(statementData.Second);
                         item.Expressions.Add(subExp);
                         m_Clauses.Add(item);
                         UpdateIsAsync();
@@ -2244,14 +2244,14 @@ namespace BatchCommand.Api
                         IfExp.Clause item = new IfExp.Clause();
                         if (fData.IsHighOrder && fData.LowerOrderFunction.GetParamNum() > 0) {
                             Dsl.ISyntaxComponent cond = fData.LowerOrderFunction.GetParam(0);
-                            item.Condition = Calculator.Load(cond);
+                            item.Condition = CodeStructure.Load(cond);
                         }
                         else {
                             //error
-                            Calculator.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
+                            CodeStructure.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
                         }
                         for (int ix = 0; ix < fData.GetParamNum(); ++ix) {
-                            IExpression subExp = Calculator.Load(fData.GetParam(ix));
+                            IExpression subExp = CodeStructure.Load(fData.GetParam(ix));
                             item.Expressions.Add(subExp);
                         }
                         m_Clauses.Add(item);
@@ -2259,12 +2259,12 @@ namespace BatchCommand.Api
                     else if (fData.GetId() == "else") {
                         if (fData != statementData.Last) {
                             //error
-                            Calculator.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
+                            CodeStructure.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
                         }
                         else {
                             IfExp.Clause item = new IfExp.Clause();
                             for (int ix = 0; ix < fData.GetParamNum(); ++ix) {
-                                IExpression subExp = Calculator.Load(fData.GetParam(ix));
+                                IExpression subExp = CodeStructure.Load(fData.GetParam(ix));
                                 item.Expressions.Add(subExp);
                             }
                             m_Clauses.Add(item);
@@ -2272,7 +2272,7 @@ namespace BatchCommand.Api
                     }
                     else {
                         //error
-                        Calculator.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
+                        CodeStructure.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
                     }
                 }
                 UpdateIsAsync();
@@ -2302,24 +2302,24 @@ namespace BatchCommand.Api
         internal sealed class WhileExp : AbstractExpression
         {
             public override bool IsAsync { get { return m_IsAsync; } }
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 BoxedValue v = 0;
                 for (; ; ) {
-                    var condVal = m_Condition.Calc();
+                    var condVal = m_Condition.Calc(calculator);
                     if (condVal.GetLong() != 0) {
                         for (int index = 0; index < m_Expressions.Count; ++index) {
-                            BoxedValue tv = m_Expressions[index].Calc();
-                            if (Calculator.RunState == RunStateEnum.Continue) {
-                                Calculator.RunState = RunStateEnum.Normal;
+                            BoxedValue tv = m_Expressions[index].Calc(calculator);
+                            if (calculator.RunState == RunStateEnum.Continue) {
+                                calculator.RunState = RunStateEnum.Normal;
                                 break;
                             }
-                            else if (Calculator.RunState != RunStateEnum.Normal) {
-                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                            else if (calculator.RunState != RunStateEnum.Normal) {
+                                if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                     v = tv;
                                 }
-                                if (Calculator.RunState == RunStateEnum.Break)
-                                    Calculator.RunState = RunStateEnum.Normal;
+                                if (calculator.RunState == RunStateEnum.Break)
+                                    calculator.RunState = RunStateEnum.Normal;
                                 return v;
                             }
                             else {
@@ -2333,13 +2333,13 @@ namespace BatchCommand.Api
                 }
                 return v;
             }
-            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            protected override IEnumerator DoCalc(DslCalculator calculator, AsyncCalcResult result)
             {
                 BoxedValue v = 0;
                 for (; ; ) {
                     BoxedValue condVal;
                     if (m_Condition.IsAsync) {
-                        var _ei1 = m_Condition.Calc(result);
+                        var _ei1 = m_Condition.Calc(calculator, result);
                         try {
                             while (_ei1.MoveNext()) { yield return _ei1.Current; }
                             condVal = result.Value;
@@ -2349,14 +2349,14 @@ namespace BatchCommand.Api
                         }
                     }
                     else {
-                        condVal = m_Condition.Calc();
+                        condVal = m_Condition.Calc(calculator);
                     }
                     if (condVal.GetLong() != 0) {
                         for (int index = 0; index < m_Expressions.Count; ++index) {
                             var exp = m_Expressions[index];
                             BoxedValue tv;
                             if (exp.IsAsync) {
-                                var _ei2 = exp.Calc(result);
+                                var _ei2 = exp.Calc(calculator, result);
                                 try {
                                     while (_ei2.MoveNext()) { yield return _ei2.Current; }
                                     tv = result.Value;
@@ -2366,18 +2366,18 @@ namespace BatchCommand.Api
                                 }
                             }
                             else {
-                                tv = exp.Calc();
+                                tv = exp.Calc(calculator);
                             }
-                            if (Calculator.RunState == RunStateEnum.Continue) {
-                                Calculator.RunState = RunStateEnum.Normal;
+                            if (calculator.RunState == RunStateEnum.Continue) {
+                                calculator.RunState = RunStateEnum.Normal;
                                 break;
                             }
-                            else if (Calculator.RunState != RunStateEnum.Normal) {
-                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                            else if (calculator.RunState != RunStateEnum.Normal) {
+                                if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                     v = tv;
                                 }
-                                if (Calculator.RunState == RunStateEnum.Break)
-                                    Calculator.RunState = RunStateEnum.Normal;
+                                if (calculator.RunState == RunStateEnum.Break)
+                                    calculator.RunState = RunStateEnum.Normal;
                                 result.Value = v;
                                 yield break;
                             }
@@ -2396,15 +2396,15 @@ namespace BatchCommand.Api
             {
                 if (funcData.IsHighOrder) {
                     Dsl.ISyntaxComponent cond = funcData.LowerOrderFunction.GetParam(0);
-                    m_Condition = Calculator.Load(cond);
+                    m_Condition = CodeStructure.Load(cond);
                     for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
-                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        IExpression subExp = CodeStructure.Load(funcData.GetParam(ix));
                         m_Expressions.Add(subExp);
                     }
                 }
                 else {
                     //error
-                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                    CodeStructure.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
                 }
                 UpdateIsAsync();
                 return true;
@@ -2422,13 +2422,13 @@ namespace BatchCommand.Api
                             !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
                         if (first.GetParamNum() > 0) {
                             Dsl.ISyntaxComponent cond = first.GetParam(0);
-                            m_Condition = Calculator.Load(cond);
+                            m_Condition = CodeStructure.Load(cond);
                         }
                         else {
                             //error
-                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                            CodeStructure.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
                         }
-                        IExpression subExp = Calculator.Load(statementData.Second);
+                        IExpression subExp = CodeStructure.Load(statementData.Second);
                         m_Expressions.Add(subExp);
                         UpdateIsAsync();
                         return true;
@@ -2459,25 +2459,25 @@ namespace BatchCommand.Api
         internal sealed class LoopExp : AbstractExpression
         {
             public override bool IsAsync { get { return m_IsAsync; } }
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 BoxedValue v = 0;
-                var count = m_Count.Calc();
+                var count = m_Count.Calc(calculator);
                 long ct = count.GetLong();
                 for (int i = 0; i < ct; ++i) {
-                    Calculator.SetVariable("$$", i);
+                    calculator.SetVariable("$$", i);
                     for (int index = 0; index < m_Expressions.Count; ++index) {
-                        BoxedValue tv = m_Expressions[index].Calc();
-                        if (Calculator.RunState == RunStateEnum.Continue) {
-                            Calculator.RunState = RunStateEnum.Normal;
+                        BoxedValue tv = m_Expressions[index].Calc(calculator);
+                        if (calculator.RunState == RunStateEnum.Continue) {
+                            calculator.RunState = RunStateEnum.Normal;
                             break;
                         }
-                        else if (Calculator.RunState != RunStateEnum.Normal) {
-                            if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                        else if (calculator.RunState != RunStateEnum.Normal) {
+                            if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                 v = tv;
                             }
-                            if (Calculator.RunState == RunStateEnum.Break)
-                                Calculator.RunState = RunStateEnum.Normal;
+                            if (calculator.RunState == RunStateEnum.Break)
+                                calculator.RunState = RunStateEnum.Normal;
                             return v;
                         }
                         else {
@@ -2487,12 +2487,12 @@ namespace BatchCommand.Api
                 }
                 return v;
             }
-            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            protected override IEnumerator DoCalc(DslCalculator calculator, AsyncCalcResult result)
             {
                 BoxedValue v = 0;
                 BoxedValue countVal;
                 if (m_Count.IsAsync) {
-                    var _ei1 = m_Count.Calc(result);
+                    var _ei1 = m_Count.Calc(calculator, result);
                     try {
                         while (_ei1.MoveNext()) { yield return _ei1.Current; }
                         countVal = result.Value;
@@ -2502,16 +2502,16 @@ namespace BatchCommand.Api
                     }
                 }
                 else {
-                    countVal = m_Count.Calc();
+                    countVal = m_Count.Calc(calculator);
                 }
                 long ct = countVal.GetLong();
                 for (int i = 0; i < ct; ++i) {
-                    Calculator.SetVariable("$$", i);
+                    calculator.SetVariable("$$", i);
                     for (int index = 0; index < m_Expressions.Count; ++index) {
                         var exp = m_Expressions[index];
                         BoxedValue tv;
                         if (exp.IsAsync) {
-                            var _ei2 = exp.Calc(result);
+                            var _ei2 = exp.Calc(calculator, result);
                             try {
                                 while (_ei2.MoveNext()) { yield return _ei2.Current; }
                                 tv = result.Value;
@@ -2521,18 +2521,18 @@ namespace BatchCommand.Api
                             }
                         }
                         else {
-                            tv = exp.Calc();
+                            tv = exp.Calc(calculator);
                         }
-                        if (Calculator.RunState == RunStateEnum.Continue) {
-                            Calculator.RunState = RunStateEnum.Normal;
+                        if (calculator.RunState == RunStateEnum.Continue) {
+                            calculator.RunState = RunStateEnum.Normal;
                             break;
                         }
-                        else if (Calculator.RunState != RunStateEnum.Normal) {
-                            if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                        else if (calculator.RunState != RunStateEnum.Normal) {
+                            if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                 v = tv;
                             }
-                            if (Calculator.RunState == RunStateEnum.Break)
-                                Calculator.RunState = RunStateEnum.Normal;
+                            if (calculator.RunState == RunStateEnum.Break)
+                                calculator.RunState = RunStateEnum.Normal;
                             result.Value = v;
                             yield break;
                         }
@@ -2547,15 +2547,15 @@ namespace BatchCommand.Api
             {
                 if (funcData.IsHighOrder) {
                     Dsl.ISyntaxComponent count = funcData.LowerOrderFunction.GetParam(0);
-                    m_Count = Calculator.Load(count);
+                    m_Count = CodeStructure.Load(count);
                     for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
-                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        IExpression subExp = CodeStructure.Load(funcData.GetParam(ix));
                         m_Expressions.Add(subExp);
                     }
                 }
                 else {
                     //error
-                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                    CodeStructure.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
                 }
                 UpdateIsAsync();
                 return true;
@@ -2573,13 +2573,13 @@ namespace BatchCommand.Api
                             !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
                         if (first.GetParamNum() > 0) {
                             Dsl.ISyntaxComponent exp = first.GetParam(0);
-                            m_Count = Calculator.Load(exp);
+                            m_Count = CodeStructure.Load(exp);
                         }
                         else {
                             //error
-                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                            CodeStructure.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
                         }
-                        IExpression subExp = Calculator.Load(statementData.Second);
+                        IExpression subExp = CodeStructure.Load(statementData.Second);
                         m_Expressions.Add(subExp);
                         UpdateIsAsync();
                         return true;
@@ -2610,17 +2610,17 @@ namespace BatchCommand.Api
         internal sealed class LoopListExp : AbstractExpression
         {
             public override bool IsAsync { get { return m_IsAsync; } }
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 BoxedValue v = 0;
-                var list = m_List.Calc();
+                var list = m_List.Calc(calculator);
                 IEnumerable obj = list.As<IEnumerable>();
                 if (null != obj && obj is IEnumerable<BoxedValue> bvEnumer) {
                     var enumer = bvEnumer.GetEnumerator();
                     try {
                         while (enumer.MoveNext()) {
                             var val = enumer.Current;
-                            if (LoopOnce(val, ref v))
+                            if (LoopOnce(calculator, val, ref v))
                                 return v;
                         }
                     }
@@ -2633,7 +2633,7 @@ namespace BatchCommand.Api
                     try {
                         while (enumer.MoveNext()) {
                             var val = BoxedValue.FromObject(enumer.Current);
-                            if (LoopOnce(val, ref v))
+                            if (LoopOnce(calculator, val, ref v))
                                 return v;
                         }
                     }
@@ -2647,15 +2647,15 @@ namespace BatchCommand.Api
             {
                 if (funcData.IsHighOrder) {
                     Dsl.ISyntaxComponent list = funcData.LowerOrderFunction.GetParam(0);
-                    m_List = Calculator.Load(list);
+                    m_List = CodeStructure.Load(list);
                     for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
-                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        IExpression subExp = CodeStructure.Load(funcData.GetParam(ix));
                         m_Expressions.Add(subExp);
                     }
                 }
                 else {
                     //error
-                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                    CodeStructure.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
                 }
                 UpdateIsAsync();
                 return true;
@@ -2673,13 +2673,13 @@ namespace BatchCommand.Api
                             !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
                         if (first.GetParamNum() > 0) {
                             Dsl.ISyntaxComponent exp = first.GetParam(0);
-                            m_List = Calculator.Load(exp);
+                            m_List = CodeStructure.Load(exp);
                         }
                         else {
                             //error
-                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                            CodeStructure.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
                         }
-                        IExpression subExp = Calculator.Load(statementData.Second);
+                        IExpression subExp = CodeStructure.Load(statementData.Second);
                         m_Expressions.Add(subExp);
                         UpdateIsAsync();
                         return true;
@@ -2687,21 +2687,21 @@ namespace BatchCommand.Api
                 }
                 return false;
             }
-            private bool LoopOnce(in BoxedValue val, ref BoxedValue ret)
+            private bool LoopOnce(DslCalculator calculator, in BoxedValue val, ref BoxedValue ret)
             {
-                Calculator.SetVariable("$$", val);
+                calculator.SetVariable("$$", val);
                 for (int index = 0; index < m_Expressions.Count; ++index) {
-                    BoxedValue v = m_Expressions[index].Calc();
-                    if (Calculator.RunState == RunStateEnum.Continue) {
-                        Calculator.RunState = RunStateEnum.Normal;
+                    BoxedValue v = m_Expressions[index].Calc(calculator);
+                    if (calculator.RunState == RunStateEnum.Continue) {
+                        calculator.RunState = RunStateEnum.Normal;
                         break;
                     }
-                    else if (Calculator.RunState != RunStateEnum.Normal) {
-                        if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                    else if (calculator.RunState != RunStateEnum.Normal) {
+                        if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                             ret = v;
                         }
-                        if (Calculator.RunState == RunStateEnum.Break)
-                            Calculator.RunState = RunStateEnum.Normal;
+                        if (calculator.RunState == RunStateEnum.Break)
+                            calculator.RunState = RunStateEnum.Normal;
                         return true;
                     }
                     else {
@@ -2710,12 +2710,12 @@ namespace BatchCommand.Api
                 }
                 return false;
             }
-            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            protected override IEnumerator DoCalc(DslCalculator calculator, AsyncCalcResult result)
             {
                 BoxedValue v = 0;
                 var listResult = new AsyncCalcResult();
                 if (m_List.IsAsync) {
-                    var _ei1 = m_List.Calc(listResult);
+                    var _ei1 = m_List.Calc(calculator, listResult);
                     try {
                         while (_ei1.MoveNext()) { yield return _ei1.Current; }
                     }
@@ -2724,7 +2724,7 @@ namespace BatchCommand.Api
                     }
                 }
                 else {
-                    listResult.Value = m_List.Calc();
+                    listResult.Value = m_List.Calc(calculator);
                 }
                 var list = listResult.Value;
                 IEnumerable obj = list.As<IEnumerable>();
@@ -2734,7 +2734,7 @@ namespace BatchCommand.Api
                         while (enumer.MoveNext()) {
                             var val = enumer.Current;
                             var loopResult = new AsyncCalcResult();
-                            var _ei2 = LoopOnceAsync(val, loopResult);
+                            var _ei2 = LoopOnceAsync(calculator, val, loopResult);
                             try {
                                 while (_ei2.MoveNext()) { yield return _ei2.Current; }
                             }
@@ -2757,7 +2757,7 @@ namespace BatchCommand.Api
                         while (enumer.MoveNext()) {
                             var val = BoxedValue.FromObject(enumer.Current);
                             var loopResult = new AsyncCalcResult();
-                            var _ei3 = LoopOnceAsync(val, loopResult);
+                            var _ei3 = LoopOnceAsync(calculator, val, loopResult);
                             try {
                                 while (_ei3.MoveNext()) { yield return _ei3.Current; }
                             }
@@ -2776,15 +2776,15 @@ namespace BatchCommand.Api
                 }
                 result.Value = v;
             }
-            private IEnumerator LoopOnceAsync(BoxedValue val, AsyncCalcResult loopResult)
+            private IEnumerator LoopOnceAsync(DslCalculator calculator, BoxedValue val, AsyncCalcResult loopResult)
             {
-                Calculator.SetVariable("$$", val);
+                calculator.SetVariable("$$", val);
                 for (int index = 0; index < m_Expressions.Count; ++index) {
                     var exp = m_Expressions[index];
                     BoxedValue v;
                     if (exp.IsAsync) {
                         var subResult = new AsyncCalcResult();
-                        var _ei = exp.Calc(subResult);
+                        var _ei = exp.Calc(calculator, subResult);
                         try {
                             while (_ei.MoveNext()) { yield return _ei.Current; }
                             v = subResult.Value;
@@ -2794,18 +2794,18 @@ namespace BatchCommand.Api
                         }
                     }
                     else {
-                        v = exp.Calc();
+                        v = exp.Calc(calculator);
                     }
-                    if (Calculator.RunState == RunStateEnum.Continue) {
-                        Calculator.RunState = RunStateEnum.Normal;
+                    if (calculator.RunState == RunStateEnum.Continue) {
+                        calculator.RunState = RunStateEnum.Normal;
                         break;
                     }
-                    else if (Calculator.RunState != RunStateEnum.Normal) {
-                        if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                    else if (calculator.RunState != RunStateEnum.Normal) {
+                        if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                             loopResult.Value = v;
                         }
-                        if (Calculator.RunState == RunStateEnum.Break)
-                            Calculator.RunState = RunStateEnum.Normal;
+                        if (calculator.RunState == RunStateEnum.Break)
+                            calculator.RunState = RunStateEnum.Normal;
                         loopResult.IsBreak = true;
                         yield break;
                     }
@@ -2837,31 +2837,31 @@ namespace BatchCommand.Api
         internal sealed class ForEachValueExp : AbstractExpression
         {
             public override bool IsAsync { get { return m_IsAsync; } }
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 BoxedValue v = 0;
                 List<BoxedValue> list = new List<BoxedValue>();
                 for (int ix = 0; ix < m_Elements.Count; ++ix) {
-                    var val = m_Elements[ix].Calc();
+                    var val = m_Elements[ix].Calc(calculator);
                     list.Add(val);
                 }
                 var enumer = list.GetEnumerator();
                 try {
                     while (enumer.MoveNext()) {
                         var val = enumer.Current;
-                        Calculator.SetVariable("$$", val);
+                        calculator.SetVariable("$$", val);
                         for (int index = 0; index < m_Expressions.Count; ++index) {
-                            BoxedValue tv = m_Expressions[index].Calc();
-                            if (Calculator.RunState == RunStateEnum.Continue) {
-                                Calculator.RunState = RunStateEnum.Normal;
+                            BoxedValue tv = m_Expressions[index].Calc(calculator);
+                            if (calculator.RunState == RunStateEnum.Continue) {
+                                calculator.RunState = RunStateEnum.Normal;
                                 break;
                             }
-                            else if (Calculator.RunState != RunStateEnum.Normal) {
-                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                            else if (calculator.RunState != RunStateEnum.Normal) {
+                                if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                     v = tv;
                                 }
-                                if (Calculator.RunState == RunStateEnum.Break)
-                                    Calculator.RunState = RunStateEnum.Normal;
+                                if (calculator.RunState == RunStateEnum.Break)
+                                    calculator.RunState = RunStateEnum.Normal;
                                 return v;
                             }
                             else {
@@ -2875,7 +2875,7 @@ namespace BatchCommand.Api
                 }
                 return v;
             }
-            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            protected override IEnumerator DoCalc(DslCalculator calculator, AsyncCalcResult result)
             {
                 BoxedValue v = 0;
                 List<BoxedValue> list = new List<BoxedValue>();
@@ -2883,7 +2883,7 @@ namespace BatchCommand.Api
                     var exp = m_Elements[ix];
                     if (exp.IsAsync) {
                         var subResult = new AsyncCalcResult();
-                        var _ei1 = exp.Calc(subResult);
+                        var _ei1 = exp.Calc(calculator, subResult);
                         try {
                             while (_ei1.MoveNext()) { yield return _ei1.Current; }
                         }
@@ -2893,20 +2893,20 @@ namespace BatchCommand.Api
                         list.Add(subResult.Value);
                     }
                     else {
-                        list.Add(exp.Calc());
+                        list.Add(exp.Calc(calculator));
                     }
                 }
                 var enumer = list.GetEnumerator();
                 try {
                     while (enumer.MoveNext()) {
                         var val = enumer.Current;
-                        Calculator.SetVariable("$$", val);
+                        calculator.SetVariable("$$", val);
                         for (int index = 0; index < m_Expressions.Count; ++index) {
                             var exp = m_Expressions[index];
                             BoxedValue tv;
                             if (exp.IsAsync) {
                                 var subResult = new AsyncCalcResult();
-                                var _ei2 = exp.Calc(subResult);
+                                var _ei2 = exp.Calc(calculator, subResult);
                                 try {
                                     while (_ei2.MoveNext()) { yield return _ei2.Current; }
                                 }
@@ -2916,18 +2916,18 @@ namespace BatchCommand.Api
                                 tv = subResult.Value;
                             }
                             else {
-                                tv = exp.Calc();
+                                tv = exp.Calc(calculator);
                             }
-                            if (Calculator.RunState == RunStateEnum.Continue) {
-                                Calculator.RunState = RunStateEnum.Normal;
+                            if (calculator.RunState == RunStateEnum.Continue) {
+                                calculator.RunState = RunStateEnum.Normal;
                                 break;
                             }
-                            else if (Calculator.RunState != RunStateEnum.Normal) {
-                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                            else if (calculator.RunState != RunStateEnum.Normal) {
+                                if (calculator.RunState == RunStateEnum.Return || calculator.RunState == RunStateEnum.Redirect) {
                                     v = tv;
                                 }
-                                if (Calculator.RunState == RunStateEnum.Break)
-                                    Calculator.RunState = RunStateEnum.Normal;
+                                if (calculator.RunState == RunStateEnum.Break)
+                                    calculator.RunState = RunStateEnum.Normal;
                                 result.Value = v;
                                 yield break;
                             }
@@ -2949,13 +2949,13 @@ namespace BatchCommand.Api
                     int num = callData.GetParamNum();
                     for (int ix = 0; ix < num; ++ix) {
                         Dsl.ISyntaxComponent exp = callData.GetParam(ix);
-                        m_Elements.Add(Calculator.Load(exp));
+                        m_Elements.Add(CodeStructure.Load(exp));
                     }
                 }
                 if (funcData.HaveStatement()) {
                     int fnum = funcData.GetParamNum();
                     for (int ix = 0; ix < fnum; ++ix) {
-                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        IExpression subExp = CodeStructure.Load(funcData.GetParam(ix));
                         m_Expressions.Add(subExp);
                     }
                 }
@@ -2977,14 +2977,14 @@ namespace BatchCommand.Api
                         if (num > 0) {
                             for (int ix = 0; ix < num; ++ix) {
                                 Dsl.ISyntaxComponent exp = first.GetParam(ix);
-                                m_Elements.Add(Calculator.Load(exp));
+                                m_Elements.Add(CodeStructure.Load(exp));
                             }
                         }
                         else {
                             //error
-                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                            CodeStructure.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
                         }
-                        IExpression subExp = Calculator.Load(statementData.Second);
+                        IExpression subExp = CodeStructure.Load(statementData.Second);
                         m_Expressions.Add(subExp);
                         UpdateIsAsync();
                         return true;
@@ -3017,7 +3017,7 @@ namespace BatchCommand.Api
         }
         internal sealed class TupleExp : AbstractExpression
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 BoxedValue v;
                 int num = m_Expressions.Count;
@@ -3025,7 +3025,7 @@ namespace BatchCommand.Api
                     v = BoxedValue.NullObject;
                 }
                 else {
-                    v = PackValues(0);
+                    v = PackValues(calculator, 0);
                 }
                 return v;
             }
@@ -3034,11 +3034,11 @@ namespace BatchCommand.Api
                 int num = callData.GetParamNum();
                 for (int i = 0; i < num; ++i) {
                     Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
+                    m_Expressions.Add(CodeStructure.Load(param));
                 }
                 return true;
             }
-            private BoxedValue PackValues(int start)
+            private BoxedValue PackValues(DslCalculator calculator, int start)
             {
                 const int c_MaxTupleElementNum = 8;
                 BoxedValue v1 = BoxedValue.NullObject, v2 = BoxedValue.NullObject, v3 = BoxedValue.NullObject, v4 = BoxedValue.NullObject, v5 = BoxedValue.NullObject, v6 = BoxedValue.NullObject, v7 = BoxedValue.NullObject, v8 = BoxedValue.NullObject;
@@ -3048,54 +3048,54 @@ namespace BatchCommand.Api
                     var exp = m_Expressions[start + ix];
                     switch (ix) {
                         case 0:
-                            v1 = exp.Calc();
+                            v1 = exp.Calc(calculator);
                             if (num == 1) {
                                 return new TupleValue1(v1);
                             }
                             break;
                         case 1:
-                            v2 = exp.Calc();
+                            v2 = exp.Calc(calculator);
                             if (num == 2) {
                                 return new TupleValue2(v1, v2);
                             }
                             break;
                         case 2:
-                            v3 = exp.Calc();
+                            v3 = exp.Calc(calculator);
                             if (num == 3) {
                                 return new TupleValue3(v1, v2, v3);
                             }
                             break;
                         case 3:
-                            v4 = exp.Calc();
+                            v4 = exp.Calc(calculator);
                             if (num == 4) {
                                 return new TupleValue4(v1, v2, v3, v4);
                             }
                             break;
                         case 4:
-                            v5 = exp.Calc();
+                            v5 = exp.Calc(calculator);
                             if (num == 5) {
                                 return new TupleValue5(v1, v2, v3, v4, v5);
                             }
                             break;
                         case 5:
-                            v6 = exp.Calc();
+                            v6 = exp.Calc(calculator);
                             if (num == 6) {
                                 return new TupleValue6(v1, v2, v3, v4, v5, v6);
                             }
                             break;
                         case 6:
-                            v7 = exp.Calc();
+                            v7 = exp.Calc(calculator);
                             if (num == 7) {
                                 return new TupleValue7(v1, v2, v3, v4, v5, v6, v7);
                             }
                             break;
                         case 7:
                             if (num == 8) {
-                                v8 = exp.Calc();
+                                v8 = exp.Calc(calculator);
                                 return new TupleValue8(v1, v2, v3, v4, v5, v6, v7, Tuple.Create(v8));
                             }
                             else {
-                                var tuple = PackValues(start + 7);
+                                var tuple = PackValues(calculator, start + 7);
                                 return new TupleValue8(v1, v2, v3, v4, v5, v6, v7, Tuple.Create(tuple));
                             }
                     }
@@ -3107,15 +3107,15 @@ namespace BatchCommand.Api
         }
         internal sealed class TupleSetExp : AbstractExpression
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
-                var val = m_Op.Calc();
+                var val = m_Op.Calc(calculator);
                 bool success = true;
                 var setVars = new Dictionary<string, BoxedValue>();
                 MatchRecursively(ref success, setVars, val, m_VarIds, 0);
                 if (success) {
                     foreach (var pair in setVars) {
-                        Calculator.SetVariable(pair.Key, pair.Value);
+                        calculator.SetVariable(pair.Key, pair.Value);
                     }
                 }
                 return BoxedValue.FromBool(success);
@@ -3128,7 +3128,7 @@ namespace BatchCommand.Api
                     LoadRecursively(vars, m_VarIds);
                 }
                 Dsl.ISyntaxComponent param2 = callData.GetParam(1);
-                m_Op = Calculator.Load(param2);
+                m_Op = CodeStructure.Load(param2);
                 return true;
             }
             private void LoadRecursively(Dsl.FunctionData vars, List<ValueTuple<string, int>> varIds)
@@ -3148,7 +3148,7 @@ namespace BatchCommand.Api
                         LoadRecursively(pfd, m_EmbeddedVars[index]);
                     }
                     else {
-                        Calculator.Log("invalid tuple member {0}. code:{1} line:{2}", i, p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
+                        CodeStructure.Log("invalid tuple member {0}. code:{1} line:{2}", i, p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
                     }
                 }
             }
@@ -3285,7 +3285,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FormatExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 BoxedValue v = 0;
                 string fmt = string.Empty;
@@ -3303,7 +3303,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetTypeAssemblyExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
@@ -3318,7 +3318,7 @@ namespace BatchCommand.Api
                         }
                     }
                     catch (Exception ex) {
-                        Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
+                        CodeStructure.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3326,7 +3326,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetTypeAssemblyNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
@@ -3344,7 +3344,7 @@ namespace BatchCommand.Api
                         }
                     }
                     catch (Exception ex) {
-                        Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
+                        CodeStructure.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3352,7 +3352,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetTypeFullNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
@@ -3370,7 +3370,7 @@ namespace BatchCommand.Api
                         }
                     }
                     catch (Exception ex) {
-                        Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
+                        CodeStructure.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3378,7 +3378,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetTypeNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
@@ -3396,7 +3396,7 @@ namespace BatchCommand.Api
                         }
                     }
                     catch (Exception ex) {
-                        Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
+                        CodeStructure.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3404,7 +3404,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetTypeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
@@ -3412,14 +3412,14 @@ namespace BatchCommand.Api
                     try {
                         var r = Resolve(type);
                         if (null == r) {
-                            Calculator.Log("null == Type.GetType({0})", type);
+                            CodeStructure.Log("null == Type.GetType({0})", type);
                         }
                         else {
                             ret = BoxedValue.FromObject(r);
                         }
                     }
                     catch (Exception ex) {
-                        Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
+                        CodeStructure.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3466,7 +3466,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ChangeTypeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
@@ -3517,7 +3517,7 @@ namespace BatchCommand.Api
                                     ret = BoxedValue.FromObject(CastTo(t, str));
                                 }
                                 else {
-                                    Calculator.Log("null == Type.GetType({0})", type);
+                                    CodeStructure.Log("null == Type.GetType({0})", type);
                                 }
                             }
                         }
@@ -3564,13 +3564,13 @@ namespace BatchCommand.Api
                                     ret = BoxedValue.FromObject(obj.CastTo(t));
                                 }
                                 else {
-                                    Calculator.Log("null == Type.GetType({0})", type);
+                                    CodeStructure.Log("null == Type.GetType({0})", type);
                                 }
                             }
                         }
                     }
                     catch (Exception ex) {
-                        Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
+                        CodeStructure.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3578,7 +3578,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ParseEnumExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
@@ -3590,11 +3590,11 @@ namespace BatchCommand.Api
                             ret = BoxedValue.FromObject(Enum.Parse(t, val, true));
                         }
                         else {
-                            Calculator.Log("null == Type.GetType({0})", type);
+                            CodeStructure.Log("null == Type.GetType({0})", type);
                         }
                     }
                     catch (Exception ex) {
-                        Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
+                        CodeStructure.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3602,7 +3602,7 @@ namespace BatchCommand.Api
         }
         internal sealed class TypeCallExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -3637,7 +3637,7 @@ namespace BatchCommand.Api
                         ret = BoxedValue.FromObject(systype.InvokeMember(method, flags, null, target, _args));
                     }
                     catch (Exception ex) {
-                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                        CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3645,7 +3645,7 @@ namespace BatchCommand.Api
         }
         internal sealed class TypeSetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -3679,7 +3679,7 @@ namespace BatchCommand.Api
                         ret = BoxedValue.FromObject(systype.InvokeMember(method, flags, null, target, _args));
                     }
                     catch (Exception ex) {
-                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                        CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3687,7 +3687,7 @@ namespace BatchCommand.Api
         }
         internal sealed class TypeGetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -3721,7 +3721,7 @@ namespace BatchCommand.Api
                         ret = BoxedValue.FromObject(systype.InvokeMember(method, flags, null, target, _args));
                     }
                     catch (Exception ex) {
-                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                        CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                     }
                 }
                 return ret;
@@ -3729,7 +3729,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DotnetCallExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -3750,7 +3750,7 @@ namespace BatchCommand.Api
                     }
                     else if (null != disp) {
                         if (null == args)
-                            args = Calculator.NewCalculatorValueList();
+                            args = calculator.NewCalculatorValueList();
                         args.Add(v);
                     }
                     else {
@@ -3767,7 +3767,7 @@ namespace BatchCommand.Api
                         if (m_DispId >= 0) {
                             ret = disp.InvokeMethod(m_DispId, args);
                         }
-                        Calculator.RecycleCalculatorValueList(args);
+                        calculator.RecycleCalculatorValueList(args);
                     }
                     else {
                         if (null == arglist)
@@ -3796,7 +3796,7 @@ namespace BatchCommand.Api
                                     ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, null, _args));
                                 }
                                 catch (Exception ex) {
-                                    Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                    CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                                 }
                             }
                             else {
@@ -3809,7 +3809,7 @@ namespace BatchCommand.Api
                                         ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, obj, _args));
                                     }
                                     catch (Exception ex) {
-                                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                        CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                                     }
                                 }
                             }
@@ -3822,7 +3822,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DotnetSetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -3882,7 +3882,7 @@ namespace BatchCommand.Api
                                     ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, null, _args));
                                 }
                                 catch (Exception ex) {
-                                    Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                    CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                                 }
                             }
                             else {
@@ -3894,7 +3894,7 @@ namespace BatchCommand.Api
                                         ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, obj, _args));
                                     }
                                     catch (Exception ex) {
-                                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                        CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                                     }
                                 }
                             }
@@ -3907,7 +3907,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DotnetGetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -3963,7 +3963,7 @@ namespace BatchCommand.Api
                                     ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, null, _args));
                                 }
                                 catch (Exception ex) {
-                                    Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                    CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                                 }
                             }
                             else {
@@ -3975,7 +3975,7 @@ namespace BatchCommand.Api
                                         ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, obj, _args));
                                     }
                                     catch (Exception ex) {
-                                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                        CodeStructure.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
                                     }
                                 }
                             }
@@ -3988,7 +3988,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CollectionCallExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -4066,7 +4066,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CollectionSetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -4110,7 +4110,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CollectionGetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 object obj = null;
@@ -4174,7 +4174,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsNullExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
@@ -4186,7 +4186,7 @@ namespace BatchCommand.Api
         }
         internal sealed class NullExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 return ret;
@@ -4194,7 +4194,7 @@ namespace BatchCommand.Api
         }
         internal sealed class EqualsNullExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
@@ -4206,7 +4206,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DotnetLoadExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1)
                     throw new Exception("Expected: dotnetload(dll_path) api");
@@ -4222,7 +4222,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DotnetNewExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     throw new Exception("Expected: dotnetnew(assembly,type_name,arg1,arg2,...) api");
@@ -4243,7 +4243,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CallStackExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: call_stack()");
@@ -4255,7 +4255,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CallExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1)
                     throw new Exception("Expected: call(func_name,arg1,arg2,...) api");
@@ -4263,12 +4263,12 @@ namespace BatchCommand.Api
                 if (operands.Count >= 1) {
                     var func = operands[0].AsString;
                     if (null != func) {
-                        var args = Calculator.NewCalculatorValueList();
+                        var args = calculator.NewCalculatorValueList();
                         for (int i = 1; i < operands.Count; ++i) {
                             args.Add(operands[i]);
                         }
-                        r = Calculator.Calc(func, args);
-                        Calculator.RecycleCalculatorValueList(args);
+                        r = calculator.Calc(func, args);
+                        calculator.RecycleCalculatorValueList(args);
                     }
                 }
                 return r;
@@ -4276,11 +4276,11 @@ namespace BatchCommand.Api
         }
         internal sealed class ReturnExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count > 1)
                     throw new Exception("Expected: return([val]) api");
-                Calculator.RunState = RunStateEnum.Return;
+                calculator.RunState = RunStateEnum.Return;
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     r = operands[0];
@@ -4290,11 +4290,11 @@ namespace BatchCommand.Api
         }
         internal sealed class RedirectExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1)
                     throw new Exception("Expected: redirect(arg1,arg2,...) api");
-                Calculator.RunState = RunStateEnum.Redirect;
+                calculator.RunState = RunStateEnum.Redirect;
                 if (operands.Count >= 1) {
                     List<string> args = new List<string>();
                     for (int i = 0; i < operands.Count; ++i) {
@@ -4308,18 +4308,18 @@ namespace BatchCommand.Api
         }
         internal sealed class AwaitExp : SimpleAsyncExpressionBase
         {
-            protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+            protected override IEnumerator OnCalc(DslCalculator calculator, IList<BoxedValue> operands, AsyncCalcResult result)
             {
                 if (operands.Count < 1)
                     throw new Exception("Expected: await(\"func_name\", arg1, arg2, ...) api");
                 var funcName = operands[0].AsString;
-                var args = Calculator.NewCalculatorValueList();
+                var args = calculator.NewCalculatorValueList();
                 try {
                     for (int i = 1; i < operands.Count; ++i) {
                         args.Add(operands[i]);
                     }
                     var asyncResult = new AsyncCalcResult();
-                    var enumerator = Calculator.CalcAsync(funcName, args, asyncResult);
+                    var enumerator = calculator.CalcAsync(funcName, args, asyncResult);
                     try {
                         while (enumerator.MoveNext()) { yield return enumerator.Current; }
                         result.Value = asyncResult.Value;
@@ -4329,64 +4329,64 @@ namespace BatchCommand.Api
                     }
                 }
                 finally {
-                    Calculator.RecycleCalculatorValueList(args);
+                    calculator.RecycleCalculatorValueList(args);
                 }
 
             }
         }
         internal sealed class AwaitWhileExp : SimpleAsyncExpressionBase
         {
-            protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+            protected override IEnumerator OnCalc(DslCalculator calculator, IList<BoxedValue> operands, AsyncCalcResult result)
             {
                 if (operands.Count < 1)
                     throw new Exception("Expected: awaitwhile(\"func_name\", arg1, arg2, ...) api, loop call sync function while result is true");
                 var funcName = operands[0].AsString;
-                var args = Calculator.NewCalculatorValueList();
+                var args = calculator.NewCalculatorValueList();
                 try {
                     for (int i = 1; i < operands.Count; ++i) {
                         args.Add(operands[i]);
                     }
-                    BoxedValue v = Calculator.Calc(funcName, args);
+                    BoxedValue v = calculator.Calc(funcName, args);
                     while (v.GetBool()) {
                         yield return null;
-                        v = Calculator.Calc(funcName, args);
+                        v = calculator.Calc(funcName, args);
                     }
                     result.Value = v;
                 }
                 finally {
-                    Calculator.RecycleCalculatorValueList(args);
+                    calculator.RecycleCalculatorValueList(args);
                 }
 
             }
         }
         internal sealed class AwaitUntilExp : SimpleAsyncExpressionBase
         {
-            protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+            protected override IEnumerator OnCalc(DslCalculator calculator, IList<BoxedValue> operands, AsyncCalcResult result)
             {
                 if (operands.Count < 1)
                     throw new Exception("Expected: awaituntil(\"func_name\", arg1, arg2, ...) api, loop call sync function until result is true");
                 var funcName = operands[0].AsString;
-                var args = Calculator.NewCalculatorValueList();
+                var args = calculator.NewCalculatorValueList();
                 try {
                     for (int i = 1; i < operands.Count; ++i) {
                         args.Add(operands[i]);
                     }
-                    BoxedValue v = Calculator.Calc(funcName, args);
+                    BoxedValue v = calculator.Calc(funcName, args);
                     while (!v.GetBool()) {
                         yield return null;
-                        v = Calculator.Calc(funcName, args);
+                        v = calculator.Calc(funcName, args);
                     }
                     result.Value = v;
                 }
                 finally {
-                    Calculator.RecycleCalculatorValueList(args);
+                    calculator.RecycleCalculatorValueList(args);
                 }
 
             }
         }
         internal sealed class AwaitTimeExp : SimpleAsyncExpressionBase
         {
-            protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+            protected override IEnumerator OnCalc(DslCalculator calculator, IList<BoxedValue> operands, AsyncCalcResult result)
             {
                 if (operands.Count < 1)
                     throw new Exception("Expected: awaittime(milliseconds) api, async wait specified time");
@@ -4401,7 +4401,7 @@ namespace BatchCommand.Api
         }
         internal sealed class SubstringExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1 || operands.Count > 3)
                     throw new Exception("Expected: substring(str[,start,len]) function");
@@ -4438,7 +4438,7 @@ namespace BatchCommand.Api
         }
         internal sealed class NewStringBuilderExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0)
                     throw new Exception("Expected: newstringbuilder() api");
@@ -4451,7 +4451,7 @@ namespace BatchCommand.Api
         }
         internal sealed class AppendFormatExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     throw new Exception("Expected: appendformat(sb,fmt,arg1,arg2,...) api");
@@ -4476,7 +4476,7 @@ namespace BatchCommand.Api
         }
         internal sealed class AppendFormatLineExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
                     ApiTextInfo.Error.AppendLine("Expected: append_format_line(sb,fmt,arg1,arg2,...)");
@@ -4509,7 +4509,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringBuilderToStringExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_builder_to_string(sb)");
@@ -4527,7 +4527,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringJoinExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: string_join(sep,list), aliased as join_string|join");
@@ -4559,7 +4559,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringSplitExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: string_split(str, sep) or string_split(str,sep_list), aliased as split_string|split");
@@ -4607,7 +4607,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringTrimExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_trim(str), aliased as trim_string|trim");
@@ -4625,7 +4625,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringTrimStartExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_trim_start(str), aliased as trim_start_string|trim_start");
@@ -4643,7 +4643,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringTrimEndExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_trim_end(str), aliased as trim_end_string|trim_end");
@@ -4661,7 +4661,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringToLowerExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_to_lower(str)");
@@ -4679,7 +4679,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringToUpperExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_to_upper(str)");
@@ -4697,7 +4697,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringReplaceExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count < 3 || operands.Count > 4) {
@@ -4758,7 +4758,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StringReplaceCharExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
                     ApiTextInfo.Error.AppendLine("Expected: string_replace_char(str,key,char_as_str)");
@@ -4786,7 +4786,7 @@ namespace BatchCommand.Api
         }
         internal sealed class MakeStringExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 List<char> chars = new List<char>();
                 for (int i = 0; i < operands.Count; ++i) {
@@ -4809,7 +4809,7 @@ namespace BatchCommand.Api
         }
         public sealed class StringContainsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     ApiTextInfo.Error.AppendLine("Expected: string_contains(str,str_or_list_1,str_or_list_2,...), aliased as contains");
@@ -4844,7 +4844,7 @@ namespace BatchCommand.Api
         }
         public sealed class StringNotContainsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     ApiTextInfo.Error.AppendLine("Expected: string_not_contains(str,str_or_list_1,str_or_list_2,...), aliased as not_contains");
@@ -4879,7 +4879,7 @@ namespace BatchCommand.Api
         }
         public sealed class StringContainsAnyExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     ApiTextInfo.Error.AppendLine("Expected: string_contains_any(str,str_or_list_1,str_or_list_2,...), aliased as contains_any");
@@ -4924,7 +4924,7 @@ namespace BatchCommand.Api
         }
         public sealed class StringNotContainsAnyExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     ApiTextInfo.Error.AppendLine("Expected: string_not_contains_any(str,str_or_list_1,str_or_list_2,...), aliased as not_contains_any");
@@ -4969,7 +4969,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Str2IntExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_to_int(str), aliased as str_to_int");
@@ -4990,7 +4990,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Str2UintExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_to_uint(str), aliased as str_to_uint");
@@ -5011,7 +5011,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Str2LongExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_to_long(str), aliased as str_to_long");
@@ -5032,7 +5032,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Str2UlongExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_to_ulong(str), aliased as str_to_ulong");
@@ -5053,7 +5053,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Str2FloatExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: string_to_float(str), aliased as str_to_float");
@@ -5074,7 +5074,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Str2DoubleExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: strint_to_double(str), aliased as str_to_double");
@@ -5095,7 +5095,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Hex2IntExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: hex_string_to_int(str), aliased as hex_to_int");
@@ -5116,7 +5116,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Hex2UintExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: hex_string_to_uint(str), aliased as hex_to_uint");
@@ -5137,7 +5137,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Hex2LongExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: hex_string_to_long(str), aliased as hex_to_long");
@@ -5158,7 +5158,7 @@ namespace BatchCommand.Api
         }
         internal sealed class Hex2UlongExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: hex_string_to_ulong(str), aliased as hex_to_ulong");
@@ -5179,7 +5179,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DatetimeStrExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count > 1) {
                     ApiTextInfo.Error.AppendLine("Expected: date_time_string([fmt]), aliased as date_time_str");
@@ -5200,7 +5200,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LongDateStrExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: long_date_string(), aliased as long_date_str");
@@ -5212,7 +5212,7 @@ namespace BatchCommand.Api
         }
         internal sealed class LongTimeStrExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: long_time_string(), aliased as long_time_str");
@@ -5224,7 +5224,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ShortDateStrExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: short_date_string(), aliased as short_date_str");
@@ -5236,7 +5236,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ShortTimeStrExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: short_time_string(), aliased as short_time_str");
@@ -5248,7 +5248,7 @@ namespace BatchCommand.Api
         }
         internal sealed class NowExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: now()");
@@ -5260,7 +5260,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ParseDateTimeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: parse_date_time(str)");
@@ -5273,7 +5273,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FormatDateTimeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: format_date_time(str,datetime)");
@@ -5287,7 +5287,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsNullOrEmptyExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_null_or_empty(str)");
@@ -5303,7 +5303,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ArrayExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 BoxedValue[] r = new BoxedValue[operands.Count];
                 for (int i = 0; i < operands.Count; ++i) {
@@ -5314,7 +5314,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ToArrayExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: to_array(list)");
@@ -5344,7 +5344,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListSizeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: list_count(list), aliased as list_get_count|get_list_count|list_size");
@@ -5362,7 +5362,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 BoxedValue r = BoxedValue.NullObject;
                 List<BoxedValue> al = new List<BoxedValue>();
@@ -5375,7 +5375,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListGetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2 || operands.Count > 3) {
                     ApiTextInfo.Error.AppendLine("Expected: list_get(list,index[,defval])");
@@ -5403,7 +5403,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListSetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
                     ApiTextInfo.Error.AppendLine("Expected: list_set(list,index,val)");
@@ -5430,7 +5430,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListIndexOfExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: list_index_of(list,val), aliased as list_indexof");
@@ -5452,7 +5452,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListAddExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: list_add(list,val)");
@@ -5474,7 +5474,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListRemoveExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: list_remove(list,val)");
@@ -5496,7 +5496,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListInsertExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
                     ApiTextInfo.Error.AppendLine("Expected: list_insert(list,index,val)");
@@ -5519,7 +5519,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListRemoveAtExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: list_remove_at(list,index)");
@@ -5538,7 +5538,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListClearExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: list_clear(list)");
@@ -5556,7 +5556,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListSplitExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: list_split(list,ct) api, return list of list");
@@ -5626,7 +5626,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableSizeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_count(hash), aliased as hashtable_get_count|get_hashtable_count|hashtable_size");
@@ -5644,13 +5644,13 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableExp : AbstractExpression
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue DoCalc(DslCalculator calculator)
             {
                 BoxedValue r = BoxedValue.NullObject;
                 var dict = new Dictionary<BoxedValue, BoxedValue>();
                 for (int i = 0; i < m_Expressions.Count - 1; i += 2) {
-                    var key = m_Expressions[i].Calc();
-                    var val = m_Expressions[i + 1].Calc();
+                    var key = m_Expressions[i].Calc(calculator);
+                    var val = m_Expressions[i + 1].Calc(calculator);
                     dict.Add(key, val);
                 }
                 r = BoxedValue.FromObject(dict);
@@ -5672,9 +5672,9 @@ namespace BatchCommand.Api
                                 vd0.SetType(Dsl.ValueData.STRING_TOKEN);
                             }
                         }
-                        var expKey = Calculator.Load(p0);
+                        var expKey = CodeStructure.Load(p0);
                         m_Expressions.Add(expKey);
-                        var expVal = Calculator.Load(p1);
+                        var expVal = CodeStructure.Load(p1);
                         m_Expressions.Add(expVal);
                     }
                 }
@@ -5685,7 +5685,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableGetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2 || operands.Count > 3) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_get(hash,key[,defval])");
@@ -5717,7 +5717,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableSetExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_set(hash,key,val)");
@@ -5744,7 +5744,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableAddExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 3) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_add(hash,key,val)");
@@ -5771,7 +5771,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableRemoveExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_remove(hash,key)");
@@ -5796,7 +5796,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableClearExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_clear(hash)");
@@ -5814,7 +5814,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableKeysExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_keys(hash)");
@@ -5843,7 +5843,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableValuesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_values(hash)");
@@ -5872,7 +5872,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListHashtableExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: list_hashtable(hash) api, return list of pair");
@@ -5894,7 +5894,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HashtableSplitExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: hashtable_split(hash,ct) api, return list of hashtable");
@@ -5965,7 +5965,7 @@ namespace BatchCommand.Api
         //The stack and queue share the same peek function.
         internal sealed class PeekExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: peek(queue_or_stack)");
@@ -5987,7 +5987,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StackSizeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: stack_count(stack), aliased as stack_get_count|get_stack_count|stack_size");
@@ -6005,7 +6005,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StackExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 BoxedValue r = BoxedValue.NullObject;
                 var stack = new Stack<BoxedValue>();
@@ -6018,7 +6018,7 @@ namespace BatchCommand.Api
         }
         internal sealed class PushExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: push(stack,v)");
@@ -6037,7 +6037,7 @@ namespace BatchCommand.Api
         }
         internal sealed class PopExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: pop(stack)");
@@ -6055,7 +6055,7 @@ namespace BatchCommand.Api
         }
         internal sealed class StackClearExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: stack_clear(stack)");
@@ -6073,7 +6073,7 @@ namespace BatchCommand.Api
         }
         internal sealed class QueueSizeExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: queue_count(queue), aliased as queue_get_count|get_queue_count|queue_size");
@@ -6091,7 +6091,7 @@ namespace BatchCommand.Api
         }
         internal sealed class QueueExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 BoxedValue r = BoxedValue.NullObject;
                 var queue = new Queue<BoxedValue>();
@@ -6104,7 +6104,7 @@ namespace BatchCommand.Api
         }
         internal sealed class EnqueueExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: enqueue(queue,v)");
@@ -6123,7 +6123,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DequeueExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: dequeue(queue)");
@@ -6141,7 +6141,7 @@ namespace BatchCommand.Api
         }
         internal sealed class QueueClearExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: queue_clear(queue)");
@@ -6159,7 +6159,7 @@ namespace BatchCommand.Api
         }
         internal sealed class SetEnvironmentExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: set_env(k,v)");
@@ -6177,7 +6177,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetEnvironmentExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_env(k)");
@@ -6193,7 +6193,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ExpandEnvironmentsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: expand(str)");
@@ -6209,14 +6209,14 @@ namespace BatchCommand.Api
         }
         internal sealed class EnvironmentsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 return BoxedValue.FromObject(Environment.GetEnvironmentVariables());
             }
         }
         internal sealed class SetCurrentDirectoryExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: cd(path)");
@@ -6239,14 +6239,14 @@ namespace BatchCommand.Api
         }
         internal sealed class GetCurrentDirectoryExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 return Environment.CurrentDirectory;
             }
         }
         internal sealed class CommandLineExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: cmd_line()");
@@ -6257,7 +6257,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CommandLineArgsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: cmd_line_args(prev_arg) or cmdlineargs() api, first return next arg, second return array of arg");
@@ -6281,14 +6281,14 @@ namespace BatchCommand.Api
         }
         internal sealed class OsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 return Environment.OSVersion.VersionString;
             }
         }
         internal sealed class OsPlatformExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: os_platform()");
@@ -6299,7 +6299,7 @@ namespace BatchCommand.Api
         }
         internal sealed class OsVersionExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: os_version()");
@@ -6310,7 +6310,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetFullPathExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_full_path(path)");
@@ -6329,7 +6329,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetPathRootExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_path_root(path)");
@@ -6348,7 +6348,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetRandomFileNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: get_random_file_name()");
@@ -6359,7 +6359,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetTempFileNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: get_temp_file_name()");
@@ -6370,7 +6370,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetTempPathExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: get_temp_path()");
@@ -6381,7 +6381,7 @@ namespace BatchCommand.Api
         }
         internal sealed class HasExtensionExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: has_extension(path)");
@@ -6400,7 +6400,7 @@ namespace BatchCommand.Api
         }
         internal sealed class IsPathRootedExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: is_path_rooted(path)");
@@ -6419,7 +6419,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetFileNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_file_name(path)");
@@ -6438,7 +6438,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetFileNameWithoutExtensionExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_file_name_without_extension(path)");
@@ -6457,7 +6457,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetExtensionExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_extension(path)");
@@ -6476,7 +6476,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetDirectoryNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_directory_name(path)");
@@ -6495,7 +6495,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CombinePathExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     ApiTextInfo.Error.AppendLine("Expected: combine_path(path1,path2,...)");
@@ -6522,7 +6522,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ChangeExtensionExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: change_extension(path,ext)");
@@ -6542,7 +6542,7 @@ namespace BatchCommand.Api
         }
         internal sealed class QuotePathExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1 || operands.Count > 3) {
                     ApiTextInfo.Error.AppendLine("Expected: quote_path(path[,only_needed,single_quote])");
@@ -6609,7 +6609,7 @@ namespace BatchCommand.Api
         }
         internal sealed class EchoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
                     ApiTextInfo.Error.AppendLine("Expected: echo(fmt,arg1,arg2,...) api, Console.WriteLine");
@@ -6643,7 +6643,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FileEchoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count > 1) {
                     ApiTextInfo.Error.AppendLine("Expected: file_echo(bool) or file_echo()");
@@ -6657,7 +6657,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DirectoryExistsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: dir_exists(dir), aliased as direxists");
@@ -6674,7 +6674,7 @@ namespace BatchCommand.Api
         }
         internal sealed class FileExistsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: file_exists(file), aliased as fileexists");
@@ -6691,7 +6691,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListDirectoriesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
                     ApiTextInfo.Error.AppendLine("Expected: list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
@@ -6736,7 +6736,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListFilesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
                     ApiTextInfo.Error.AppendLine("Expected: list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
@@ -6781,7 +6781,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListAllDirectoriesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
                     ApiTextInfo.Error.AppendLine("Expected: list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
@@ -6826,7 +6826,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ListAllFilesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
                     ApiTextInfo.Error.AppendLine("Expected: list_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
@@ -6871,7 +6871,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CreateDirectoryExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: create_dir(dir), aliased as make_dir");
@@ -6895,7 +6895,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CopyDirectoryExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     ApiTextInfo.Error.AppendLine("Expected: copy_dir(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir");
@@ -6977,7 +6977,7 @@ namespace BatchCommand.Api
         }
         internal sealed class MoveDirectoryExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: move_dir(dir1,dir2)");
@@ -7006,7 +7006,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DeleteDirectoryExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: delete_dir(dir)");
@@ -7030,7 +7030,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CopyFileExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: copyfile(file1,file2)");
@@ -7060,7 +7060,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CopyFilesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2) {
                     ApiTextInfo.Error.AppendLine("Expected: copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir");
@@ -7127,7 +7127,7 @@ namespace BatchCommand.Api
         }
         internal sealed class MoveFileExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
                     ApiTextInfo.Error.AppendLine("Expected: movefile(file1,file2)");
@@ -7160,7 +7160,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DeleteFileExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: delete_file(file)");
@@ -7184,7 +7184,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DeleteFilesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
                     ApiTextInfo.Error.AppendLine("Expected: delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir");
@@ -7232,7 +7232,7 @@ namespace BatchCommand.Api
         }
         internal sealed class DeleteAllFilesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1) {
                     ApiTextInfo.Error.AppendLine("Expected: delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir");
@@ -7280,7 +7280,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetFileInfoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_file_info(file)");
@@ -7299,7 +7299,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetDirectoryInfoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_dir_info(dir)");
@@ -7318,7 +7318,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetDriveInfoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: get_drive_info(drive)");
@@ -7334,7 +7334,7 @@ namespace BatchCommand.Api
         }
         internal sealed class GetDrivesInfoExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 0) {
                     ApiTextInfo.Error.AppendLine("Expected: get_drives_info()");
@@ -7346,7 +7346,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ReadAllLinesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1 || operands.Count > 2) {
                     ApiTextInfo.Error.AppendLine("Expected: read_all_lines(file[,encoding])");
@@ -7369,7 +7369,7 @@ namespace BatchCommand.Api
         }
         internal sealed class WriteAllLinesExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2 || operands.Count > 3) {
                     ApiTextInfo.Error.AppendLine("Expected: write_all_lines(file,lines[,encoding])");
@@ -7413,7 +7413,7 @@ namespace BatchCommand.Api
         }
         internal sealed class ReadAllTextExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 1 || operands.Count > 2) {
                     ApiTextInfo.Error.AppendLine("Expected: read_all_text(file[,encoding])");
@@ -7436,7 +7436,7 @@ namespace BatchCommand.Api
         }
         internal sealed class WriteAllTextExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2 || operands.Count > 3) {
                     ApiTextInfo.Error.AppendLine("Expected: write_all_text(file,txt[,encoding])");
@@ -7476,7 +7476,7 @@ namespace BatchCommand.Api
         }
         internal sealed class CalcMd5Exp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
                     ApiTextInfo.Error.AppendLine("Expected: calc_md5(file)");
@@ -7514,7 +7514,7 @@ namespace BatchCommand.Api
 
         internal sealed class TimeStampExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 return BoxedValue.From((GetElapsedTimeUsExp.GetElapsedTimeUs() - m_StartTimeUs) / 1000);
             }
@@ -7528,14 +7528,14 @@ namespace BatchCommand.Api
         }
         internal sealed class GetElapsedTimeMsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 return BoxedValue.From(GetElapsedTimeUsExp.GetElapsedTimeUs() / 1000);
             }
         }
         internal sealed class GetElapsedTimeUsExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 return BoxedValue.From(GetElapsedTimeUs() / 1000);
             }

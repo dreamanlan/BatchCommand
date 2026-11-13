@@ -82,7 +82,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerStartServerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_start_server(port, root [, headers_json [, use_https]])");
@@ -128,7 +128,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerStopServerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_stop_server(port)");
@@ -153,7 +153,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerSetHeadersExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_set_headers(port, headers_json)");
@@ -183,7 +183,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerGetRequestCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_get_request_count(port)");
@@ -214,7 +214,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerSetMimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_set_mime(ext, content_type)");
@@ -246,7 +246,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerAddFilterExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_add_filter(port [, pattern ...] [, fields_json])");
@@ -294,7 +294,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerRemoveFilterExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_remove_filter(port, filter_id)");
@@ -319,7 +319,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerClearFiltersExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_clear_filters(port)");
@@ -352,7 +352,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebServerSetFilterDslExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: webserver_set_filter_dsl(port, path)");

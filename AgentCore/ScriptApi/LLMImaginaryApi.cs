@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections;
 using System.Text;
 using DotnetStoryScript;
@@ -12,7 +13,7 @@ namespace AgentCore.ScriptApi
 {
     sealed class AppendExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: append(stringbuilder, val)");
@@ -40,7 +41,7 @@ namespace AgentCore.ScriptApi
     // BatchScriptApiRegistrar.RegisterSharedApis.
     internal sealed class StringIndexOfExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count < 2 || operands.Count > 4) {
@@ -71,7 +72,7 @@ namespace AgentCore.ScriptApi
     }
     internal sealed class StringLastIndexOfExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count < 2 || operands.Count > 4) {
@@ -102,7 +103,7 @@ namespace AgentCore.ScriptApi
     }
     internal sealed class StringIndexOfAnyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count < 2 || operands.Count > 4) {
@@ -146,7 +147,7 @@ namespace AgentCore.ScriptApi
     }
     internal sealed class StringLastIndexOfAnyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count < 2 || operands.Count > 4) {
@@ -190,7 +191,7 @@ namespace AgentCore.ScriptApi
     }
     internal sealed class StringConcatExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var sb = new StringBuilder();
             foreach (var opd in operands) {
@@ -201,7 +202,7 @@ namespace AgentCore.ScriptApi
     }
     internal sealed class SizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: length(str_or_list_or_hashtable), aliased as len|size|count");
@@ -233,7 +234,7 @@ namespace AgentCore.ScriptApi
     }
     internal sealed class CharToIntExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count != 1) {
@@ -253,7 +254,7 @@ namespace AgentCore.ScriptApi
     }
     internal sealed class IntToCharExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count != 1) {

@@ -20,7 +20,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class FindFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("find_file requires (query[, max_count])");
@@ -119,7 +119,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class FindFileRawExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("find_file_raw requires (query[, max_count])");

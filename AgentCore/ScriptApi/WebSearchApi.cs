@@ -15,7 +15,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class BraveSetApiKeyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("brave_set_api_key requires (api_key)");
@@ -42,7 +42,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class SearXNGSetUrlExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("searxng_set_url requires (url)");
@@ -66,7 +66,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class SearXNGGetUrlExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.FromString(Core.AgentCore.Instance.SearXNGSearch.GetUrl());
         }
@@ -80,7 +80,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class SearXNGSetEnginesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("searxng_set_engines requires (engines_csv)");
@@ -97,7 +97,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class SearXNGGetEnginesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.FromString(Core.AgentCore.Instance.SearXNGSearch.GetEngines());
         }
@@ -111,7 +111,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebSearchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("web_search requires (query[, count])");
@@ -136,7 +136,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WebSearchRawExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("web_search_raw requires (query[, count])");

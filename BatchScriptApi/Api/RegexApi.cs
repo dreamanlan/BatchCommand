@@ -58,7 +58,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexMatchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_match(str, regex_pattern, [ignoreCase or 'i']), aliased as regex_is_match or regex_find");
@@ -88,7 +88,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexReplaceExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_replace(str, regex_pattern, replacement, [ignoreCase]), aliased as regex_replace_string");
@@ -127,7 +127,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexReplaceWithCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 6) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_replace_with_count(str, regex_pattern, replacement, count, [skipCount, [ignoreCase]]), aliased as regex_replace_string_with_count");
@@ -209,7 +209,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexFindAllExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_find_all(str, regex_pattern, [ignoreCase]), returns a list. Please use 'to_string' to convert it to a string, aliased as regex_matches.");
@@ -239,7 +239,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexFindFirstExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_find_first(str, regex_pattern, [ignoreCase]) returns first match string or null");
@@ -268,7 +268,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexReplaceInFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 5) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase[, encoding]])");
@@ -312,7 +312,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexReplaceInFileWithCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 7) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_replace_in_file_with_count(path, regex_pattern, replacement, count, [skipCount, [ignoreCase, [encoding]]])");
@@ -368,7 +368,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexSearchFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_search_file(path, regex_pattern, [ignoreCase[, encoding]]) return List, use 'to_string' to convert to a string");
@@ -402,7 +402,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexEscapeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_escape(str)");
@@ -426,7 +426,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexUnescapeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_unescape(str)");
@@ -451,7 +451,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexGroupExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_group(str, regex_pattern, group_index, [ignoreCase]) group_index: 0=full match, 1+=capture groups");
@@ -481,7 +481,7 @@ namespace BatchCommand.Api
     /// </summary>
     public sealed class RegexGroupAllExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: regex_group_all(str, regex_pattern, [ignoreCase]) returns List<List<string>>, use 'to_string' to convert to a string");

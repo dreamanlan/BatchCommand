@@ -69,7 +69,7 @@ namespace BatchCommand.Api
 
     sealed class HttpGetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: http_get(url) or http_get(url, headers)");
@@ -100,7 +100,7 @@ namespace BatchCommand.Api
 
     sealed class HttpPostExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: http_post(url, content) or http_post(url, content, contentType) or http_post(url, content, contentType, headers)");
@@ -142,7 +142,7 @@ namespace BatchCommand.Api
 
     sealed class DownloadFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: download_file(url, savePath) or download_file(url, savePath, headers)");
@@ -174,7 +174,7 @@ namespace BatchCommand.Api
 
     sealed class HttpGetBytesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: http_get_bytes(url) or http_get_bytes(url, headers)");
@@ -205,7 +205,7 @@ namespace BatchCommand.Api
 
     sealed class HttpPutExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: http_put(url, content) or http_put(url, content, contentType) or http_put(url, content, contentType, headers)");
@@ -247,7 +247,7 @@ namespace BatchCommand.Api
 
     sealed class HttpDeleteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: http_delete(url) or http_delete(url, headers)");
@@ -278,7 +278,7 @@ namespace BatchCommand.Api
 
     sealed class HttpPostFormExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: http_post_form(url, formData) or http_post_form(url, formData, headers)");
@@ -314,7 +314,7 @@ namespace BatchCommand.Api
 
     sealed class HttpUploadFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 ApiTextInfo.Error.AppendLine("Expected: http_upload_file(url, filePath) or http_upload_file(url, filePath, fieldName) or http_upload_file(url, filePath, fieldName, formData) or http_upload_file(url, filePath, fieldName, formData, headers)");
@@ -364,7 +364,7 @@ namespace BatchCommand.Api
 
     sealed class SetHttpDefaultHeaderExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: set_http_default_header(name, value)");
@@ -377,7 +377,7 @@ namespace BatchCommand.Api
 
     sealed class RemoveHttpDefaultHeaderExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: remove_http_default_header(name)");
@@ -393,7 +393,7 @@ namespace BatchCommand.Api
     // with 3 string args: (url, tag, result).
     sealed class HttpGetCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: http_get_callback(url, tag) or http_get_callback(url, headers, tag)");
@@ -424,7 +424,7 @@ namespace BatchCommand.Api
     // response body encoded as a base64 string (or "error: ..." on failure).
     sealed class HttpGetBytesCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: http_get_bytes_callback(url, tag) or http_get_bytes_callback(url, headers, tag)");
@@ -453,7 +453,7 @@ namespace BatchCommand.Api
 
     sealed class HttpPostCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 5) {
                 ApiTextInfo.Error.AppendLine("Expected: http_post_callback(url, content, tag) or http_post_callback(url, content, contentType, tag) or http_post_callback(url, content, contentType, headers, tag)");
@@ -493,7 +493,7 @@ namespace BatchCommand.Api
 
     sealed class HttpPostFormCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: http_post_form_callback(url, formData, tag) or http_post_form_callback(url, formData, headers, tag)");
@@ -527,7 +527,7 @@ namespace BatchCommand.Api
 
     sealed class HttpPutCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 5) {
                 ApiTextInfo.Error.AppendLine("Expected: http_put_callback(url, content, tag) or http_put_callback(url, content, contentType, tag) or http_put_callback(url, content, contentType, headers, tag)");
@@ -567,7 +567,7 @@ namespace BatchCommand.Api
 
     sealed class HttpDeleteCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: http_delete_callback(url, tag) or http_delete_callback(url, headers, tag)");
@@ -596,7 +596,7 @@ namespace BatchCommand.Api
 
     sealed class HttpUploadFileCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
                 ApiTextInfo.Error.AppendLine("Expected: http_upload_file_callback(url, filePath, tag) or (url, filePath, fieldName, tag) or (url, filePath, fieldName, formData, tag) or (url, filePath, fieldName, formData, headers, tag)");
@@ -644,7 +644,7 @@ namespace BatchCommand.Api
 
     sealed class DownloadFileCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: download_file_callback(url, savePath, tag) or download_file_callback(url, savePath, headers, tag)");
@@ -674,7 +674,7 @@ namespace BatchCommand.Api
 
     sealed class SetHttpUserAgentExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: set_http_user_agent(user_agent)");
@@ -688,7 +688,7 @@ namespace BatchCommand.Api
 
     sealed class GetHttpUserAgentExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.FromString(HttpClientOperations.Shared.GetUserAgent());
         }

@@ -50,7 +50,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientOpenExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_open(local_address, local_port[, id])");
@@ -66,7 +66,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientSendExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 4 || !(operands[1].GetObject() is byte[] bytes)) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_send(id, bytes, remote_address, remote_port), where bytes is byte[]");
@@ -79,7 +79,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientCloseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_close(id)");
@@ -91,7 +91,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientDrainSendExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_drain_send(id[, timeout_ms])");
@@ -105,7 +105,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientDrainSendStatusExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_drain_send_status(id)");
@@ -118,7 +118,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientDrainWaitExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_drain_wait(id[, wait_timeout_ms])");
@@ -132,7 +132,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientCloseAllExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_close_all()");
@@ -144,7 +144,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_count()");
@@ -156,7 +156,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientStateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_state(id)");
@@ -168,7 +168,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientLocalEndPointExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_local_endpoint(id)");
@@ -180,7 +180,7 @@ namespace BatchCommand.Api
 
     internal sealed class UdpClientListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 ApiTextInfo.Error.AppendLine("Expected: udpclient_list()");
@@ -192,7 +192,7 @@ namespace BatchCommand.Api
 
     internal sealed class HandleUdpClientQueueExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
                 ApiTextInfo.Error.AppendLine("Expected: handle_udpclient_queue([max_count])");

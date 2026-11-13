@@ -21,7 +21,7 @@ namespace BatchCommand.Api
     {
         private static readonly BatchCommand.Utils.ClipboardOperations s_Ops = new BatchCommand.Utils.ClipboardOperations();
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 string text = s_Ops.GetText();
@@ -38,7 +38,7 @@ namespace BatchCommand.Api
     {
         private static readonly BatchCommand.Utils.ClipboardOperations s_Ops = new BatchCommand.Utils.ClipboardOperations();
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: set_clipboard(text)");
@@ -62,7 +62,7 @@ namespace BatchCommand.Api
     // Get from dict/json
     sealed class DictOrJsonGetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: dict_or_json_get(paramsObj, key)");
@@ -105,7 +105,7 @@ namespace BatchCommand.Api
     //   LitJson.JsonData (object)            -> DslHelper.GetJsonValueFromBoxedValue
     sealed class DictOrJsonSetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 ApiTextInfo.Error.AppendLine("Expected: dict_or_json_set(paramsObj, key, value)");
@@ -150,7 +150,7 @@ namespace BatchCommand.Api
     // Get from list/json array by start
     sealed class ListOrJsonGetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: list_or_json_get(paramsObj, start)");
@@ -191,7 +191,7 @@ namespace BatchCommand.Api
     //   LitJson.JsonData (array)   -> DslHelper.GetJsonValueFromBoxedValue
     sealed class ListOrJsonSetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 ApiTextInfo.Error.AppendLine("Expected: list_or_json_set(paramsObj, start, value)");
@@ -238,7 +238,7 @@ namespace BatchCommand.Api
     // JSON Operations
     public sealed class ToJsonExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: to_json(obj, prettyPrint)");
@@ -265,7 +265,7 @@ namespace BatchCommand.Api
 
     public sealed class FromJsonExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: from_json(json)");
@@ -288,7 +288,7 @@ namespace BatchCommand.Api
 
     public sealed class JsonEscapeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: json_escape(str[, bool_add_quotes])");
@@ -312,7 +312,7 @@ namespace BatchCommand.Api
 
     public sealed class JsonUnescapeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: json_unescape(str)");
@@ -336,7 +336,7 @@ namespace BatchCommand.Api
 
     public sealed class NewObjectExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 // Create a dictionary to hold the key-value pairs
@@ -361,7 +361,7 @@ namespace BatchCommand.Api
 
     public sealed class ToStringExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: to_string(val)");
@@ -385,7 +385,7 @@ namespace BatchCommand.Api
 
     public sealed class StringLengthExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: string_length(val), aliased as stringlength|strlen");
@@ -404,7 +404,7 @@ namespace BatchCommand.Api
 
     public sealed class StringStartsWithExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: string_starts_with(str, substr), aliased as starts_with");
@@ -433,7 +433,7 @@ namespace BatchCommand.Api
 
     public sealed class StringEndsWithExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: string_ends_with(str, substr), aliased as ends_with");
@@ -462,7 +462,7 @@ namespace BatchCommand.Api
 
     public sealed class ExtractTagsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var empty = new List<IList<string>>();
             if (operands.Count < 2 || operands.Count > 3) {
@@ -512,7 +512,7 @@ namespace BatchCommand.Api
 
     public sealed class ExtractTagCodesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var empty = new List<BoxedValue>();
             if (operands.Count < 2 || operands.Count > 3) {
@@ -557,7 +557,7 @@ namespace BatchCommand.Api
     // HTML/URL Encode Operations
     public sealed class HtmlEncodeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: html_encode(html_str)");
@@ -577,7 +577,7 @@ namespace BatchCommand.Api
 
     public sealed class HtmlDecodeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: html_decode(encoded_html_str)");
@@ -597,7 +597,7 @@ namespace BatchCommand.Api
 
     public sealed class UrlEncodeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: url_encode(url_str)");
@@ -617,7 +617,7 @@ namespace BatchCommand.Api
 
     public sealed class UrlDecodeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: url_decode(encoded_url_str)");
@@ -637,7 +637,7 @@ namespace BatchCommand.Api
 
     public sealed class ToPrettyStringExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: to_pretty_string(val)");
@@ -762,7 +762,7 @@ namespace BatchCommand.Api
     }
     public sealed class ListContainsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: list_contains(list,val)");
@@ -784,7 +784,7 @@ namespace BatchCommand.Api
     }
     public sealed class HashtableContainsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: hashtable_contains(hash,val)");
@@ -806,7 +806,7 @@ namespace BatchCommand.Api
     }
     public sealed class StringBuilderLengthExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: string_builder_length(sb), aliased as stringbuilder_length or stringbuilderlength");
@@ -824,7 +824,7 @@ namespace BatchCommand.Api
     }
     public sealed class CharCodeAtExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2)
                 throw new Exception("Expected: char_code_at(str,start), aliased as charcodeat");
@@ -842,7 +842,7 @@ namespace BatchCommand.Api
     }
     public sealed class ArrayToListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3)
                 throw new Exception("Expected: array_to_list(array[,start,count]), aliased as arraytolist");
@@ -934,7 +934,7 @@ namespace BatchCommand.Api
     }
     public sealed class ListToArrayExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3)
                 throw new Exception("Expected: list_to_array(list[,start,count]), aliased as listtoarray");
@@ -1044,7 +1044,7 @@ namespace BatchCommand.Api
     }
     public sealed class SubListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3)
                 throw new Exception("Expected: sublist(list[,start,count]) (alias: list_slice)");
@@ -1150,7 +1150,7 @@ namespace BatchCommand.Api
     // subarray(array[, start, count]) - slice array, returns array of same element type
     public sealed class SubArrayExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3)
                 throw new Exception("Expected: subarray(array[,start,count]) (alias: array_slice)");
@@ -1258,7 +1258,7 @@ namespace BatchCommand.Api
     // bytes_to_string(bytes[, encoding]) - convert byte array to string, default UTF-8
     public sealed class BytesToStringExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2)
                 throw new Exception("Expected: bytes_to_string(bytes[, encoding]) (alias: bytestostring)");
@@ -1279,7 +1279,7 @@ namespace BatchCommand.Api
     // string_to_bytes(str[, encoding]) - convert string to byte array, default UTF-8
     public sealed class StringToBytesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2)
                 throw new Exception("Expected: string_to_bytes(str[, encoding]) (alias: stringtobytes)");
@@ -1291,7 +1291,7 @@ namespace BatchCommand.Api
     // string_first_lines(str, n) - return the first n lines of a string
     public sealed class StringFirstLinesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2)
                 throw new Exception("Expected: string_first_lines(str, n) (alias: stringfirstlines)");
@@ -1313,7 +1313,7 @@ namespace BatchCommand.Api
     // string_replace_with_count(str, oldValue, newValue, count[, skipCount]) - skip first skipCount matches, then replace next N occurrences
     public sealed class StringReplaceWithCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 5)
                 throw new Exception("Expected: string_replace_with_count(str, oldValue, newValue, count[, skipCount]) (alias: stringreplacewithcount)");

@@ -22,7 +22,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingExistsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(EverythingSDK.EverythingExists());
         }
@@ -34,7 +34,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingResetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (EverythingSDK.EverythingExists()) {
                 lock (EverythingSDK.Lock) {
@@ -51,7 +51,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingSetDefaultExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (EverythingSDK.EverythingExists()) {
                 lock (EverythingSDK.Lock) {
@@ -72,7 +72,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingMatchPathExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count >= 1) {
                 bool val = operands[0].GetBool();
@@ -99,7 +99,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingMatchCaseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count >= 1) {
                 bool val = operands[0].GetBool();
@@ -126,7 +126,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingMatchWholeWordExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count >= 1) {
                 bool val = operands[0].GetBool();
@@ -153,7 +153,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingRegexExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count >= 1) {
                 bool val = operands[0].GetBool();
@@ -182,7 +182,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingSortExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count >= 1) {
                 string type = operands[0].AsString;
@@ -244,7 +244,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingSearchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: everything_search(query[, max_count])");
@@ -318,7 +318,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingSearchRawExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: everything_search_raw(query[, max_count])");
@@ -373,7 +373,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class EverythingEnsureExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 // If cached path exists and process is running, return immediately

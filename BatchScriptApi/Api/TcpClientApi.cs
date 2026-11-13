@@ -47,7 +47,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientOpenExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_open(host, port[, id[, frame_mode[, reconnect_count]]])");
@@ -65,7 +65,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientSendExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2 || !(operands[1].GetObject() is byte[] bytes)) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_send(id, bytes), where bytes is byte[]");
@@ -77,7 +77,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientShutdownSendExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_shutdown_send(id[, timeout_ms])");
@@ -91,7 +91,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientShutdownSendStatusExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_shutdown_send_status(id)");
@@ -104,7 +104,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientDrainWaitExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_drain_wait(id[, wait_timeout_ms])");
@@ -118,7 +118,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientCloseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_close(id)");
@@ -130,7 +130,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientCloseAllExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_close_all()");
@@ -142,7 +142,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_count()");
@@ -154,7 +154,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientStateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_state(id)");
@@ -166,7 +166,7 @@ namespace BatchCommand.Api
 
     internal sealed class TcpClientListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 ApiTextInfo.Error.AppendLine("Expected: tcpclient_list()");
@@ -178,7 +178,7 @@ namespace BatchCommand.Api
 
     internal sealed class HandleTcpClientQueueExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
                 ApiTextInfo.Error.AppendLine("Expected: handle_tcpclient_queue([max_count])");

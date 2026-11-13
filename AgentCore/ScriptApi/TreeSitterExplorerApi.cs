@@ -33,7 +33,7 @@ namespace AgentCore.ScriptApi
 
     sealed class InspectCLanguageDllExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: inspect_c_language_dll() => string");
@@ -53,7 +53,7 @@ namespace AgentCore.ScriptApi
 
     sealed class InspectCppLanguageDllExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: inspect_cpp_language_dll() => string");
@@ -73,7 +73,7 @@ namespace AgentCore.ScriptApi
 
     sealed class ExploreTreeSitterCApiExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: explore_treesitter_c_api() => string");
@@ -93,7 +93,7 @@ namespace AgentCore.ScriptApi
 
     sealed class ExploreTreeSitterCppApiExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: explore_treesitter_cpp_api() => string");
@@ -113,7 +113,7 @@ namespace AgentCore.ScriptApi
 
     sealed class TestCreateCParserExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: test_create_c_parser() => string");
@@ -133,7 +133,7 @@ namespace AgentCore.ScriptApi
 
     sealed class TestCreateCppParserExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: test_create_cpp_parser() => string");
@@ -153,7 +153,7 @@ namespace AgentCore.ScriptApi
 
     sealed class ExploreAllTreeSitterApisExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: explore_all_treesitter_apis() => string");
@@ -174,7 +174,7 @@ namespace AgentCore.ScriptApi
     sealed class SaveTreeSitterReportExp : SimpleExpressionBase
 
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 if (operands.Count != 1) {
@@ -209,7 +209,7 @@ namespace AgentCore.ScriptApi
 
     sealed class TestGetNodeTextExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: test_get_node_text() => string");
@@ -229,7 +229,7 @@ namespace AgentCore.ScriptApi
 
     sealed class TestEsprimaPropertiesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: test_js_properties()");

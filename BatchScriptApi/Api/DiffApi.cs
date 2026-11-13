@@ -11,7 +11,7 @@ namespace BatchCommand.Api
     // apply_diff(targetPath, diffPath[, isContent[, exactMatch]]) - apply unified diff patch to target file
     public sealed class ApplyDiffExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 ApiTextInfo.Error.AppendLine("Expected: apply_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]), aliased as apply_unified_diff|applydiff");

@@ -20,7 +20,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class StartHttpAuthServerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("start_http_auth_server requires (listen_port, url, tag)");
@@ -41,7 +41,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class StopHttpAuthServerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("stop_http_auth_server requires (port)");

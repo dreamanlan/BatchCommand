@@ -51,7 +51,7 @@ namespace AgentCore.ScriptApi
     // semantic_init(collection) - start background loading of a collection
     sealed class SemanticInitExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_init(collection)");
@@ -75,7 +75,7 @@ namespace AgentCore.ScriptApi
     // semantic_is_ready(collection) - check if collection is loaded
     sealed class SemanticIsReadyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_is_ready(collection)");
@@ -98,7 +98,7 @@ namespace AgentCore.ScriptApi
     // semantic_add(collection, content [, metadata]) - add a record, returns id
     sealed class SemanticAddExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_add(collection, content[, metadata])");
@@ -158,7 +158,7 @@ namespace AgentCore.ScriptApi
     // semantic_search(collection, query[, keywords, topN[, meta_keywords]]) - search, returns JSON array
     sealed class SemanticSearchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search(collection, query[, keywords, topN[, meta_keywords]])");
@@ -195,7 +195,7 @@ namespace AgentCore.ScriptApi
     // semantic_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - search within time range, returns JSON
     sealed class SemanticSearchBetweenExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -234,7 +234,7 @@ namespace AgentCore.ScriptApi
     // keyword_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - keyword search within time range, returns JSON
     sealed class KeywordSearchBetweenExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_between(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -265,7 +265,7 @@ namespace AgentCore.ScriptApi
     // semantic_delete(collection) - delete all records in a collection
     sealed class SemanticDeleteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_delete(collection)");
@@ -289,7 +289,7 @@ namespace AgentCore.ScriptApi
     // semantic_count(collection) - count records in a collection
     sealed class SemanticCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_count(collection)");
@@ -313,7 +313,7 @@ namespace AgentCore.ScriptApi
     // keyword_search(collection, query[, keywords, topN[, meta_keywords]]) - BM25-based keyword search, returns JSON array
     sealed class KeywordSearchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search(collection, query[, keywords, topN[, meta_keywords]])");
@@ -341,7 +341,7 @@ namespace AgentCore.ScriptApi
     // semantic_get_recent(collection[, topN]) - get most recent N records ordered chronologically, returns JSON array
     sealed class SemanticGetRecentExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_get_recent(collection[, topN])");
@@ -366,7 +366,7 @@ namespace AgentCore.ScriptApi
     // semantic_get_recent_as_list(collection[, topN]) - get most recent N records' content as a list of strings
     sealed class SemanticGetRecentAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_get_recent_as_list(collection[, topN])");
@@ -393,7 +393,7 @@ namespace AgentCore.ScriptApi
     // semantic_search_as_list(collection, query[, keywords, topN[, meta_keywords]])
     sealed class SemanticSearchAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_as_list(collection, query[, keywords, topN[, meta_keywords]])");
@@ -434,7 +434,7 @@ namespace AgentCore.ScriptApi
     // keyword_search_as_list(collection, query[, keywords, topN[, meta_keywords]])
     sealed class KeywordSearchAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_as_list(collection, query[, keywords, topN[, meta_keywords]])");
@@ -463,7 +463,7 @@ namespace AgentCore.ScriptApi
     // semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]])
     sealed class SemanticSearchBetweenAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -506,7 +506,7 @@ namespace AgentCore.ScriptApi
     // keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]])
     sealed class KeywordSearchBetweenAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -539,7 +539,7 @@ namespace AgentCore.ScriptApi
     // semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]])
     sealed class SemanticSearchOrderByTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 6) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]])");
@@ -581,7 +581,7 @@ namespace AgentCore.ScriptApi
     // keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]])
     sealed class KeywordSearchOrderByTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 6) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc[, meta_keywords]]])");
@@ -611,7 +611,7 @@ namespace AgentCore.ScriptApi
     // semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]])
     sealed class SemanticSearchBetweenOrderByTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 8) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -655,7 +655,7 @@ namespace AgentCore.ScriptApi
     // keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]])
     sealed class KeywordSearchBetweenOrderByTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 8) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -687,7 +687,7 @@ namespace AgentCore.ScriptApi
     // semantic_set_weights(vectorWeight, bm25Weight) - set hybrid scoring weights
     sealed class SemanticSetWeightsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_set_weights(vectorWeight, bm25Weight)");
@@ -709,7 +709,7 @@ namespace AgentCore.ScriptApi
     // semantic_rebuild_fts(collection) - rebuild FTS5 index with current segmenter
     sealed class SemanticRebuildFtsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: semantic_rebuild_fts(collection)");
@@ -730,7 +730,7 @@ namespace AgentCore.ScriptApi
     // sqlite_execute(sql) - execute a non-query SQL statement, returns affected rows
     sealed class SqliteExecuteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_execute(sql)");
@@ -755,7 +755,7 @@ namespace AgentCore.ScriptApi
     // sqlite_query(sql) - execute a query SQL statement, returns JSON array
     sealed class SqliteQueryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_query(sql)");
@@ -776,7 +776,7 @@ namespace AgentCore.ScriptApi
     // sqlite_backup([path]) - backup database using VACUUM INTO
     sealed class SqliteBackupExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_backup([path])");
@@ -797,7 +797,7 @@ namespace AgentCore.ScriptApi
     // sqlite_restore(path) - restore database from backup file
     sealed class SqliteRestoreExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_restore(backupPath)");
@@ -819,7 +819,7 @@ namespace AgentCore.ScriptApi
     // sqlite_search(collection, query[, topN[, meta_keywords]]) - direct LIKE search on semantic_records, returns JSON array
     sealed class SqliteSearchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search(collection, query[, topN[, meta_keywords]])");
@@ -843,7 +843,7 @@ namespace AgentCore.ScriptApi
     // sqlite_search_between(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - direct LIKE search within time range, returns JSON
     sealed class SqliteSearchBetweenExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_between(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -869,7 +869,7 @@ namespace AgentCore.ScriptApi
     // sqlite_search_between_as_list(collection, query, startTime[, endTime[, topN[, meta_keywords]]])
     sealed class SqliteSearchBetweenAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_between_as_list(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -895,7 +895,7 @@ namespace AgentCore.ScriptApi
     // sqlite_search_order_by_time(collection, query[, topN[, isAsc[, meta_keywords]]])
     sealed class SqliteSearchOrderByTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_order_by_time(collection, query[, topN[, isAsc[, meta_keywords]]])");
@@ -920,7 +920,7 @@ namespace AgentCore.ScriptApi
     // sqlite_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc[, meta_keywords]]]])
     sealed class SqliteSearchBetweenOrderByTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 7) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
@@ -947,7 +947,7 @@ namespace AgentCore.ScriptApi
     // sqlite_query_as_list(sql) - execute a query SQL statement, returns list of Dictionary<string, BoxedValue> (column->value, native types preserved)
     sealed class SqliteQueryAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_query_as_list(sql)");
@@ -971,7 +971,7 @@ namespace AgentCore.ScriptApi
     // sqlite_search_as_list(collection, query[, topN[, meta_keywords]]) - direct LIKE search, returns list of result strings
     sealed class SqliteSearchAsListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sqlite_search_as_list(collection, query[, topN[, meta_keywords]])");
@@ -995,7 +995,7 @@ namespace AgentCore.ScriptApi
     // semantic_migrate_fts() - migrate FTS schema to latest version
     sealed class SemanticMigrateFtsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 string report = Core.AgentCore.Instance.SemanticIndex.MigrateFtsSchema();
@@ -1011,7 +1011,7 @@ namespace AgentCore.ScriptApi
     // sqlite_list_tables() - list all user tables in the semantic sqlite database
     sealed class SqliteListTablesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 string sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;";
@@ -1027,7 +1027,7 @@ namespace AgentCore.ScriptApi
     // list_semantic_collections() - list all distinct collection names in semantic_records
     sealed class ListSemanticCollectionsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             try {
                 string sql = "SELECT DISTINCT collection FROM semantic_records ORDER BY collection;";

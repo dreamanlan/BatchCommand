@@ -1,5 +1,6 @@
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -405,7 +406,7 @@ namespace DotNetLib
 {
     sealed class SetDslFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: setdslfile(dsl_file)");
@@ -421,7 +422,7 @@ namespace DotNetLib
     }
     sealed class JavascriptLogExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string str;
             if (operands.Count == 1) {
@@ -443,7 +444,7 @@ namespace DotNetLib
     }
     sealed class EnqueueCefMessageExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1)
                 throw new Exception("Expected: startasynctask(func_name, args...) api");
@@ -458,7 +459,7 @@ namespace DotNetLib
     }
     sealed class HandleThreadQueueExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             int maxNativeCount = int.MaxValue;
             int maxJsCount = int.MaxValue;
@@ -485,7 +486,7 @@ namespace DotNetLib
     }
     sealed class SetHeartBeatIntervalExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: set_heartbeat_interval(interval_ms)");
@@ -498,7 +499,7 @@ namespace DotNetLib
     }
     sealed class SendJavascriptCodeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: send_javascript_code(code)");
@@ -516,7 +517,7 @@ namespace DotNetLib
     }
     sealed class SendJavascriptCallExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: send_javascript_call(func, arg1, arg2, ...)");
@@ -541,7 +542,7 @@ namespace DotNetLib
     // generated JavaScript (quotes, newlines, backslashes are all escaped).
     sealed class ShowNativeJsDialogExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 NativeApi.AppendApiErrorInfoLine("Expected: show_native_js_dialog(handle, dialog_type, message[, default_text])");
@@ -557,7 +558,7 @@ namespace DotNetLib
     }
     sealed class CompleteNativeCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 NativeApi.AppendApiErrorInfoLine("Expected: complete_native_callback(handle, ok[, data, code])");
@@ -593,7 +594,7 @@ namespace DotNetLib
     // when the script does not take over). |domain| defaults to all hosts.
     sealed class RegisterCustomSchemeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: register_custom_scheme(scheme[, domain])");
@@ -609,7 +610,7 @@ namespace DotNetLib
     // registered custom scheme handler factory for the scheme/domain.
     sealed class UnregisterCustomSchemeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: unregister_custom_scheme(scheme[, domain])");
@@ -626,7 +627,7 @@ namespace DotNetLib
     // on_file_changed(file_path, file_type) is invoked. |file_type| defaults to "File".
     sealed class WatchFileExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: watch_file(file_name[, relative_path, file_type])");
@@ -645,7 +646,7 @@ namespace DotNetLib
     // |file_type| defaults to "File".
     sealed class WatchDirectoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: watch_dir(dir_name[, relative_path, file_type])");
@@ -660,7 +661,7 @@ namespace DotNetLib
     }
     sealed class GetBrowserIdsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var ids = Lib.GetAllContextBrowserIds();
             if (null == ids)
@@ -674,7 +675,7 @@ namespace DotNetLib
     }
     sealed class SetContextByIdExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: set_context_by_id(browser_id)");
@@ -687,7 +688,7 @@ namespace DotNetLib
     }
     sealed class FindBrowserIdByUrlKeyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: find_browser_id_by_url_key(url_key)");
@@ -705,7 +706,7 @@ namespace DotNetLib
     // Returns the number of close requests issued (0 = nothing to close).
     sealed class ExitBrowserExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             var ids = Lib.GetAllContextBrowserIds();
             if (null == ids) {
@@ -726,7 +727,7 @@ namespace DotNetLib
     // Uses System.Text.Json for efficient in-place UTF-8 parsing without extra string allocation.
     sealed class DevToolsParseBytesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: dev_tools_parse_bytes(bytes_or_string)");

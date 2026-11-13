@@ -22,7 +22,7 @@ namespace AgentCore.ScriptApi
     // Set context variable on an agent instance
     sealed class AgentSetContextVarExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: agent_set_context_var(agentId, key, value)");
@@ -47,7 +47,7 @@ namespace AgentCore.ScriptApi
     // Get context variable from an agent instance
     sealed class AgentGetContextVarExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: agent_get_context_var(agentId, key)");
@@ -71,7 +71,7 @@ namespace AgentCore.ScriptApi
     // Remove context variable from an agent instance
     sealed class AgentRemoveContextVarExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: agent_remove_context_var(agentId, key)");
@@ -95,7 +95,7 @@ namespace AgentCore.ScriptApi
     // Clear context variables on an agent instance
     sealed class AgentClearContextVarsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: agent_clear_context_vars(agentId)");

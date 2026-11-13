@@ -79,7 +79,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternAddItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_pattern requires (agentId, title)");
@@ -100,7 +100,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternModifyItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_pattern requires (agentId, idx, title)");
@@ -124,7 +124,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternDeleteItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_patterns requires (agentId, idx[, idx2, ...])");
@@ -148,7 +148,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternMoveItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("move_pattern requires (agentId, idx, newIdx)");
@@ -177,7 +177,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternMergeItemsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("merge_patterns requires (agentId, srcIdx, dstIdx)");
@@ -207,7 +207,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternSetClausesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_pattern_clauses requires (agentId, idx, clause1, clause2, ...)");
@@ -234,7 +234,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternAddClauseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("add_pattern_clause requires (agentId, idx, content)");
@@ -257,7 +257,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternModifyClauseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("modify_pattern_clause requires (agentId, idx, clauseIdx, content)");
@@ -285,7 +285,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternDeleteClauseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("delete_pattern_clauses requires (agentId, idx, clauseIdx[, clauseIdx2, ...])");
@@ -312,7 +312,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternClearClausesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("clear_pattern_clauses requires (agentId, idx)");
@@ -335,7 +335,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternListExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("list_patterns requires (agentId)");
@@ -362,7 +362,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternViewItemExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("view_pattern requires (agentId, idx)");
@@ -385,7 +385,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternAlignExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("align_patterns requires (agentId)");
@@ -406,7 +406,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternRestoreExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_patterns_state requires (agentId, patterns_text)");
@@ -427,7 +427,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternSetMaxExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("set_patterns_max requires (maxCount, maxSize)");
@@ -450,7 +450,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternGetMaxCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(PatternTrackHelper.MaxItems);
         }
@@ -461,7 +461,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class PatternGetMaxSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.From(PatternTrackHelper.MaxBytes);
         }

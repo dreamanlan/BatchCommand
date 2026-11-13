@@ -19,7 +19,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmSetProviderExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_provider requires (provider_id, type, url, api_key, model)");
@@ -44,7 +44,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmSetProviderOptionExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_provider_option requires (provider_id, key, value)");
@@ -65,7 +65,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmChatCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_callback requires (provider_id, tag, topic, message)");
@@ -88,7 +88,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmChatWithImagesCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_with_images_callback requires (provider_id, tag, topic, message [, image_url1, image_url2, ...])");
@@ -120,7 +120,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmClearHistoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_clear_history requires (provider_id, tag)");
@@ -140,7 +140,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmAddChatExtraExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_add_chat_extra requires (provider_id, tag, key [, value1, value2, ...])");
@@ -165,7 +165,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmClearChatExtrasExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_clear_chat_extras requires (provider_id, tag)");
@@ -183,7 +183,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmIsBusyExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_is_busy requires (provider_id, tag)");
@@ -201,7 +201,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmGetBusyDurationExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_get_busy_duration requires (provider_id, tag)");
@@ -220,7 +220,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmCancelExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_cancel requires (provider_id, tag)");
@@ -240,7 +240,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmGetProvidersConfigExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             return BoxedValue.FromString(Core.LlmClientService.Instance.GetProvidersConfig());
         }
@@ -255,7 +255,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmSetSystemPromptExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_set_system_prompt requires (provider_id, tag, prompt)");
@@ -275,7 +275,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     internal sealed class LlmChatAsyncExp : SimpleAsyncExpressionBase
     {
-        protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+        protected override IEnumerator OnCalc(DslCalculator calculator, IList<BoxedValue> operands, AsyncCalcResult result)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_async requires 4 args: provider_id, tag, topic, message");
@@ -307,7 +307,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     internal sealed class LlmChatWithImagesAsyncExp : SimpleAsyncExpressionBase
     {
-        protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+        protected override IEnumerator OnCalc(DslCalculator calculator, IList<BoxedValue> operands, AsyncCalcResult result)
         {
             if (operands.Count < 5) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_with_images_async requires at least 5 args: provider_id, tag, topic, message, image_url...");
@@ -350,7 +350,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmChatExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat requires (provider_id, tag, topic, message)");
@@ -378,7 +378,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class LlmChatWithImagesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("llm_chat_with_images requires (provider_id, tag, topic, message [, image_url1, ...])");

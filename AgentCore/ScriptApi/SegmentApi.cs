@@ -15,7 +15,7 @@ namespace AgentCore.ScriptApi
     // tokenize(text) - segment mixed Chinese/English text into a list of tokens
     sealed class TokenizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: tokenize(text)");
@@ -42,7 +42,7 @@ namespace AgentCore.ScriptApi
     // set_help_semantic_search(type) - set help search mode: 0=BagOfWords, 1=TfIdf, 2=Embedding
     sealed class SetHelpSemanticSearchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_help_semantic_search(type)");
@@ -60,7 +60,7 @@ namespace AgentCore.ScriptApi
     // set_help_reranker(enable) - enable or disable reranker for help search: 1=enable, 0=disable
     sealed class SetHelpRerankerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: set_help_reranker(enable)");
@@ -77,7 +77,7 @@ namespace AgentCore.ScriptApi
     // sethelp_debug(enable) - append help search diagnostics when enabled
     sealed class SetHelpDebugExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: sethelp_debug(enable)");
@@ -158,7 +158,7 @@ namespace AgentCore.ScriptApi
             return parts;
         }
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: update_help_freq(file)");

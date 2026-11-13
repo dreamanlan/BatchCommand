@@ -21,7 +21,7 @@ namespace BatchCommand
 {
     internal sealed class StartAsyncTaskExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1)
                 throw new Exception("Expected: startasynctask(func_name, args...) api");
@@ -37,7 +37,7 @@ namespace BatchCommand
     }
     internal sealed class TickAsyncTasksExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 0)
                 throw new Exception("Expected: tickasynctasks() api");
@@ -47,7 +47,7 @@ namespace BatchCommand
     }
     internal sealed class StopAsyncTaskExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
                 throw new Exception("Expected: stopasynctask(handle) api");
@@ -58,7 +58,7 @@ namespace BatchCommand
     }
     internal sealed class StopCompletedAsyncTasksExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 0)
                 throw new Exception("Expected: stopcompletedasynctasks() api");
@@ -68,7 +68,7 @@ namespace BatchCommand
     }
     internal sealed class GetAsyncTaskResultExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
                 throw new Exception("Expected: getasynctaskresult(handle) api");
@@ -79,7 +79,7 @@ namespace BatchCommand
     }
     internal sealed class DebuggerLaunchExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: debuggerlaunch() api");
@@ -92,7 +92,7 @@ namespace BatchCommand
     }
     internal sealed class DebuggerBreakExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: debuggerbreak() api");
@@ -102,7 +102,7 @@ namespace BatchCommand
     }
     internal sealed class IsOsPlatformExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
                 throw new Exception("Expected: isosplatform(str_osp) api");
@@ -126,7 +126,7 @@ namespace BatchCommand
 
     internal sealed class TimeStatisticOnExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1)
                 throw new Exception("Expected: timestat(bool) or timestat() api");
@@ -139,7 +139,7 @@ namespace BatchCommand
 
     internal sealed class GrepExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4)
                 throw new Exception("Expected: grep(lines,regex[,context_lines_after,context_lines_before]) api");
@@ -221,7 +221,7 @@ namespace BatchCommand
 
     internal sealed class SubstExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4)
                 throw new Exception("Expected: subst(lines,regex,subst[,count]) api, count is the max count of per subst");
@@ -259,7 +259,7 @@ namespace BatchCommand
 
     internal sealed class AwkExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2)
                 throw new Exception("Expected: awk(lines,scp[,removeEmpties,sep1,sep2,...]) api");
@@ -332,7 +332,7 @@ namespace BatchCommand
 
     internal sealed class GetScriptDirectoryExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getscriptdir() api");
@@ -342,7 +342,7 @@ namespace BatchCommand
 
     internal sealed class PauseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: pause() api");
@@ -353,7 +353,7 @@ namespace BatchCommand
 
     internal sealed class ReadLineExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 2)
                 throw new Exception("Expected: readline() api, Console.ReadLine");
@@ -377,7 +377,7 @@ namespace BatchCommand
 
     internal sealed class ReadExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1)
                 throw new Exception("Expected: read([nodisplay]) api, Console.Read");
@@ -392,7 +392,7 @@ namespace BatchCommand
 
     internal sealed class ClearExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: clear() api, clear console");
@@ -403,7 +403,7 @@ namespace BatchCommand
 
     internal sealed class WriteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1)
                 throw new Exception("Expected: write(fmt,arg1,arg2,....) api, Console.Write");
@@ -429,11 +429,11 @@ namespace BatchCommand
 
     internal sealed class WriteBlockExp : AbstractExpression
     {
-        protected override BoxedValue DoCalc()
+        protected override BoxedValue DoCalc(DslCalculator calculator)
         {
             if (null != m_BeginChars && null != m_EndChars) {
-                var c1 = m_BeginChars.Calc().ToString();
-                var c2 = m_EndChars.Calc().ToString();
+                var c1 = m_BeginChars.Calc(calculator).ToString();
+                var c2 = m_EndChars.Calc(calculator).ToString();
                 if (c1.Length >= 2 && c2.Length >= 2) {
                     m_BeginFirst = c1[0];
                     m_BeginSecond = c1[1];
@@ -452,7 +452,7 @@ namespace BatchCommand
                     m_CommentEndSecond = c2[3];
                 }
             }
-            Console.Write(BlockExp.CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder
+            Console.Write(BlockExp.CalcBlockString(m_Block, calculator, m_OutputBuilder, m_TempBuilder
                 , m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond
                 , m_CommentBeginFirst, m_CommentBeginSecond, m_CommentEndFirst, m_CommentEndSecond));
             return BoxedValue.NullObject;
@@ -465,8 +465,8 @@ namespace BatchCommand
             if (funcData.IsHighOrder) {
                 var callData = funcData.LowerOrderFunction;
                 if (callData.GetParamNum() == 2) {
-                    m_BeginChars = Calculator.Load(callData.GetParam(0));
-                    m_EndChars = Calculator.Load(callData.GetParam(1));
+                    m_BeginChars = CodeStructure.Load(callData.GetParam(0));
+                    m_EndChars = CodeStructure.Load(callData.GetParam(1));
                 }
             }
             return true;
@@ -494,11 +494,11 @@ namespace BatchCommand
 
     internal sealed class BlockExp : AbstractExpression
     {
-        protected override BoxedValue DoCalc()
+        protected override BoxedValue DoCalc(DslCalculator calculator)
         {
             if (null != m_BeginChars && null != m_EndChars) {
-                var c1 = m_BeginChars.Calc().ToString();
-                var c2 = m_EndChars.Calc().ToString();
+                var c1 = m_BeginChars.Calc(calculator).ToString();
+                var c2 = m_EndChars.Calc(calculator).ToString();
                 if (c1.Length >= 2 && c2.Length >= 2) {
                     m_BeginFirst = c1[0];
                     m_BeginSecond = c1[1];
@@ -517,7 +517,7 @@ namespace BatchCommand
                     m_CommentEndSecond = c2[3];
                 }
             }
-            return BoxedValue.From(CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder
+            return BoxedValue.From(CalcBlockString(m_Block, calculator, m_OutputBuilder, m_TempBuilder
                 , m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond
                 , m_CommentBeginFirst, m_CommentBeginSecond, m_CommentEndFirst, m_CommentEndSecond));
         }
@@ -529,8 +529,8 @@ namespace BatchCommand
             if (funcData.IsHighOrder) {
                 var callData = funcData.LowerOrderFunction;
                 if (callData.GetParamNum() == 2) {
-                    m_BeginChars = Calculator.Load(callData.GetParam(0));
-                    m_EndChars = Calculator.Load(callData.GetParam(1));
+                    m_BeginChars = CodeStructure.Load(callData.GetParam(0));
+                    m_EndChars = CodeStructure.Load(callData.GetParam(1));
                 }
             }
             return true;
@@ -625,7 +625,7 @@ namespace BatchCommand
 
     internal sealed class BeepExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 2)
                 throw new Exception("Expected: beep([frequence,duration]) api, Console.Beep, only on win32");
@@ -645,7 +645,7 @@ namespace BatchCommand
 
     internal sealed class GetTitleExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: gettitle() api, Console.Title, only on win32");
@@ -658,7 +658,7 @@ namespace BatchCommand
 
     internal sealed class SetTitleExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
                 throw new Exception("Expected: settitle(title) api");
@@ -674,7 +674,7 @@ namespace BatchCommand
 
     internal sealed class GetBufferWidthExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getbufferwidth() api");
@@ -684,7 +684,7 @@ namespace BatchCommand
 
     internal sealed class GetBufferHeightExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getbufferheight() api");
@@ -694,7 +694,7 @@ namespace BatchCommand
 
     internal sealed class SetBufferSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2)
                 throw new Exception("Expected: setbuffersize(width,height) api");
@@ -711,7 +711,7 @@ namespace BatchCommand
 
     internal sealed class GetCursorLeftExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getcursorleft() api");
@@ -721,7 +721,7 @@ namespace BatchCommand
 
     internal sealed class GetCursorTopExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getcursortop() api");
@@ -731,7 +731,7 @@ namespace BatchCommand
 
     internal sealed class SetCursorPosExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2)
                 throw new Exception("Expected: setcursorpos(left,top) api");
@@ -746,7 +746,7 @@ namespace BatchCommand
 
     internal sealed class GetBgColorExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getbgcolor() api, return str");
@@ -757,7 +757,7 @@ namespace BatchCommand
 
     internal sealed class SetBgColorExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
                 throw new Exception("Expected: setbgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White");
@@ -773,7 +773,7 @@ namespace BatchCommand
 
     internal sealed class GetFgColorExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getfgcolor() api, return str");
@@ -784,7 +784,7 @@ namespace BatchCommand
 
     internal sealed class SetFgColorExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
                 throw new Exception("Expected: setfgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White");
@@ -800,7 +800,7 @@ namespace BatchCommand
 
     internal sealed class ResetColorExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: resetcolor() api");
@@ -811,7 +811,7 @@ namespace BatchCommand
 
     internal sealed class SetEncodingExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 2)
                 throw new Exception("Expected: setencoding([input[,output]]) api, def is UTF8");
@@ -834,7 +834,7 @@ namespace BatchCommand
 
     internal sealed class GetInputEncodingExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getinputencoding() api, return Encoding");
@@ -844,7 +844,7 @@ namespace BatchCommand
 
     internal sealed class GetOutputEncodingExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: getoutputencoding() api, return Encoding");
@@ -854,7 +854,7 @@ namespace BatchCommand
 
     internal sealed class ConsoleExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: console() api, return typeof(Console)");
@@ -864,7 +864,7 @@ namespace BatchCommand
 
     internal sealed class EncodingExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: encoding() api, return typeof(Encoding)");
@@ -874,7 +874,7 @@ namespace BatchCommand
 
     internal sealed class RuntimeInformationExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: runtimeinfo() api, return typeof(RuntimeInformation)");
@@ -884,7 +884,7 @@ namespace BatchCommand
 
     internal sealed class EnvironmentExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
                 throw new Exception("Expected: env() api, return typeof(Environment)");
@@ -900,7 +900,7 @@ namespace BatchCommand
     // value only exists for the (never taken) no-exit path.
     internal sealed class ExitProcessExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             int exitCode = 0;
             if (operands.Count >= 1) {
@@ -913,7 +913,7 @@ namespace BatchCommand
 
     internal sealed class RegReadExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3)
                 throw new Exception("Expected: regread(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG");
@@ -933,7 +933,7 @@ namespace BatchCommand
     }
     internal sealed class RegWriteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4)
                 throw new Exception("Expected: regwrite(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword");
@@ -968,7 +968,7 @@ namespace BatchCommand
     }
     internal sealed class RegDeleteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2)
                 throw new Exception("Expected: regdelete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG");
@@ -1447,9 +1447,9 @@ namespace BatchCommand
             ClearUserApiDocs();
             ClearDslErrors();
             ClearAllAsyncTaskInfo();
-            Calculator.OnLog = msg => { OnDslError(msg); };
+            Calculator.CodeStructure.OnLog = msg => { OnDslError(msg); };
             if (null != apiRegistry) {
-                Calculator.ApiRegistry = apiRegistry;
+                Calculator.CodeStructure.ApiRegistry = apiRegistry;
             }
             else {
                 Calculator.NewApiRegistry();

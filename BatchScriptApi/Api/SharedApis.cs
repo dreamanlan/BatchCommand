@@ -20,7 +20,7 @@ namespace BatchCommand.Api
     // append_line(stringbuilder, val) - append value with newline
     public sealed class AppendLineExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: append_line(stringbuilder, val)");

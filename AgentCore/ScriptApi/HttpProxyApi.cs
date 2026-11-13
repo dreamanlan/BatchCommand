@@ -80,7 +80,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class HttpProxyStartServerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: httpproxy_start_server(port)");
@@ -111,7 +111,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class HttpProxyStopServerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: httpproxy_stop_server(port)");
@@ -136,7 +136,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class HttpProxyGetRequestCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: httpproxy_get_request_count(port)");
@@ -174,7 +174,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class HttpProxyAddFilterExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: httpproxy_add_filter(port, direction [, pattern ...] [, fields_json])");
@@ -242,7 +242,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class HttpProxyRemoveFilterExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: httpproxy_remove_filter(port, filter_id)");
@@ -267,7 +267,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class HttpProxyClearFiltersExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: httpproxy_clear_filters(port)");
@@ -302,7 +302,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class HttpProxySetFilterDslExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: httpproxy_set_filter_dsl(port, path)");

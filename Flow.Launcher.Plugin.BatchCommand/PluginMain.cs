@@ -997,7 +997,7 @@ public sealed class MessageWindow : Form
 
 internal sealed class MaxArtificialScoreExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         BoxedValue r = Main.c_MaxArtificialScore;
         return r;
@@ -1005,7 +1005,7 @@ internal sealed class MaxArtificialScoreExp : SimpleExpressionBase
 }
 internal sealed class MainThreadSyncExecutionTypeExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         BoxedValue r = 0;
         if (operands.Count >= 1) {
@@ -1026,7 +1026,7 @@ internal sealed class DialogOwnerForm : System.Windows.Forms.Form
 }
 internal sealed class FolderDialogExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         string ret = string.Empty;
         if (operands.Count >= 1) {
@@ -1063,7 +1063,7 @@ internal sealed class FolderDialogExp : SimpleExpressionBase
 }
 internal sealed class OpenFileDialogExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         string ret = string.Empty;
         if (operands.Count >= 3) {
@@ -1101,7 +1101,7 @@ internal sealed class OpenFileDialogExp : SimpleExpressionBase
 }
 internal sealed class OpenFilesDialogExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         string[] ret = null;
         if (operands.Count >= 3) {
@@ -1142,7 +1142,7 @@ internal sealed class OpenFilesDialogExp : SimpleExpressionBase
 }
 internal sealed class SaveFileDialogExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         string ret = string.Empty;
         if (operands.Count >= 3) {
@@ -1180,35 +1180,35 @@ internal sealed class SaveFileDialogExp : SimpleExpressionBase
 }
 internal sealed class ShellContextMenuExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         return BoxedValue.FromObject(Main.s_ShellCtxMenu);
     }
 }
 internal sealed class ContextExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         return BoxedValue.FromObject(Main.s_Context);
     }
 }
 internal sealed class ApiExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         return BoxedValue.FromObject(Main.s_Context.API);
     }
 }
 internal sealed class MetadataExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         return BoxedValue.FromObject(Main.s_Context.CurrentPluginMetadata);
     }
 }
 internal sealed class ShowMsgExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count > 0) {
             string title = operands[0].ToString();
@@ -1232,7 +1232,7 @@ internal sealed class ShowMsgExp : SimpleExpressionBase
 }
 internal sealed class RestartExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (null != Main.s_CurFuncs) {
             //The RestarApp method needs to be executed on the main thread (it seems that
@@ -1248,7 +1248,7 @@ internal sealed class RestartExp : SimpleExpressionBase
 }
 internal sealed class ShowConsoleExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         BoxedValue r = BoxedValue.NullObject;
         Main.ShowConsole();
@@ -1257,7 +1257,7 @@ internal sealed class ShowConsoleExp : SimpleExpressionBase
 }
 internal sealed class HideConsoleExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         BoxedValue r = BoxedValue.NullObject;
         Main.HideConsole();
@@ -1266,7 +1266,7 @@ internal sealed class HideConsoleExp : SimpleExpressionBase
 }
 internal sealed class ReloadDslExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         Main.s_NeedReload = true;
         return BoxedValue.NullObject;
@@ -1274,7 +1274,7 @@ internal sealed class ReloadDslExp : SimpleExpressionBase
 }
 internal sealed class EvalDslExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         BoxedValue r = BoxedValue.NullObject;
         if (operands.Count >= 1) {
@@ -1311,7 +1311,7 @@ internal sealed class EvalDslExp : SimpleExpressionBase
 }
 internal sealed class ChangeQueryExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 2) {
             string queryStr = operands[0].AsString;
@@ -1334,7 +1334,7 @@ internal sealed class ChangeQueryExp : SimpleExpressionBase
 }
 internal sealed class AddResultExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 6) {
             string title = operands[0].AsString;
@@ -1396,7 +1396,7 @@ internal sealed class AddResultExp : SimpleExpressionBase
     }
 }
 internal sealed class PostResultExp : SimpleExpressionBase{
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             Query query = operands[0].As<Query>();
@@ -1409,7 +1409,7 @@ internal sealed class PostResultExp : SimpleExpressionBase{
 }
 internal sealed class AddContextMenuExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 6) {
             string title = operands[0].AsString;
@@ -1431,7 +1431,7 @@ internal sealed class AddContextMenuExp : SimpleExpressionBase
 }
 internal sealed class ActionKeywordRegisteredExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string keyword = operands[0].AsString;
@@ -1442,7 +1442,7 @@ internal sealed class ActionKeywordRegisteredExp : SimpleExpressionBase
 }
 internal sealed class ClearActionKeywordsExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string id = operands[0].AsString;
@@ -1460,7 +1460,7 @@ internal sealed class ClearActionKeywordsExp : SimpleExpressionBase
 }
 internal sealed class AddActionKeywordExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 2) {
             string id = operands[0].AsString;
@@ -1483,7 +1483,7 @@ internal sealed class AddActionKeywordExp : SimpleExpressionBase
 }
 internal sealed class ShowContextMenuExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 3) {
             string path = operands[0].AsString;
@@ -1518,7 +1518,7 @@ internal sealed class ShowContextMenuExp : SimpleExpressionBase
 }
 internal sealed class ReloadAutoCompleteExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         Main.s_AutoCompletions = Main.LoadAutoComplete(Main.s_Context.CurrentPluginMetadata.PluginDirectory);
         return Main.s_AutoCompletions.Count > 0;
@@ -1526,7 +1526,7 @@ internal sealed class ReloadAutoCompleteExp : SimpleExpressionBase
 }
 internal sealed class GetAutoCompleteExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string key = operands[0].AsString;
@@ -1542,7 +1542,7 @@ internal sealed class GetAutoCompleteExp : SimpleExpressionBase
 }
 internal sealed class TryFindEverythingExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         Main.TryFindEverything();
         return BoxedValue.From(Main.s_EverythingFullPath);
@@ -1550,14 +1550,14 @@ internal sealed class TryFindEverythingExp : SimpleExpressionBase
 }
 internal sealed class EverythingExistsExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         return BoxedValue.From(EveryThingSDK.EverythingExists());
     }
 }
 internal sealed class EverythingResetExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (EveryThingSDK.EverythingExists()) {
             EveryThingSDK.Everything_Reset();
@@ -1567,7 +1567,7 @@ internal sealed class EverythingResetExp : SimpleExpressionBase
 }
 internal sealed class EverythingSetDefaultExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (EveryThingSDK.EverythingExists()) {
             EveryThingSDK.Everything_SetMatchPath(false);
@@ -1581,7 +1581,7 @@ internal sealed class EverythingSetDefaultExp : SimpleExpressionBase
 }
 internal sealed class EverythingMatchPathExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
@@ -1601,7 +1601,7 @@ internal sealed class EverythingMatchPathExp : SimpleExpressionBase
 }
 internal sealed class EverythingMatchCaseExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
@@ -1621,7 +1621,7 @@ internal sealed class EverythingMatchCaseExp : SimpleExpressionBase
 }
 internal sealed class EverythingMatchWholeWordExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
@@ -1641,7 +1641,7 @@ internal sealed class EverythingMatchWholeWordExp : SimpleExpressionBase
 }
 internal sealed class EverythingRegexExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
@@ -1661,7 +1661,7 @@ internal sealed class EverythingRegexExp : SimpleExpressionBase
 }
 internal sealed class EverythingSortExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string type = operands[0].AsString;
@@ -1730,7 +1730,7 @@ internal sealed class EverythingSortExp : SimpleExpressionBase
 }
 internal sealed class EverythingSearchExp : SimpleExpressionBase
 {
-    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string str = operands[0].AsString;

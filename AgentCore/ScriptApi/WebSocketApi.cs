@@ -93,7 +93,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WsStartServerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ws_start_server(port, [agentId])");
@@ -138,7 +138,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WsStopServerExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ws_stop_server(port)");
@@ -163,7 +163,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WsGetClientCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ws_get_client_count(port)");
@@ -192,7 +192,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class WsGetReceiveQueueCountExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: ws_get_receive_queue_count(port)");

@@ -13,7 +13,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpConnectExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_connect requires (serverId, type, target)");
@@ -32,7 +32,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpDisconnectExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_disconnect requires (serverId)");
@@ -49,7 +49,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpIsConnectedExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_is_connected requires (serverId)");
@@ -66,7 +66,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpListToolsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_tools requires (serverId)");
@@ -83,7 +83,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpListResourcesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_resources requires (serverId)");
@@ -102,7 +102,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpReadResourceExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_resource requires (serverId, uri)");
@@ -132,7 +132,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpReadResourceCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_resource_callback requires (serverId, uri, tag)");
@@ -153,7 +153,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpListPromptsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_list_prompts requires (serverId)");
@@ -172,7 +172,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpReadPromptExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_prompt requires (serverId, promptName[, argsJson])");
@@ -203,7 +203,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpReadPromptCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_read_prompt_callback requires (serverId, promptName, argsJson, tag)");
@@ -229,7 +229,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpCallToolCallbackExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_call_tool_callback requires (serverId, toolName, argsJson, tag)");
@@ -255,7 +255,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpSetOptionExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_set_option requires (serverId, key, value)");
@@ -276,7 +276,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpClearOptionsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_clear_options requires (serverId)");
@@ -296,7 +296,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpCallToolExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_call_tool requires (serverId, toolName, argsJson)");
@@ -323,7 +323,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpGetBusyDurationExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_get_busy_duration requires (serverId, tag)");
@@ -342,7 +342,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class McpCancelExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("mcp_cancel requires (serverId, tag)");

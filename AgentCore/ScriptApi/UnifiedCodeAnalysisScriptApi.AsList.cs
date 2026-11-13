@@ -64,7 +64,7 @@ namespace AgentCore.ScriptApi
         // ========== Function Search (List) ==========
         public sealed class FindFunctionsAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -87,7 +87,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindFunctionsInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -112,7 +112,7 @@ namespace AgentCore.ScriptApi
         // ========== Type Search (List) ==========
         public sealed class FindTypesAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -135,7 +135,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindTypesInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -160,7 +160,7 @@ namespace AgentCore.ScriptApi
         // ========== Variable Search (List) ==========
         public sealed class FindVariablesAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -183,7 +183,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindVariablesInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -207,7 +207,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindGlobalVariablesAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -230,7 +230,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindGlobalVariablesInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -254,7 +254,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindParametersAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -277,7 +277,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindParametersInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -302,7 +302,7 @@ namespace AgentCore.ScriptApi
         // ========== Class Member Search (List) ==========
         public sealed class FindClassMembersAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -325,7 +325,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindClassMembersInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -349,7 +349,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindFieldsAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -373,7 +373,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindFieldsInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -398,7 +398,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindPropertiesAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -422,7 +422,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindPropertiesInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -447,7 +447,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindMethodsAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -471,7 +471,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindMethodsInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -496,7 +496,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindEventsAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -520,7 +520,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindEventsInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -545,7 +545,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindConstructorsAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -568,7 +568,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindConstructorsInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -593,7 +593,7 @@ namespace AgentCore.ScriptApi
         // ========== Interface / Struct / Enum Search (List) ==========
         public sealed class FindInterfacesAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -616,7 +616,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindInterfacesInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -640,7 +640,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindStructsAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -663,7 +663,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindStructsInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -687,7 +687,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindEnumsAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -710,7 +710,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindEnumsInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 2)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -735,7 +735,7 @@ namespace AgentCore.ScriptApi
         // ========== AST Node Search (List) ==========
         public sealed class FindNodesAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 3)
                     return BoxedValue.FromObject(s_EmptyStringList);
@@ -758,7 +758,7 @@ namespace AgentCore.ScriptApi
 
         public sealed class FindNodesInCodeAsListExp : SimpleExpressionBase
         {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count < 3 || operands.Count > 4)
                     return BoxedValue.FromObject(s_EmptyStringList);

@@ -181,7 +181,7 @@ namespace BatchCommand
 
     internal sealed class CompileDbgScpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string scpFile = "hook.txt";
             string struFile = "struct.txt";
@@ -244,7 +244,7 @@ namespace BatchCommand
     }
     internal sealed class UploadDbgScpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             CppDebugScript.DebugScriptCompiler.Instance.UploadToCppVM();
             return BoxedValue.NullObject;
@@ -252,7 +252,7 @@ namespace BatchCommand
     }
     internal sealed class SaveDbgScpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string datFile = "bytecode.dat";
             if (operands.Count > 0) {
@@ -268,7 +268,7 @@ namespace BatchCommand
     }
     internal sealed class LoadDbgScpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             string datFile = "bytecode.dat";
             if (operands.Count > 0) {
@@ -284,7 +284,7 @@ namespace BatchCommand
     }
     internal sealed class DbgScpSetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             int cmd = 0;
             int a = 123;
@@ -308,7 +308,7 @@ namespace BatchCommand
     }
     internal sealed class DbgScpGetExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             int cmd = 0;
             int a = 123;
@@ -331,7 +331,7 @@ namespace BatchCommand
     }
     internal sealed class TestDbgScpExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             int a = CppDebugScript.CppDbgScpInterface.Test1_Export(123, 123.456, "test1");
             LogSystem.Warn("retval a:{0}", a);
@@ -353,7 +353,7 @@ namespace BatchCommand
     }
     internal sealed class Addrs2LinesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             ulong textBase = 0x72a4d6a000;
             ulong textSeg = 0x55a000;

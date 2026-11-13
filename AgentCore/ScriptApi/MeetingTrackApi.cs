@@ -72,7 +72,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingOpenExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("open_meeting requires (agentId, channelId, title)");
@@ -105,7 +105,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingAgendaAddExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("add_agenda_item requires (agentId, channelId, content)");
@@ -131,7 +131,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingAgendaStateExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 4 && operands.Count != 5) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("change_agenda_item_state requires (agentId, channelId, idx, state[, note])");
@@ -167,7 +167,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingAgendaNoteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("append_agenda_note requires (agentId, channelId, note)");
@@ -192,7 +192,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingAgendaItemNoteExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 4) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("append_agenda_item_note requires (agentId, channelId, idx, note)");
@@ -222,7 +222,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingGetAgendaExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("get_agenda requires (agentId, channelId)");
@@ -243,7 +243,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingGetActionsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("get_action_items requires (agentId, channelId)");
@@ -264,7 +264,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingGetViewExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("get_meeting requires (agentId, channelId)");
@@ -285,7 +285,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingAlignExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("align_agenda requires (agentId, channelId)");
@@ -313,7 +313,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingRestoreExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("restore_meeting_state requires (agentId, channelId)");
@@ -345,7 +345,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingActionAddExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 4 && operands.Count != 5) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("add_action_item requires (agentId, channelId, owner, task[, deadline])");
@@ -372,7 +372,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingMinutesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("append_minutes requires (agentId, channelId, text)");
@@ -401,7 +401,7 @@ namespace AgentCore.ScriptApi
     /// </summary>
     sealed class MeetingCloseExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2 && operands.Count != 3) {
                 Core.MetaDslExecutor.AppendApiErrorInfoLine("close_meeting requires (agentId, channelId[, summary])");

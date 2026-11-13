@@ -20,7 +20,7 @@ namespace AgentCore.ScriptApi
     // Logging Operations
     sealed class LogInfoExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: log_info(fmt, ...)");
@@ -46,7 +46,7 @@ namespace AgentCore.ScriptApi
 
     sealed class LogErrorExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: log_error(fmt, ...)");
@@ -72,7 +72,7 @@ namespace AgentCore.ScriptApi
 
     sealed class LogWarningExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
                 AgentCore.Core.MetaDslExecutor.AppendApiErrorInfoLine("Expected: log_warning(fmt, ...)");

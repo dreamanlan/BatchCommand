@@ -10,7 +10,7 @@ namespace BatchCommand.Api
     // get_file_size(path) - get file size in bytes
     public sealed class GetFileSizeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: get_file_size(path), aliased as file_size");
@@ -38,7 +38,7 @@ namespace BatchCommand.Api
     // file_last_write_time(path) - get file last write time as DateTime
     public sealed class GetFileLastWriteTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: file_last_write_time(path)");
@@ -65,7 +65,7 @@ namespace BatchCommand.Api
     // file_last_access_time(path) - get file last access time as DateTime
     public sealed class GetFileLastAccessTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: file_last_access_time(path)");
@@ -92,7 +92,7 @@ namespace BatchCommand.Api
     // file_create_time(path) - get file create time as DateTime
     public sealed class GetFileCreateTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: file_create_time(path)");
@@ -119,7 +119,7 @@ namespace BatchCommand.Api
     // set_file_attributes(path, int_attrs) - set file attributes from int value
     public sealed class SetFileAttributesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: set_file_attributes(path, int_attrs)");
@@ -147,7 +147,7 @@ namespace BatchCommand.Api
     // get_file_attributes(path) - get file attributes as int
     public sealed class GetFileAttributesExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
                 ApiTextInfo.Error.AppendLine("Expected: get_file_attributes(path)");
@@ -174,7 +174,7 @@ namespace BatchCommand.Api
     // set_file_last_write_time(path, date_time) - set file last write time
     public sealed class SetFileLastWriteTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: set_file_last_write_time(path, date_time)");
@@ -202,7 +202,7 @@ namespace BatchCommand.Api
     // set_file_last_access_time(path, date_time) - set file last access time
     public sealed class SetFileLastAccessTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: set_file_last_access_time(path, date_time)");
@@ -230,7 +230,7 @@ namespace BatchCommand.Api
     // set_file_create_time(path, date_time) - set file creation time
     public sealed class SetFileCreateTimeExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: set_file_create_time(path, date_time)");
@@ -258,7 +258,7 @@ namespace BatchCommand.Api
     // get_diff_time_days(date_time_1, date_time_2) - (date_time_2 - date_time_1).TotalDays, truncated to int
     public sealed class GetDiffTimeDaysExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: get_diff_time_days(date_time_1, date_time_2)");
@@ -281,7 +281,7 @@ namespace BatchCommand.Api
     // get_diff_time_seconds(date_time_1, date_time_2) - (date_time_2 - date_time_1).TotalSeconds truncated to int
     public sealed class GetDiffTimeSecondsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: get_diff_time_seconds(date_time_1, date_time_2)");
@@ -304,7 +304,7 @@ namespace BatchCommand.Api
     // get_diff_time_ms(date_time_1, date_time_2) - (date_time_2 - date_time_1).TotalMilliseconds truncated to long
     public sealed class GetDiffTimeMsExp : SimpleExpressionBase
     {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
                 ApiTextInfo.Error.AppendLine("Expected: get_diff_time_ms(date_time_1, date_time_2)");

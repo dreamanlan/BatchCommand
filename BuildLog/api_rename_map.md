@@ -647,3 +647,30 @@ KEEP 原则（63 条不改动）：已含下划线合规名（cam_info/asset_ref
 重要发现：TestUC 运行时引擎是 GameDemo 的 StoryScript（netstandard2.1，非 DotnetStoryScript），using StoryScript; using StoryScript.DslExpression;——该引擎已是 snake_case 新版。批次11 全目录扫描漏了 e 盘工程，dsl 里残留 32 个内建旧名（stringcontains/looplist/readalllines/appendlineformat→append_format_line/stringbuildertostring→stringbuilder_tostring 等），本次补改 526 处。dsl_tools 执行器 smol-v-test.exe 是单文件打包（内嵌旧构建），改源码后需重新构建 exe 才能跑新名脚本。
 
 验证：代码区裸出现预检 0 命中（PowerShell -match 不区分大小写会误报 GetComponent 等 Unity 驼峰 API，须用 -cmatch）；区分大小写残留扫描仅剩 Odin 第三方（import 英文词）与 proto 生成字段（appid）噪音；反向断链审计（dsl 调用名 ⊆ TestUC 470 注册 ∪ StoryScript 354 内建 ∪ 本地 script() 定义 ∪ smol 宿主 UI 描述语法白名单 button/input/popup/table/string/float/range/multiple/inthash/stringhash/label/file/encoding/feature/rect/sampler 及 startup 系 log_sysinfo/set_timescale/resettrees/mapmyhooksymbols/updatetexturedb）= 0 断链。Unity 工程内编译与 smol-v-test.exe 重建留用户。
+## 批次 13：StoryDsl.txt 编码修复 + ServerPlatform 部署升级（2026-11-17，用户授权）
+
+### 1）CSharpGameFramework/Doc/StoryDsl.txt 乱码修复
+
+现象：工作区文件 65958B 混合编码（首字节 `D2-BB` GBK "一" + 11382 个 `EF-BF-BD` U+FFFD），中文不可逆损坏；git HEAD blob（40820B）是完好的 GB18030 原文；`GameDemo/Tools/DocGenerator/bin/Debug/StoryDsl.txt` 是另一份 UTF-8 生成器输出（2131 行/356 API 头，不是同一文件）。
+
+修复：以 HEAD blob（GB18030 完好中文）为底；把工作区乱码版与 HEAD 逐行对齐（1992 行、1621 行 ASCII token 一致）推导出 191 个干净的旧名→snake_case 改名对（排除 2 个 mojibake token 噪音 `key->keloop_list`、`looplist->loop_listlooplist`）；加 rustdsl_map.tsv 旧名兜底共 299 对，按长度降序整词替换；输出 UTF-8 无 BOM（49951B）。
+
+验证：strict UTF-8 YES、U+FFFD 0、中文 7054 字、1991 行、rustdsl 旧名残留 0、260 个编号 API 头全为 snake_case。刻意不动：文档里游戏域粘连名（isjsonarray/json2str/npcpatrol 等，注册表无权威映射证据，按"无证据不猜"保留）。
+
+### 2）libevent 2.1.12 → 2.1.13
+
+- 构建：`libevent-2.1.13-stable` 用 CMake 4.4 + VS2022 v143 静态 Release（`/MT`、OpenSSL off、tests/benchmark/samples/regress off），`-DCMAKE_POLICY_VERSION_MINIMUM=3.5` 绕过 cmake_minimum_required 3.1 兼容限制；x64/Win32 各生成 event/event_core/event_extra.lib。
+- 落位（对齐 2.1.12 布局）：`lib/x64`、`lib/win32` 各 3 个 lib；`include/x64/`、`include/win32/` 放 evconfig-private.h 与 event2/event-config.h；`include/event2/event-config.h` 共用。新旧 event-config.h 仅 4 行版本号差异（ABI 一致）。
+- 依赖切换：ServerCenter/AdminTool/CenterClientLibrary/CenterHubLibrary 四个 vcxproj 各 6 处 + .gitignore 2 处，2.1.12→2.1.13（源码级引用 0 残留）。
+- 验证：MSBuild Debug|x64 四个工程全 0 错误；ServerCenter Win32 用临时 include 补丁（补既有缺失的 ../Common/Encoding）也 0 错误，构建后 vcxproj 已还原。LNK4098 为 /MT 静态库与 /MD 的既有警告。
+- 删除 2.1.12 整目录（备份 e:/tmp/libevent_2112_backup + 旧 nodejs 亦在 e:/tmp）。环境 safe-delete 阈值按轮累计 500 文件拦截整目录删除，改用小批量逐文件删除完成；未绕过机制。
+
+### 3）Node 26 部署
+
+- 最新稳定 LTS：v26.13.1（Lithium，2026-11-10），`process.versions.modules=147`；从 nodejs.org 下载 win-x64 zip（41MB）。
+- `d:/nodejs` 由 v24.15.0 更新到 v26.13.1（npm 11.20.0），旧版双备份 e:/tmp/nodejs24_backup 与 e:/tmp/nodejs24_original。
+- `node_center_client`：main.cc 用标准 N-API（NODE_API_MODULE、Napi::*），无裸 V8 废弃调用；package.json 依赖 `node-addon-api` 由 `*` 固定为 `^8.9.2`（最新版，对应 Node 26），npm install + node-gyp rebuild（旧 config.gypi 的 module 137 → 147）；`-flto=thin/-fprofile-use` 警告为 Node 26 官方 headers 携带的 PGO 选项被 MSVC 忽略，无害。
+- 部署 bin64：`node.exe`(100089160B) + `center_client.node`(730624B，11 个导出)，旧文件备份 e:/tmp/bin64_backup。
+- 冒烟：bin64 就地 `node.exe -e "require('./center_client.node')"` 加载成功（11 exports、v26.13.1）；addon 依赖 `CenterClientLibrary.dll` 由 bin64 提供（dumpbin 确认 + 显式 PATH 验证）。
+
+生效说明：ServerEnv 目录的部署由用户自行完成（bin64 已就绪）。

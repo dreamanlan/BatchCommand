@@ -634,3 +634,16 @@ UnityEditorApi.Register 49 条连写注册（与批次 9 处理的 `Assets\Edito
 验证：e:/tmp/bsapi_smoke 存根宿主（引用根 bin DLL，DslHost.Prepare + ExecuteScript）冒烟 8 项全 PASS：FA 版 copy_file 2 参默认覆盖、FA 版 3 参拒绝（dst 不变）、copy_file_ex overwrite=true/false、FA 版 move_file 2 参、move_file_ex、file_exists %VAR% 展开（FA 版）、dir_exists %VAR%（DS 版，展开正常）、参数错误文案（"Expected: copy_file(file1,file2)"）与 copy_file_ex 目标存在不覆盖报错均经 ApiTextInfo.Error 回流。REGDOC 断言：copy_file/move_file/file_exists/path_exists=FA 文案、copy_file_ex/move_file_ex=新名、dir_exists/file_exist=DS 文案（带 " api" 后缀）。BatchCommand.csproj 构建 0 警告 0 错误，read_lints 0 诊断。
 
 生效说明：webagent 运行时需重启（换新 BatchScriptApi.dll，AgentCore post-build 拷贝受 webagentdbg 进程锁制约，留用户处理）。
+## 批次12：TestUC（e:/UGit/TestUC，2026-11-16，用户授权）
+
+范围：Unity 工程 TestUC 的 DSL API 改 snake_case。注册 477 个（ClientGmStorySystem 240 + EditorDslProcessorApi 131 + EditorDslApi 73 + GmCommands 14 + TerrainProcessor 14 + UCEditorDslApi 5），改名 414 条（KEEP 63），完整映射表 e:/tmp/testuc_map.tsv。映射优先级：rustdsl_map（DS/StoryScript 权威）> uprof_map（批次9 同工具链已验收）> 类名 SOP 推导（缩写词典 Idapro/Url/Md5/Gpu/Cpu/Tex/Mem/Ui/Ptr/Scp/UrP/Msaa/Appid 等）。
+
+KEEP 原则（63 条不改动）：已含下划线合规名（cam_info/asset_refresh/api_list 等）；标准 shell 名（gm/help/cd/pwd/gc/cmd/shell）；单词名（click/toggle/capture/screen/app/quit/position/rotation/scale/expand）；Profiler 内存五分类名（mono/native/gfx/unused/total）；紧凑转换对（deg2rad/rad2deg，itof-ftoi 先例）；C# 关键字风格（typeof）。
+
+人工修正的 SOP 推导项：prefset*/prefget* 系补 set/get 动词（player_pref_set_int 等，myuzu 批次10 先例 prefset→player_pref_set）；WeTest 专有名词整词（wetest_touch/wetest_get_x 等）；asset_path_2_guid/guid_2_asset_path（数字独立分词）；is_iphone（iPhone 整词）；get_shell/get_shell_timeout（避免与 shell/shell_timeout 撞名）；position/rotation/scale 共用 Vector3Function 类推导会撞名为 vector3，按单词保留。
+
+消费端：6 个注册 C# 文件（注册名+doc+错误消息，728 处）+ 补漏 4 文件（StartScript.cs 的 DebugConsole.Execute DSL 字符串、GeneralCommands.cs 实现类 doc/Expected 消息、GmCommands.cs 错误日志/case 注释、GmSocketServer.cs 示例注释，29 处）+ dsl 脚本 102 个（tools/dsl_scripts，494 处）。
+
+重要发现：TestUC 运行时引擎是 GameDemo 的 StoryScript（netstandard2.1，非 DotnetStoryScript），using StoryScript; using StoryScript.DslExpression;——该引擎已是 snake_case 新版。批次11 全目录扫描漏了 e 盘工程，dsl 里残留 32 个内建旧名（stringcontains/looplist/readalllines/appendlineformat→append_format_line/stringbuildertostring→stringbuilder_tostring 等），本次补改 526 处。dsl_tools 执行器 smol-v-test.exe 是单文件打包（内嵌旧构建），改源码后需重新构建 exe 才能跑新名脚本。
+
+验证：代码区裸出现预检 0 命中（PowerShell -match 不区分大小写会误报 GetComponent 等 Unity 驼峰 API，须用 -cmatch）；区分大小写残留扫描仅剩 Odin 第三方（import 英文词）与 proto 生成字段（appid）噪音；反向断链审计（dsl 调用名 ⊆ TestUC 470 注册 ∪ StoryScript 354 内建 ∪ 本地 script() 定义 ∪ smol 宿主 UI 描述语法白名单 button/input/popup/table/string/float/range/multiple/inthash/stringhash/label/file/encoding/feature/rect/sampler 及 startup 系 log_sysinfo/set_timescale/resettrees/mapmyhooksymbols/updatetexturedb）= 0 断链。Unity 工程内编译与 smol-v-test.exe 重建留用户。

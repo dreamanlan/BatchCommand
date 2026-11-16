@@ -130,7 +130,7 @@ script(build)
             output_log("build failed:{0}", native_api.GetResultCode());
             return(-1);
         };
-        native_api.ShowWindowsConsole();
+        //native_api.ShowWindowsConsole();
     };
     output_log("[dsl] build success");
     return(1);
@@ -140,7 +140,7 @@ script(install)
 {
     $filename = get_file_name(selInTree);
     $ext = get_extension(selInTree);
-    if (direxist(selInTree)) {
+    if (dir_exist(selInTree)) {
         if ($filename=="AssetsBundle") {
             $adbExe = native_api.GetAdbExe();
             if (is_null_or_empty($adbExe)) {

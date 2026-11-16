@@ -409,13 +409,13 @@ namespace DotNetLib
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                NativeApi.AppendApiErrorInfoLine("Expected: setdslfile(dsl_file)");
+                NativeApi.AppendApiErrorInfoLine("Expected: set_dsl_file(dsl_file)");
                 return BoxedValue.EmptyString;
             }
             string file = operands[0].AsString;
             if (!string.IsNullOrEmpty(file)) {
                 Lib.DslScriptFile = file;
-                BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(Lib.DslScriptFile));
+                BatchCommand.BatchScript.SetGlobalVariable("dsl_file", BoxedValue.FromString(Lib.DslScriptFile));
             }
             return BoxedValue.FromString(Lib.DslScriptFile);
         }
@@ -2467,9 +2467,9 @@ namespace DotNetLib
                             NativeLog(string.Format("[csharp] parse --metadsl:{0} error, the value must adhere to the format 'xxx.dsl,xxx_renderer.dsl'", switchValue));
                         }
                     }
-                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "projectidentity", out string prjSwitchValue)) {
+                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "project_identity", out string prjSwitchValue)) {
                         s_ProjectSwitch = prjSwitchValue;
-                        NativeLog(string.Format("[csharp] parse --projectidentity:{0}", s_ProjectSwitch));
+                        NativeLog(string.Format("[csharp] parse --project_identity:{0}", s_ProjectSwitch));
 
                         s_InitialProjectIdentity = s_ProjectSwitch;
                     }
@@ -3773,8 +3773,8 @@ namespace DotNetLib
                         NativeLog($"[dsl] on_before_child_process_launch: copied --metadsl={s_MetaDslSwitch} to child process");
                     }
                     if (!string.IsNullOrEmpty(s_ProjectSwitch)) {
-                        cmdLineProxy.AppendSwitchWithValue("projectidentity", s_ProjectSwitch);
-                        NativeLog($"[dsl] on_before_child_process_launch: copied --projectidentity={s_ProjectSwitch} to child process");
+                        cmdLineProxy.AppendSwitchWithValue("project_identity", s_ProjectSwitch);
+                        NativeLog($"[dsl] on_before_child_process_launch: copied --project_identity={s_ProjectSwitch} to child process");
                     }
 
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
@@ -5142,7 +5142,7 @@ namespace DotNetLib
         // All script execution machinery (interpreter init, hot reload, script/
         // func execution, unified error collection, call_metadsl_task pool and
         // the common framework apis) lives in the shared DslHost; this wires it
-        // up to the CEF process (NativeLog, nativeapi global, native context
+        // up to the CEF process (NativeLog, native_api global, native context
         // reset in tasks) and syncs the Lib process info into it.
 
         private static DslHost? s_DslHost;
@@ -5175,7 +5175,7 @@ namespace DotNetLib
 
         // Copies the Lib process info (owned by the CEF lifecycle callbacks)
         // into the shared host before the host uses it. The CEF specific
-        // info (processtype/startupurl/...) is pushed as dsl globals through
+        // info (process_type/startup_url/...) is pushed as dsl globals through
         // SetCefHostGlobalVars instead of host fields.
         private static void SyncHostInfo()
         {
@@ -5189,25 +5189,25 @@ namespace DotNetLib
         }
 
         // CEF specific dsl globals (the common ones come from
-        // DslHost.RefreshGlobalVars): nativeapi plus the process info owned
+        // DslHost.RefreshGlobalVars): native_api plus the process info owned
         // by this module (the former DslHost.ProcessType/StartupUrl/...
         // fields, moved back here).
         private static void SetCefHostGlobalVars()
         {
-            BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-            BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
-            BatchCommand.BatchScript.SetGlobalVariable("startupurl", BoxedValue.FromString(s_StartupUrl));
-            BatchCommand.BatchScript.SetGlobalVariable("lastloadedmainurl", BoxedValue.FromString(s_LastLoadedMainUrl));
-            BatchCommand.BatchScript.SetGlobalVariable("lastloadedurl", BoxedValue.FromString(s_LastLoadedUrl));
-            BatchCommand.BatchScript.SetGlobalVariable("initialdslfile", BoxedValue.FromString(s_InitialDslScriptFile));
-            BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
+            BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+            BatchCommand.BatchScript.SetGlobalVariable("process_type", BoxedValue.From(s_ProcessType));
+            BatchCommand.BatchScript.SetGlobalVariable("startup_url", BoxedValue.FromString(s_StartupUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("last_loaded_main_url", BoxedValue.FromString(s_LastLoadedMainUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("last_loaded_url", BoxedValue.FromString(s_LastLoadedUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("initial_dsl_file", BoxedValue.FromString(s_InitialDslScriptFile));
+            BatchCommand.BatchScript.SetGlobalVariable("initial_project_identity", BoxedValue.FromString(s_InitialProjectIdentity));
         }
 
         // CEF specific apis; the common framework/utility apis are registered
         // by DslHost.RegisterCommonApis before this runs.
         private static void RegisterCefApis()
         {
-            BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
+            BatchCommand.BatchScript.Register("javascript_log", "javascript_log(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("enqueue_cef_message", "enqueue_cef_message(msg,arg1,arg2,...), enqueue message to browser", false, new ExpressionFactoryHelper<EnqueueCefMessageExp>());
 
             // Relay segment: the wsclient_* api set and the WebSocketClientManager
@@ -5226,7 +5226,7 @@ namespace DotNetLib
             BatchCommand.Utils.UdpClientManager.Dispatch = Lib.DispatchUdpClientEvent;
 
             // Only valid in MainThread
-            BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
+            BatchCommand.BatchScript.Register("set_dsl_file", "set_dsl_file(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("handle_thread_queue", "handle_thread_queue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
             BatchCommand.BatchScript.Register("set_heartbeat_interval", "set_heartbeat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartBeatIntervalExp>());
             BatchCommand.BatchScript.Register("complete_native_callback", "complete_native_callback(handle, ok[, data, code]) - complete a CEF async callback taken over by the script (JS dialog, deferred resource load, cefQuery)", false, new ExpressionFactoryHelper<CompleteNativeCallbackExp>());

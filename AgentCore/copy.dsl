@@ -1,19 +1,19 @@
 script(main)
 {
-	curdir = getscriptdir();
+	curdir = get_script_directory();
 	cd(curdir);
-	fileecho(true);
+	file_echo(true);
 
-	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","AgentCore.*");
+	copy_files("bin/Debug/net9.0", "../../WebAgent/webagent/managed","AgentCore.*");
 	// Lucene codecs (separate nuget package since 4.8-beta) and the WinRT
 	// projections TextCopy probes at runtime (deps references).
-	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Lucene.Net.Codecs.*");
-	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Microsoft.Windows.SDK.NET.*");
-	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","WinRT.Runtime.*");
+	copy_files("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Lucene.Net.Codecs.*");
+	copy_files("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Microsoft.Windows.SDK.NET.*");
+	copy_files("bin/Debug/net9.0", "../../WebAgent/webagent/managed","WinRT.Runtime.*");
 	// Self-signed https cert setup script for the webserver (standalone, run manually or via launch_process_with_admin).
-	copyfiles(".", "../../WebAgent/webagent", "ssl_selfsign_setup.ps1");
+	copy_files(".", "../../WebAgent/webagent", "ssl_selfsign_setup.ps1");
 
-	if (argnum() <= 1) {
+	if (arg_num() <= 1) {
 		echo("press any key ...");
 		read();
 	};

@@ -1,18 +1,18 @@
 script(main)
 {
-	curdir = getscriptdir();
+	curdir = get_script_directory();
 	cd(curdir);
-	fileecho(true);
+	file_echo(true);
 
-	copyfiles("bin/Debug/net9.0", "../managed","DotnetApp.*");
-	copyfiles("bin/Debug/net9.0", "../managed","BatchScriptApi.*");
-	copyfiles("bin/Debug/net9.0", "../managed","Common.*");
-	copyfiles("bin/Debug/net9.0", "../managed","DotnetStoryScript.*");
-	copyfiles("bin/Debug/net9.0", "../managed","Dsl.*");
-	copyfiles("bin/Debug/net9.0", "../managed","LitJson.*");
-	copyfiles("bin/Debug/net9.0", "../managed","ScriptFrameworkLibrary.*");
+	copy_files("bin/Debug/net9.0", "../managed","DotnetApp.*");
+	copy_files("bin/Debug/net9.0", "../managed","BatchScriptApi.*");
+	copy_files("bin/Debug/net9.0", "../managed","Common.*");
+	copy_files("bin/Debug/net9.0", "../managed","DotnetStoryScript.*");
+	copy_files("bin/Debug/net9.0", "../managed","Dsl.*");
+	copy_files("bin/Debug/net9.0", "../managed","LitJson.*");
+	copy_files("bin/Debug/net9.0", "../managed","ScriptFrameworkLibrary.*");
 
-	if (argnum() <= 1) {
+	if (arg_num() <= 1) {
 		echo("press any key ...");
 		read();
 	};

@@ -187,7 +187,7 @@ public sealed class Main : IAsyncPlugin, IContextMenu, IAsyncReloadable, IPlugin
                 s_NeedReload = false;
                 ReloadDsl();
             }
-            //Flow API calls queued by the script (changequery etc.) run on the UI thread,
+            //Flow API calls queued by the script (change_query etc.) run on the UI thread,
             //in order, before the task completes.
             while (funcs.TryDequeue(out var f)) {
                 var f2 = f;
@@ -235,7 +235,7 @@ public sealed class Main : IAsyncPlugin, IContextMenu, IAsyncReloadable, IPlugin
                 s_NeedReload = false;
                 ReloadDsl();
             }
-            //Flow API calls queued by the script (changequery etc.) run on the UI thread,
+            //Flow API calls queued by the script (change_query etc.) run on the UI thread,
             //in order, before the task completes.
             while (funcs.TryDequeue(out var f)) {
                 var f2 = f;
@@ -255,7 +255,7 @@ public sealed class Main : IAsyncPlugin, IContextMenu, IAsyncReloadable, IPlugin
 
     public event ResultUpdatedEventHandler ResultsUpdated;
 
-    //Post the results accumulated by addresult so far to the Flow UI immediately,
+    //Post the results accumulated by add_result so far to the Flow UI immediately,
     //while the DSL query script keeps running (IResultUpdated partial results).
     //The list is snapshotted: Flow updates the UI on its dispatcher thread while
     //the script thread keeps appending to s_NewResults.
@@ -660,40 +660,40 @@ public sealed class Main : IAsyncPlugin, IContextMenu, IAsyncReloadable, IPlugin
         BatchScript.Init();
         BatchScript.Register("max_artificial_score", "max_artificial_score()", new ExpressionFactoryHelper<MaxArtificialScoreExp>());
         BatchScript.Register("set_sync_execution_type", "set_sync_execution_type(type), 0--rendering 1--message 2--dispatcher", new ExpressionFactoryHelper<MainThreadSyncExecutionTypeExp>());
-        BatchScript.Register("folderdlg", "folderdlg(desc[,int_spec_dir_enum])", new ExpressionFactoryHelper<FolderDialogExp>());
-        BatchScript.Register("openfiledlg", "openfiledlg(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<OpenFileDialogExp>());
-        BatchScript.Register("openfilesdlg", "openfilesdlg(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<OpenFilesDialogExp>());
-        BatchScript.Register("savefiledlg", "savefiledlg(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<SaveFileDialogExp>());
-        BatchScript.Register("contextmenu", "contextment api", new ExpressionFactoryHelper<ShellContextMenuExp>());
+        BatchScript.Register("folder_dialog", "folder_dialog(desc[,int_spec_dir_enum])", new ExpressionFactoryHelper<FolderDialogExp>());
+        BatchScript.Register("open_file_dialog", "open_file_dialog(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<OpenFileDialogExp>());
+        BatchScript.Register("open_files_dialog", "open_files_dialog(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<OpenFilesDialogExp>());
+        BatchScript.Register("save_file_dialog", "save_file_dialog(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<SaveFileDialogExp>());
+        BatchScript.Register("context_menu", "contextment api", new ExpressionFactoryHelper<ShellContextMenuExp>());
         BatchScript.Register("context", "context api", new ExpressionFactoryHelper<ContextExp>());
         BatchScript.Register("api", "api api", new ExpressionFactoryHelper<ApiExp>());
         BatchScript.Register("metadata", "metadata api", new ExpressionFactoryHelper<MetadataExp>());
-        BatchScript.Register("showmsg", "showmsg api", new ExpressionFactoryHelper<ShowMsgExp>());
+        BatchScript.Register("show_msg", "show_msg api", new ExpressionFactoryHelper<ShowMsgExp>());
         BatchScript.Register("restart", "restart api", new ExpressionFactoryHelper<RestartExp>());
         BatchScript.Register("show", "show api", new ExpressionFactoryHelper<ShowConsoleExp>());
         BatchScript.Register("hide", "hide api", new ExpressionFactoryHelper<HideConsoleExp>());
-        BatchScript.Register("reloaddsl", "reloaddsl api", new ExpressionFactoryHelper<ReloadDslExp>());
-        BatchScript.Register("evaldsl", "evaldsl api", new ExpressionFactoryHelper<EvalDslExp>());
-        BatchScript.Register("changequery", "changequery api", new ExpressionFactoryHelper<ChangeQueryExp>());
-        BatchScript.Register("addresult", "addresult api", new ExpressionFactoryHelper<AddResultExp>());
-        BatchScript.Register("postresult", "postresult(query) posts the results added by addresult so far to the UI immediately, the query script keeps running; can be called multiple times to show results progressively", new ExpressionFactoryHelper<PostResultExp>());
-        BatchScript.Register("addcontextmenu", "addcontextmenu api", new ExpressionFactoryHelper<AddContextMenuExp>());
-        BatchScript.Register("keywordregistered", "keywordregistered api", new ExpressionFactoryHelper<ActionKeywordRegisteredExp>());
-        BatchScript.Register("clearkeywords", "clearkeywords api", new ExpressionFactoryHelper<ClearActionKeywordsExp>());
-        BatchScript.Register("addkeyword", "addkeyword api", new ExpressionFactoryHelper<AddActionKeywordExp>());
-        BatchScript.Register("showcontextmenu", "showcontextmenu api", new ExpressionFactoryHelper<ShowContextMenuExp>());
-        BatchScript.Register("reloadautocomplete", "reloadautocomplete api", new ExpressionFactoryHelper<ReloadAutoCompleteExp>());
-        BatchScript.Register("getautocomplete", "getautocomplete api", new ExpressionFactoryHelper<GetAutoCompleteExp>());
-        BatchScript.Register("tryfindeverything", "tryfindeverything api", new ExpressionFactoryHelper<TryFindEverythingExp>());
-        BatchScript.Register("everythingexists", "everythingexists api", new ExpressionFactoryHelper<EverythingExistsExp>());
-        BatchScript.Register("everythingreset", "everythingreset api", new ExpressionFactoryHelper<EverythingResetExp>());
-        BatchScript.Register("everythingsetdefault", "everythingsetdefault api", new ExpressionFactoryHelper<EverythingSetDefaultExp>());
-        BatchScript.Register("everythingmatchpath", "everythingmatchpath api", new ExpressionFactoryHelper<EverythingMatchPathExp>());
-        BatchScript.Register("everythingmatchcase", "everythingmatchcase api", new ExpressionFactoryHelper<EverythingMatchCaseExp>());
-        BatchScript.Register("everythingmatchwholeword", "everythingmatchwholeword api", new ExpressionFactoryHelper<EverythingMatchWholeWordExp>());
-        BatchScript.Register("everythingregex", "everythingregex api", new ExpressionFactoryHelper<EverythingRegexExp>());
-        BatchScript.Register("everythingsort", "everythingsort api", new ExpressionFactoryHelper<EverythingSortExp>());
-        BatchScript.Register("everythingsearch", "everythingsearch api", new ExpressionFactoryHelper<EverythingSearchExp>());
+        BatchScript.Register("reload_dsl", "reload_dsl api", new ExpressionFactoryHelper<ReloadDslExp>());
+        BatchScript.Register("eval_dsl", "eval_dsl api", new ExpressionFactoryHelper<EvalDslExp>());
+        BatchScript.Register("change_query", "change_query api", new ExpressionFactoryHelper<ChangeQueryExp>());
+        BatchScript.Register("add_result", "add_result api", new ExpressionFactoryHelper<AddResultExp>());
+        BatchScript.Register("postresult", "postresult(query) posts the results added by add_result so far to the UI immediately, the query script keeps running; can be called multiple times to show results progressively", new ExpressionFactoryHelper<PostResultExp>());
+        BatchScript.Register("add_context_menu", "add_context_menu api", new ExpressionFactoryHelper<AddContextMenuExp>());
+        BatchScript.Register("keyword_registered", "keyword_registered api", new ExpressionFactoryHelper<ActionKeywordRegisteredExp>());
+        BatchScript.Register("clear_keywords", "clear_keywords api", new ExpressionFactoryHelper<ClearActionKeywordsExp>());
+        BatchScript.Register("add_keyword", "add_keyword api", new ExpressionFactoryHelper<AddActionKeywordExp>());
+        BatchScript.Register("show_context_menu", "show_context_menu api", new ExpressionFactoryHelper<ShowContextMenuExp>());
+        BatchScript.Register("reload_autocomplete", "reload_autocomplete api", new ExpressionFactoryHelper<ReloadAutoCompleteExp>());
+        BatchScript.Register("get_autocomplete", "get_autocomplete api", new ExpressionFactoryHelper<GetAutoCompleteExp>());
+        BatchScript.Register("try_find_everything", "try_find_everything api", new ExpressionFactoryHelper<TryFindEverythingExp>());
+        BatchScript.Register("everything_exists", "everything_exists api", new ExpressionFactoryHelper<EverythingExistsExp>());
+        BatchScript.Register("everything_reset", "everything_reset api", new ExpressionFactoryHelper<EverythingResetExp>());
+        BatchScript.Register("everything_set_default", "everything_set_default api", new ExpressionFactoryHelper<EverythingSetDefaultExp>());
+        BatchScript.Register("everything_match_path", "everything_match_path api", new ExpressionFactoryHelper<EverythingMatchPathExp>());
+        BatchScript.Register("everything_match_case", "everything_match_case api", new ExpressionFactoryHelper<EverythingMatchCaseExp>());
+        BatchScript.Register("everything_match_whole_word", "everything_match_whole_word api", new ExpressionFactoryHelper<EverythingMatchWholeWordExp>());
+        BatchScript.Register("everything_regex", "everything_regex api", new ExpressionFactoryHelper<EverythingRegexExp>());
+        BatchScript.Register("everything_sort", "everything_sort api", new ExpressionFactoryHelper<EverythingSortExp>());
+        BatchScript.Register("everything_search", "everything_search api", new ExpressionFactoryHelper<EverythingSearchExp>());
 
         ReloadDsl();
     }
@@ -1051,7 +1051,7 @@ internal sealed class FolderDialogExp : SimpleExpressionBase
                     if (result == DialogResult.OK) {
                         ret = fbd.SelectedPath;
                     }
-                    Main.LogLine("folderdlg returns {0}, path {1}", result, ret);
+                    Main.LogLine("folder_dialog returns {0}, path {1}", result, ret);
                 }
                 finally {
                     Main.RestoreHideWhenDeactivated(hideOrig);
@@ -1089,7 +1089,7 @@ internal sealed class OpenFileDialogExp : SimpleExpressionBase
                     if (result == DialogResult.OK) {
                         ret = ofd.FileName;
                     }
-                    Main.LogLine("openfiledlg returns {0}, file {1}", result, ret);
+                    Main.LogLine("open_file_dialog returns {0}, file {1}", result, ret);
                 }
                 finally {
                     Main.RestoreHideWhenDeactivated(hideOrig);
@@ -1127,7 +1127,7 @@ internal sealed class OpenFilesDialogExp : SimpleExpressionBase
                     if (result == DialogResult.OK) {
                         ret = ofd.FileNames;
                     }
-                    Main.LogLine("openfilesdlg returns {0}, files {1}", result, null == ret ? string.Empty : string.Join("|", ret));
+                    Main.LogLine("open_files_dialog returns {0}, files {1}", result, null == ret ? string.Empty : string.Join("|", ret));
                 }
                 finally {
                     Main.RestoreHideWhenDeactivated(hideOrig);
@@ -1168,7 +1168,7 @@ internal sealed class SaveFileDialogExp : SimpleExpressionBase
                     if (result == DialogResult.OK) {
                         ret = sfd.FileName;
                     }
-                    Main.LogLine("savefiledlg returns {0}, file {1}", result, ret);
+                    Main.LogLine("save_file_dialog returns {0}, file {1}", result, ret);
                 }
                 finally {
                     Main.RestoreHideWhenDeactivated(hideOrig);

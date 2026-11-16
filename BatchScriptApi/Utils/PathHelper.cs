@@ -61,6 +61,11 @@ namespace BatchCommand.Utils
             if (string.IsNullOrEmpty(path))
                 return path;
 
+            // Expand %VAR% environment variables first (same behavior as the
+            // DotnetStoryScript builtin implementations). Undefined variables
+            // are left as-is by .NET, which is harmless.
+            path = Environment.ExpandEnvironmentVariables(path);
+
             if (IsAbsolutePath(path))
                 return path;
 

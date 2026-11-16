@@ -90,7 +90,7 @@
             $parts = string_split($field_names_csv, ",");
             $arr = "[";
             $first = 1;
-            looplist($parts) {
+            loop_list($parts) {
                 $f = $$;
                 if($first == 1){$first = 0;}else{$arr = $arr + ",";};
                 $arr = $arr + '"' + $f + '"';

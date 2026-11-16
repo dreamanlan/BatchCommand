@@ -755,8 +755,8 @@ namespace DotNetLib
                     s_NativeApi.Result = result;
 
                     TryLoadDSL();
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                    BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                    BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                     BoxedValue r = BatchCommand.BatchScript.Call("init");
                     CheckDslError();
                     if (!r.IsNullObject) {
@@ -780,8 +780,8 @@ namespace DotNetLib
                         s_NativeApi.Result = result;
 
                         TryLoadDSL();
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         var id = BatchCommand.BatchScript.EvalAsFunc(dsl, s_EmptyArgs);
@@ -809,8 +809,8 @@ namespace DotNetLib
                         s_NativeApi.Result = result;
 
                         TryLoadDSL();
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                         BoxedValue r = BatchCommand.BatchScript.Call("loadsetting");
                         CheckDslError();
                         if (r.IsInteger) {
@@ -835,8 +835,8 @@ namespace DotNetLib
                         s_NativeApi.Result = result;
 
                         TryLoadDSL();
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                         BoxedValue r = BatchCommand.BatchScript.Call("loadschememenu");
                         CheckDslError();
                         if (r.IsInteger) {
@@ -861,8 +861,8 @@ namespace DotNetLib
                         s_NativeApi.Result = result;
 
                         TryLoadDSL();
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                         var args = BatchCommand.BatchScript.NewCalculatorValueList();
                         args.Add(BoxedValue.FromString(path));
                         BoxedValue r = BatchCommand.BatchScript.Call("loadscheme", args);
@@ -890,8 +890,8 @@ namespace DotNetLib
                         s_NativeApi.Result = result;
 
                         TryLoadDSL();
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         var args = BatchCommand.BatchScript.NewCalculatorValueList();
@@ -922,8 +922,8 @@ namespace DotNetLib
                         s_NativeApi.Result = result;
 
                         TryLoadDSL();
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         BoxedValue r = BatchCommand.BatchScript.Call("runprog");
@@ -950,8 +950,8 @@ namespace DotNetLib
                         s_NativeApi.Result = result;
 
                         TryLoadDSL();
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         BoxedValue r = BatchCommand.BatchScript.Call("build");
@@ -978,8 +978,8 @@ namespace DotNetLib
                         s_NativeApi.Result = result;
 
                         TryLoadDSL();
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(s_BasePath));
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         BoxedValue r = BatchCommand.BatchScript.Call("install");
@@ -1053,11 +1053,11 @@ namespace DotNetLib
         }
         private static void RegisterBatchScriptApi()
         {
-            BatchCommand.BatchScript.Register("outputlog", "outputlog(fmt, ...)", new ExpressionFactoryHelper<OutpuLogExp>());
-            BatchCommand.BatchScript.Register("writefile", "writefile(path, txt)", new ExpressionFactoryHelper<WriteFileExp>());
-            BatchCommand.BatchScript.Register("clrscpcon", "clrscpcon()", new ExpressionFactoryHelper<ClearScriptConsoleExp>());
-            BatchCommand.BatchScript.Register("logscpcon", "logscpcon()", new ExpressionFactoryHelper<LogScriptConsoleExp>());
-            BatchCommand.BatchScript.Register("builddbgscp", "builddbgscp(path,scpFile,struFile,apiFile,datFile) api", new ExpressionFactoryHelper<BuildDbgScpExp>());
+            BatchCommand.BatchScript.Register("output_log", "output_log(fmt, ...)", new ExpressionFactoryHelper<OutpuLogExp>());
+            BatchCommand.BatchScript.Register("write_file", "write_file(path, txt)", new ExpressionFactoryHelper<WriteFileExp>());
+            BatchCommand.BatchScript.Register("clear_script_console", "clear_script_console()", new ExpressionFactoryHelper<ClearScriptConsoleExp>());
+            BatchCommand.BatchScript.Register("log_script_console", "log_script_console()", new ExpressionFactoryHelper<LogScriptConsoleExp>());
+            BatchCommand.BatchScript.Register("build_dbg_scp", "build_dbg_scp(path,scpFile,struFile,apiFile,datFile) api", new ExpressionFactoryHelper<BuildDbgScpExp>());
         }
         private static void PrepareBatchScript()
         {

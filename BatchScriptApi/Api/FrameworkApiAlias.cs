@@ -140,22 +140,8 @@ namespace BatchCommand.Api
 
         public static void RegisterApis()
         {
-            //BatchCommand.BatchScript.Register("clone", "clone(v)", new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("clone_array", "clone_array(v)", false, new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("clone_list", "clone_list(v)", false, new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("clone_hashtable", "clone_hashtable(v)", false, new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("clone_queue", "clone_queue(v)", false, new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("clone_stack", "clone_stack(v)", false, new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("clone_tuple", "clone_tuple(v)", false, new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("copy", "copy(v)", new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("copy_array", "copy_array(v)", new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("copy_list", "copy_list(v)", new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("copy_hashtable", "copy_hashtable(v)", new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("copy_queue", "copy_queue(v)", new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("copy_stack", "copy_stack(v)", new ExpressionFactoryHelper<CloneExp>());
-            BatchCommand.BatchScript.Register("copy_tuple", "copy_tuple(v)", new ExpressionFactoryHelper<CloneExp>());
-            //BatchCommand.BatchScript.Register("inc", "inc(a,b)", new ExpressionFactoryHelper<IncExp>());
-            //BatchCommand.BatchScript.Register("dec", "dec(a,b)", new ExpressionFactoryHelper<DecExp>());
+            BatchCommand.BatchScript.Register("inc", "inc(a,b)", new ExpressionFactoryHelper<IncExp>());
+            BatchCommand.BatchScript.Register("dec", "dec(a,b)", new ExpressionFactoryHelper<DecExp>());
             BatchCommand.BatchScript.Register("add", "add(a,b)", new ExpressionFactoryHelper<AddExp>());
             BatchCommand.BatchScript.Register("sub", "sub(a,b)", new ExpressionFactoryHelper<SubExp>());
             BatchCommand.BatchScript.Register("mul", "mul(a,b)", new ExpressionFactoryHelper<MulExp>());
@@ -167,48 +153,48 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("bit_not", "bitnot(a)", new ExpressionFactoryHelper<BitNotExp>());
             BatchCommand.BatchScript.Register("left_shift", "left_shift(a,b)", new ExpressionFactoryHelper<LShiftExp>());
             BatchCommand.BatchScript.Register("right_shift", "right_shift(a,b)", new ExpressionFactoryHelper<RShiftExp>());
-            //BatchCommand.BatchScript.Register("max", "max(v1,v2)", new ExpressionFactoryHelper<MaxExp>());
-            //BatchCommand.BatchScript.Register("min", "min(v1,v2)", new ExpressionFactoryHelper<MinExp>());
-            //BatchCommand.BatchScript.Register("abs", "abs(v)", new ExpressionFactoryHelper<AbsExp>());
-            //BatchCommand.BatchScript.Register("sin", "sin(v)", new ExpressionFactoryHelper<SinExp>());
-            //BatchCommand.BatchScript.Register("cos", "cos(v)", new ExpressionFactoryHelper<CosExp>());
-            //BatchCommand.BatchScript.Register("tan", "tan(v)", new ExpressionFactoryHelper<TanExp>());
-            //BatchCommand.BatchScript.Register("asin", "asin(v)", new ExpressionFactoryHelper<AsinExp>());
-            //BatchCommand.BatchScript.Register("acos", "acos(v)", new ExpressionFactoryHelper<AcosExp>());
-            //BatchCommand.BatchScript.Register("atan", "atan(v)", new ExpressionFactoryHelper<AtanExp>());
-            //BatchCommand.BatchScript.Register("atan2", "atan2(v1,v2)", new ExpressionFactoryHelper<Atan2Exp>());
-            //BatchCommand.BatchScript.Register("sinh", "sinh(v)", new ExpressionFactoryHelper<SinhExp>());
-            //BatchCommand.BatchScript.Register("cosh", "cosh(v)", new ExpressionFactoryHelper<CoshExp>());
-            //BatchCommand.BatchScript.Register("tanh", "tanh(v)", new ExpressionFactoryHelper<TanhExp>());
+            BatchCommand.BatchScript.Register("max", "max(v1,v2)", new ExpressionFactoryHelper<MaxExp>());
+            BatchCommand.BatchScript.Register("min", "min(v1,v2)", new ExpressionFactoryHelper<MinExp>());
+            BatchCommand.BatchScript.Register("abs", "abs(v)", new ExpressionFactoryHelper<AbsExp>());
+            BatchCommand.BatchScript.Register("sin", "sin(v)", new ExpressionFactoryHelper<SinExp>());
+            BatchCommand.BatchScript.Register("cos", "cos(v)", new ExpressionFactoryHelper<CosExp>());
+            BatchCommand.BatchScript.Register("tan", "tan(v)", new ExpressionFactoryHelper<TanExp>());
+            BatchCommand.BatchScript.Register("asin", "asin(v)", new ExpressionFactoryHelper<AsinExp>());
+            BatchCommand.BatchScript.Register("acos", "acos(v)", new ExpressionFactoryHelper<AcosExp>());
+            BatchCommand.BatchScript.Register("atan", "atan(v)", new ExpressionFactoryHelper<AtanExp>());
+            BatchCommand.BatchScript.Register("atan_2", "atan_2(v1,v2)", new ExpressionFactoryHelper<Atan2Exp>());
+            BatchCommand.BatchScript.Register("sinh", "sinh(v)", new ExpressionFactoryHelper<SinhExp>());
+            BatchCommand.BatchScript.Register("cosh", "cosh(v)", new ExpressionFactoryHelper<CoshExp>());
+            BatchCommand.BatchScript.Register("tanh", "tanh(v)", new ExpressionFactoryHelper<TanhExp>());
             BatchCommand.BatchScript.Register("rnd_int", "rnd_int(min,max)", new ExpressionFactoryHelper<RndIntExp>());
             BatchCommand.BatchScript.Register("rnd_float", "rnd_float(min,max)", new ExpressionFactoryHelper<RndFloatExp>());
-            //BatchCommand.BatchScript.Register("pow", "pow(v1,v2)", new ExpressionFactoryHelper<PowExp>());
-            //BatchCommand.BatchScript.Register("sqrt", "sqrt(v)", new ExpressionFactoryHelper<SqrtExp>());
-            //BatchCommand.BatchScript.Register("exp", "exp(v)", new ExpressionFactoryHelper<ExpExp>());
-            //BatchCommand.BatchScript.Register("exp2", "exp2(v)", new ExpressionFactoryHelper<Exp2Exp>());
-            //BatchCommand.BatchScript.Register("log", "log(v)", new ExpressionFactoryHelper<LogExp>());
-            //BatchCommand.BatchScript.Register("log2", "log2(v)", new ExpressionFactoryHelper<Log2Exp>());
-            //BatchCommand.BatchScript.Register("log10", "log10(v)", new ExpressionFactoryHelper<Log10Exp>());
-            //BatchCommand.BatchScript.Register("floor", "floor(v)", new ExpressionFactoryHelper<FloorExp>());
-            //BatchCommand.BatchScript.Register("ceiling", "ceiling(v)", new ExpressionFactoryHelper<CeilingExp>());
-            //BatchCommand.BatchScript.Register("round", "round(v)", new ExpressionFactoryHelper<RoundExp>());
+            BatchCommand.BatchScript.Register("pow", "pow(v1,v2)", new ExpressionFactoryHelper<PowExp>());
+            BatchCommand.BatchScript.Register("sqrt", "sqrt(v)", new ExpressionFactoryHelper<SqrtExp>());
+            BatchCommand.BatchScript.Register("exp", "exp(v)", new ExpressionFactoryHelper<ExpExp>());
+            BatchCommand.BatchScript.Register("exp_2", "exp_2(v)", new ExpressionFactoryHelper<Exp2Exp>());
+            BatchCommand.BatchScript.Register("log", "log(v)", new ExpressionFactoryHelper<LogExp>());
+            BatchCommand.BatchScript.Register("log_2", "log_2(v)", new ExpressionFactoryHelper<Log2Exp>());
+            BatchCommand.BatchScript.Register("log_10", "log_10(v)", new ExpressionFactoryHelper<Log10Exp>());
+            BatchCommand.BatchScript.Register("floor", "floor(v)", new ExpressionFactoryHelper<FloorExp>());
+            BatchCommand.BatchScript.Register("ceiling", "ceiling(v)", new ExpressionFactoryHelper<CeilingExp>());
+            BatchCommand.BatchScript.Register("round", "round(v)", new ExpressionFactoryHelper<RoundExp>());
             BatchCommand.BatchScript.Register("floor_to_int", "floor_to_int(v)", new ExpressionFactoryHelper<FloorToIntExp>());
             BatchCommand.BatchScript.Register("ceiling_to_int", "ceiling_to_int(v)", new ExpressionFactoryHelper<CeilingToIntExp>());
             BatchCommand.BatchScript.Register("round_to_int", "round_to_int(v)", new ExpressionFactoryHelper<RoundToIntExp>());
-            //BatchCommand.BatchScript.Register("bool", "bool(v)", new ExpressionFactoryHelper<BoolExp>());
-            //BatchCommand.BatchScript.Register("sbyte", "sbyte(v)", new ExpressionFactoryHelper<SByteExp>());
-            //BatchCommand.BatchScript.Register("byte", "byte(v)", new ExpressionFactoryHelper<ByteExp>());
-            //BatchCommand.BatchScript.Register("char", "char(v)", new ExpressionFactoryHelper<CharExp>());
-            //BatchCommand.BatchScript.Register("short", "short(v)", new ExpressionFactoryHelper<ShortExp>());
-            //BatchCommand.BatchScript.Register("ushort", "ushort(v)", new ExpressionFactoryHelper<UShortExp>());
-            //BatchCommand.BatchScript.Register("int", "int(v)", new ExpressionFactoryHelper<IntExp>());
-            //BatchCommand.BatchScript.Register("uint", "uint(v)", new ExpressionFactoryHelper<UIntExp>());
-            //BatchCommand.BatchScript.Register("long", "long(v)", new ExpressionFactoryHelper<LongExp>());
-            //BatchCommand.BatchScript.Register("ulong", "ulong(v)", new ExpressionFactoryHelper<ULongExp>());
-            //BatchCommand.BatchScript.Register("float", "float(v)", new ExpressionFactoryHelper<FloatExp>());
-            //BatchCommand.BatchScript.Register("double", "double(v)", new ExpressionFactoryHelper<DoubleExp>());
-            //BatchCommand.BatchScript.Register("decimal", "decimal(v)", new ExpressionFactoryHelper<DecimalExp>());
-            //BatchCommand.BatchScript.Register("datetime", "datetime(v) api", new ExpressionFactoryHelper<DateTimeExp>());
+            BatchCommand.BatchScript.Register("bool", "bool(v)", new ExpressionFactoryHelper<BoolExp>());
+            BatchCommand.BatchScript.Register("sbyte", "sbyte(v)", new ExpressionFactoryHelper<SByteExp>());
+            BatchCommand.BatchScript.Register("byte", "byte(v)", new ExpressionFactoryHelper<ByteExp>());
+            BatchCommand.BatchScript.Register("char", "char(v)", new ExpressionFactoryHelper<CharExp>());
+            BatchCommand.BatchScript.Register("short", "short(v)", new ExpressionFactoryHelper<ShortExp>());
+            BatchCommand.BatchScript.Register("ushort", "ushort(v)", new ExpressionFactoryHelper<UShortExp>());
+            BatchCommand.BatchScript.Register("int", "int(v)", new ExpressionFactoryHelper<IntExp>());
+            BatchCommand.BatchScript.Register("uint", "uint(v)", new ExpressionFactoryHelper<UIntExp>());
+            BatchCommand.BatchScript.Register("long", "long(v)", new ExpressionFactoryHelper<LongExp>());
+            BatchCommand.BatchScript.Register("ulong", "ulong(v)", new ExpressionFactoryHelper<ULongExp>());
+            BatchCommand.BatchScript.Register("float", "float(v)", new ExpressionFactoryHelper<FloatExp>());
+            BatchCommand.BatchScript.Register("double", "double(v)", new ExpressionFactoryHelper<DoubleExp>());
+            BatchCommand.BatchScript.Register("decimal", "decimal(v)", new ExpressionFactoryHelper<DecimalExp>());
+            BatchCommand.BatchScript.Register("datetime", "datetime(v) api", new ExpressionFactoryHelper<DateTimeExp>());
             BatchCommand.BatchScript.Register("is_object", "is_object(v)", new ExpressionFactoryHelper<IsObjectExp>());
             BatchCommand.BatchScript.Register("is_string", "is_string(v)", new ExpressionFactoryHelper<IsStringExp>());
             BatchCommand.BatchScript.Register("is_boolean", "is_boolean(v)", new ExpressionFactoryHelper<IsBooleanExp>());
@@ -229,13 +215,13 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("l_to_d", "l_to_d(v)", new ExpressionFactoryHelper<LtodExp>());
             BatchCommand.BatchScript.Register("d_to_u", "d_to_u(v)", new ExpressionFactoryHelper<DtouExp>());
             BatchCommand.BatchScript.Register("u_to_d", "u_to_d(v)", new ExpressionFactoryHelper<UtodExp>());
-            //BatchCommand.BatchScript.Register("lerp", "lerp(a,b,t)", new ExpressionFactoryHelper<LerpExp>());
+            BatchCommand.BatchScript.Register("lerp", "lerp(a,b,t)", new ExpressionFactoryHelper<LerpExp>());
             BatchCommand.BatchScript.Register("lerp_unclamped", "lerp_unclamped(a,b,t)", new ExpressionFactoryHelper<LerpUnclampedExp>());
             BatchCommand.BatchScript.Register("lerp_angle", "lerp_angle(a,b,t)", new ExpressionFactoryHelper<LerpAngleExp>());
             BatchCommand.BatchScript.Register("smooth_step", "smooth_step(from,to,t)", new ExpressionFactoryHelper<SmoothStepExp>());
-            //BatchCommand.BatchScript.Register("clamp01", "clamp01(v)", new ExpressionFactoryHelper<Clamp01Exp>());
-            //BatchCommand.BatchScript.Register("clamp", "clamp(v,v1,v2)", new ExpressionFactoryHelper<ClampExp>());
-            //BatchCommand.BatchScript.Register("approximately", "approximately(v1,v2)", new ExpressionFactoryHelper<ApproximatelyExp>());
+            BatchCommand.BatchScript.Register("clamp_01", "clamp_01(v)", new ExpressionFactoryHelper<Clamp01Exp>());
+            BatchCommand.BatchScript.Register("clamp", "clamp(v,v1,v2)", new ExpressionFactoryHelper<ClampExp>());
+            BatchCommand.BatchScript.Register("approximately", "approximately(v1,v2)", new ExpressionFactoryHelper<ApproximatelyExp>());
             BatchCommand.BatchScript.Register("is_power_of_two", "is_power_of_two(v)", new ExpressionFactoryHelper<IsPowerOfTwoExp>());
             BatchCommand.BatchScript.Register("closest_power_of_two", "closest_power_of_two(v)", new ExpressionFactoryHelper<ClosestPowerOfTwoExp>());
             BatchCommand.BatchScript.Register("next_power_of_two", "next_power_of_two(v)", new ExpressionFactoryHelper<NextPowerOfTwoExp>());
@@ -252,7 +238,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("not", "not(a)", new ExpressionFactoryHelper<NotExp>());
             BatchCommand.BatchScript.Register("if_expr", "if_expr(expr,a,b)", new ExpressionFactoryHelper<CondExp>());
             BatchCommand.BatchScript.Register("ifexpr", "ifexpr(expr,a,b)", false, new ExpressionFactoryHelper<CondExp>());
-            //BatchCommand.BatchScript.Register("format", "format(fmt,arg1,arg2,...)", new ExpressionFactoryHelper<FormatExp>());
+            BatchCommand.BatchScript.Register("format", "format(fmt,arg1,arg2,...)", new ExpressionFactoryHelper<FormatExp>());
             BatchCommand.BatchScript.Register("get_type_assembly", "get_type_assembly(obj) api", new ExpressionFactoryHelper<GetTypeAssemblyExp>());
             BatchCommand.BatchScript.Register("assembly", "assembly(obj) api", new ExpressionFactoryHelper<GetTypeAssemblyExp>());
             BatchCommand.BatchScript.Register("get_type_assembly_name", "get_type_assembly_name(obj)", new ExpressionFactoryHelper<GetTypeAssemblyNameExp>());
@@ -269,7 +255,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("type_set", "type_set(obj_or_type,name,val) api, set Type's property", new ExpressionFactoryHelper<TypeSetExp>());
             BatchCommand.BatchScript.Register("type_get", "type_get(obj_or_type,name) api, get Type's property", new ExpressionFactoryHelper<TypeGetExp>());
             BatchCommand.BatchScript.Register("is_null", "is_null(obj)", new ExpressionFactoryHelper<IsNullExp>());
-            //BatchCommand.BatchScript.Register("null", "null()", new ExpressionFactoryHelper<NullExp>());
+            BatchCommand.BatchScript.Register("null", "null()", new ExpressionFactoryHelper<NullExp>());
             BatchCommand.BatchScript.Register("equals_null", "equals_null(obj)", new ExpressionFactoryHelper<EqualsNullExp>());
             BatchCommand.BatchScript.Register("dotnet_load", "dotnet_load(dll_path)", new ExpressionFactoryHelper<DotnetLoadExp>());
             BatchCommand.BatchScript.Register("dotnet_new", "dotnet_new(assembly,type_name,arg1,arg2,...)", new ExpressionFactoryHelper<DotnetNewExp>());
@@ -341,6 +327,10 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("contains_any", "contains_any(str, substr1, ...)", new ExpressionFactoryHelper<StringContainsAnyExp>());
             BatchCommand.BatchScript.Register("not_contains", "not_contains(str, substr1, ...)", new ExpressionFactoryHelper<StringNotContainsExp>());
             BatchCommand.BatchScript.Register("not_contains_any", "not_contains_any(str, substr1, ...)", new ExpressionFactoryHelper<StringNotContainsAnyExp>());
+            BatchCommand.BatchScript.Register("name_contains", "name_contains(str,str_or_list_1,str_or_list_2,...)", false, new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.StringContainsExp>());
+            BatchCommand.BatchScript.Register("name_not_contains", "name_not_contains(str,str_or_list_1,str_or_list_2,...)", false, new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.StringNotContainsExp>());
+            BatchCommand.BatchScript.Register("name_contains_any", "name_contains_any(str,str_or_list_1,str_or_list_2,...)", false, new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.StringContainsAnyExp>());
+            BatchCommand.BatchScript.Register("name_not_contains_any", "name_not_contains_any(str,str_or_list_1,str_or_list_2,...)", false, new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.StringNotContainsAnyExp>());
             BatchCommand.BatchScript.Register("string_to_int", "string_to_int(str)", new ExpressionFactoryHelper<Str2IntExp>());
             BatchCommand.BatchScript.Register("str_to_int", "str_to_int(str)", new ExpressionFactoryHelper<Str2IntExp>());
             BatchCommand.BatchScript.Register("int_parse", "int_parse(str)", false, new ExpressionFactoryHelper<Str2IntExp>());
@@ -398,7 +388,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("short_date_str", "short_date_str()", new ExpressionFactoryHelper<ShortDateStrExp>());
             BatchCommand.BatchScript.Register("short_time_string", "short_time_string()", new ExpressionFactoryHelper<ShortTimeStrExp>());
             BatchCommand.BatchScript.Register("short_time_str", "short_time_str()", new ExpressionFactoryHelper<ShortTimeStrExp>());
-            //BatchCommand.BatchScript.Register("now", "now() api", new ExpressionFactoryHelper<NowExp>());
+            BatchCommand.BatchScript.Register("now", "now() api", new ExpressionFactoryHelper<NowExp>());
             BatchCommand.BatchScript.Register("get_local_time", "get_local_time() api", new ExpressionFactoryHelper<NowExp>());
             BatchCommand.BatchScript.Register("local_time", "local_time() api", false, new ExpressionFactoryHelper<NowExp>());
             BatchCommand.BatchScript.Register("get_local_now", "get_local_now() api", false, new ExpressionFactoryHelper<NowExp>());
@@ -416,13 +406,13 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("date_format", "date_format(fmt,datetime)", false, new ExpressionFactoryHelper<FormatDateTimeExp>());
             BatchCommand.BatchScript.Register("time_format", "time_format(fmt,datetime)", false, new ExpressionFactoryHelper<FormatDateTimeExp>());
             BatchCommand.BatchScript.Register("is_null_or_empty", "is_null_or_empty(str)", new ExpressionFactoryHelper<IsNullOrEmptyExp>());
-            //BatchCommand.BatchScript.Register("tuple", "(v1,v2,...) or tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
+            BatchCommand.BatchScript.Register("tuple", "(v1,v2,...) or tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
             BatchCommand.BatchScript.Register("tuple_of", "(v1,v2,...) or tuple_of(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
             BatchCommand.BatchScript.Register("new_tuple", "(v1,v2,...) or new_tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
             BatchCommand.BatchScript.Register("newtuple", "(v1,v2,...) or newtuple(v1,v2,...) object", false, new ExpressionFactoryHelper<TupleExp>());
             BatchCommand.BatchScript.Register("tuple_new", "(v1,v2,...) or tuple_new(v1,v2,...) object", false, new ExpressionFactoryHelper<TupleExp>());
             BatchCommand.BatchScript.Register("tuple_set", "(var1,var2,...) = (v1,v2,...) or tuple_set((var1,var2,...), (v1,v2,...))", new ExpressionFactoryHelper<TupleSetExp>());
-            //BatchCommand.BatchScript.Register("array", "[v1,v2,...] or array(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
+            BatchCommand.BatchScript.Register("array", "[v1,v2,...] or array(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
             BatchCommand.BatchScript.Register("array_of", "[v1,v2,...] or array_of(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
             BatchCommand.BatchScript.Register("new_array", "[v1,v2,...] or new_array(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
             BatchCommand.BatchScript.Register("newarray", "[v1,v2,...] or newarray(v1,v2,...) object", false, new ExpressionFactoryHelper<ArrayExp>());
@@ -432,7 +422,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("list_get_count", "list_get_count(list)", false, new ExpressionFactoryHelper<ListSizeExp>());
             BatchCommand.BatchScript.Register("get_list_count", "get_list_count(list)", false, new ExpressionFactoryHelper<ListSizeExp>());
             BatchCommand.BatchScript.Register("list_size", "list_size(list)", false, new ExpressionFactoryHelper<ListSizeExp>());
-            //BatchCommand.BatchScript.Register("list", "list(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
+            BatchCommand.BatchScript.Register("list", "list(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
             BatchCommand.BatchScript.Register("list_of", "list_of(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
             BatchCommand.BatchScript.Register("new_list", "new_list(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
             BatchCommand.BatchScript.Register("newlist", "newlist(v1,v2,...) object", false, new ExpressionFactoryHelper<ListExp>());
@@ -451,7 +441,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("hashtable_get_count", "hashtable_get_count(hash)", false, new ExpressionFactoryHelper<HashtableSizeExp>());
             BatchCommand.BatchScript.Register("get_hashtable_count", "get_hashtable_count(hash)", false, new ExpressionFactoryHelper<HashtableSizeExp>());
             BatchCommand.BatchScript.Register("hashtable_size", "hashtable_size(hash)", false, new ExpressionFactoryHelper<HashtableSizeExp>());
-            //BatchCommand.BatchScript.Register("hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or hashtable(k1=>v1,k2=>v2,...) or hashtable(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
+            BatchCommand.BatchScript.Register("hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or hashtable(k1=>v1,k2=>v2,...) or hashtable(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
             BatchCommand.BatchScript.Register("hashtable_of", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or hashtable_of(k1=>v1,k2=>v2,...) or hashtable_of(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
             BatchCommand.BatchScript.Register("new_hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or new_hashtable(k1=>v1,k2=>v2,...) or new_hashtable(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
             BatchCommand.BatchScript.Register("newhashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or newhashtable(k1=>v1,k2=>v2,...) or newhashtable(k1:v1,k2:v2,...) object", false, new ExpressionFactoryHelper<HashtableExp>());
@@ -465,45 +455,45 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("hashtable_values", "hashtable_values(hash)", new ExpressionFactoryHelper<HashtableValuesExp>());
             BatchCommand.BatchScript.Register("list_hashtable", "list_hashtable(hash) api, return list of pair", new ExpressionFactoryHelper<ListHashtableExp>());
             BatchCommand.BatchScript.Register("hashtable_split", "hashtable_split(hash,ct) api, return list of hashtable", new ExpressionFactoryHelper<HashtableSplitExp>());
-            //BatchCommand.BatchScript.Register("peek", "peek(queue_or_stack)", new ExpressionFactoryHelper<PeekExp>());
+            BatchCommand.BatchScript.Register("peek", "peek(queue_or_stack)", new ExpressionFactoryHelper<PeekExp>());
             BatchCommand.BatchScript.Register("stack_count", "stack_count(stack)", new ExpressionFactoryHelper<StackSizeExp>());
             BatchCommand.BatchScript.Register("stack_get_count", "stack_get_count(stack)", false, new ExpressionFactoryHelper<StackSizeExp>());
             BatchCommand.BatchScript.Register("get_stack_count", "get_stack_count(stack)", false, new ExpressionFactoryHelper<StackSizeExp>());
             BatchCommand.BatchScript.Register("stack_size", "stack_size(stack)", false, new ExpressionFactoryHelper<StackSizeExp>());
-            //BatchCommand.BatchScript.Register("stack", "stack(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
+            BatchCommand.BatchScript.Register("stack", "stack(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
             BatchCommand.BatchScript.Register("stack_of", "stack_of(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
             BatchCommand.BatchScript.Register("new_stack", "new_stack(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
             BatchCommand.BatchScript.Register("newstack", "newstack(v1,v2,...) object", false, new ExpressionFactoryHelper<StackExp>());
             BatchCommand.BatchScript.Register("stack_new", "stack_new(v1,v2,...) object", false, new ExpressionFactoryHelper<StackExp>());
-            //BatchCommand.BatchScript.Register("push", "push(stack,v)", new ExpressionFactoryHelper<PushExp>());
-            //BatchCommand.BatchScript.Register("pop", "pop(stack)", new ExpressionFactoryHelper<PopExp>());
+            BatchCommand.BatchScript.Register("push", "push(stack,v)", new ExpressionFactoryHelper<PushExp>());
+            BatchCommand.BatchScript.Register("pop", "pop(stack)", new ExpressionFactoryHelper<PopExp>());
             BatchCommand.BatchScript.Register("stack_clear", "stack_clear(stack)", new ExpressionFactoryHelper<StackClearExp>());
             BatchCommand.BatchScript.Register("queue_count", "queue_count(queue)", new ExpressionFactoryHelper<QueueSizeExp>());
             BatchCommand.BatchScript.Register("queue_get_count", "queue_get_count(queue)", false, new ExpressionFactoryHelper<QueueSizeExp>());
             BatchCommand.BatchScript.Register("get_queue_count", "get_queue_count(queue)", false, new ExpressionFactoryHelper<QueueSizeExp>());
             BatchCommand.BatchScript.Register("queue_size", "queue_size(queue)", false, new ExpressionFactoryHelper<QueueSizeExp>());
-            //BatchCommand.BatchScript.Register("queue", "queue(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
+            BatchCommand.BatchScript.Register("queue", "queue(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
             BatchCommand.BatchScript.Register("queue_of", "queue_of(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
             BatchCommand.BatchScript.Register("new_queue", "new_queue(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
             BatchCommand.BatchScript.Register("newqueue", "newqueue(v1,v2,...) object", false, new ExpressionFactoryHelper<QueueExp>());
             BatchCommand.BatchScript.Register("queue_new", "queue_new(v1,v2,...) object", false, new ExpressionFactoryHelper<QueueExp>());
-            //BatchCommand.BatchScript.Register("enqueue", "enqueue(queue,v)", new ExpressionFactoryHelper<EnqueueExp>());
-            //BatchCommand.BatchScript.Register("dequeue", "dequeue(queue)", new ExpressionFactoryHelper<DequeueExp>());
+            BatchCommand.BatchScript.Register("enqueue", "enqueue(queue,v)", new ExpressionFactoryHelper<EnqueueExp>());
+            BatchCommand.BatchScript.Register("dequeue", "dequeue(queue)", new ExpressionFactoryHelper<DequeueExp>());
             BatchCommand.BatchScript.Register("queue_clear", "queue_clear(queue)", new ExpressionFactoryHelper<QueueClearExp>());
-            //BatchCommand.BatchScript.Register("setenv", "setenv(k,v) api", new ExpressionFactoryHelper<SetEnvironmentExp>());
-            //BatchCommand.BatchScript.Register("getenv", "getenv(k) api", new ExpressionFactoryHelper<GetEnvironmentExp>());
+            BatchCommand.BatchScript.Register("setenv", "setenv(k,v) api", new ExpressionFactoryHelper<SetEnvironmentExp>());
+            BatchCommand.BatchScript.Register("getenv", "getenv(k) api", new ExpressionFactoryHelper<GetEnvironmentExp>());
             BatchCommand.BatchScript.Register("set_env", "set_env(k,v)", new ExpressionFactoryHelper<SetEnvironmentExp>());
             BatchCommand.BatchScript.Register("set_environment", "set_environment(k,v)", new ExpressionFactoryHelper<SetEnvironmentExp>());
             BatchCommand.BatchScript.Register("get_env", "get_env(k)", new ExpressionFactoryHelper<GetEnvironmentExp>());
             BatchCommand.BatchScript.Register("get_environment", "get_environment(k)", new ExpressionFactoryHelper<GetEnvironmentExp>());
             BatchCommand.BatchScript.Register("environment", "environment(k)", false, new ExpressionFactoryHelper<GetEnvironmentExp>());
-            //BatchCommand.BatchScript.Register("expand", "expand(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
+            BatchCommand.BatchScript.Register("expand", "expand(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
             BatchCommand.BatchScript.Register("expand_env", "expand_env(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
             BatchCommand.BatchScript.Register("expand_environment", "expand_environment(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
-            //BatchCommand.BatchScript.Register("envs", "envs()", new ExpressionFactoryHelper<EnvironmentsExp>());
+            BatchCommand.BatchScript.Register("envs", "envs()", new ExpressionFactoryHelper<EnvironmentsExp>());
             BatchCommand.BatchScript.Register("environments", "environments()", new ExpressionFactoryHelper<EnvironmentsExp>());
-            //BatchCommand.BatchScript.Register("cd", "cd(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
-            //BatchCommand.BatchScript.Register("pwd", "pwd()", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
+            BatchCommand.BatchScript.Register("cd", "cd(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
+            BatchCommand.BatchScript.Register("pwd", "pwd()", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
             BatchCommand.BatchScript.Register("set_current_directory", "set_current_directory(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
             BatchCommand.BatchScript.Register("set_current_dir", "set_current_dir(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
             BatchCommand.BatchScript.Register("set_cur_dir", "set_cur_dir(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
@@ -512,7 +502,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("get_cur_dir", "get_cur_dir()", false, new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
             BatchCommand.BatchScript.Register("cmd_line", "cmd_line()", new ExpressionFactoryHelper<CommandLineExp>());
             BatchCommand.BatchScript.Register("cmd_line_args", "cmd_line_args(prev_arg) or cmdlineargs() api, first return next arg, second return array of arg", new ExpressionFactoryHelper<CommandLineArgsExp>());
-            //BatchCommand.BatchScript.Register("os", "os()", new ExpressionFactoryHelper<OsExp>());
+            BatchCommand.BatchScript.Register("os", "os()", new ExpressionFactoryHelper<OsExp>());
             BatchCommand.BatchScript.Register("os_platform", "os_platform()", new ExpressionFactoryHelper<OsPlatformExp>());
             BatchCommand.BatchScript.Register("os_version", "os_version()", new ExpressionFactoryHelper<OsVersionExp>());
             BatchCommand.BatchScript.Register("get_full_path", "get_full_path(path)", new ExpressionFactoryHelper<GetFullPathExp>());
@@ -540,7 +530,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("combine_path", "combine_path(path1,path2,...)", new ExpressionFactoryHelper<CombinePathExp>());
             BatchCommand.BatchScript.Register("change_extension", "change_extension(path,ext)", new ExpressionFactoryHelper<ChangeExtensionExp>());
             BatchCommand.BatchScript.Register("quote_path", "quote_path(path[,only_needed,single_quote])", new ExpressionFactoryHelper<QuotePathExp>());
-            //BatchCommand.BatchScript.Register("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine", new ExpressionFactoryHelper<EchoExp>());
+            BatchCommand.BatchScript.Register("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine", new ExpressionFactoryHelper<EchoExp>());
             BatchCommand.BatchScript.Register("call_stack", "call_stack()", new ExpressionFactoryHelper<CallStackExp>());
 
             BatchCommand.BatchScript.Register("file_echo", "file_echo(bool) or file_echo()", new ExpressionFactoryHelper<FileEchoExp>());
@@ -550,9 +540,18 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("exists_directory", "exists_directory(dir)", false, new ExpressionFactoryHelper<DirectoryExistsExp>());
             BatchCommand.BatchScript.Register("is_directory", "is_directory(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
             BatchCommand.BatchScript.Register("isdirectory", "isdirectory(path)", false, new ExpressionFactoryHelper<DirectoryExistsExp>());
-            //BatchCommand.BatchScript.Register("direxists", "direxists(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
-            //BatchCommand.BatchScript.Register("fileexists", "fileexists(file)", new ExpressionFactoryHelper<FileExistsExp>());
-            //BatchCommand.BatchScript.Register("pathexists", "pathexists(file)", new ExpressionFactoryHelper<PathExistsExp>());
+            // The exists/copy/move names below are the DotnetStoryScript clone
+            // names: this alias group re-registers them with error-info
+            // (ApiTextInfo.Error) enabled versions and intentionally shadows the
+            // DotnetStoryScript builtin implementations, so they also show up in
+            // help (DotnetStoryScript builtin registrations do not). The richer
+            // 3-arg FileOperationsApi variants live under copy_file_ex/move_file_ex.
+            BatchCommand.BatchScript.Register("dir_exists", "dir_exists(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
+            BatchCommand.BatchScript.Register("dir_exist", "dir_exist(dir)", false, new ExpressionFactoryHelper<DirectoryExistsExp>());
+            BatchCommand.BatchScript.Register("file_exists", "file_exists(file)", new ExpressionFactoryHelper<FileExistsExp>());
+            BatchCommand.BatchScript.Register("file_exist", "file_exist(file)", false, new ExpressionFactoryHelper<FileExistsExp>());
+            BatchCommand.BatchScript.Register("path_exists", "path_exists(file)", new ExpressionFactoryHelper<PathExistsExp>());
+            BatchCommand.BatchScript.Register("path_exist", "path_exist(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             BatchCommand.BatchScript.Register("list_dirs", "list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListDirectoriesExp>()); BatchCommand.BatchScript.Register("list_dir", "list_dir(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", false, new ExpressionFactoryHelper<ListDirectoriesExp>());
             BatchCommand.BatchScript.Register("list_files", "list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListFilesExp>());
             BatchCommand.BatchScript.Register("list_all_dirs", "list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
@@ -568,9 +567,9 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("move_directory", "move_directory(dir1,dir2)", new ExpressionFactoryHelper<MoveDirectoryExp>());
             BatchCommand.BatchScript.Register("delete_dir", "delete_dir(dir)", new ExpressionFactoryHelper<DeleteDirectoryExp>());
             BatchCommand.BatchScript.Register("delete_directory", "delete_directory(dir)", false, new ExpressionFactoryHelper<DeleteDirectoryExp>());
-            //BatchCommand.BatchScript.Register("copyfile", "copyfile(file1,file2)", new ExpressionFactoryHelper<CopyFileExp>());
+            BatchCommand.BatchScript.Register("copy_file", "copy_file(file1,file2)", new ExpressionFactoryHelper<CopyFileExp>());
             BatchCommand.BatchScript.Register("copy_files", "copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<CopyFilesExp>());
-            //BatchCommand.BatchScript.Register("movefile", "movefile(file1,file2)", new ExpressionFactoryHelper<MoveFileExp>());
+            BatchCommand.BatchScript.Register("move_file", "move_file(file1,file2)", new ExpressionFactoryHelper<MoveFileExp>());
             BatchCommand.BatchScript.Register("delete_file", "delete_file(file)", new ExpressionFactoryHelper<DeleteFileExp>());
             BatchCommand.BatchScript.Register("delete_files", "delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<DeleteFilesExp>());
             BatchCommand.BatchScript.Register("delete_all_files", "delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<DeleteAllFilesExp>());
@@ -589,94 +588,38 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("calc_md5", "calc_md5(file)", new ExpressionFactoryHelper<CalcMd5Exp>());
             BatchCommand.BatchScript.Register("calc_file_md5", "calc_file_md5(file)", false, new ExpressionFactoryHelper<CalcMd5Exp>());
 
-            //BatchCommand.BatchScript.Register("time", "time() or timestamp() api", new ExpressionFactoryHelper<TimeStampExp>());
-            //BatchCommand.BatchScript.Register("timestamp", "time() or timestamp() api", new ExpressionFactoryHelper<TimeStampExp>());
-            //BatchCommand.BatchScript.Register("getelapsedms", "getelapsedms() api, return elapsed milliseconds (time)", new ExpressionFactoryHelper<GetElapsedTimeMsExp>());
-            //BatchCommand.BatchScript.Register("getelapsedus", "getelapsedus() api, return elapsed microseconds (time)", new ExpressionFactoryHelper<GetElapsedTimeUsExp>());
+            BatchCommand.BatchScript.Register("clone", "clone(v)", new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("clone_array", "clone_array(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("clone_list", "clone_list(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("clone_hashtable", "clone_hashtable(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("clone_queue", "clone_queue(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("clone_stack", "clone_stack(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("clone_tuple", "clone_tuple(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("copy", "copy(v)", new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("copy_array", "copy_array(v)", new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("copy_list", "copy_list(v)", new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("copy_hashtable", "copy_hashtable(v)", new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("copy_queue", "copy_queue(v)", new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("copy_stack", "copy_stack(v)", new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("copy_tuple", "copy_tuple(v)", new ExpressionFactoryHelper<CloneExp>());
+            BatchCommand.BatchScript.Register("time", "time() or timestamp() api", new ExpressionFactoryHelper<TimeStampExp>());
+            BatchCommand.BatchScript.Register("timestamp", "time() or timestamp() api", new ExpressionFactoryHelper<TimeStampExp>());
+            BatchCommand.BatchScript.Register("getelapsedms", "getelapsedms() api, return elapsed milliseconds (time)", new ExpressionFactoryHelper<GetElapsedTimeMsExp>());
+            BatchCommand.BatchScript.Register("getelapsedus", "getelapsedus() api, return elapsed microseconds (time)", new ExpressionFactoryHelper<GetElapsedTimeUsExp>());
             BatchCommand.BatchScript.Register("get_timestamp", "get_timestamp() api", new ExpressionFactoryHelper<TimeStampExp>());
             BatchCommand.BatchScript.Register("get_elapsed_ms", "get_elapsed_ms() api, return elapsed milliseconds (time)", new ExpressionFactoryHelper<GetElapsedTimeMsExp>());
             BatchCommand.BatchScript.Register("get_elapsed_us", "get_elapsed_us() api, return elapsed microseconds (time)", new ExpressionFactoryHelper<GetElapsedTimeUsExp>());
+            BatchCommand.BatchScript.Register("string_length", "string_length(str)", new ExpressionFactoryHelper<StringLengthExp>());
+            BatchCommand.BatchScript.Register("stringlength", "stringlength(val)", false, new ExpressionFactoryHelper<StringLengthExp>());
+            BatchCommand.BatchScript.Register("strlength", "strlength(val)", false, new ExpressionFactoryHelper<StringLengthExp>());
+            BatchCommand.BatchScript.Register("strlen", "strlen(val)", new ExpressionFactoryHelper<StringLengthExp>());
+            BatchCommand.BatchScript.Register("str_len", "str_len(val)", false, new ExpressionFactoryHelper<StringLengthExp>());
+            BatchCommand.BatchScript.Register("str_length", "str_length(str)", false, new ExpressionFactoryHelper<StringLengthExp>());
+            BatchCommand.BatchScript.Register("get_string_in_length", "get_string_in_length(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
+            BatchCommand.BatchScript.Register("get_clipboard", "get_clipboard()", new ExpressionFactoryHelper<GetClipboardExp>());
+            BatchCommand.BatchScript.Register("set_clipboard", "set_clipboard(text)", new ExpressionFactoryHelper<SetClipboardExp>());
         }
 
-        internal sealed class CloneExp : SimpleExpressionBase
-        {
-            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
-            {
-                if (operands.Count != 1) {
-                    ApiTextInfo.Error.AppendLine("Expected: clone(v), aliased as clone_array|clone_list|clone_hashtable|clone_queue|clone_stack|clone_tuple|copy|copy_array|copy_list|copy_hashtable|copy_queue|copy_stack|copy_tuple");
-                    return BoxedValue.NullObject;
-                }
-                if (operands.Count >= 1) {
-                    var val = operands[0];
-                    return Clone(val);
-                }
-                return BoxedValue.NullObject;
-            }
-            private BoxedValue Clone(BoxedValue val)
-            {
-                if (val.IsNullObject) {
-                    return BoxedValue.NullObject;
-                }
-                else if (val.IsString) {
-                    var str = val.GetString();
-                    return string.Concat(str);
-                }
-                else if (val.IsObject) {
-                    var obj = val.GetObject();
-                    if (obj is ICloneable cloneable) {
-                        return BoxedValue.FromObject(cloneable.Clone());
-                    }
-                    else if (obj is IList list) {
-                        var newList = new List<BoxedValue>();
-                        foreach (var item in list) {
-                            newList.Add(BoxedValue.FromObject(item));
-                        }
-                        return BoxedValue.FromObject(newList);
-                    }
-                    else if (obj is IDictionary dict) {
-                        var newDict = new Dictionary<BoxedValue, BoxedValue>();
-                        foreach (var key in dict.Keys) {
-                            var v = dict[key];
-                            newDict.Add(BoxedValue.FromObject(key), BoxedValue.FromObject(v));
-                        }
-                        return BoxedValue.FromObject(newDict);
-                    }
-                    else if (obj is Queue<BoxedValue> queue) {
-                        var newQueue = new Queue<BoxedValue>(queue);
-                        return BoxedValue.FromObject(newQueue);
-                    }
-                    else if (obj is Stack<BoxedValue> stack) {
-                        var newStack = new Stack<BoxedValue>(stack.ToArray());
-                        return BoxedValue.FromObject(newStack);
-                    }
-                    else if (obj is Tuple<BoxedValue> t1) {
-                        return BoxedValue.From(Tuple.Create(t1.Item1));
-                    }
-                    else if (obj is Tuple<BoxedValue, BoxedValue> t2) {
-                        return BoxedValue.From(Tuple.Create(t2.Item1, t2.Item2));
-                    }
-                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue> t3) {
-                        return BoxedValue.From(Tuple.Create(t3.Item1, t3.Item2, t3.Item3));
-                    }
-                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue> t4) {
-                        return BoxedValue.From(Tuple.Create(t4.Item1, t4.Item2, t4.Item3, t4.Item4));
-                    }
-                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t5) {
-                        return BoxedValue.From(Tuple.Create(t5.Item1, t5.Item2, t5.Item3, t5.Item4, t5.Item5));
-                    }
-                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t6) {
-                        return BoxedValue.From(Tuple.Create(t6.Item1, t6.Item2, t6.Item3, t6.Item4, t6.Item5, t6.Item6));
-                    }
-                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t7) {
-                        return BoxedValue.From(Tuple.Create(t7.Item1, t7.Item2, t7.Item3, t7.Item4, t7.Item5, t7.Item6, t7.Item7));
-                    }
-                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, Tuple<BoxedValue>> t8) {
-                        return BoxedValue.From(Tuple.Create(t8.Item1, t8.Item2, t8.Item3, t8.Item4, t8.Item5, t8.Item6, t8.Item7, Tuple.Create(Clone(t8.Rest.Item1))));
-                    }
-                }
-                return val;
-            }
-        }
         internal sealed class IncExp : AbstractExpression
         {
             protected override BoxedValue DoCalc(DslCalculator calculator)
@@ -2662,14 +2605,14 @@ namespace BatchCommand.Api
             }
             protected override bool Load(Dsl.StatementData statementData)
             {
-                //the handling of the simple syntax 'looplist(exp) func(args);'
+                //the handling of the simple syntax 'loop_list(exp) func(args);'
                 if (statementData.GetFunctionNum() == 2) {
                     var first = statementData.First.AsFunction;
                     var secondV = statementData.Second.AsValue;
                     var secondF = statementData.Second.AsFunction;
                     var firstId = first.GetId();
                     var secondId = statementData.Second.GetId();
-                    if (firstId == "looplist" && !first.HaveStatement() && !first.HaveExternScript() &&
+                    if (firstId == "loop_list" && !first.HaveStatement() && !first.HaveExternScript() &&
                             !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
                         if (first.GetParamNum() > 0) {
                             Dsl.ISyntaxComponent exp = first.GetParam(0);
@@ -2964,14 +2907,14 @@ namespace BatchCommand.Api
             }
             protected override bool Load(Dsl.StatementData statementData)
             {
-                //the handling of the simple syntax 'foreachvalue(exp1,exp2,...) func(args);'
+                //the handling of the simple syntax 'for_each_value(exp1,exp2,...) func(args);'
                 if (statementData.GetFunctionNum() == 2) {
                     var first = statementData.First.AsFunction;
                     var secondV = statementData.Second.AsValue;
                     var secondF = statementData.Second.AsFunction;
                     var firstId = first.GetId();
                     var secondId = statementData.Second.GetId();
-                    if (firstId == "foreachvalue" && !first.HaveStatement() && !first.HaveExternScript() &&
+                    if (firstId == "for_each_value" && !first.HaveStatement() && !first.HaveExternScript() &&
                             !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
                         int num = first.GetParamNum();
                         if (num > 0) {
@@ -6677,7 +6620,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 1) {
-                    ApiTextInfo.Error.AppendLine("Expected: file_exists(file), aliased as fileexists");
+                    ApiTextInfo.Error.AppendLine("Expected: file_exists(file), aliased as file_exists");
                     return BoxedValue.NullObject;
                 }
                 var ret = BoxedValue.NullObject;
@@ -7033,7 +6976,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiTextInfo.Error.AppendLine("Expected: copyfile(file1,file2)");
+                    ApiTextInfo.Error.AppendLine("Expected: copy_file(file1,file2)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -7130,7 +7073,7 @@ namespace BatchCommand.Api
             protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 if (operands.Count != 2) {
-                    ApiTextInfo.Error.AppendLine("Expected: movefile(file1,file2)");
+                    ApiTextInfo.Error.AppendLine("Expected: move_file(file1,file2)");
                     return BoxedValue.NullObject;
                 }
                 bool ret = false;
@@ -7512,7 +7455,86 @@ namespace BatchCommand.Api
             }
         }
 
-        internal sealed class TimeStampExp : SimpleExpressionBase
+        public sealed class CloneExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    ApiTextInfo.Error.AppendLine("Expected: clone(v), aliased as clone_array|clone_list|clone_hashtable|clone_queue|clone_stack|clone_tuple|copy|copy_array|copy_list|copy_hashtable|copy_queue|copy_stack|copy_tuple");
+                    return BoxedValue.NullObject;
+                }
+                if (operands.Count >= 1) {
+                    var val = operands[0];
+                    return Clone(val);
+                }
+                return BoxedValue.NullObject;
+            }
+            private BoxedValue Clone(BoxedValue val)
+            {
+                if (val.IsNullObject) {
+                    return BoxedValue.NullObject;
+                }
+                else if (val.IsString) {
+                    var str = val.GetString();
+                    return string.Concat(str);
+                }
+                else if (val.IsObject) {
+                    var obj = val.GetObject();
+                    if (obj is ICloneable cloneable) {
+                        return BoxedValue.FromObject(cloneable.Clone());
+                    }
+                    else if (obj is IList list) {
+                        var newList = new List<BoxedValue>();
+                        foreach (var item in list) {
+                            newList.Add(BoxedValue.FromObject(item));
+                        }
+                        return BoxedValue.FromObject(newList);
+                    }
+                    else if (obj is IDictionary dict) {
+                        var newDict = new Dictionary<BoxedValue, BoxedValue>();
+                        foreach (var key in dict.Keys) {
+                            var v = dict[key];
+                            newDict.Add(BoxedValue.FromObject(key), BoxedValue.FromObject(v));
+                        }
+                        return BoxedValue.FromObject(newDict);
+                    }
+                    else if (obj is Queue<BoxedValue> queue) {
+                        var newQueue = new Queue<BoxedValue>(queue);
+                        return BoxedValue.FromObject(newQueue);
+                    }
+                    else if (obj is Stack<BoxedValue> stack) {
+                        var newStack = new Stack<BoxedValue>(stack.ToArray());
+                        return BoxedValue.FromObject(newStack);
+                    }
+                    else if (obj is Tuple<BoxedValue> t1) {
+                        return BoxedValue.From(Tuple.Create(t1.Item1));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue> t2) {
+                        return BoxedValue.From(Tuple.Create(t2.Item1, t2.Item2));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue> t3) {
+                        return BoxedValue.From(Tuple.Create(t3.Item1, t3.Item2, t3.Item3));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue> t4) {
+                        return BoxedValue.From(Tuple.Create(t4.Item1, t4.Item2, t4.Item3, t4.Item4));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t5) {
+                        return BoxedValue.From(Tuple.Create(t5.Item1, t5.Item2, t5.Item3, t5.Item4, t5.Item5));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t6) {
+                        return BoxedValue.From(Tuple.Create(t6.Item1, t6.Item2, t6.Item3, t6.Item4, t6.Item5, t6.Item6));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t7) {
+                        return BoxedValue.From(Tuple.Create(t7.Item1, t7.Item2, t7.Item3, t7.Item4, t7.Item5, t7.Item6, t7.Item7));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, Tuple<BoxedValue>> t8) {
+                        return BoxedValue.From(Tuple.Create(t8.Item1, t8.Item2, t8.Item3, t8.Item4, t8.Item5, t8.Item6, t8.Item7, Tuple.Create(Clone(t8.Rest.Item1))));
+                    }
+                }
+                return val;
+            }
+        }
+        public sealed class TimeStampExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
@@ -7526,14 +7548,14 @@ namespace BatchCommand.Api
 
             private long m_StartTimeUs = 0L;
         }
-        internal sealed class GetElapsedTimeMsExp : SimpleExpressionBase
+        public sealed class GetElapsedTimeMsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
                 return BoxedValue.From(GetElapsedTimeUsExp.GetElapsedTimeUs() / 1000);
             }
         }
-        internal sealed class GetElapsedTimeUsExp : SimpleExpressionBase
+        public sealed class GetElapsedTimeUsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
             {
@@ -7546,6 +7568,78 @@ namespace BatchCommand.Api
             }
 
             private static double s_TickPerUs = (double)System.Diagnostics.Stopwatch.Frequency / 1000000.0;
+        }
+        public sealed class StringLengthExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    ApiTextInfo.Error.AppendLine("Expected: string_length(val), aliased as stringlength|strlen");
+                    return (BoxedValue)(-1);
+                }
+
+                {
+                    string str = operands[0].AsString;
+                    if (!string.IsNullOrEmpty(str)) {
+                        return BoxedValue.From(str.Length);
+                    }
+                }
+                return -1;
+            }
+        }
+        public sealed class GetStringInLengthExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+            {
+                if (operands.Count < 2 || operands.Count > 3) {
+                    ApiTextInfo.Error.AppendLine("Expected: get_string_in_length(str,len[,begin0_end1_or_beginend2])");
+                    return BoxedValue.EmptyString;
+                }
+                string str = operands[0].AsString;
+                int len = operands[1].GetInt();
+                int beginOrEndOrBeginEnd = operands.Count > 2 ? operands[2].GetInt() : 0;
+                return BoxedValue.FromString(DslHost.GetStringInLength(str, len, beginOrEndOrBeginEnd));
+            }
+        }
+        public sealed class GetClipboardExp : SimpleExpressionBase
+        {
+            private static readonly BatchCommand.Utils.ClipboardOperations s_Ops = new BatchCommand.Utils.ClipboardOperations();
+
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+            {
+                try {
+                    string text = s_Ops.GetText();
+                    return BoxedValue.FromString(text);
+                }
+                catch (Exception ex) {
+                    ApiTextInfo.Error.AppendLine($"getclipboard error: {ex.Message}");
+                    return BoxedValue.FromString(string.Empty);
+                }
+            }
+        }
+        public sealed class SetClipboardExp : SimpleExpressionBase
+        {
+            private static readonly BatchCommand.Utils.ClipboardOperations s_Ops = new BatchCommand.Utils.ClipboardOperations();
+
+            protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    ApiTextInfo.Error.AppendLine("Expected: set_clipboard(text)");
+                    return BoxedValue.From(false);
+                }
+
+                {
+                    try {
+                        string text = operands[0].AsString;
+                        bool result = s_Ops.SetText(text);
+                        return BoxedValue.From(result);
+                    }
+                    catch (Exception ex) {
+                        ApiTextInfo.Error.AppendLine($"setclipboard error: {ex.Message}");
+                    }
+                }
+                return BoxedValue.From(false);
+            }
         }
     }
 }

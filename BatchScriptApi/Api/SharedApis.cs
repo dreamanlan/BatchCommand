@@ -1,22 +1,39 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
+using BatchCommand.Utils;
 
 namespace BatchCommand.Api
 {
-    // Shared utility apis used by multiple hosts (AgentCore, CefDotnetApp,
-    // ...). Implementations only: BatchScriptApiRegistrar registers the names.
-    // Errors are recorded through ApiTextInfo.Error (thread static, fetched
-    // uniformly by the host after dsl execution) and a null/default value is
-    // returned, so execution continues.
-    // Note: read_file/to_json/strlen (StringLengthExp) moved in from AgentCore
-    // OtherOperationsApi.cs, and string_contains*/combine_path/new_string_builder/
-    // string_builder_tostring use the AgentCore-copied implementations in
-    // FrameworkApiAlias.cs - see the notes at the bottom of this file.
+    public sealed class AppendExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                ApiTextInfo.Error.AppendLine("Expected: append(stringbuilder, val)");
+                return BoxedValue.NullObject;
+            }
 
+            {
+                try {
+                    var sb = operands[0].As<StringBuilder>();
+                    var v = operands[1];
+                    var tmp = new StringBuilder();
+                    DslHelper.ConvertToString(v, tmp, 0, true);
+                    sb.Append(tmp.ToString());
+                    return BoxedValue.FromObject(sb);
+                }
+                catch (Exception ex) {
+                    ApiTextInfo.Error.AppendLine($"fromjson error: {ex.Message}");
+                }
+            }
+            return BoxedValue.NullObject;
+        }
+    }
     // append_line(stringbuilder, val) - append value with newline
     public sealed class AppendLineExp : SimpleExpressionBase
     {
@@ -37,10 +54,235 @@ namespace BatchCommand.Api
             return BoxedValue.FromObject(sb);
         }
     }
+    public sealed class StringIndexOfExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            BoxedValue r = BoxedValue.NullObject;
+            if (operands.Count < 2 || operands.Count > 4) {
+                ApiTextInfo.Error.AppendLine("Expected: string_index_of(str, substr[, start, count]), aliased as string_find|stringfind|index_of|indexof|string_indexof|stringindexof");
+                return BoxedValue.NullObject;
+            }
 
-    // string_contains/not_contains/contains_any/not_contains_any and
-    // combine_path/new_string_builder/string_builder_tostring previously had
-    // local ports here; the single implementation now lives in
-    // FrameworkApiAlias.cs (copied from AgentCore), registered under all the
-    // alias names by FrameworkApiAlias.RegisterApis.
+            {
+                string srcstr = operands[0].GetString();
+                string str = operands[1].GetString();
+                if (srcstr != null && str != null) {
+                    int start = 0;
+                    int ct = srcstr.Length;
+                    if (operands.Count >= 3) {
+                        start = operands[2].GetInt();
+                    }
+                    if (operands.Count >= 4) {
+                        ct = operands[3].GetInt();
+                    }
+                    if (ct > srcstr.Length - start) {
+                        ct = srcstr.Length - start;
+                    }
+                    r = srcstr.IndexOf(str, start, ct);
+                }
+            }
+            return r;
+        }
+    }
+    public sealed class StringLastIndexOfExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            BoxedValue r = BoxedValue.NullObject;
+            if (operands.Count < 2 || operands.Count > 4) {
+                ApiTextInfo.Error.AppendLine("Expected: string_last_index_of(str, substr[, start, count]), aliased as last_index_of|lastindexof|string_last_indexof|stringlastindexof");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                string srcstr = operands[0].GetString();
+                string str = operands[1].GetString();
+                if (srcstr != null && str != null) {
+                    int start = srcstr.Length - 1;
+                    int ct = srcstr.Length;
+                    if (operands.Count >= 3) {
+                        start = operands[2].GetInt();
+                    }
+                    if (operands.Count >= 4) {
+                        ct = operands[3].GetInt();
+                    }
+                    if (ct > start + 1) {
+                        ct = start + 1;
+                    }
+                    r = srcstr.LastIndexOf(str, start, ct);
+                }
+            }
+            return r;
+        }
+    }
+    public sealed class StringIndexOfAnyExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            BoxedValue r = BoxedValue.NullObject;
+            if (operands.Count < 2 || operands.Count > 4) {
+                ApiTextInfo.Error.AppendLine("Expected: string_index_of_any(str, substr[, start, count]), aliased as index_of_any|indexofany|string_indexof_any|stringindexofany");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                string srcstr = operands[0].GetString();
+                IList seps = operands[1].As<IList>();
+                if (srcstr != null && seps != null) {
+                    char[] cs = new char[seps.Count];
+                    for (int i = 0; i < seps.Count; i++) {
+                        var _sep = seps[i];
+                        if (null != _sep) {
+                            string? sep = _sep.ToString();
+                            if (sep?.Length > 0) {
+                                cs[i] = sep[0];
+                            }
+                            else {
+                                cs[i] = '\0';
+                            }
+                        }
+                    }
+                    int start = 0;
+                    int ct = srcstr.Length;
+                    if (operands.Count >= 3) {
+                        start = operands[2].GetInt();
+                    }
+                    if (operands.Count >= 4) {
+                        ct = operands[3].GetInt();
+                    }
+                    if (ct > srcstr.Length - start) {
+                        ct = srcstr.Length - start;
+                    }
+                    r = srcstr.IndexOfAny(cs, start, ct);
+                }
+            }
+            return r;
+        }
+    }
+    public sealed class StringLastIndexOfAnyExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            BoxedValue r = BoxedValue.NullObject;
+            if (operands.Count < 2 || operands.Count > 4) {
+                ApiTextInfo.Error.AppendLine("Expected: string_last_index_of_any(str, substr[, start, count]), aliased as last_index_of_any|lastindexofany|string_last_indexof_any|stringlastindexofany");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                string srcstr = operands[0].GetString();
+                IList seps = operands[1].As<IList>();
+                if (srcstr != null && seps != null) {
+                    char[] cs = new char[seps.Count];
+                    for (int i = 0; i < seps.Count; i++) {
+                        var _sep = seps[i];
+                        if (null != _sep) {
+                            string? sep = _sep.ToString();
+                            if (sep?.Length > 0) {
+                                cs[i] = sep[0];
+                            }
+                            else {
+                                cs[i] = '\0';
+                            }
+                        }
+                    }
+                    int start = srcstr.Length - 1;
+                    int ct = srcstr.Length;
+                    if (operands.Count >= 3) {
+                        start = operands[2].GetInt();
+                    }
+                    if (operands.Count >= 4) {
+                        ct = operands[3].GetInt();
+                    }
+                    if (ct > start + 1) {
+                        ct = start + 1;
+                    }
+                    r = srcstr.LastIndexOfAny(cs, start, ct);
+                }
+            }
+            return r;
+        }
+    }
+    public sealed class StringConcatExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            var sb = new StringBuilder();
+            foreach (var opd in operands) {
+                sb.Append(opd.ToString());
+            }
+            return sb.ToString();
+        }
+    }
+    public sealed class SizeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                ApiTextInfo.Error.AppendLine("Expected: length(str_or_list_or_hashtable), aliased as len|size|count");
+                return (BoxedValue)(-1);
+            }
+
+            {
+                string str = operands[0].AsString;
+                if (null != str) {
+                    return BoxedValue.From(str.Length);
+                }
+                else {
+                    System.Collections.IList list = operands[0].As<System.Collections.IList>();
+                    if (null != list) {
+                        return BoxedValue.From(list.Count);
+                    }
+                    else {
+                        System.Collections.IDictionary dict = operands[0].As<System.Collections.IDictionary>();
+                        if (null != dict) {
+                            return BoxedValue.From(dict.Count);
+                        }
+                        else {
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    public sealed class CharToIntExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            BoxedValue r = BoxedValue.NullObject;
+            if (operands.Count != 1) {
+                ApiTextInfo.Error.AppendLine("Expected: char_to_int(char_str)");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                string str = operands[0].AsString;
+                if (!string.IsNullOrEmpty(str)) {
+                    char c = str[0];
+                    r = BoxedValue.From((int)c);
+                }
+            }
+            return r;
+        }
+    }
+    public sealed class IntToCharExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
+        {
+            BoxedValue r = BoxedValue.NullObject;
+            if (operands.Count != 1) {
+                ApiTextInfo.Error.AppendLine("Expected: int_to_char(int_ascii)");
+                return BoxedValue.NullObject;
+            }
+
+            {
+                int ascii = operands[0].GetInt();
+                char c = (char)ascii;
+                r = c.ToString();
+            }
+            return r;
+        }
+    }
 }

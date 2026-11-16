@@ -1,0 +1,1073 @@
+var vertexes = new[] {
+	new VertexData(new Vector4(5.5745f, 1.52435f, 17.82627f, 18.02612f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.26955f, 2.94492f, 0.01555f, 0.58736f), new Vector4(11.80031f, 8.25089f, 17.92619f, 18.02612f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.41125f, -0.1409f, -0.90015f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.53642f, 0.60648f, 0.62213f, 1.00f))
+	, new VertexData(new Vector4(7.15171f, 1.52435f, 17.82627f, 18.02612f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.60461f, 2.94492f, 0.21791f, 0.90342f), new Vector4(12.58892f, 8.25089f, 17.92619f, 18.02612f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.85304f, -0.1409f, -0.50173f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.53642f, 0.60648f, 0.62213f, 1.00f))
+	, new VertexData(new Vector4(4.45922f, 2.45786f, 17.90317f, 18.10303f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.03078f, 2.81674f, 0.09658f, 0.21791f), new Vector4(11.28112f, 7.82258f, 18.0031f, 18.10303f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(0.0865f, 0.18052f, -0.97938f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.52822f, 0.59882f, 0.61422f, 1.00f))
+	, new VertexData(new Vector4(8.267f, 2.45812f, 17.90317f, 18.10303f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.84339f, 2.81674f, 0.58736f, 0.98445f), new Vector4(13.18501f, 7.82245f, 18.0031f, 18.10303f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.98308f, 0.18052f, -0.01477f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.52821f, 0.59882f, 0.61422f, 1.00f))
+	, new VertexData(new Vector4(8.26715f, 3.7788f, 18.01181f, 18.21167f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.84339f, 2.63688f, 0.90342f, 0.78209f), new Vector4(13.23941f, 7.21643f, 18.11174f, 18.21167f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.72432f, 0.63289f, 0.27215f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.51673f, 0.5881f, 0.60313f, 1.00f))
+	, new VertexData(new Vector4(7.15171f, 4.71257f, 18.08848f, 18.28833f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.60461f, 2.5087f, 0.98445f, 0.41264f), new Vector4(12.72002f, 6.78788f, 18.1884f, 18.28833f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.22656f, 0.95431f, 0.19293f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.50869f, 0.5806f, 0.59537f, 1.00f))
+	, new VertexData(new Vector4(5.57465f, 4.71257f, 18.08848f, 18.28833f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.26955f, 2.5087f, 0.78209f, 0.09658f), new Vector4(11.93149f, 6.78788f, 18.1884f, 18.28833f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(0.21522f, 0.95431f, -0.2055f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.50869f, 0.5806f, 0.59537f, 1.00f))
+	, new VertexData(new Vector4(4.45922f, 3.7788f, 18.01181f, 18.21167f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.03078f, 2.63688f, 0.41264f, 0.01555f), new Vector4(11.33544f, 7.21643f, 18.11174f, 18.21167f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(0.34527f, 0.63289f, -0.69246f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.51673f, 0.5881f, 0.60313f, 1.00f))
+	, new VertexData(new Vector4(4.06576f, 2.32173f, 17.89194f, 18.0918f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(0.94605f, 2.83535f, 0.01271f, 0.15892f), new Vector4(11.07878f, 7.88503f, 17.99187f, 18.0918f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(0.29225f, -0.02935f, -0.95578f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.52941f, 0.59994f, 0.61537f, 1.00f))
+	, new VertexData(new Vector4(4.06591f, 3.91493f, 18.02304f, 18.2229f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(0.94605f, 2.61827f, 0.39416f, -0.08531f), new Vector4(11.14441f, 7.15399f, 18.12297f, 18.2229f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(0.60209f, 0.51231f, -0.61223f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.51555f, 0.587f, 0.60199f, 1.00f))
+	, new VertexData(new Vector4(5.41179f, 1.19477f, 17.79917f, 17.99902f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.23489f, 2.9904f, -0.08531f, 0.60584f), new Vector4(11.70541f, 8.40213f, 17.89909f, 17.99902f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.29768f, -0.41029f, -0.86188f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.53933f, 0.6092f, 0.62495f, 1.00f))
+	, new VertexData(new Vector4(5.41194f, 5.04216f, 18.11582f, 18.31567f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.23489f, 2.46322f, 0.84108f, 0.01271f), new Vector4(11.86381f, 6.63676f, 18.21575f, 18.31567f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(0.44796f, 0.89325f, -0.0351f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.50587f, 0.57797f, 0.59265f, 1.00f))
+	, new VertexData(new Vector4(7.31472f, 5.04216f, 18.11558f, 18.31543f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.63927f, 2.46322f, 1.08531f, 0.39416f), new Vector4(12.81508f, 6.63664f, 18.2155f, 18.31543f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.08102f, 0.89325f, 0.44197f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.50587f, 0.57796f, 0.59265f, 1.00f))
+	, new VertexData(new Vector4(7.31457f, 1.19477f, 17.79941f, 17.99927f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.63927f, 2.9904f, 0.15892f, 0.98729f), new Vector4(12.65692f, 8.40225f, 17.89934f, 17.99927f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.82666f, -0.41029f, -0.38482f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.53933f, 0.6092f, 0.62495f, 1.00f))
+	, new VertexData(new Vector4(8.66045f, 2.32173f, 17.89194f, 18.0918f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.92812f, 2.83535f, 0.60584f, 1.08531f), new Vector4(13.37613f, 7.88503f, 17.99187f, 18.0918f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.98079f, -0.02935f, 0.19232f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.52941f, 0.59994f, 0.61537f, 1.00f))
+	, new VertexData(new Vector4(8.66031f, 3.91493f, 18.0228f, 18.22266f), new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f), new Vector4(0.00f, 0.00f, 0.00f, 2.10f), new Vector4(1.92812f, 2.61827f, 0.98729f, 0.84108f), new Vector4(13.44148f, 7.15386f, 18.12273f, 18.22266f), new Vector4(0.17627f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-0.67096f, 0.51231f, 0.53587f, 1.00f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.00f, 0.00f, 0.00f), new Vector4(0.51555f, 0.587f, 0.60199f, 1.00f))
+};
+
+// gl_Position
+var gl_Position = new[] {
+	new Vector4(5.5745f, 1.52435f, 17.82627f, 18.02612f)
+	, new Vector4(7.15171f, 1.52435f, 17.82627f, 18.02612f)
+	, new Vector4(4.45922f, 2.45786f, 17.90317f, 18.10303f)
+	, new Vector4(8.267f, 2.45812f, 17.90317f, 18.10303f)
+	, new Vector4(8.26715f, 3.7788f, 18.01181f, 18.21167f)
+	, new Vector4(7.15171f, 4.71257f, 18.08848f, 18.28833f)
+	, new Vector4(5.57465f, 4.71257f, 18.08848f, 18.28833f)
+	, new Vector4(4.45922f, 3.7788f, 18.01181f, 18.21167f)
+	, new Vector4(4.06576f, 2.32173f, 17.89194f, 18.0918f)
+	, new Vector4(4.06591f, 3.91493f, 18.02304f, 18.2229f)
+	, new Vector4(5.41179f, 1.19477f, 17.79917f, 17.99902f)
+	, new Vector4(5.41194f, 5.04216f, 18.11582f, 18.31567f)
+	, new Vector4(7.31472f, 5.04216f, 18.11558f, 18.31543f)
+	, new Vector4(7.31457f, 1.19477f, 17.79941f, 17.99927f)
+	, new Vector4(8.66045f, 2.32173f, 17.89194f, 18.0918f)
+	, new Vector4(8.66031f, 3.91493f, 18.0228f, 18.22266f)
+};
+
+// out_attr0
+var out_attr0 = new[] {
+	new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+	, new Vector4(1.09333f, 1.07386f, 0.96317f, 0.00294f)
+};
+
+// out_attr1
+var out_attr1 = new[] {
+	new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 2.10f)
+};
+
+// out_attr2
+var out_attr2 = new[] {
+	new Vector4(1.26955f, 2.94492f, 0.01555f, 0.58736f)
+	, new Vector4(1.60461f, 2.94492f, 0.21791f, 0.90342f)
+	, new Vector4(1.03078f, 2.81674f, 0.09658f, 0.21791f)
+	, new Vector4(1.84339f, 2.81674f, 0.58736f, 0.98445f)
+	, new Vector4(1.84339f, 2.63688f, 0.90342f, 0.78209f)
+	, new Vector4(1.60461f, 2.5087f, 0.98445f, 0.41264f)
+	, new Vector4(1.26955f, 2.5087f, 0.78209f, 0.09658f)
+	, new Vector4(1.03078f, 2.63688f, 0.41264f, 0.01555f)
+	, new Vector4(0.94605f, 2.83535f, 0.01271f, 0.15892f)
+	, new Vector4(0.94605f, 2.61827f, 0.39416f, -0.08531f)
+	, new Vector4(1.23489f, 2.9904f, -0.08531f, 0.60584f)
+	, new Vector4(1.23489f, 2.46322f, 0.84108f, 0.01271f)
+	, new Vector4(1.63927f, 2.46322f, 1.08531f, 0.39416f)
+	, new Vector4(1.63927f, 2.9904f, 0.15892f, 0.98729f)
+	, new Vector4(1.92812f, 2.83535f, 0.60584f, 1.08531f)
+	, new Vector4(1.92812f, 2.61827f, 0.98729f, 0.84108f)
+};
+
+// out_attr3
+var out_attr3 = new[] {
+	new Vector4(11.80031f, 8.25089f, 17.92619f, 18.02612f)
+	, new Vector4(12.58892f, 8.25089f, 17.92619f, 18.02612f)
+	, new Vector4(11.28112f, 7.82258f, 18.0031f, 18.10303f)
+	, new Vector4(13.18501f, 7.82245f, 18.0031f, 18.10303f)
+	, new Vector4(13.23941f, 7.21643f, 18.11174f, 18.21167f)
+	, new Vector4(12.72002f, 6.78788f, 18.1884f, 18.28833f)
+	, new Vector4(11.93149f, 6.78788f, 18.1884f, 18.28833f)
+	, new Vector4(11.33544f, 7.21643f, 18.11174f, 18.21167f)
+	, new Vector4(11.07878f, 7.88503f, 17.99187f, 18.0918f)
+	, new Vector4(11.14441f, 7.15399f, 18.12297f, 18.2229f)
+	, new Vector4(11.70541f, 8.40213f, 17.89909f, 17.99902f)
+	, new Vector4(11.86381f, 6.63676f, 18.21575f, 18.31567f)
+	, new Vector4(12.81508f, 6.63664f, 18.2155f, 18.31543f)
+	, new Vector4(12.65692f, 8.40225f, 17.89934f, 17.99927f)
+	, new Vector4(13.37613f, 7.88503f, 17.99187f, 18.0918f)
+	, new Vector4(13.44148f, 7.15386f, 18.12273f, 18.22266f)
+};
+
+// out_attr4
+var out_attr4 = new[] {
+	new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(0.17627f, 0.00f, 0.00f, 1.00f)
+};
+
+// out_attr5
+var out_attr5 = new[] {
+	new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(1.00f, 1.00f, 1.00f, 1.00f)
+};
+
+// out_attr6
+var out_attr6 = new[] {
+	new Vector4(-0.41125f, -0.1409f, -0.90015f, 1.00f)
+	, new Vector4(-0.85304f, -0.1409f, -0.50173f, 1.00f)
+	, new Vector4(0.0865f, 0.18052f, -0.97938f, 1.00f)
+	, new Vector4(-0.98308f, 0.18052f, -0.01477f, 1.00f)
+	, new Vector4(-0.72432f, 0.63289f, 0.27215f, 1.00f)
+	, new Vector4(-0.22656f, 0.95431f, 0.19293f, 1.00f)
+	, new Vector4(0.21522f, 0.95431f, -0.2055f, 1.00f)
+	, new Vector4(0.34527f, 0.63289f, -0.69246f, 1.00f)
+	, new Vector4(0.29225f, -0.02935f, -0.95578f, 1.00f)
+	, new Vector4(0.60209f, 0.51231f, -0.61223f, 1.00f)
+	, new Vector4(-0.29768f, -0.41029f, -0.86188f, 1.00f)
+	, new Vector4(0.44796f, 0.89325f, -0.0351f, 1.00f)
+	, new Vector4(-0.08102f, 0.89325f, 0.44197f, 1.00f)
+	, new Vector4(-0.82666f, -0.41029f, -0.38482f, 1.00f)
+	, new Vector4(-0.98079f, -0.02935f, 0.19232f, 1.00f)
+	, new Vector4(-0.67096f, 0.51231f, 0.53587f, 1.00f)
+};
+
+// out_attr7
+var out_attr7 = new[] {
+	new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+	, new Vector4(1.00f, 0.00f, 0.00f, 1.00f)
+};
+
+// out_attr8
+var out_attr8 = new[] {
+	new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+	, new Vector4(0.00f, 0.00f, 0.00f, 0.00f)
+};
+
+// out_attr9
+var out_attr9 = new[] {
+	new Vector4(0.53642f, 0.60648f, 0.62213f, 1.00f)
+	, new Vector4(0.53642f, 0.60648f, 0.62213f, 1.00f)
+	, new Vector4(0.52822f, 0.59882f, 0.61422f, 1.00f)
+	, new Vector4(0.52821f, 0.59882f, 0.61422f, 1.00f)
+	, new Vector4(0.51673f, 0.5881f, 0.60313f, 1.00f)
+	, new Vector4(0.50869f, 0.5806f, 0.59537f, 1.00f)
+	, new Vector4(0.50869f, 0.5806f, 0.59537f, 1.00f)
+	, new Vector4(0.51673f, 0.5881f, 0.60313f, 1.00f)
+	, new Vector4(0.52941f, 0.59994f, 0.61537f, 1.00f)
+	, new Vector4(0.51555f, 0.587f, 0.60199f, 1.00f)
+	, new Vector4(0.53933f, 0.6092f, 0.62495f, 1.00f)
+	, new Vector4(0.50587f, 0.57797f, 0.59265f, 1.00f)
+	, new Vector4(0.50587f, 0.57796f, 0.59265f, 1.00f)
+	, new Vector4(0.53933f, 0.6092f, 0.62495f, 1.00f)
+	, new Vector4(0.52941f, 0.59994f, 0.61537f, 1.00f)
+	, new Vector4(0.51555f, 0.587f, 0.60199f, 1.00f)
+};
+
+// fs_cbuf8[30] = new Vector4(0.10f, 25000.00f, 2500.00f, 24999.90f);
+// fs_cbuf9[139] = new Vector4(1.00f, 0.00f, 0.00f, 0.00f);
+// fs_cbuf9[140] = new Vector4(0.00f, 3.00f, 0.00f, 0.00f);
+// fs_cbuf13[0] = new Vector4(0.00f, 0.50f, 1.00f, 0.20f);
+// fs_cbuf15[1] = new Vector4(0.00f, 0.00f, 2.631586f, 0.20f);
+
+// fs_cbuf8[30] = , 1036831949u, 1187205120u, 1159479296u, 1187205069u
+// fs_cbuf9[139] = , 1065353216u, 0u, 0u, 0u
+// fs_cbuf9[140] = , 0u, 1077936128u, 0u, 0u
+// fs_cbuf13[0] = , 0u, 1056964608u, 1065353216u, 1045220557u
+// fs_cbuf15[1] = , 0u, 0u, 1076390888u, 1045220556u
+
+// 1065353216 = 1.00f;
+// fs_cbuf8[30] = vec4(0.10, 25000.00, 2500.00, 24999.90);
+// fs_cbuf9[139] = vec4(1.00, 0.00, 0.00, 0.00);
+// fs_cbuf9[140] = vec4(0.00, 3.00, 0.00, 0.00);
+// fs_cbuf13[0] = vec4(0.00, 0.50, 1.00, 0.20);
+// fs_cbuf15[1] = vec4(0.00, 0.00, 2.631586, 0.20);
+
+vec4 gl_FragCoord;
+layout(location = 0 )in vec4 in_attr0;
+layout(location = 1 )in vec4 in_attr1;
+layout(location = 2 )in vec4 in_attr2;
+layout(location = 3 )in vec4 in_attr3;
+layout(location = 4 )in vec4 in_attr4;
+layout(location = 5 )in vec4 in_attr5;
+layout(location = 6 )in vec4 in_attr6;
+layout(location = 7 )in vec4 in_attr7;
+layout(location = 8 )in vec4 in_attr8;
+layout(location = 9 )in vec4 in_attr9;
+layout(location = 0 )out vec4 frag_color0;
+layout(location = 1 )out vec4 frag_color1;
+layout(location = 2 )out vec4 frag_color2;
+layout(location = 3 )out vec4 frag_color3;
+layout(location = 4 )out vec4 frag_color4;
+layout(location = 5 )out vec4 frag_color5;
+layout(location = 6 )out vec4 frag_color6;
+layout(location = 7 )out vec4 frag_color7;
+layout(std140, binding = 7 )uniform fs_cbuf_8
+{
+	uvec4 fs_cbuf8[4096 ];
+};
+layout(std140, binding = 8 )uniform fs_cbuf_9
+{
+	uvec4 fs_cbuf9[4096 ];
+};
+layout(std140, binding = 9 )uniform fs_cbuf_13
+{
+	uvec4 fs_cbuf13[4096 ];
+};
+layout(std140, binding = 10 )uniform fs_cbuf_15
+{
+	uvec4 fs_cbuf15[4096 ];
+};
+layout(binding = 1 )uniform sampler2D tex1;
+layout(binding = 2 )uniform sampler2D tex2;
+layout(binding = 3 )uniform sampler2D tex3;
+layout(binding = 4 )uniform samplerCube tex4;
+void main()
+{
+	gl_FragCoord = vec4(838.2488, 321.85464, 9.413135, 18.02612 );	// vec4(838.2488,321.8546,9.413135,18.02612)
+	in_attr0.x  = float(1.09333 );	// 1.09333
+	in_attr0.y  = float(1.07386 );	// 1.07386
+	in_attr0.z  = float(0.96317 );	// 0.96317
+	in_attr0.w  = float(0.00294 );	// 0.00294
+	in_attr1.x  = float(0.00 );	// 0.00
+	in_attr1.y  = float(0.00 );	// 0.00
+	in_attr1.z  = float(0.00 );	// 0.00
+	in_attr1.w  = float(2.10 );	// 2.10
+	in_attr2.x  = float(1.26955 );	// 1.26955
+	in_attr2.y  = float(2.94492 );	// 2.94492
+	in_attr2.z  = float(0.01555 );	// 0.01555
+	in_attr2.w  = float(0.58736 );	// 0.58736
+	in_attr3.x  = float(11.80031 );	// 11.80031
+	in_attr3.y  = float(8.25089 );	// 8.25089
+	in_attr3.z  = float(17.92619 );	// 17.92619
+	in_attr3.w  = float(18.02612 );	// 18.02612
+	in_attr4.x  = float(0.17627 );	// 0.17627
+	in_attr4.y  = float(0.00 );	// 0.00
+	in_attr4.z  = float(0.00 );	// 0.00
+	in_attr4.w  = float(1.00 );	// 1.00
+	in_attr5.x  = float(1.00 );	// 1.00
+	in_attr5.y  = float(1.00 );	// 1.00
+	in_attr5.z  = float(1.00 );	// 1.00
+	in_attr5.w  = float(1.00 );	// 1.00
+	in_attr6.x  = float(-0.41125 );	// -0.41125
+	in_attr6.y  = float(-0.1409 );	// -0.1409
+	in_attr6.z  = float(-0.90015 );	// -0.90015
+	in_attr6.w  = float(1.00 );	// 1.00
+	in_attr7.x  = float(1.00 );	// 1.00
+	in_attr7.y  = float(0.00 );	// 0.00
+	in_attr7.z  = float(0.00 );	// 0.00
+	in_attr7.w  = float(1.00 );	// 1.00
+	in_attr8.x  = float(0.00 );	// 0.00
+	in_attr8.y  = float(0.00 );	// 0.00
+	in_attr8.z  = float(0.00 );	// 0.00
+	in_attr8.w  = float(0.00 );	// 0.00
+	in_attr9.x  = float(0.53642 );	// 0.53642
+	in_attr9.y  = float(0.60648 );	// 0.60648
+	in_attr9.z  = float(0.62213 );	// 0.62213
+	in_attr9.w  = float(1.00 );	// 1.00
+	fs_cbuf8[30 ] = uvec4(1036831949, 1187205120, 1159479296, 1187205069 );	// uvec4(1036831949,1187205120,1159479296,1187205069)
+	fs_cbuf9[139 ] = uvec4(1065353216, 0, 0, 0 );	// uvec4(1065353216,0,0,0)
+	fs_cbuf9[140 ] = uvec4(0, 1077936128, 0, 0 );	// uvec4(0,1077936128,0,0)
+	fs_cbuf13[0 ] = uvec4(0, 1056964608, 1065353216, 1045220557 );	// uvec4(0,1056964608,1065353216,1045220557)
+	fs_cbuf15[1 ] = uvec4(0, 0, 1076390888, 1045220556 );	// uvec4(0,0,1076390888,1045220556)
+	bool b_0 = bool(0 );	// False
+	bool b_1 = bool(0 );	// False
+	uint u_0 = uint(0 );	// 0
+	uint u_1 = uint(0 );	// 0
+	uint u_2 = uint(0 );	// 0
+	uint u_3 = uint(0 );	// 0
+	uint u_4 = uint(0 );	// 0
+	float f_0 = float(0 );	// 0.00
+	float f_1 = float(0 );	// 0.00
+	float f_2 = float(0 );	// 0.00
+	float f_3 = float(0 );	// 0.00
+	float f_4 = float(0 );	// 0.00
+	float f_5 = float(0 );	// 0.00
+	float f_6 = float(0 );	// 0.00
+	float f_7 = float(0 );	// 0.00
+	float f_8 = float(0 );	// 0.00
+	float f_9 = float(0 );	// 0.00
+	float f_10 = float(0 );	// 0.00
+	vec2 f2_0 = vec2(0 );	// vec2(0.00,0.00)
+	vec3 f3_0 = vec3(0 );	// vec3(0.00,0.00,0.00)
+	vec4 f4_0 = vec4(0 );	// vec4(0.00,0.00,0.00,0.00)
+	precise float pf_0 = float(0 );	// 0.00
+	precise float pf_1 = float(0 );	// 0.00
+	precise float pf_2 = float(0 );	// 0.00
+	precise float pf_3 = float(0 );	// 0.00
+	precise float pf_4 = float(0 );	// 0.00
+	precise float pf_5 = float(0 );	// 0.00
+	precise float pf_6 = float(0 );	// 0.00
+	f_0_0 = in_attr3.w ;	// 18.02612
+	f_1_0 = gl_FragCoord.w ;	// 18.02612
+	f_0_1 = f_0_0 * f_1_0;	// 324.941
+	f_0_2 = (1.0f ) / f_0_1;	/* 0.0030775  <=>  (1.0f / ({in_attr3.w : 18.02612} * {gl_FragCoord.w : 18.02612}))
+<=>
+(1.0f / (in_attr3.w * gl_FragCoord.w))
+<=>
+{f_0_2 = (1.0f / 
+	{f_0_1 = (
+		{f_0_0 = in_attr3.w
+		} * 
+		{f_1_0 = gl_FragCoord.w
+		})
+	})
+}
+*/
+	f_1_1 = in_attr2.z ;	// 0.01555
+	f_2_0 = in_attr2.w ;	// 0.58736
+	f_3_0 = in_attr2.x ;	// 1.26955
+	f_4_0 = in_attr2.y ;	// 2.94492
+	f_5_0 = in_attr3.x ;	// 11.80031
+	f_6_0 = gl_FragCoord.w ;	// 18.02612
+	f_5_1 = f_5_0 * f_6_0;	// 212.7138
+	f_5_2 = f_5_1 * f_0_2;	// 0.6546229
+	f_6_1 = in_attr3.y ;	// 8.25089
+	f_7_0 = gl_FragCoord.w ;	// 18.02612
+	f_6_2 = f_6_1 * f_7_0;	// 148.7315
+	f_0_3 = f_6_2 * f_0_2;	// 0.4577186
+	f2_0_0 = vec2(f_1_1, f_2_0 );	// vec2(0.01555,0.58736)
+	f4_0_0 = texture(tex2, f2_0_0 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex2 : tex2}, vec2({in_attr2.z : 0.01555}, {in_attr2.w : 0.58736}))
+<=>
+texture(tex2, vec2(in_attr2.z, in_attr2.w))
+<=>
+{f4_0_0 = texture(tex2, 
+	{f2_0_0 = vec2(
+		{f_1_1 = in_attr2.z
+		}, 
+		{f_2_0 = in_attr2.w
+		})
+	})
+}
+*/
+	f_1_2 = f4_0_0.w ;	// 0.75
+	f2_0_1 = vec2(f_3_0, f_4_0 );	// vec2(1.26955,2.94492)
+	f4_0_1 = texture(tex1, f2_0_1 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex1 : tex1}, vec2({in_attr2.x : 1.26955}, {in_attr2.y : 2.94492}))
+<=>
+texture(tex1, vec2(in_attr2.x, in_attr2.y))
+<=>
+{f4_0_1 = texture(tex1, 
+	{f2_0_1 = vec2(
+		{f_3_0 = in_attr2.x
+		}, 
+		{f_4_0 = in_attr2.y
+		})
+	})
+}
+*/
+	f_2_1 = f4_0_1.w ;	// 0.75
+	f2_0_2 = vec2(f_5_2, f_0_3 );	// vec2(0.6546229,0.4577186)
+	f4_0_2 = texture(tex3, f2_0_2 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex3 : tex3}, vec2((({in_attr3.x : 11.80031} * {gl_FragCoord.w : 18.02612}) * {f_0_2 : 0.0030775}), (({in_attr3.y : 8.25089} * {gl_FragCoord.w : 18.02612}) * {f_0_2 : 0.0030775})))
+<=>
+texture(tex3, vec2(((in_attr3.x * gl_FragCoord.w) * f_0_2), ((in_attr3.y * gl_FragCoord.w) * f_0_2)))
+<=>
+{f4_0_2 = texture(tex3, 
+	{f2_0_2 = vec2(
+		{f_5_2 = (
+			{f_5_1 = (
+				{f_5_0 = in_attr3.x
+				} * 
+				{f_6_0 = gl_FragCoord.w
+				})
+			} * f_0_2)
+		}, 
+		{f_0_3 = (
+			{f_6_2 = (
+				{f_6_1 = in_attr3.y
+				} * 
+				{f_7_0 = gl_FragCoord.w
+				})
+			} * f_0_2)
+		})
+	})
+}
+*/
+	f_0_4 = f4_0_2.x ;	// 0.50
+	f_3_1 = in_attr3.w ;	// 18.02612
+	f_4_1 = in_attr3.z ;	// 17.92619
+	f_5_3 = in_attr0.w ;	// 0.00294
+	u_0_0 = ftou(f_5_3 );	// 994094340
+	f_6_3 = in_attr1.w ;	// 2.10
+	u_1_0 = ftou(f_6_3 );	// 1074161254
+	f_3_2 = (1.0f ) / f_3_1;	// 0.0554751
+	f_7_1 = in_attr4.x ;	// 0.17627
+	f_8_0 = utof(fs_cbuf9[140 ].y  );	// 3.00
+	f_8_1 = (1.0f ) / f_8_0;	// 0.3333333
+	u_2_0 = ftou(f_8_1 );	// 1051372203
+	pf_0_0 = f_4_1 * f_3_2;	// 0.9944564
+	f_3_3 = utof(fs_cbuf8[30 ].y  );	// 25000.00
+	f_4_2 = utof(fs_cbuf8[30 ].w  );	// 24999.90
+	f_3_4 = 0.f - (f_3_3 );	// -25000.00
+	pf_0_1 = fma(pf_0_0, f_4_2, f_3_4 );	// -138.6903
+	f_3_5 = (1.0f ) / pf_0_1;	// -0.0072103
+	pf_0_2 = f_1_2 * f_2_1;	// 0.5625
+	f_1_3 = utof(fs_cbuf8[30 ].x  );	// 0.10
+	f_2_2 = utof(fs_cbuf8[30 ].w  );	// 24999.90
+	pf_1_0 = fma(f_0_4, f_2_2, f_1_3 );	// 12500.05
+	pf_0_3 = pf_0_2 * f_5_3;	// 0.0016538
+	f_0_5 = utof(fs_cbuf8[30 ].z  );	// 2500.00
+	pf_1_1 = fma(f_3_5, f_0_5, pf_1_0 );	// 12482.02
+	pf_0_4 = pf_0_3 * f_6_3;	// 0.0034729
+	f_0_6 = min(max(pf_0_4, 0.0 ), 1.0 );	// 0.0034729
+	u_3_0 = ftou(f_0_6 );	// 996383020
+	pf_0_5 = pf_1_1 * f_8_1;	// 4160.675
+	f_1_4 = min(max(pf_0_5, 0.0 ), 1.0 );	// 1.00
+	pf_0_6 = f_1_4 * f_0_6;	// 0.0034729
+	pf_0_7 = pf_0_6 * f_7_1;	/* 0.0006122  <=>  ((clamp(((((1.0f / ((({in_attr3.z : 17.92619} * (1.0f / {in_attr3.w : 18.02612})) * {utof(fs_cbuf8[30].w) : 24999.90}) + (0.f - {utof(fs_cbuf8[30].y) : 25000.00}))) * {utof(fs_cbuf8[30].z) : 2500.00}) + (({f4_0_2.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.90}) + {utof(fs_cbuf8[30].x) : 0.10})) * (1.0f / {utof(fs_cbuf9[140].y) : 3.00})), 0.0, 1.0) * clamp(((({f4_0_0.w : 0.75} * {f4_0_1.w : 0.75}) * {in_attr0.w : 0.00294}) * {in_attr1.w : 2.10}), 0.0, 1.0)) * {in_attr4.x : 0.17627})
+<=>
+((clamp(((((1.0f / (((in_attr3.z * (1.0f / in_attr3.w)) * utof(fs_cbuf8[30].w)) + (0.f - utof(fs_cbuf8[30].y)))) * utof(fs_cbuf8[30].z)) + ((f4_0_2.x * utof(fs_cbuf8[30].w)) + utof(fs_cbuf8[30].x))) * (1.0f / utof(fs_cbuf9[140].y))), 0.0, 1.0) * clamp((((f4_0_0.w * f4_0_1.w) * in_attr0.w) * in_attr1.w), 0.0, 1.0)) * in_attr4.x)
+<=>
+{pf_0_7 = (
+	{pf_0_6 = (
+		{f_1_4 = clamp(
+			{pf_0_5 = (
+				{pf_1_1 = ((
+					{f_3_5 = (1.0f / 
+						{pf_0_1 = ((
+							{pf_0_0 = (
+								{f_4_1 = in_attr3.z
+								} * 
+								{f_3_2 = (1.0f / 
+									{f_3_1 = in_attr3.w
+									})
+								})
+							} * 
+							{f_4_2 = utof(fs_cbuf8[30].w)
+							}) + 
+							{f_3_4 = (0.f - 
+								{f_3_3 = utof(fs_cbuf8[30].y)
+								})
+							})
+						})
+					} * 
+					{f_0_5 = utof(fs_cbuf8[30].z)
+					}) + 
+					{pf_1_0 = ((
+						{f_0_4 = f4_0_2.x
+						} * 
+						{f_2_2 = utof(fs_cbuf8[30].w)
+						}) + 
+						{f_1_3 = utof(fs_cbuf8[30].x)
+						})
+					})
+				} * 
+				{f_8_1 = (1.0f / 
+					{f_8_0 = utof(fs_cbuf9[140].y)
+					})
+				})
+			}, 0.0, 1.0)
+		} * 
+		{f_0_6 = clamp(
+			{pf_0_4 = (
+				{pf_0_3 = (
+					{pf_0_2 = (
+						{f_1_2 = f4_0_0.w
+						} * 
+						{f_2_1 = f4_0_1.w
+						})
+					} * 
+					{f_5_3 = in_attr0.w
+					})
+				} * 
+				{f_6_3 = in_attr1.w
+				})
+			}, 0.0, 1.0)
+		})
+	} * 
+	{f_7_1 = in_attr4.x
+	})
+}
+*/
+	f_0_7 = utof(fs_cbuf9[139 ].z  );	/* 0.00  <=>  {utof(fs_cbuf9[139].z) : 0.00}
+<=>
+utof(fs_cbuf9[139].z)
+<=>
+{f_0_7 = utof(fs_cbuf9[139].z)
+}
+*/
+	b_0_0 = pf_0_7 <= f_0_7 && ! isnan(pf_0_7 ) && ! isnan(f_0_7 );	/* False  <=>  ((({pf_0_7 : 0.0006122} <= {f_0_7 : 0.00}) && (! isnan({pf_0_7 : 0.0006122}))) && (! isnan({f_0_7 : 0.00})))
+<=>
+(((pf_0_7 <= f_0_7) && (! isnan(pf_0_7))) && (! isnan(f_0_7)))
+<=>
+{b_0_0 = (((pf_0_7 <= f_0_7) && (! isnan(pf_0_7))) && (! isnan(f_0_7)))
+}
+*/
+	b_1_0 = b_0_0 ? (true) : (false);	// False
+	if(b_1_0 )	/* False  <=>  if(({b_0_0 : False} ? true : false))
+<=>
+if((b_0_0 ? true : false))
+<=>if(b_1_0...)
+*/
+	{
+		discard;
+	} 
+	b_1_1 = b_0_0 ? (true) : (false);	// False
+	u_4_0 = u_3_0;	/* 996383020  <=>  {ftou(clamp(((({f4_0_0.w : 0.75} * {f4_0_1.w : 0.75}) * {in_attr0.w : 0.00294}) * {in_attr1.w : 2.10}), 0.0, 1.0)) : 996383020}
+<=>
+ftou(clamp((((f4_0_0.w * f4_0_1.w) * in_attr0.w) * in_attr1.w), 0.0, 1.0))
+<=>
+{u_4_0 = 
+	{u_3_0 = ftou(
+		{f_0_6 = clamp(
+			{pf_0_4 = (
+				{pf_0_3 = (
+					{pf_0_2 = (
+						{f_1_2 = f4_0_0.w
+						} * 
+						{f_2_1 = f4_0_1.w
+						})
+					} * 
+					{f_5_3 = in_attr0.w
+					})
+				} * 
+				{f_6_3 = in_attr1.w
+				})
+			}, 0.0, 1.0)
+		})
+	}
+}
+*/
+	u_4_phi_2 = u_4_0;
+	if(b_1_1 )	/* False  <=>  if(({b_0_0 : False} ? true : false))
+<=>
+if((b_0_0 ? true : false))
+<=>if(b_1_1...)
+*/
+	{
+		u_4_1 = 0u;	/* 0  <=>  0u
+<=>
+0u
+<=>
+{u_4_1 = 0u
+}
+*/
+		u_4_phi_2 = u_4_1;
+	} 
+	b_1_2 = b_0_0 ? (true) : (false);	// False
+	u_3_1 = u_2_0;	/* 1051372203  <=>  {ftou((1.0f / {utof(fs_cbuf9[140].y) : 3.00})) : 1051372203}
+<=>
+ftou((1.0f / utof(fs_cbuf9[140].y)))
+<=>
+{u_3_1 = 
+	{u_2_0 = ftou(
+		{f_8_1 = (1.0f / 
+			{f_8_0 = utof(fs_cbuf9[140].y)
+			})
+		})
+	}
+}
+*/
+	u_3_phi_3 = u_3_1;
+	if(b_1_2 )	/* False  <=>  if(({b_0_0 : False} ? true : false))
+<=>
+if((b_0_0 ? true : false))
+<=>if(b_1_2...)
+*/
+	{
+		u_3_2 = 0u;	/* 0  <=>  0u
+<=>
+0u
+<=>
+{u_3_2 = 0u
+}
+*/
+		u_3_phi_3 = u_3_2;
+	} 
+	b_1_3 = b_0_0 ? (true) : (false);	// False
+	u_2_1 = u_1_0;	/* 1074161254  <=>  {ftou(in_attr1.w) : 1074161254}
+<=>
+ftou(in_attr1.w)
+<=>
+{u_2_1 = 
+	{u_1_0 = ftou(
+		{f_6_3 = in_attr1.w
+		})
+	}
+}
+*/
+	u_2_phi_4 = u_2_1;
+	if(b_1_3 )	/* False  <=>  if(({b_0_0 : False} ? true : false))
+<=>
+if((b_0_0 ? true : false))
+<=>if(b_1_3...)
+*/
+	{
+		u_2_2 = 0u;	/* 0  <=>  0u
+<=>
+0u
+<=>
+{u_2_2 = 0u
+}
+*/
+		u_2_phi_4 = u_2_2;
+	} 
+	b_1_4 = b_0_0 ? (true) : (false);	// False
+	u_1_1 = u_0_0;	/* 994094340  <=>  {ftou(in_attr0.w) : 994094340}
+<=>
+ftou(in_attr0.w)
+<=>
+{u_1_1 = 
+	{u_0_0 = ftou(
+		{f_5_3 = in_attr0.w
+		})
+	}
+}
+*/
+	u_1_phi_5 = u_1_1;
+	if(b_1_4 )	/* False  <=>  if(({b_0_0 : False} ? true : false))
+<=>
+if((b_0_0 ? true : false))
+<=>if(b_1_4...)
+*/
+	{
+		u_1_2 = 0u;	/* 0  <=>  0u
+<=>
+0u
+<=>
+{u_1_2 = 0u
+}
+*/
+		u_1_phi_5 = u_1_2;
+	} 
+	b_1_5 = b_0_0 ? (true) : (false);	// False
+	f_0_phi_6 = f_0_7;
+	if(b_1_5 )	/* False  <=>  if(({b_0_0 : False} ? true : false))
+<=>
+if((b_0_0 ? true : false))
+<=>if(b_1_5...)
+*/
+	{
+		f_0_8 = utof(u_4_phi_2 );	// 0.0034729
+		frag_color0.x  = f_0_8;	/* 0.0034729  <=>  {utof(u_4_phi_2) : 0.0034729}
+<=>
+utof(u_4_phi_2)
+<=>
+{frag_color0.x = 
+	{f_0_8 = utof(u_4_phi_2)
+	}
+}
+*/
+		f_0_9 = utof(u_3_phi_3 );	// 0.3333333
+		frag_color0.y  = f_0_9;	/* 0.3333333  <=>  {utof(u_3_phi_3) : 0.3333333}
+<=>
+utof(u_3_phi_3)
+<=>
+{frag_color0.y = 
+	{f_0_9 = utof(u_3_phi_3)
+	}
+}
+*/
+		f_0_10 = utof(u_2_phi_4 );	// 2.10
+		frag_color0.z  = f_0_10;	/* 2.10  <=>  {utof(u_2_phi_4) : 2.10}
+<=>
+utof(u_2_phi_4)
+<=>
+{frag_color0.z = 
+	{f_0_10 = utof(u_2_phi_4)
+	}
+}
+*/
+		f_0_11 = utof(u_1_phi_5 );	// 0.00294
+		frag_color0.w  = f_0_11;	/* 0.00294  <=>  {utof(u_1_phi_5) : 0.00294}
+<=>
+utof(u_1_phi_5)
+<=>
+{frag_color0.w = 
+	{f_0_11 = utof(u_1_phi_5)
+	}
+}
+*/
+		return;
+		f_0_phi_6 = f_0_11;
+	} 
+	f_0_12 = in_attr6.x ;	// -0.41125
+	f_1_5 = in_attr6.y ;	// -0.1409
+	f_2_3 = in_attr6.z ;	// -0.90015
+	pf_1_2 = f_0_12 * f_0_12;	// 0.1691266
+	pf_1_3 = fma(f_1_5, f_1_5, pf_1_2 );	// 0.1889794
+	pf_1_4 = fma(f_2_3, f_2_3, pf_1_3 );	// 0.9992494
+	f_3_6 = inversesqrt(pf_1_4 );	// 1.000376
+	pf_1_5 = f_1_5 * f_3_6;	/* -0.1409529  <=>  ({in_attr6.y : -0.1409} * inversesqrt((({in_attr6.z : -0.90015} * {in_attr6.z : -0.90015}) + (({in_attr6.y : -0.1409} * {in_attr6.y : -0.1409}) + ({in_attr6.x : -0.41125} * {in_attr6.x : -0.41125})))))
+<=>
+(in_attr6.y * inversesqrt(((in_attr6.z * in_attr6.z) + ((in_attr6.y * in_attr6.y) + (in_attr6.x * in_attr6.x)))))
+<=>
+{pf_1_5 = (
+	{f_1_5 = in_attr6.y
+	} * 
+	{f_3_6 = inversesqrt(
+		{pf_1_4 = ((
+			{f_2_3 = in_attr6.z
+			} * f_2_3) + 
+			{pf_1_3 = ((f_1_5 * f_1_5) + 
+				{pf_1_2 = (
+					{f_0_12 = in_attr6.x
+					} * f_0_12)
+				})
+			})
+		})
+	})
+}
+*/
+	pf_2_0 = f_0_12 * f_3_6;	// -0.4114044
+	pf_3_0 = f_2_3 * f_3_6;	/* -0.900488  <=>  ({in_attr6.z : -0.90015} * inversesqrt((({in_attr6.z : -0.90015} * {in_attr6.z : -0.90015}) + (({in_attr6.y : -0.1409} * {in_attr6.y : -0.1409}) + ({in_attr6.x : -0.41125} * {in_attr6.x : -0.41125})))))
+<=>
+(in_attr6.z * inversesqrt(((in_attr6.z * in_attr6.z) + ((in_attr6.y * in_attr6.y) + (in_attr6.x * in_attr6.x)))))
+<=>
+{pf_3_0 = (
+	{f_2_3 = in_attr6.z
+	} * 
+	{f_3_6 = inversesqrt(
+		{pf_1_4 = ((f_2_3 * f_2_3) + 
+			{pf_1_3 = ((
+				{f_1_5 = in_attr6.y
+				} * f_1_5) + 
+				{pf_1_2 = (
+					{f_0_12 = in_attr6.x
+					} * f_0_12)
+				})
+			})
+		})
+	})
+}
+*/
+	f_0_13 = abs(pf_1_5 );	// 0.1409529
+	f_1_6 = abs(pf_2_0 );	// 0.4114044
+	f_0_14 = max(f_0_13, f_1_6 );	// 0.4114044
+	f_1_7 = abs(pf_3_0 );	// 0.900488
+	f_0_15 = max(f_1_7, f_0_14 );	// 0.900488
+	f_0_16 = (1.0f ) / f_0_15;	/* 1.110509  <=>  (1.0f / max(abs({pf_3_0 : -0.900488}), max(abs({pf_1_5 : -0.1409529}), abs(({in_attr6.x : -0.41125} * inversesqrt((({in_attr6.z : -0.90015} * {in_attr6.z : -0.90015}) + (({in_attr6.y : -0.1409} * {in_attr6.y : -0.1409}) + ({in_attr6.x : -0.41125} * {in_attr6.x : -0.41125})))))))))
+<=>
+(1.0f / max(abs(pf_3_0), max(abs(pf_1_5), abs((in_attr6.x * inversesqrt(((in_attr6.z * in_attr6.z) + ((in_attr6.y * in_attr6.y) + (in_attr6.x * in_attr6.x)))))))))
+<=>
+{f_0_16 = (1.0f / 
+	{f_0_15 = max(
+		{f_1_7 = abs(pf_3_0)
+		}, 
+		{f_0_14 = max(
+			{f_0_13 = abs(pf_1_5)
+			}, 
+			{f_1_6 = abs(
+				{pf_2_0 = (
+					{f_0_12 = in_attr6.x
+					} * 
+					{f_3_6 = inversesqrt(
+						{pf_1_4 = ((
+							{f_2_3 = in_attr6.z
+							} * f_2_3) + 
+							{pf_1_3 = ((
+								{f_1_5 = in_attr6.y
+								} * f_1_5) + 
+								{pf_1_2 = (f_0_12 * f_0_12)
+								})
+							})
+						})
+					})
+				})
+			})
+		})
+	})
+}
+*/
+	pf_2_1 = pf_2_0 * f_0_16;	// -0.4568683
+	pf_1_6 = pf_1_5 * f_0_16;	// -0.1565295
+	f_0_17 = 0.f - (f_0_16 );	// -1.110509
+	pf_3_1 = pf_3_0 * f_0_17;	// 1.00
+	f_0_18 = utof(fs_cbuf15[1 ].x  );	// 0.00
+	f3_0_0 = vec3(pf_2_1, pf_1_6, pf_3_1 );	// vec3(-0.4568683,-0.1565295,1.00)
+	f4_0_3 = textureLod(tex4, f3_0_0, f_0_18 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  textureLod({tex4 : tex4}, vec3((({in_attr6.x : -0.41125} * inversesqrt((({in_attr6.z : -0.90015} * {in_attr6.z : -0.90015}) + (({in_attr6.y : -0.1409} * {in_attr6.y : -0.1409}) + ({in_attr6.x : -0.41125} * {in_attr6.x : -0.41125}))))) * {f_0_16 : 1.110509}), ({pf_1_5 : -0.1409529} * {f_0_16 : 1.110509}), ({pf_3_0 : -0.900488} * (0.f - {f_0_16 : 1.110509}))), {utof(fs_cbuf15[1].x) : 0.00})
+<=>
+textureLod(tex4, vec3(((in_attr6.x * inversesqrt(((in_attr6.z * in_attr6.z) + ((in_attr6.y * in_attr6.y) + (in_attr6.x * in_attr6.x))))) * f_0_16), (pf_1_5 * f_0_16), (pf_3_0 * (0.f - f_0_16))), utof(fs_cbuf15[1].x))
+<=>
+{f4_0_3 = textureLod(tex4, 
+	{f3_0_0 = vec3(
+		{pf_2_1 = (
+			{pf_2_0 = (
+				{f_0_12 = in_attr6.x
+				} * 
+				{f_3_6 = inversesqrt(
+					{pf_1_4 = ((
+						{f_2_3 = in_attr6.z
+						} * f_2_3) + 
+						{pf_1_3 = ((
+							{f_1_5 = in_attr6.y
+							} * f_1_5) + 
+							{pf_1_2 = (f_0_12 * f_0_12)
+							})
+						})
+					})
+				})
+			} * f_0_16)
+		}, 
+		{pf_1_6 = (pf_1_5 * f_0_16)
+		}, 
+		{pf_3_1 = (pf_3_0 * 
+			{f_0_17 = (0.f - f_0_16)
+			})
+		})
+	}, 
+	{f_0_18 = utof(fs_cbuf15[1].x)
+	})
+}
+*/
+	f_0_19 = f4_0_3.x ;	// 0.50
+	f_1_8 = f4_0_3.y ;	// 0.50
+	f_2_4 = f4_0_3.z ;	// 0.50
+	f_3_7 = in_attr5.x ;	// 1.00
+	f_4_3 = in_attr0.x ;	// 1.09333
+	f_5_4 = in_attr5.y ;	// 1.00
+	f_6_4 = in_attr0.y ;	// 1.07386
+	f_7_2 = in_attr5.z ;	// 1.00
+	f_8_2 = in_attr0.z ;	// 0.96317
+	f_9_0 = in_attr8.w ;	// 0.00
+	f_10_0 = in_attr9.x ;	// 0.53642
+	pf_1_7 = f_3_7 * f_4_3;	// 1.09333
+	f_3_8 = in_attr9.y ;	// 0.60648
+	pf_2_2 = f_5_4 * f_6_4;	// 1.07386
+	f_4_4 = in_attr9.z ;	// 0.62213
+	pf_3_2 = f_7_2 * f_8_2;	// 0.96317
+	f_5_5 = in_attr7.x ;	// 1.00
+	f_6_5 = 0.f - (f_9_0 );	// 0.00
+	pf_4_0 = fma(f_0_19, f_6_5, f_0_19 );	// 0.50
+	f_0_20 = 0.f - (f_9_0 );	// 0.00
+	pf_5_0 = fma(f_1_8, f_0_20, f_1_8 );	// 0.50
+	f_0_21 = 0.f - (f_9_0 );	// 0.00
+	pf_6_0 = fma(f_2_4, f_0_21, f_2_4 );	// 0.50
+	f_0_22 = utof(fs_cbuf13[0 ].y  );	// 0.50
+	pf_4_1 = pf_4_0 * f_0_22;	// 0.25
+	f_0_23 = utof(fs_cbuf13[0 ].y  );	// 0.50
+	pf_5_1 = pf_5_0 * f_0_23;	// 0.25
+	f_0_24 = utof(fs_cbuf13[0 ].y  );	// 0.50
+	pf_6_1 = pf_6_0 * f_0_24;	// 0.25
+	f_0_25 = utof(fs_cbuf15[1 ].w  );	// 0.20
+	pf_4_2 = fma(pf_4_1, f_0_25, f_10_0 );	// 0.58642
+	f_0_26 = utof(fs_cbuf15[1 ].w  );	// 0.20
+	pf_5_2 = fma(pf_5_1, f_0_26, f_3_8 );	// 0.65648
+	f_0_27 = utof(fs_cbuf15[1 ].w  );	// 0.20
+	pf_6_2 = fma(pf_6_1, f_0_27, f_4_4 );	// 0.67213
+	pf_1_8 = pf_1_7 * pf_4_2;	// 0.6411506
+	pf_2_3 = pf_2_2 * pf_5_2;	// 0.7049677
+	pf_3_3 = pf_3_2 * pf_6_2;	// 0.6473755
+	pf_1_9 = pf_1_8 * f_5_5;	// 0.6411506
+	pf_2_4 = pf_2_3 * f_5_5;	// 0.7049677
+	pf_3_4 = pf_3_3 * f_5_5;	// 0.6473755
+	f_0_28 = min(max(pf_0_7, 0.0 ), 1.0 );	// 0.0006122
+	frag_color0.x  = pf_1_9;	/* 0.6411506  <=>  ((({in_attr5.x : 1.00} * {in_attr0.x : 1.09333}) * ((((({f4_0_3.x : 0.50} * (0.f - {in_attr8.w : 0.00})) + {f4_0_3.x : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr9.x : 0.53642})) * {in_attr7.x : 1.00})
+<=>
+(((in_attr5.x * in_attr0.x) * (((((f4_0_3.x * (0.f - in_attr8.w)) + f4_0_3.x) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr9.x)) * in_attr7.x)
+<=>
+{frag_color0.x = 
+	{pf_1_9 = (
+		{pf_1_8 = (
+			{pf_1_7 = (
+				{f_3_7 = in_attr5.x
+				} * 
+				{f_4_3 = in_attr0.x
+				})
+			} * 
+			{pf_4_2 = ((
+				{pf_4_1 = (
+					{pf_4_0 = ((
+						{f_0_19 = f4_0_3.x
+						} * 
+						{f_6_5 = (0.f - 
+							{f_9_0 = in_attr8.w
+							})
+						}) + f_0_19)
+					} * 
+					{f_0_22 = utof(fs_cbuf13[0].y)
+					})
+				} * 
+				{f_0_25 = utof(fs_cbuf15[1].w)
+				}) + 
+				{f_10_0 = in_attr9.x
+				})
+			})
+		} * 
+		{f_5_5 = in_attr7.x
+		})
+	}
+}
+*/
+	frag_color0.y  = pf_2_4;	/* 0.7049677  <=>  ((({in_attr5.y : 1.00} * {in_attr0.y : 1.07386}) * ((((({f4_0_3.y : 0.50} * (0.f - {in_attr8.w : 0.00})) + {f4_0_3.y : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr9.y : 0.60648})) * {in_attr7.x : 1.00})
+<=>
+(((in_attr5.y * in_attr0.y) * (((((f4_0_3.y * (0.f - in_attr8.w)) + f4_0_3.y) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr9.y)) * in_attr7.x)
+<=>
+{frag_color0.y = 
+	{pf_2_4 = (
+		{pf_2_3 = (
+			{pf_2_2 = (
+				{f_5_4 = in_attr5.y
+				} * 
+				{f_6_4 = in_attr0.y
+				})
+			} * 
+			{pf_5_2 = ((
+				{pf_5_1 = (
+					{pf_5_0 = ((
+						{f_1_8 = f4_0_3.y
+						} * 
+						{f_0_20 = (0.f - 
+							{f_9_0 = in_attr8.w
+							})
+						}) + f_1_8)
+					} * 
+					{f_0_23 = utof(fs_cbuf13[0].y)
+					})
+				} * 
+				{f_0_26 = utof(fs_cbuf15[1].w)
+				}) + 
+				{f_3_8 = in_attr9.y
+				})
+			})
+		} * 
+		{f_5_5 = in_attr7.x
+		})
+	}
+}
+*/
+	frag_color0.z  = pf_3_4;	/* 0.6473755  <=>  ((({in_attr5.z : 1.00} * {in_attr0.z : 0.96317}) * ((((({f4_0_3.z : 0.50} * (0.f - {in_attr8.w : 0.00})) + {f4_0_3.z : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr9.z : 0.62213})) * {in_attr7.x : 1.00})
+<=>
+(((in_attr5.z * in_attr0.z) * (((((f4_0_3.z * (0.f - in_attr8.w)) + f4_0_3.z) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr9.z)) * in_attr7.x)
+<=>
+{frag_color0.z = 
+	{pf_3_4 = (
+		{pf_3_3 = (
+			{pf_3_2 = (
+				{f_7_2 = in_attr5.z
+				} * 
+				{f_8_2 = in_attr0.z
+				})
+			} * 
+			{pf_6_2 = ((
+				{pf_6_1 = (
+					{pf_6_0 = ((
+						{f_2_4 = f4_0_3.z
+						} * 
+						{f_0_21 = (0.f - 
+							{f_9_0 = in_attr8.w
+							})
+						}) + f_2_4)
+					} * 
+					{f_0_24 = utof(fs_cbuf13[0].y)
+					})
+				} * 
+				{f_0_27 = utof(fs_cbuf15[1].w)
+				}) + 
+				{f_4_4 = in_attr9.z
+				})
+			})
+		} * 
+		{f_5_5 = in_attr7.x
+		})
+	}
+}
+*/
+	frag_color0.w  = f_0_28;	/* 0.0006122  <=>  clamp({pf_0_7 : 0.0006122}, 0.0, 1.0)
+<=>
+clamp(pf_0_7, 0.0, 1.0)
+<=>
+{frag_color0.w = 
+	{f_0_28 = clamp(pf_0_7, 0.0, 1.0)
+	}
+}
+*/
+	return;
+} 
+/*split_variable_assignment{
+	b_0_0,
+	f_0_16,
+	f_0_2,
+	f_0_7,
+	f4_0_0,
+	f4_0_1,
+	f4_0_2,
+	f4_0_3,
+	pf_0_7,
+	pf_1_5,
+	pf_3_0,
+	u_1_1,
+	u_1_2,
+	u_1_phi_5,
+	u_2_1,
+	u_2_2,
+	u_2_phi_4,
+	u_3_1,
+	u_3_2,
+	u_3_phi_3,
+	u_4_0,
+	u_4_1,
+	u_4_phi_2,
+}*/

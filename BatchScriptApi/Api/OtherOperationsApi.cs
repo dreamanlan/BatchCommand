@@ -11,53 +11,8 @@ using BatchCommand.Utils;
 namespace BatchCommand.Api
 {
     // Generic (host independent) utility apis moved from AgentCore/ScriptApi/OtherOperationsApi.cs:
-    // clipboard, json, string, collection and byte conversion helpers. The network/http and
+    // json, string, collection and byte conversion helpers. The network/http and
     // logger apis stayed in AgentCore (they are bound to AgentCore services).
-
-    // Clipboard Operations (TextCopy, see Utils/ClipboardOperations.cs).
-    // Uses a private static instance so these also work in hosts that never
-    // create a DslHost (e.g. the console BatchCommand.exe).
-    public sealed class GetClipboardExp : SimpleExpressionBase
-    {
-        private static readonly BatchCommand.Utils.ClipboardOperations s_Ops = new BatchCommand.Utils.ClipboardOperations();
-
-        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
-        {
-            try {
-                string text = s_Ops.GetText();
-                return BoxedValue.FromString(text);
-            }
-            catch (Exception ex) {
-                ApiTextInfo.Error.AppendLine($"getclipboard error: {ex.Message}");
-                return BoxedValue.FromString(string.Empty);
-            }
-        }
-    }
-
-    public sealed class SetClipboardExp : SimpleExpressionBase
-    {
-        private static readonly BatchCommand.Utils.ClipboardOperations s_Ops = new BatchCommand.Utils.ClipboardOperations();
-
-        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                ApiTextInfo.Error.AppendLine("Expected: set_clipboard(text)");
-                return BoxedValue.From(false);
-            }
-
-            {
-                try {
-                    string text = operands[0].AsString;
-                    bool result = s_Ops.SetText(text);
-                    return BoxedValue.From(result);
-                }
-                catch (Exception ex) {
-                    ApiTextInfo.Error.AppendLine($"setclipboard error: {ex.Message}");
-                }
-            }
-            return BoxedValue.From(false);
-        }
-    }
 
     // Get from dict/json
     sealed class DictOrJsonGetExp : SimpleExpressionBase
@@ -380,25 +335,6 @@ namespace BatchCommand.Api
                 }
             }
             return string.Empty;
-        }
-    }
-
-    public sealed class StringLengthExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                ApiTextInfo.Error.AppendLine("Expected: string_length(val), aliased as stringlength|strlen");
-                return (BoxedValue)(-1);
-            }
-
-            {
-                string str = operands[0].AsString;
-                if (!string.IsNullOrEmpty(str)) {
-                    return BoxedValue.From(str.Length);
-                }
-            }
-            return -1;
         }
     }
 

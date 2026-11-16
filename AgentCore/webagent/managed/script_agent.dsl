@@ -20,38 +20,38 @@
 // per agent in context vars.
 
 // ----------------------------------------------------------------------------
-// constants (P1b: unconditional, this IS the agent process; processtype is -1)
+// constants (P1b: unconditional, this IS the agent process; process_type is -1)
 // ----------------------------------------------------------------------------
 
 script(init_global_consts)
 {
-    setenv("PLAYWRIGHT_DRIVER_SEARCH_PATH", combinepath(basepath, "managed"));
+    set_env("PLAYWRIGHT_DRIVER_SEARCH_PATH", combine_path(base_path, "managed"));
 
     // Site table (P1c, data-driven): agentId -> port / project dir / identity /
-    // max result size / context injection. 9527 = the relay port (agentport).
+    // max result size / context injection. 9527 = the relay port (agent_port).
     // C-b: instances are keyed by agent id strings; ports are transport details.
     @AgentId = "webagent";
     // Local CORS reverse proxy port for page-side HTTP calls (AiClaw llm.js
     // etc.): pages from other local origins fetch this port with the upstream
     // url in the 'target' query parameter. See Core/HttpProxyServer.cs and
     // ScriptApi/HttpProxyApi.cs. Default 9528, overridable with
-    // --httpproxyport (exposed to dsl as the httpproxyport global).
+    // --http_proxy_port (exposed to dsl as the http_proxy_port global).
 
     @SiteIdentity = hashtable("webagent":"webagent","hyarena":"hyarena","venus":"venus","aichat":"aichat","gemini":"gemini","openai":"openai","imate":"imate","with":"with","google":"google");
     // mac: AiFreebie sits in the app dir (./AiFreebie), not above it
     $baseRelativeDir = "../AiFreebie";
-    if (ismac) {
+    if (is_mac) {
         $baseRelativeDir = "./AiFreebie";
     };
     @SiteDir = hashtable("webagent":"", "hyarena":$baseRelativeDir + "/AiArena", "venus":$baseRelativeDir + "/AiVenus", "aichat":$baseRelativeDir + "/AiChat", "gemini":$baseRelativeDir + "/AiGemini", "openai":$baseRelativeDir + "/AiOpenai", "imate":$baseRelativeDir + "/AiImate", "with":$baseRelativeDir + "/AiWith", "google":$baseRelativeDir + "/AiGoogle");
     @SiteMaxSize = hashtable("webagent":50*1024,"hyarena":50*1024,"venus":8*1024,"aichat":50*1024,"gemini":40*1024,"openai":40*1024,"imate":40*1024,"with":40*1024,"google":7*1024);
     @SiteContextInjection = hashtable("webagent":false,"hyarena":false,"venus":false,"aichat":false,"gemini":true,"openai":true,"imate":false,"with":false,"google":false);
 
-    if (ismac) {
-        @UserName = getenv("USER");
+    if (is_mac) {
+        @UserName = get_env("USER");
     }
     else {
-        @UserName = getenv("USERNAME");
+        @UserName = get_env("USERNAME");
     };
     @EnableLlmPM = (@UserName == "dreamanlan" || @UserName == "dreaman" || @UserName == "lanxiang");
     // PM agent. Every LLM call in this script (decision, align, induction,
@@ -61,13 +61,13 @@ script(init_global_consts)
 
     @ProjectIdentity = agent_get_project_identity(@AgentId);
     @ProjectDirectory = agent_get_project_dir(@AgentId);
-    // P1a: the browser passes --projectidentity through to this process; seed
+    // P1a: the browser passes --project_identity through to this process; seed
     // the agent state with it when nothing is configured yet.
-    if (isnullorempty(@ProjectIdentity) && !isnullorempty(initialprojectidentity)) {
-        @ProjectIdentity = initialprojectidentity;
+    if (is_null_or_empty(@ProjectIdentity) && !is_null_or_empty(initial_project_identity)) {
+        @ProjectIdentity = initial_project_identity;
         agent_set_project_identity(@AgentId, @ProjectIdentity);
     };
-    if (!isnullorempty(@ProjectIdentity)) {
+    if (!is_null_or_empty(@ProjectIdentity)) {
         @MarquisHistory = @ProjectIdentity + "_marquis_history";
         @ChiliarchHistory = @ProjectIdentity + "_chiliarch_history";
         @CenturionHistory = @ProjectIdentity + "_centurion_history";
@@ -83,11 +83,11 @@ script(init_global_consts)
     // every RSI reminder must carry so the LLM knows where the flow reference
     // lives.
     @RsiDocPath = "d:/AiClaw/docs/webagent_recursive_self_improvement.md";
-    @UpgradeStateFile = combine_path(basepath, "upgrade_state.json");
+    @UpgradeStateFile = combine_path(base_path, "upgrade_state.json");
     // Monitor heartbeat: the monitor refreshes this file on every check (~3s).
     // The whole RSI upgrade flow only exists under monitor supervision, so the
     // self-check reminder is only sent while the heartbeat is fresh.
-    @MonitorAliveFile = combine_path(basepath, "monitor_alive.txt");
+    @MonitorAliveFile = combine_path(base_path, "monitor_alive.txt");
     // Idle self-check: when everything has been quiet for a while, tell the
     // LLM it MAY self-check - no preset inputs, what to look at and whether
     // to improve anything at all is its own decision (the doc has the flow).
@@ -100,12 +100,12 @@ script(init_global_consts)
 
 script(on_init)
 {
-    nativelog("[agent] on_init, starting websocket servers (relay port {0} + site ports)", agentport);
+    native_log("[agent] on_init, starting websocket servers (relay port {0} + site ports)", agent_port);
     init_global_consts();
-    $ok = ws_start_server(agentport, @AgentId);
-    nativelog("[agent] ws_start_server({0}, {1}) = {2}", agentport, @AgentId, $ok);
-    $ok = httpproxy_start_server(httpproxyport);
-    nativelog("[agent] httpproxy_start_server({0}) = {1}", httpproxyport, $ok);
+    $ok = ws_start_server(agent_port, @AgentId);
+    native_log("[agent] ws_start_server({0}, {1}) = {2}", agent_port, @AgentId, $ok);
+    $ok = httpproxy_start_server(http_proxy_port);
+    native_log("[agent] httpproxy_start_server({0}) = {1}", http_proxy_port, $ok);
     // Static web servers (HTTP on all platforms; only https is Windows-only
     // in Core/WebServer.cs): 8080 -> AiFreebie/LocalAgent, 8082 ->
     // AiFreebie/MeetingRoom. Windows layout: AiFreebie sits above the app
@@ -120,13 +120,13 @@ script(on_init)
     // page is stuck half-loaded. no-cache makes the html revalidate too, so a
     // cold start fails on the main frame and the retry takes over.
     $webRoot = "../AiFreebie";
-    if (ismac) {
+    if (is_mac) {
         $webRoot = "./AiFreebie";
     };
-    $ok = webserver_start_server(8080, combine_path(basepath, $webRoot + "/LocalAgent/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
-    nativelog("[agent] webserver_start_server(8080, LocalAgent) = {0}", $ok);
-    $ok = webserver_start_server(8082, combine_path(basepath, $webRoot + "/MeetingRoom/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
-    nativelog("[agent] webserver_start_server(8082, MeetingRoom) = {0}", $ok);
+    $ok = webserver_start_server(8080, combine_path(base_path, $webRoot + "/LocalAgent/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
+    native_log("[agent] webserver_start_server(8080, LocalAgent) = {0}", $ok);
+    $ok = webserver_start_server(8082, combine_path(base_path, $webRoot + "/MeetingRoom/"), "[{\"headers\": {\"Cache-Control\": \"no-cache\"}}]");
+    native_log("[agent] webserver_start_server(8082, MeetingRoom) = {0}", $ok);
     // Site ports retired: every page (main + single-page agents) reaches this
     // process through the relay port; per-agent resolution is the agent_bind
     // connection binding, see the raw MetaDSL path in WebSocketServer.
@@ -134,9 +134,9 @@ script(on_init)
 
 script(on_finalize)
 {
-    nativelog("[agent] on_finalize");
-    ws_stop_server(agentport);
-    httpproxy_stop_server(httpproxyport);
+    native_log("[agent] on_finalize");
+    ws_stop_server(agent_port);
+    httpproxy_stop_server(http_proxy_port);
     webserver_stop_server(8080);
     webserver_stop_server(8082);
 };
@@ -154,7 +154,7 @@ script(on_tick)
     // it died, so is_process_alive() is what decides (its name key keeps a
     // recycled pid from looking like a live parent). Throttled: ~1s.
     $tick = get_context_var("parentWatchTick");
-    if (isnull($tick)) {
+    if (is_null($tick)) {
         $tick = 0;
     };
     $tick = $tick + 1;
@@ -162,7 +162,7 @@ script(on_tick)
         $tick = 0;
         $ppid = get_process_parent_id();
         if ($ppid > 0 && !is_process_alive($ppid, "webagent")) {
-            nativelog("[agent] parent browser is gone (ppid={0}), exiting", $ppid);
+            native_log("[agent] parent browser is gone (ppid={0}), exiting", $ppid);
             exit_process(0);
         };
     };
@@ -173,7 +173,7 @@ script(on_tick)
     // after they all pass - rare by design). Sends at most one
     // metacognition-style reminder per idle period.
     $sc = get_context_var("selfCheckTick");
-    if (isnull($sc)) {
+    if (is_null($sc)) {
         $sc = 0;
     };
     $sc = $sc + 1;
@@ -191,7 +191,7 @@ script(on_tick)
     // log only on state change, deduped via projectDirCheckState; before the
     // first update_project_config sync only an info line is logged.
     $dirChecks = get_context_var("projectDirCheckTick");
-    if (isnull($dirChecks)) {
+    if (is_null($dirChecks)) {
         $dirChecks = 0;
     };
     $dirChecks = $dirChecks + 1;
@@ -203,9 +203,9 @@ script(on_tick)
         // Before that the directory is empty because init has not run, not
         // because of a fault, so log an info line instead of an error.
         $dirSynced = get_context_var("ProjectDirSynced");
-        if (isnull($dirSynced) || !$dirSynced) {
+        if (is_null($dirSynced) || !$dirSynced) {
             $dirState = "waiting";
-        } elif (isnull(@ProjectDirectory) || "" == @ProjectDirectory) {
+        } elif (is_null(@ProjectDirectory) || "" == @ProjectDirectory) {
             $dirState = "empty";
         } elif (!dir_exists(@ProjectDirectory)) {
             $dirState = "missing";
@@ -218,7 +218,7 @@ script(on_tick)
             };
         } elif ("" != $dirState) {
             if ($lastDirState != $dirState) {
-                nativelog("[agent] project directory invalid (state={0}, dir={1})", $dirState, @ProjectDirectory);
+                native_log("[agent] project directory invalid (state={0}, dir={1})", $dirState, @ProjectDirectory);
                 set_context_var("projectDirCheckState", $dirState);
             };
         } elif ("" != $lastDirState) {
@@ -247,7 +247,7 @@ script(read_upgrade_state)
         return(null);
     };
     $txt = read_file(@UpgradeStateFile);
-    if (isnullorempty($txt)) {
+    if (is_null_or_empty($txt)) {
         return(null);
     };
     return(from_json($txt));
@@ -271,7 +271,7 @@ script(write_upgrade_state)params($v)
 script(resume_after_upgrade)
 {
     $v = read_upgrade_state();
-    if (isnull($v)) {
+    if (is_null($v)) {
         return;
     };
     if (to_string(dict_or_json_get($v, "stage")) != "verify_pending") {
@@ -283,12 +283,12 @@ script(resume_after_upgrade)
         dict_or_json_set($v, "lastError", "resume failed twice");
         dict_or_json_set($v, "stageSince", now());
         write_upgrade_state($v);
-        nativelog("[agent] upgrade resume aborted (attempt={0})", $attempt);
+        native_log("[agent] upgrade resume aborted (attempt={0})", $attempt);
         send_command_to_inject("send_message", to_json({text: format("【RSI 升级中止】本次升级目标连续失败 {0} 次，已停止自动重试。请先诊断失败原因，必要时请人工介入，不要强行继续。RSI 流程参考：{1}", $attempt, @RsiDocPath)}));
         return;
     };
     $resumePrompt = to_string(dict_or_json_get($v, "resumePrompt"));
-    if (isnullorempty($resumePrompt)) {
+    if (is_null_or_empty($resumePrompt)) {
         $resumePrompt = format("浏览器因升级重启完成，请从中断处继续之前的任务。RSI 流程参考：{0}", @RsiDocPath);
     };
     dict_or_json_set($v, "stage", "idle");
@@ -296,7 +296,7 @@ script(resume_after_upgrade)
     dict_or_json_set($v, "lastCompletedAt", now());
     dict_or_json_set($v, "stageSince", now());
     write_upgrade_state($v);
-    nativelog("[agent] upgrade verified, stage -> idle, pushing the resume prompt");
+    native_log("[agent] upgrade verified, stage -> idle, pushing the resume prompt");
     send_command_to_inject("send_message", to_json({text: $resumePrompt}));
 };
 
@@ -310,11 +310,11 @@ script(monitor_heartbeat_fresh)
         return(false);
     };
     $txt = read_file(@MonitorAliveFile);
-    if (isnullorempty($txt)) {
+    if (is_null_or_empty($txt)) {
         return(false);
     };
     $t = parse_date_time(to_string($txt));
-    if (isnull($t)) {
+    if (is_null($t)) {
         return(false);
     };
     $age = get_diff_time_seconds($t, now());
@@ -328,14 +328,14 @@ script(monitor_heartbeat_fresh)
 script(idle_selfcheck_tick)
 {
     $last = get_context_var("lastActivityAt");
-    if (isnull($last)) {
+    if (is_null($last)) {
         return;
     };
     if (get_diff_time_seconds($last, now()) <= @SelfCheckIdleSeconds) {
         return;
     };
     $lastSelfCheck = get_context_var("lastSelfCheckAt");
-    if (!isnull($lastSelfCheck) && get_diff_time_seconds($lastSelfCheck, now()) < @SelfCheckMinIntervalSeconds) {
+    if (!is_null($lastSelfCheck) && get_diff_time_seconds($lastSelfCheck, now()) < @SelfCheckMinIntervalSeconds) {
         return;
     };
     if (agent_get_active_workers(@AgentId) > 0) {
@@ -358,20 +358,20 @@ script(idle_selfcheck_tick)
         return;
     };
     $v = read_upgrade_state();
-    if (!isnull($v)) {
+    if (!is_null($v)) {
         if (to_string(dict_or_json_get($v, "stage")) != "idle") {
             return;
         };
         $lastCompletedAt = dict_or_json_get($v, "lastCompletedAt");
-        if (!isnull($lastCompletedAt)) {
+        if (!is_null($lastCompletedAt)) {
             $t = parse_date_time(to_string($lastCompletedAt));
-            if (!isnull($t) && get_diff_time_seconds($t, now()) < @SelfCheckMinIntervalSeconds) {
+            if (!is_null($t) && get_diff_time_seconds($t, now()) < @SelfCheckMinIntervalSeconds) {
                 return;
             };
         };
     };
     set_context_var("lastSelfCheckAt", now());
-    nativelog("[agent] idle for over {0}s, sending the self-check reminder", @SelfCheckIdleSeconds);
+    native_log("[agent] idle for over {0}s, sending the self-check reminder", @SelfCheckIdleSeconds);
     // on_tick has no connection context, so this push broadcasts to every page.
     // Use the dedicated rsi_selfcheck_reminder command so only the main page
     // adapter (main.js) acts on it - the single-page agents just log an
@@ -381,12 +381,12 @@ script(idle_selfcheck_tick)
 
 script(on_ws_client_connected)params($port)
 {
-    nativelog("[agent] ws client connected on port {0}", $port);
+    native_log("[agent] ws client connected on port {0}", $port);
 };
 
 script(on_ws_client_disconnected)params($port)
 {
-    nativelog("[agent] ws client disconnected from port {0}", $port);
+    native_log("[agent] ws client disconnected from port {0}", $port);
 };
 
 // ----------------------------------------------------------------------------
@@ -403,7 +403,7 @@ script(cache_js_state)params($data, $agentId)
     if ($jsState == null) {
         return;
     };
-    if (isnullorempty($agentId)) {
+    if (is_null_or_empty($agentId)) {
         $agentId = "webagent";
     };
     set_context_var("jsState_" + $agentId, to_json($jsState));
@@ -411,11 +411,11 @@ script(cache_js_state)params($data, $agentId)
 
 script(js_queue_count)params($agentId, $kind)
 {
-    if (isnullorempty($agentId)) {
+    if (is_null_or_empty($agentId)) {
         $agentId = "webagent";
     };
     $s = get_context_var("jsState_" + $agentId);
-    if (isnull($s)) {
+    if (is_null($s)) {
         return(0);
     };
     $v = from_json($s);
@@ -427,11 +427,11 @@ script(js_queue_count)params($agentId, $kind)
 
 script(js_llm_category)params($agentId)
 {
-    if (isnullorempty($agentId)) {
+    if (is_null_or_empty($agentId)) {
         $agentId = "webagent";
     };
     $s = get_context_var("jsState_" + $agentId);
-    if (isnull($s)) {
+    if (is_null($s)) {
         return("");
     };
     $v = from_json($s);
@@ -468,7 +468,7 @@ script(sync_local_agent_injection)params($pageType)
 // Handle agent command
 script(handle_agent_command)params($jsonData)
 {
-    nativelog("[agent] handle_agent_command: {0}", get_string_in_length($jsonData, 100));
+    native_log("[agent] handle_agent_command: {0}", get_string_in_length($jsonData, 100));
 
     $cmd = parse_agent_command($jsonData);
     if ($cmd == null) {
@@ -481,7 +481,7 @@ script(handle_agent_command)params($jsonData)
     $command = dict_or_json_get($cmd, "command");
     $params = dict_or_json_get($cmd, "params");
 
-    nativelog("[agent] Command: {0}, ID: {1}", $command, $id);
+    native_log("[agent] Command: {0}, ID: {1}", $command, $id);
 
     if ($command == "ping") {
         handle_ping_command($id, $params);
@@ -502,7 +502,7 @@ script(handle_agent_command)params($jsonData)
         handle_update_project_config_command($id, $params);
     }
     else {
-        nativelog("[agent] Unknown command: {0}", $command);
+        native_log("[agent] Unknown command: {0}", $command);
         $errorResponse = build_agent_response($id, false, "", format("Unknown command: {0}", $command));
         send_response_to_inject($errorResponse);
     };
@@ -513,7 +513,7 @@ script(handle_agent_command)params($jsonData)
 // Handle ping command
 script(handle_ping_command)params($id, $params)
 {
-    nativelog("[agent] Handling ping command, ID: {0}", $id);
+    native_log("[agent] Handling ping command, ID: {0}", $id);
     $response = build_agent_response($id, true, "pong", "");
     send_response_to_inject($response);
 };
@@ -522,14 +522,14 @@ script(handle_ping_command)params($id, $params)
 // params: providerId, tag, topic, text
 script(handle_llm_chat_command)params($id, $params)
 {
-    nativelog("[agent] Handling llm_chat command, ID: {0}", $id);
+    native_log("[agent] Handling llm_chat command, ID: {0}", $id);
 
     $providerId = dict_or_json_get($params, "providerId");
     $tag = dict_or_json_get($params, "tag");
     $topic = dict_or_json_get($params, "topic");
     $text = dict_or_json_get($params, "text");
 
-    nativelog("[agent] llm_chat: provider={0} tag={1} topic={2} text_len={3}", $providerId, $tag, $topic, strlen($text));
+    native_log("[agent] llm_chat: provider={0} tag={1} topic={2} text_len={3}", $providerId, $tag, $topic, strlen($text));
 
     if (strlen($text) == 0) {
         $response = build_agent_response($id, false, "", "text is empty");
@@ -546,42 +546,42 @@ script(handle_llm_chat_command)params($id, $params)
     $response = build_agent_response($id, $result, "", $errText);
     send_response_to_inject($response);
 
-    nativelog("[agent] llm_chat sent: {0}", $result);
+    native_log("[agent] llm_chat sent: {0}", $result);
 };
 
 // Handle set_agent_environment command from inject.js config panel
 // params: category, group, key, value
 script(handle_set_agent_environment_command)params($id, $params)
 {
-    nativelog("[agent] Handling set_agent_environment command, ID: {0}", $id);
+    native_log("[agent] Handling set_agent_environment command, ID: {0}", $id);
 
     $category = dict_or_json_get($params, "category");
     $group = dict_or_json_get($params, "group");
     $key = dict_or_json_get($params, "key");
     $value = dict_or_json_get($params, "value");
 
-    nativelog("[agent] set_agent_environment: category={0} group={1} key={2}", $category, $group, $key);
+    native_log("[agent] set_agent_environment: category={0} group={1} key={2}", $category, $group, $key);
 
     $result = set_agent_environment($category, $group, $key, $value);
 
     $response = build_agent_response($id, $result, "ok", "");
     send_response_to_inject($response);
 
-    nativelog("[agent] set_agent_environment result: {0}", $result);
+    native_log("[agent] set_agent_environment result: {0}", $result);
 };
 
 // Handle update_agent_configs command - notified when agent environments are fully loaded
 script(handle_update_agent_configs_command)params($id, $params)
 {
-    nativelog("[agent] Handling update_agent_configs command, ID: {0}", $id);
+    native_log("[agent] Handling update_agent_configs command, ID: {0}", $id);
     $response = build_agent_response($id, true, "ok", "");
     send_response_to_inject($response);
 
     // LLM providers configured here; apiKey uses %var% placeholders expanded via agent environment
     llm_set_provider("ollama", "ollama", "http://localhost:11434", "", "qwen3.8:27b");
 
-    $pmModel = "hy3";
-    if (ismac) {
+    $pmModel = "hy4-flash";
+    if (is_mac) {
         $pmModel = "deepseek-v4-flash";
     };
     // PM agent: %agent_id% / %person_token% resolve from the environment group
@@ -596,11 +596,11 @@ script(handle_update_agent_configs_command)params($id, $params)
     llm_set_provider_option(@PmLlmProviderId, "timeout", "60");
     llm_set_provider_option(@PmLlmProviderId, "max_busy_seconds", "90");
 
-    // hy3 supports a "no_think" reasoning effort: the PM only has to classify
+    // hy4-flash supports a "no_think" reasoning effort: the PM only has to classify
     // the last LLM message, so reasoning here is pure latency. Only sent on
     // Windows - deepseek-v4-flash (mac) has no reasoningEfforts in the
     // capability matrix and would just reject the unknown field.
-    if (!ismac) {
+    if (!is_mac) {
         llm_set_provider_option(@PmLlmProviderId, "reasoning_effort", "no_think");
     };
 
@@ -614,12 +614,12 @@ script(handle_update_agent_configs_command)params($id, $params)
 // params: projectDir, projectIdentity
 script(handle_update_project_config_command)params($id, $params)
 {
-    nativelog("[agent] Handling update_project_config command, ID: {0}", $id);
+    native_log("[agent] Handling update_project_config command, ID: {0}", $id);
 
     $projectDir = dict_or_json_get($params, "projectDir");
     $projectIdentity = dict_or_json_get($params, "projectIdentity");
 
-    nativelog("[agent] update_project_config: dir={0} identity={1}", $projectDir, $projectIdentity);
+    native_log("[agent] update_project_config: dir={0} identity={1}", $projectDir, $projectIdentity);
 
     if (strlen($projectDir) == 0 || strlen($projectIdentity) == 0) {
         $response = build_agent_response($id, false, "", "projectDir and projectIdentity are required");
@@ -647,7 +647,7 @@ script(handle_update_project_config_command)params($id, $params)
     $response = build_agent_response($id, true, "ok", "");
     send_response_to_inject($response);
 
-    nativelog("[agent] update_project_config done: dir={0} identity={1}", $projectDir, $projectIdentity);
+    native_log("[agent] update_project_config done: dir={0} identity={1}", $projectDir, $projectIdentity);
 };
 
 // ----------------------------------------------------------------------------
@@ -667,13 +667,13 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
     $sendQueueCount = js_queue_count("", "sendQueueCount");
     $receiveQueueCount = js_queue_count("", "receiveQueueCount");
     $activeWorkers = agent_get_active_workers(@AgentId);
-    nativelog("[agent] llm_callback: provider={0} tag={1} topic={2} reply_len={3} operation={4} send={5} receive={6} active_workers={7}", $providerId, $tag, $topic, strlen($reply), $metaDslOperationCount, $sendQueueCount, $receiveQueueCount, $activeWorkers);
+    native_log("[agent] llm_callback: provider={0} tag={1} topic={2} reply_len={3} operation={4} send={5} receive={6} active_workers={7}", $providerId, $tag, $topic, strlen($reply), $metaDslOperationCount, $sendQueueCount, $receiveQueueCount, $activeWorkers);
 
     // A failed or cancelled request still delivers its result, as "[error] ...".
     // Never treat that as a PM reply: the branches below would write it into
     // plan.txt / memory or forward it to the LLM as if the PM had said it.
     if (string_contains($reply, "[error]")) {
-        nativelog("[agent] llm_callback dropped: error reply for tag={0}, reply={1}", $tag, get_string_in_length($reply, 200));
+        native_log("[agent] llm_callback dropped: error reply for tag={0}, reply={1}", $tag, get_string_in_length($reply, 200));
         llm_clear_history($providerId, $tag);
         return;
     };
@@ -681,12 +681,12 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
     if ($tag == "reflection") {
         if (strlen($reply) > 1500) {
             llm_chat_callback($providerId, "reflection", "reflection", "超长了，请控制到300字左右");
-            nativelog("[agent] Episodic memory too long: {0}", get_string_in_length($reply, 500));
+            native_log("[agent] Episodic memory too long: {0}", get_string_in_length($reply, 500));
         }
         else {
             semantic_add(@EpisodicMemory, $reply, to_json({source: "reflection", date: date_time_str(), type: "episodic"}));
             llm_clear_history($providerId, "reflection");
-            nativelog("[agent] Episodic memory saved: {0}", get_string_in_length($reply, 500));
+            native_log("[agent] Episodic memory saved: {0}", get_string_in_length($reply, 500));
         };
     }
     elif ($tag == "llm_pm_marquis") {
@@ -724,7 +724,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
                         trigger_plan($autoPlan, $lockAgent);
                     }
                     else {
-                        nativelog("[agent] plan_if: auto_plan={0} lock_agent={1}", $autoPlan, $lockAgent);
+                        native_log("[agent] plan_if: auto_plan={0} lock_agent={1}", $autoPlan, $lockAgent);
                     };
                 }
                 elif ($action=="reply_if"){
@@ -733,7 +733,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
                         send_command_to_inject("send_message", to_json({text: $info}));
                     }
                     else {
-                        nativelog("[agent] reply_if: auto_plan={0} lock_agent={1} info={2}", $autoPlan, $lockAgent, $info);
+                        native_log("[agent] reply_if: auto_plan={0} lock_agent={1} info={2}", $autoPlan, $lockAgent, $info);
                     };
                 };
             };
@@ -742,7 +742,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
             $workers = agent_get_active_workers(@AgentId);
             if (string_contains($reply, "没有待执行代码了") && $workers > 0) {
                 // Remain silent
-                nativelog("[agent] skip reply: info={0} workers={1}", $reply, $workers);
+                native_log("[agent] skip reply: info={0} workers={1}", $reply, $workers);
             }
             else {
                 send_command_to_inject("send_message", to_json({text: $reply}));
@@ -765,28 +765,28 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 // $serverId: MCP server id, $callbackTag: caller tag, $resultText: tool result
 script(handle_mcp_callback)params($serverId, $callbackTag, $resultText)
 {
-    nativelog("[agent] mcp_callback: server={0} tag={1} result_len={2}", $serverId, $callbackTag, strlen($resultText));
+    native_log("[agent] mcp_callback: server={0} tag={1} result_len={2}", $serverId, $callbackTag, strlen($resultText));
     $text = format("[MCP Tool Result] server={0} tag={1}\n{2}", $serverId, $callbackTag, $resultText);
     send_command_to_inject("send_message", to_json({text: $text}));
 };
 
 script(handle_skill_callback)params($cmdStr, $argStr, $workDir, $resultText)
 {
-    nativelog("[agent] skill_callback: cmd={0} arg={1} work_dir={2} result={3}", $cmdStr, $argStr, $workDir, get_string_in_length($resultText, 100));
+    native_log("[agent] skill_callback: cmd={0} arg={1} work_dir={2} result={3}", $cmdStr, $argStr, $workDir, get_string_in_length($resultText, 100));
     $text = format("[skill Result] cmd={0} arg={1} work_dir={2}\n{3}", $cmdStr, $argStr, $workDir, $resultText);
     send_command_to_inject("send_message", to_json({text: $text}));
 };
 
 script(handle_command_callback)params($cmdStr, $argStr, $workDir, $resultText)
 {
-    nativelog("[agent] command_callback: cmd={0} arg={1} work_dir={2} result={3}", $cmdStr, $argStr, $workDir, get_string_in_length($resultText, 100));
+    native_log("[agent] command_callback: cmd={0} arg={1} work_dir={2} result={3}", $cmdStr, $argStr, $workDir, get_string_in_length($resultText, 100));
     $text = format("[command Result] cmd={0} arg={1} work_dir={2}\n{3}", $cmdStr, $argStr, $workDir, $resultText);
     send_command_to_inject("send_message", to_json({text: $text}));
 };
 
 script(handle_http_auth_callback)params($url, $tag, $response)
 {
-    nativelog("[agent] http_auth_callback: url={0} tag={1} response={2}", $url, $tag, get_string_in_length($response, 100));
+    native_log("[agent] http_auth_callback: url={0} tag={1} response={2}", $url, $tag, get_string_in_length($response, 100));
     $text = format("[http Auth Result] url={0} tag={1}\n{2}", $url, $tag, $response);
     send_command_to_inject("send_message", to_json({text: $text}));
 };
@@ -798,9 +798,9 @@ script(handle_http_auth_callback)params($url, $tag, $response)
 script(update_system_prompt)params($pageType,$isFirst)
 {
     // Read context file
-    $foundationPromptFile = combine_path(basepath, "docs/foundation_prompt.txt");
-    $toplevelRulesFile = combine_path(basepath, "docs/rules_toplevel.txt");
-    $emphasizeFile = combine_path(basepath, "docs/emphasize.txt");
+    $foundationPromptFile = combine_path(base_path, "docs/foundation_prompt.txt");
+    $toplevelRulesFile = combine_path(base_path, "docs/rules_toplevel.txt");
+    $emphasizeFile = combine_path(base_path, "docs/emphasize.txt");
     $soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
     $projectMemoryFile = combine_path(@ProjectDirectory, "docs/project_memory.txt");
     $backlogFile = combine_path(@ProjectDirectory, "docs/backlog.txt");
@@ -822,12 +822,12 @@ script(update_system_prompt)params($pageType,$isFirst)
     $context = read_file($contextFile);
     $history = read_file($historyFile);
 
-    nativelog("[agent] prompt lengths: foundation={0} rules={1} emphasize={2} soul={3} project={4} backlog={5} plan={6} context={7} history={8}", strlen($foundationPrompt), strlen($toplevelRules), strlen($emphasize), strlen($soul), strlen($projectMemory), strlen($backlog), strlen($plan), strlen($context), strlen($history));
+    native_log("[agent] prompt lengths: foundation={0} rules={1} emphasize={2} soul={3} project={4} backlog={5} plan={6} context={7} history={8}", strlen($foundationPrompt), strlen($toplevelRules), strlen($emphasize), strlen($soul), strlen($projectMemory), strlen($backlog), strlen($plan), strlen($context), strlen($history));
 
     // P2: llm category from the js state cache instead of CallJavascriptFuncInRenderer.
     $llmCategory = js_llm_category(@AgentId);
 
-    nativelog("[agent] page_type={0} is_first={1} llm_category={2}", $pageType, $isFirst, $llmCategory);
+    native_log("[agent] page_type={0} is_first={1} llm_category={2}", $pageType, $isFirst, $llmCategory);
     
     //now we use dynamic system prompts
     if ($pageType == "local-agent") {
@@ -854,7 +854,7 @@ script(update_system_prompt)params($pageType,$isFirst)
     };
 
     send_command_to_inject("update_system_prompt", to_json({prompt: $prompt}));
-    nativelog("[agent] system prompt: {0}", get_string_in_length($prompt,500));
+    native_log("[agent] system prompt: {0}", get_string_in_length($prompt,500));
 
     if (@EnableLlmPM) {
         $note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
@@ -879,7 +879,7 @@ script(update_system_prompt)params($pageType,$isFirst)
 
 script(induction_info)params($batch, $infos, $session)
 {
-    nativelog("[agent] induction_info, batch: {0}, infos: {1}, session: {2}", $batch, count($infos), $session);
+    native_log("[agent] induction_info, batch: {0}, infos: {1}, session: {2}", $batch, count($infos), $session);
 
     if (@EnableLlmPM) {
         loop($batch) {
@@ -926,7 +926,7 @@ script(induction_info)params($batch, $infos, $session)
             if ($i + 1 < $batch) {
                 $id = semantic_add(agent_get_project_identity(@AgentId) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
 
-                nativelog("[agent] induction_info, order: {0}, skip: {1}, history id: {2}", $i, $id, $histId);
+                native_log("[agent] induction_info, order: {0}, skip: {1}, history id: {2}", $i, $id, $histId);
             };
         };
 
@@ -934,7 +934,7 @@ script(induction_info)params($batch, $infos, $session)
             if ($ct > 0) {
                 $id = semantic_add(agent_get_project_identity(@AgentId) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
 
-                nativelog("[agent] induction_info, order: {0}, skip: {1}, history id: {2}", $batch - 1, $id, $histId);
+                native_log("[agent] induction_info, order: {0}, skip: {1}, history id: {2}", $batch - 1, $id, $histId);
             }
             else {
                 $prompt = format("{0}\n\n以上是最近若干次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", get_string_in_length(to_pretty_string(string_builder_to_string($induction)), 160 * 1024, 1),
@@ -943,7 +943,7 @@ script(induction_info)params($batch, $infos, $session)
                 // Fallback when PM is disabled: just send "continue" to keep LLM moving.
                 send_command_to_inject("send_message", to_json({text: $prompt}));
 
-                nativelog("[agent] induction_info, prompt: {0}, history id: {1}", get_string_in_length($prompt, 100), $histId);
+                native_log("[agent] induction_info, prompt: {0}, history id: {1}", get_string_in_length($prompt, 100), $histId);
             };
         };
     };
@@ -951,7 +951,7 @@ script(induction_info)params($batch, $infos, $session)
 
 script(induction_decision)params($lastMsg,$autoPlan,$lockAgent)
 {
-    $promptTpl = read_file(combine_path(basepath, "docs/reply_prompt.txt"));
+    $promptTpl = read_file(combine_path(base_path, "docs/reply_prompt.txt"));
     $prompt = format($promptTpl, $autoPlan, $lockAgent, $lastMsg);
 
     if (@EnableLlmPM) {
@@ -970,10 +970,10 @@ script(trigger_plan)params($autoPlan,$lockAgent)
 
     agent_set_soul(@AgentId, read_file($soulPath));
 
-    nativelog("[agent] trigger_plan: auto_plan:{0} lock_agent:{1}", $autoPlan, $lockAgent);
+    native_log("[agent] trigger_plan: auto_plan:{0} lock_agent:{1}", $autoPlan, $lockAgent);
 
     if (file_exists($backlogPath) && $autoPlan) {
-        nativelog("[agent] plan triggered");
+        native_log("[agent] plan triggered");
 
         if ($lockAgent) {
             $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），更新计划状态（进度与断点写计划笔记：change_plan_item_state或append_plan_item_note或append_plan_note）；需求库只在需求状态变化时维护（change_backlog_item_state，完成条目置状态2即删除并自动落盘），不要把进度写进需求库条款。如当前计划完成但仍有可继续工作，先align_plan获取当前plan信息并将笔记归档到md文件，然后create_plan后start_plan";
@@ -984,13 +984,13 @@ script(trigger_plan)params($autoPlan,$lockAgent)
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }
     else {
-        nativelog("[agent] trigger_plan: plan_file not found or auto_plan is false, skip plan");
+        native_log("[agent] trigger_plan: plan_file not found or auto_plan is false, skip plan");
     };
 };
 
 script(trigger_reflection)params()
 {
-    nativelog("[agent] trigger_reflection called");
+    native_log("[agent] trigger_reflection called");
 
     // Collect recent conversation history
     $legionnaireHistory = get_string_in_length(to_pretty_string(semantic_get_recent(@LegionnaireHistory, 20)), 160 * 1024, 1);
@@ -1000,7 +1000,7 @@ script(trigger_reflection)params()
     $prompt = format("【最近对话历史】：\n{0}\n\n【当前待办】：\n{1}\n\n【当前上下文】：\n{2}", $legionnaireHistory, $planHistory, $contextHistory);
 
     // Set reflection system prompt
-    $sysPrompt = read_file(combine_path(basepath, "docs/reflection_prompt.txt"));
+    $sysPrompt = read_file(combine_path(base_path, "docs/reflection_prompt.txt"));
     llm_set_system_prompt(@PmLlmProviderId, "reflection", $sysPrompt);
 
     // Send reflection request
@@ -1015,7 +1015,7 @@ script(trigger_reflection)params()
         send_command_to_inject("send_message", to_json({text: $prompt}));
     };
 
-    nativelog("[agent] trigger_reflection: reflection request sent");
+    native_log("[agent] trigger_reflection: reflection request sent");
 };
 
 script(save_context)params($count,$pageType)
@@ -1031,28 +1031,28 @@ script(save_context)params($count,$pageType)
     agent_set_context_var(@AgentId, "LastHistoryCount", semantic_count(@LegionnaireHistory));
 
     $context = new_string_builder();
-    looplist($marquisHistory) {
+    loop_list($marquisHistory) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
         };
         append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
     };
-    looplist($chiliarchHistory) {
+    loop_list($chiliarchHistory) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
         };
         append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
     };
-    looplist($centurionHistory) {
+    loop_list($centurionHistory) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
         };
         append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
     };
-    looplist($decurionHistory) {
+    loop_list($decurionHistory) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
@@ -1070,7 +1070,7 @@ script(save_history)params()
 {
     $conversationCount = semantic_count(@LegionnaireHistory);
     $lastHistoryCount = agent_get_context_var(@AgentId, "LastHistoryCount");
-    if (isnull($lastHistoryCount) || $lastHistoryCount == 0) {
+    if (is_null($lastHistoryCount) || $lastHistoryCount == 0) {
         agent_set_context_var(@AgentId, "LastHistoryCount", $conversationCount);
         return;
     };
@@ -1078,7 +1078,7 @@ script(save_history)params()
     if ($historyCount > 0) {
         $histories = semantic_get_recent_as_list(@LegionnaireHistory, $historyCount);
         $history = new_string_builder();
-        looplist($histories) {
+        loop_list($histories) {
             $rec = $$;
             append_format_line($history, "{0} {1}", $rec.Content, $rec.Metadata);
         };
@@ -1099,7 +1099,7 @@ script(save_conversations_task)params($jsonData)
     $conversations = dict_or_json_get($data, "conversations");
     $count = size($conversations);
 
-    nativelog("[agent] Saving {0} new conversation(s) to history (task)", $count);
+    native_log("[agent] Saving {0} new conversation(s) to history (task)", $count);
 
     loop($count) {
         $i = $$;
@@ -1108,7 +1108,7 @@ script(save_conversations_task)params($jsonData)
         $assistant = dict_or_json_get($conv, "assistant");
         $content = format("User:\n{0}\n\nAssistant:\n{1}", $user, $assistant);
         semantic_add(@LegionnaireHistory, $content, to_json({source: "inject", index: $i, date: date_time_str()}));
-        nativelog("[agent] Saved conversation {0}/{1}", $i + 1, $count);
+        native_log("[agent] Saved conversation {0}/{1}", $i + 1, $count);
     };
 
     save_history();
@@ -1128,7 +1128,7 @@ script(enable_freebie_button)params($agentId, $name)
 
 script(induction_freebie_info)params($batch, $infos, $session, $agentId)
 {
-    nativelog("[agent] induction_freebie_info, batch: {0}, infos: {1}, session: {2}, agent: {3}", $batch, count($infos), $session, $agentId);
+    native_log("[agent] induction_freebie_info, batch: {0}, infos: {1}, session: {2}, agent: {3}", $batch, count($infos), $session, $agentId);
 
     // P2: queue counts from the js state cache for this agent.
     $metaDslOperationCount = js_queue_count($agentId, "metaDslOperationCount");
@@ -1163,7 +1163,7 @@ script(induction_freebie_info)params($batch, $infos, $session, $agentId)
         if ($i + 1 < $batch) {
             $id = semantic_add(agent_get_project_identity($agentId) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
 
-            nativelog("[agent] induction_freebie_info, order: {0}, skip: {1}, history id: {2}", $i, $id, $histId);
+            native_log("[agent] induction_freebie_info, order: {0}, skip: {1}, history id: {2}", $i, $id, $histId);
         };
     };
 
@@ -1171,7 +1171,7 @@ script(induction_freebie_info)params($batch, $infos, $session, $agentId)
         if ($ct > 0) {
             $id = semantic_add(agent_get_project_identity($agentId) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
 
-            nativelog("[agent] induction_freebie_info, order: {0}, skip: {1}, history id: {2}", $batch - 1, $id, $histId);
+            native_log("[agent] induction_freebie_info, order: {0}, skip: {1}, history id: {2}", $batch - 1, $id, $histId);
         }
         else {
             $maxLen = 30 * 1024;
@@ -1185,14 +1185,14 @@ script(induction_freebie_info)params($batch, $infos, $session, $agentId)
             // Notify page to enable the induce button instead of auto sending
             enable_freebie_button($agentId, "induce");
 
-            nativelog("[agent] induction_freebie_info, prompt: {0}, history id: {1}", get_string_in_length($prompt, 100), $histId);
+            native_log("[agent] induction_freebie_info, prompt: {0}, history id: {1}", get_string_in_length($prompt, 100), $histId);
         };
     };
 };
 
 script(trigger_freebie_reflection)params($agentId)
 {
-    nativelog("[agent] trigger_freebie_reflection called");
+    native_log("[agent] trigger_freebie_reflection called");
 
     $projectDirectory = agent_get_project_dir($agentId);
     $projectIdentity = agent_get_project_identity($agentId);
@@ -1207,7 +1207,7 @@ script(trigger_freebie_reflection)params($agentId)
     // Notify page to enable the reflect button instead of auto sending
     enable_freebie_button($agentId, "reflect");
 
-    nativelog("[agent] trigger_freebie_reflection: reflection request sent");
+    native_log("[agent] trigger_freebie_reflection: reflection request sent");
 };
 
 script(save_freebie_context)params($count,$agentId)
@@ -1231,28 +1231,28 @@ script(save_freebie_context)params($count,$agentId)
     agent_set_context_var($agentId, "FreebieLastHistoryCount", semantic_count($legionnaireHistory));
 
     $context = new_string_builder();
-    looplist($marquisHistory) {
+    loop_list($marquisHistory) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
         };
         append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
     };
-    looplist($chiliarchHistory) {
+    loop_list($chiliarchHistory) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
         };
         append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
     };
-    looplist($centurionHistory) {
+    loop_list($centurionHistory) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
         };
         append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
     };
-    looplist($decurionHistory) {
+    loop_list($decurionHistory) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
@@ -1274,7 +1274,7 @@ script(save_freebie_history)params($agentId)
 
     $conversationCount = semantic_count($legionnaireHistory);
     $lastHistoryCount = agent_get_context_var($agentId, "FreebieLastHistoryCount");
-    if (isnull($lastHistoryCount) || $lastHistoryCount == 0) {
+    if (is_null($lastHistoryCount) || $lastHistoryCount == 0) {
         agent_set_context_var($agentId, "FreebieLastHistoryCount", $conversationCount);
         return;
     };
@@ -1282,7 +1282,7 @@ script(save_freebie_history)params($agentId)
     if ($historyCount > 0) {
         $histories = semantic_get_recent_as_list($legionnaireHistory, $historyCount);
         $history = new_string_builder();
-        looplist($histories) {
+        loop_list($histories) {
             $rec = $$;
             append_format_line($history, "{0} {1}", $rec.Content, $rec.Metadata);
         };
@@ -1297,14 +1297,14 @@ script(save_freebie_history)params($agentId)
 // js side (relay_transport.callAgent). $agentId identifies the site.
 script(freebie_get_induction_prompt)params($agentId)
 {
-    if (isnullorempty($agentId)) {
+    if (is_null_or_empty($agentId)) {
         $agentId = "webagent";
     };
-    nativelog("[agent] freebie_get_induction_prompt, agent: {0}", $agentId);
+    native_log("[agent] freebie_get_induction_prompt, agent: {0}", $agentId);
     $legionnaireHistory = agent_get_project_identity($agentId) + "_legionnaire_history";
     $infos = semantic_get_recent_as_list($legionnaireHistory, 10);
     $induction = new_string_builder();
-    looplist($infos) {
+    loop_list($infos) {
         $rec = $$;
         if ($rec.Content == ".") {
             continue;
@@ -1324,10 +1324,10 @@ script(freebie_get_induction_prompt)params($agentId)
 
 script(freebie_get_reflection_prompt)params($agentId)
 {
-    if (isnullorempty($agentId)) {
+    if (is_null_or_empty($agentId)) {
         $agentId = "webagent";
     };
-    nativelog("[agent] freebie_get_reflection_prompt, agent: {0}", $agentId);
+    native_log("[agent] freebie_get_reflection_prompt, agent: {0}", $agentId);
     $projectDirectory = agent_get_project_dir($agentId);
     $contextHistory = read_file(combine_path($projectDirectory, "docs/context.txt"));
     $prompt = format("{0}\n\n请结合你的上下文记忆，提取结构化的经验记录（300字以内），然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $contextHistory,
@@ -1347,18 +1347,18 @@ script(backup_patterns_file)params($agentId)
         return(false);
     };
     $bakFile = combine_path(agent_get_project_dir($agentId), "docs/patterns.txt.bak");
-    copy_file($patternsFile, $bakFile, true);
-    nativelog("[agent] patterns.txt rolled into patterns.txt.bak before pattern update");
+    copy_file_ex($patternsFile, $bakFile, true);
+    native_log("[agent] patterns.txt rolled into patterns.txt.bak before pattern update");
     return(true);
 };
 
 script(freebie_get_pattern_prompt)params($agentId)
 {
-    if (isnullorempty($agentId)) {
+    if (is_null_or_empty($agentId)) {
         $agentId = "webagent";
     };
     backup_patterns_file($agentId);
-    nativelog("[agent] freebie_get_pattern_prompt, agent: {0}", $agentId);
+    native_log("[agent] freebie_get_pattern_prompt, agent: {0}", $agentId);
     $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限{3}条、总量控制在{4}字节内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir($agentId), agent_get_project_identity($agentId), $agentId, get_patterns_max_count(), get_patterns_max_size());
     return($prompt);
 };
@@ -1376,7 +1376,7 @@ script(save_freebie_conversations_task)params($agentId, $jsonData)
     $projectIdentity = agent_get_project_identity($agentId);
     $legionnaireHistory = $projectIdentity + "_legionnaire_history";
 
-    nativelog("[agent] Saving {0} new conversation(s) to history (task, agent:{1})", $count, $agentId);
+    native_log("[agent] Saving {0} new conversation(s) to history (task, agent:{1})", $count, $agentId);
 
     loop($count) {
         $i = $$;
@@ -1385,7 +1385,7 @@ script(save_freebie_conversations_task)params($agentId, $jsonData)
         $assistant = dict_or_json_get($conv, "assistant");
         $content = format("User:\n{0}\n\nAssistant:\n{1}", $user, $assistant);
         semantic_add($legionnaireHistory, $content, to_json({source: "inject", index: $i, date: date_time_str()}));
-        nativelog("[agent] Saved conversation {0}/{1}", $i + 1, $count);
+        native_log("[agent] Saved conversation {0}/{1}", $i + 1, $count);
     };
 
     save_freebie_history($agentId);
@@ -1395,7 +1395,7 @@ script(save_freebie_conversations_task)params($agentId, $jsonData)
 // old synchronous callMetaDSL('get_plan', AGENT_ID) in the adapters).
 script(get_plan)params($agentId)
 {
-    if (isnullorempty($agentId)) {
+    if (is_null_or_empty($agentId)) {
         $agentId = @AgentId;
     };
     $dir = agent_get_project_dir($agentId);
@@ -1415,14 +1415,14 @@ script(get_plan)params($agentId)
 // them: append both to the site prompt, skipping empty parts.
 script(append_emphasize_and_soul)params($prompt, $agentId)
 {
-    $emphasize = read_file(combine_path(basepath, "docs/emphasize.txt"));
-    if (!isnullorempty($emphasize)) {
+    $emphasize = read_file(combine_path(base_path, "docs/emphasize.txt"));
+    if (!is_null_or_empty($emphasize)) {
         $prompt = format("{0}\n\n{1}", $prompt, $emphasize);
     };
     $dir = agent_get_project_dir($agentId);
-    if (!isnullorempty($dir)) {
+    if (!is_null_or_empty($dir)) {
         $soul = read_file(combine_path($dir, "docs/soul.md"));
-        if (!isnullorempty($soul)) {
+        if (!is_null_or_empty($soul)) {
             $prompt = format("{0}\n\n{1}", $prompt, $soul);
         };
     };
@@ -1431,24 +1431,24 @@ script(append_emphasize_and_soul)params($prompt, $agentId)
 
 script(get_arena_system_prompt)params()
 {
-    $prompt = append_emphasize_and_soul(read_file(combine_path(basepath, "docs/arena_prompt.txt")), "hyarena");
+    $prompt = append_emphasize_and_soul(read_file(combine_path(base_path, "docs/arena_prompt.txt")), "hyarena");
 
     // Dynamic part: current plan + induction context from the hyarena project
     // dir. Context injection is disabled for hyarena (page message size limit),
     // so the page system prompt carries this state instead, refreshed on
     // ready and every context count down (main agent rhythm).
     $projectDirectory = agent_get_project_dir("hyarena");
-    if (!isnullorempty($projectDirectory)) {
+    if (!is_null_or_empty($projectDirectory)) {
         $plan = read_file(combine_path($projectDirectory, "docs/plan.txt"));
         $context = read_file(combine_path($projectDirectory, "docs/context.txt"));
         $history = read_file(combine_path($projectDirectory, "docs/history.txt"));
-        if (!isnullorempty($plan)) {
+        if (!is_null_or_empty($plan)) {
             $prompt = format("{0}\n\n【当前计划】:\n{1}", $prompt, $plan);
         };
-        if (!isnullorempty($context)) {
+        if (!is_null_or_empty($context)) {
             $prompt = format("{0}\n\n【上下文信息】:\n{1}", $prompt, $context);
         };
-        if (!isnullorempty($history)) {
+        if (!is_null_or_empty($history)) {
             $prompt = format("{0}\n\n【上下文信息】:\n{1}", $prompt, $history);
         };
     };
@@ -1458,24 +1458,24 @@ script(get_arena_system_prompt)params()
 
 script(get_venus_system_prompt)params()
 {
-    $prompt = append_emphasize_and_soul(read_file(combine_path(basepath, "docs/venus_prompt.txt")), "venus");
+    $prompt = append_emphasize_and_soul(read_file(combine_path(base_path, "docs/venus_prompt.txt")), "venus");
 
     // Dynamic part: current plan + induction context from the venus project
     // dir. Context injection is disabled for venus (page message size limit),
     // so the page system prompt carries this state instead, refreshed on
     // ready and every context count down (main agent rhythm).
     $projectDirectory = agent_get_project_dir("venus");
-    if (!isnullorempty($projectDirectory)) {
+    if (!is_null_or_empty($projectDirectory)) {
         $plan = read_file(combine_path($projectDirectory, "docs/plan.txt"));
         $context = read_file(combine_path($projectDirectory, "docs/context.txt"));
         $history = read_file(combine_path($projectDirectory, "docs/history.txt"));
-        if (!isnullorempty($plan)) {
+        if (!is_null_or_empty($plan)) {
             $prompt = format("{0}\n\n【当前计划】:\n{1}", $prompt, $plan);
         };
-        if (!isnullorempty($context)) {
+        if (!is_null_or_empty($context)) {
             $prompt = format("{0}\n\n【上下文信息】:\n{1}", $prompt, $context);
         };
-        if (!isnullorempty($history)) {
+        if (!is_null_or_empty($history)) {
             $prompt = format("{0}\n\n【上下文信息】:\n{1}", $prompt, $history);
         };
     };
@@ -1485,39 +1485,39 @@ script(get_venus_system_prompt)params()
 
 script(get_google_prompt_1)params()
 {
-    return(read_file(combine_path(basepath, "docs/google_prompt_1.txt")));
+    return(read_file(combine_path(base_path, "docs/google_prompt_1.txt")));
 };
 
 script(get_google_prompt_2)params()
 {
-    return(read_file(combine_path(basepath, "docs/google_prompt_2.txt")));
+    return(read_file(combine_path(base_path, "docs/google_prompt_2.txt")));
 };
 
 script(get_google_prompt_3)params()
 {
     // Last part of the split google prompt: emphasize + soul go here only,
     // so sending all three parts carries them exactly once.
-    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/google_prompt_3.txt")), "google"));
+    return(append_emphasize_and_soul(read_file(combine_path(base_path, "docs/google_prompt_3.txt")), "google"));
 };
 
 script(get_google_prompt)params()
 {
-    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/google_prompt.txt")), "gemini"));
+    return(append_emphasize_and_soul(read_file(combine_path(base_path, "docs/google_prompt.txt")), "gemini"));
 };
 
 script(get_openai_prompt)params()
 {
-    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/openai_prompt.txt")), "openai"));
+    return(append_emphasize_and_soul(read_file(combine_path(base_path, "docs/openai_prompt.txt")), "openai"));
 };
 
 script(get_imate_prompt)params()
 {
-    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/imate_prompt.txt")), "imate"));
+    return(append_emphasize_and_soul(read_file(combine_path(base_path, "docs/imate_prompt.txt")), "imate"));
 };
 
 script(get_with_prompt)params()
 {
-    return(append_emphasize_and_soul(read_file(combine_path(basepath, "docs/with_prompt.txt")), "with"));
+    return(append_emphasize_and_soul(read_file(combine_path(base_path, "docs/with_prompt.txt")), "with"));
 };
 
 // plan.txt size guard: when the notes grow past 100KB, nudge the LLM to
@@ -1545,7 +1545,7 @@ script(remind_plan_size)params($planFile)
 
 script(handle_agent_notification)params($jsonData)
 {
-    nativelog("[agent] handle_agent_notification: {0}", get_string_in_length($jsonData,100));
+    native_log("[agent] handle_agent_notification: {0}", get_string_in_length($jsonData,100));
 
     // RSI: any notification counts as activity - the idle self-check gate
     // (idle_selfcheck_tick) measures silence from this timestamp.
@@ -1555,7 +1555,7 @@ script(handle_agent_notification)params($jsonData)
     $type = dict_or_json_get($notif, "type");
     $data = dict_or_json_get($notif, "data");
 
-    nativelog("[agent] Notification type: {0}", $type);
+    native_log("[agent] Notification type: {0}", $type);
 
     // P2: cache the js state block carried by every notification.
     $agentIdForKey = dict_or_json_get($data, "agentId");
@@ -1565,7 +1565,7 @@ script(handle_agent_notification)params($jsonData)
         $pageType = dict_or_json_get($data, "pageType");
         $url = dict_or_json_get($data, "url");
 
-        nativelog("[agent] Agent initialized on page type: {0}, url: {1} agentId: {2}", $pageType, $url, $agentIdForKey);
+        native_log("[agent] Agent initialized on page type: {0}, url: {1} agentId: {2}", $pageType, $url, $agentIdForKey);
 
         agent_set_max_result_size(@AgentId, 80*1024);
         sync_local_agent_injection($pageType);
@@ -1579,27 +1579,27 @@ script(handle_agent_notification)params($jsonData)
         // Single-page agent ready (hyarena_ready, venus_ready, ...): data
         // driven via the site table.
         $agentId = string_substring($type, 0, strlen($type) - strlen("_ready"));
-        if (isnull(hashtableget(@SiteIdentity, $agentId))) {
-            nativelog("[agent] Unknown site ready notification: {0}", $type);
+        if (is_null(hashtable_get(@SiteIdentity, $agentId))) {
+            native_log("[agent] Unknown site ready notification: {0}", $type);
             return;
         };
 
         $url = dict_or_json_get($data, "url");
-        nativelog("[agent] {0} initialized, url: {1}", $agentId, $url);
+        native_log("[agent] {0} initialized, url: {1}", $agentId, $url);
 
-        agent_set_max_result_size($agentId, hashtableget(@SiteMaxSize, $agentId));
-        agent_enable_context_injection($agentId, hashtableget(@SiteContextInjection, $agentId));
-        $siteDir = hashtableget(@SiteDir, $agentId);
+        agent_set_max_result_size($agentId, hashtable_get(@SiteMaxSize, $agentId));
+        agent_enable_context_injection($agentId, hashtable_get(@SiteContextInjection, $agentId));
+        $siteDir = hashtable_get(@SiteDir, $agentId);
         if ($siteDir != "") {
-            agent_set_project_dir($agentId, combinepath(basepath, $siteDir));
+            agent_set_project_dir($agentId, combine_path(base_path, $siteDir));
         };
-        agent_set_project_identity($agentId, hashtableget(@SiteIdentity, $agentId));
+        agent_set_project_identity($agentId, hashtable_get(@SiteIdentity, $agentId));
 
         // Tell the page to (re)create its execution slot: the single-slot
         // adapters still key their slot creation off this push. The port
         // value is legacy-only — wsCreate builds a RelaySlot (relay, agent_bind)
         // and ignores it.
-        send_command_to_inject("ws_start_" + $agentId, to_json({port: agentport}));
+        send_command_to_inject("ws_start_" + $agentId, to_json({port: agent_port}));
 
         // venus carries plan/context in its page system prompt (message-level
         // context injection is off for page message size reasons): seed it
@@ -1608,10 +1608,10 @@ script(handle_agent_notification)params($jsonData)
             send_command_to_inject("update_system_prompt", to_json({prompt: get_venus_system_prompt()}));
         };
 
-        nativelog("[agent] {0} ready", $agentId);
+        native_log("[agent] {0} ready", $agentId);
     }
     elif ($type == "freebie_context_count_down") {
-        nativelog("[agent] freebie context count down notification received");
+        native_log("[agent] freebie context count down notification received");
 
         $agentId = dict_or_json_get($data, "agentId");
         $count = dict_or_json_get($data, "count");
@@ -1619,7 +1619,7 @@ script(handle_agent_notification)params($jsonData)
         $projectDirectory = agent_get_project_dir($agentId);
         $projectIdentity = agent_get_project_identity($agentId);
 
-        nativelog("[agent] freebie_context_count_down, agent: {0}, count: {1}", $agentId, $count);
+        native_log("[agent] freebie_context_count_down, agent: {0}, count: {1}", $agentId, $count);
 
         trigger_freebie_reflection($agentId);
         save_freebie_context($count, $agentId);
@@ -1645,7 +1645,7 @@ script(handle_agent_notification)params($jsonData)
         };
     }
     elif ($type == "freebie_save_conversation_history") {
-        nativelog("[agent] freebie_save_conversation_history notification received");
+        native_log("[agent] freebie_save_conversation_history notification received");
 
         $conversations = dict_or_json_get($data, "conversations");
         $agentId = dict_or_json_get($data, "agentId");
@@ -1654,7 +1654,7 @@ script(handle_agent_notification)params($jsonData)
             $projectDirectory = agent_get_project_dir($agentId);
         $projectIdentity = agent_get_project_identity($agentId);
 
-        nativelog("[agent] freebie_save_conversation_history, count: {0} agent id:{1}", $count, $agentId);
+        native_log("[agent] freebie_save_conversation_history, count: {0} agent id:{1}", $count, $agentId);
 
         $marquisHistory = $projectIdentity + "_marquis_history";
         $chiliarchHistory = $projectIdentity + "_chiliarch_history";
@@ -1692,18 +1692,18 @@ script(handle_agent_notification)params($jsonData)
         induction_freebie_info($decurionBatch, $decurions, "llm_pm_centurion", $agentId);
         induction_freebie_info($legionnaireBatch, $legionnaires, "llm_pm_decurion", $agentId);
 
-        nativelog("[agent] Saved Freebie Induction, LegionnaireBatch: {0}, DecurionBatch: {1}, CenturionBatch: {2}, ChiliarchBatch: {3}", $legionnaireBatch, $decurionBatch, $centurionBatch, $chiliarchBatch);
+        native_log("[agent] Saved Freebie Induction, LegionnaireBatch: {0}, DecurionBatch: {1}, CenturionBatch: {2}, ChiliarchBatch: {3}", $legionnaireBatch, $decurionBatch, $centurionBatch, $chiliarchBatch);
 
         // Check episodic memory count and trigger pattern recognition
         $episodicCount = semantic_count($episodicMemory);
         $lastPatternEpisodicCount = agent_get_context_var($agentId, "LastFreebiePatternEpisodicCount");
-        if (isnull($lastPatternEpisodicCount) || $lastPatternEpisodicCount == 0) {
+        if (is_null($lastPatternEpisodicCount) || $lastPatternEpisodicCount == 0) {
             $lastPatternEpisodicCount = $episodicCount;
             agent_set_context_var($agentId, "LastFreebiePatternEpisodicCount", $episodicCount);
         };
         if ($episodicCount - $lastPatternEpisodicCount >= 30) {
             agent_set_context_var($agentId, "LastFreebiePatternEpisodicCount", $episodicCount);
-            nativelog("[agent] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
+            native_log("[agent] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
             // Notify page to enable the pattern button instead of auto sending
             enable_freebie_button($agentId, "pattern");
         };
@@ -1723,21 +1723,21 @@ script(handle_agent_notification)params($jsonData)
         };
     }
     elif ($type == "llm_update_system_prompt") {
-        nativelog("[agent] LLM update system prompt notification received");
+        native_log("[agent] LLM update system prompt notification received");
 
         $pageType = dict_or_json_get($data, "pageType");
 
-        nativelog("[agent] LLM update system prompt pageType: {0}", $pageType);
+        native_log("[agent] LLM update system prompt pageType: {0}", $pageType);
 
         update_system_prompt($pageType, true);
     }
     elif ($type == "llm_context_count_down") {
-        nativelog("[agent] LLM context count down notification received");
+        native_log("[agent] LLM context count down notification received");
 
         $pageType = dict_or_json_get($data, "pageType");
         $count = dict_or_json_get($data, "count");
 
-        nativelog("[agent] llm_context_count_down pageType: {0}, count: {1}", $pageType, $count);
+        native_log("[agent] llm_context_count_down pageType: {0}, count: {1}", $pageType, $count);
 
         trigger_reflection();
         save_context($count, $pageType);
@@ -1757,12 +1757,12 @@ script(handle_agent_notification)params($jsonData)
         };
     }
     elif ($type == "llm_align_target") {
-        nativelog("[agent] LLM align target notification received");
+        native_log("[agent] LLM align target notification received");
 
         $pageType = dict_or_json_get($data, "pageType");
         $count = dict_or_json_get($data, "count");
 
-        nativelog("[agent] llm_align_target pageType: {0}, count: {1}", $pageType, $count);
+        native_log("[agent] llm_align_target pageType: {0}, count: {1}", $pageType, $count);
 
         $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
         $time1 = get_file_last_write_time($planFile);
@@ -1770,7 +1770,7 @@ script(handle_agent_notification)params($jsonData)
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 60) {
             $planText = align_plan(@AgentId);
-            if (!isnullorempty($planText)) {
+            if (!is_null_or_empty($planText)) {
                 write_file($planFile, $planText);
                 update_system_prompt($pageType, false);
             };
@@ -1780,11 +1780,11 @@ script(handle_agent_notification)params($jsonData)
             // its reply does not queue another one behind it.
             return;
         };
-        nativelog("[agent] episodic_reflection notification received");
+        native_log("[agent] episodic_reflection notification received");
         trigger_reflection();
     }
     elif ($type == "save_conversation_history") {
-        nativelog("[agent] save_conversation_history notification received");
+        native_log("[agent] save_conversation_history notification received");
 
         $conversations = dict_or_json_get($data, "conversations");
         $pageType = dict_or_json_get($data, "pageType");
@@ -1820,18 +1820,18 @@ script(handle_agent_notification)params($jsonData)
         induction_info($decurionBatch, $decurions, "llm_pm_centurion");
         induction_info($legionnaireBatch, $legionnaires, "llm_pm_decurion");
 
-        nativelog("[agent] Saved Induction, LegionnaireBatch: {0}, DecurionBatch: {1}, CenturionBatch: {2}, ChiliarchBatch: {3}", $legionnaireBatch, $decurionBatch, $centurionBatch, $chiliarchBatch);
+        native_log("[agent] Saved Induction, LegionnaireBatch: {0}, DecurionBatch: {1}, CenturionBatch: {2}, ChiliarchBatch: {3}", $legionnaireBatch, $decurionBatch, $centurionBatch, $chiliarchBatch);
 
         // Check episodic memory count and trigger pattern recognition
         $episodicCount = semantic_count(@EpisodicMemory);
         $lastPatternEpisodicCount = agent_get_context_var(@AgentId, "LastPatternEpisodicCount");
-        if (isnull($lastPatternEpisodicCount) || $lastPatternEpisodicCount == 0) {
+        if (is_null($lastPatternEpisodicCount) || $lastPatternEpisodicCount == 0) {
             $lastPatternEpisodicCount = $episodicCount;
             agent_set_context_var(@AgentId, "LastPatternEpisodicCount", $episodicCount);
         };
         if ($episodicCount - $lastPatternEpisodicCount >= 30) {
             agent_set_context_var(@AgentId, "LastPatternEpisodicCount", $episodicCount);
-            nativelog("[agent] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
+            native_log("[agent] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
             backup_patterns_file(@AgentId);
             $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先用 list_patterns(\"{2}\") 看已有模式概览（按需 view_pattern 看详情），再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳后用模式库 API（add_pattern/add_pattern_clause/modify_pattern_clause/merge_patterns/set_pattern_clauses 等）新增/修订/归并模式，编辑会自动写入 {0}/docs/patterns.txt，不要用 write_file 改该文件。模式上限{3}条、总量控制在{4}字节内，超限先归并压缩（保持简洁，无空话套话）。", agent_get_project_dir(@AgentId), agent_get_project_identity(@AgentId), @AgentId, get_patterns_max_count(), get_patterns_max_size());
             send_command_to_inject("send_message", to_json({text: $prompt}));
@@ -1849,7 +1849,7 @@ script(handle_agent_notification)params($jsonData)
     }
     elif ($type == "agent_need_to_decide") {
         // Lightweight PM reply channel for C-class semantic keywords
-        nativelog("[agent] agent_need_to_decide notification received (trigger_decision)");
+        native_log("[agent] agent_need_to_decide notification received (trigger_decision)");
 
         // Recovery backstop: if the page's init commands were lost in the
         // restart race (relay not up within the js retry window),
@@ -1862,15 +1862,15 @@ script(handle_agent_notification)params($jsonData)
         // throttle keeps a force-notification burst from flooding the page
         // with resync commands.
         $dirSynced = get_context_var("ProjectDirSynced");
-        if (isnull($dirSynced) || !$dirSynced) {
+        if (is_null($dirSynced) || !$dirSynced) {
             $lastResyncAt = get_context_var("LastResyncAt");
-            if (isnull($lastResyncAt) || get_diff_time_seconds($lastResyncAt, now()) >= 30) {
+            if (is_null($lastResyncAt) || get_diff_time_seconds($lastResyncAt, now()) >= 30) {
                 set_context_var("LastResyncAt", now());
-                nativelog("[agent] project config not synced (init lost in restart race?), requesting resync from page");
+                native_log("[agent] project config not synced (init lost in restart race?), requesting resync from page");
                 send_command_to_inject("resync_project_config", to_json({}));
             };
-            if (isnullorempty(@ProjectDirectory)) {
-                nativelog("[agent] project dir empty, decision skipped until resync completes");
+            if (is_null_or_empty(@ProjectDirectory)) {
+                native_log("[agent] project dir empty, decision skipped until resync completes");
                 return;
             };
         };
@@ -1884,10 +1884,10 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_soul(@AgentId, read_file($soulPath));
 
-        nativelog("[agent] agent_need_to_decide: page:{0} lastMsg:{1}", $pageType, $lastScannedMessage);
+        native_log("[agent] agent_need_to_decide: page:{0} lastMsg:{1}", $pageType, $lastScannedMessage);
         induction_decision($lastScannedMessage, $autoPlan, $lockAgent);
     }
     else {
-        nativelog("[agent] Unknown notification type: {0}", $type);
+        native_log("[agent] Unknown notification type: {0}", $type);
     };
 };

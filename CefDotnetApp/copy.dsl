@@ -1,14 +1,14 @@
 script(main)
 {
-	curdir = getscriptdir();
+	curdir = get_script_directory();
 	cd(curdir);
-	fileecho(true);
+	file_echo(true);
 
-	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","CefDotnetApp.*");
-	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","TextCopy.dll");
-	copyfiles("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Microsoft.Extensions.DependencyInjection.Abstractions.dll");
+	copy_files("bin/Debug/net9.0", "../../WebAgent/webagent/managed","CefDotnetApp.*");
+	copy_files("bin/Debug/net9.0", "../../WebAgent/webagent/managed","TextCopy.dll");
+	copy_files("bin/Debug/net9.0", "../../WebAgent/webagent/managed","Microsoft.Extensions.DependencyInjection.Abstractions.dll");
 
-	if (argnum() <= 1) {
+	if (arg_num() <= 1) {
 		echo("press any key ...");
 		read();
 	};

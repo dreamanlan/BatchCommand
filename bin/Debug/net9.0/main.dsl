@@ -1,11 +1,11 @@
 ﻿script(main)
 {
-	fileecho(true);
+	file_echo(true);
 	clear();
-	echo("{0} {1} {2} {3} {4}", gettitle(), getbufferwidth(), getbufferheight(), getbgcolor(), getfgcolor());
-	settitle("测试c#批处理工具");
-	$encoding = getinputencoding();
-	setencoding("gb2312");
+	echo("{0} {1} {2} {3} {4}", get_title(), get_buffer_width(), get_buffer_height(), get_bg_color(), get_fg_color());
+	set_title("测试c#批处理工具");
+	$encoding = get_input_encoding();
+	set_encoding("gb2312");
 
 	echo("os:{0}",os());
 	echo("osplatform:{0}",osplatform());
@@ -31,21 +31,21 @@
 	};
 	echo("dir result:{0}", $txt);
 
-	looplist(plist("")){
+	loop_list(plist("")){
 		echo("{0} {1}", $$.Id, $$.ProcessName);
 	};
 
 	echo("pid:{0}", pid());
 	echo("kill:{0}", kill("BatchCommand"));
 
-	setfgcolor("DarkBlue");
-	echo("readline:");
-	$var1 = readline();
+	set_fg_color("DarkBlue");
+	echo("read_line:");
+	$var1 = read_line();
 	echo("read:");
 	$var2 = read();
 	echo();
-	$var3 = makestring($var2,$var2,$var2);
-	echo("makestring:{0}", $var3);
+	$var3 = make_string($var2,$var2,$var2);
+	echo("make_string:{0}", $var3);
 	echo("press any key ...");
 	process("cmd", "/c dir"){
 		nowait(true);
@@ -60,7 +60,7 @@
 		unix{:grep command:};
 	};
 	pause();
-	resetcolor();
+	reset_color();
 	echo("kill me:{0}",pid());
 	killme();
 	echo("you should not see this.");

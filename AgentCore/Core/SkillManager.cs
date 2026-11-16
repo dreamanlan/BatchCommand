@@ -59,8 +59,8 @@ namespace AgentCore.Core
 
         public void ResetSysEnvs()
         {
-            _envs["basepath"] = _basePath;
-            _envs["appdir"] = _appDir;
+            _envs["base_path"] = _basePath;
+            _envs["app_dir"] = _appDir;
         }
 
         public bool SetEnv(string key, string value)

@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // Configuration Manager - Centralized configuration with validation and persistence
 // ============================================================================
 class ConfigManager {
@@ -68,7 +68,7 @@ class ConfigManager {
 
       // WebSocket settings
       // 9527: the standalone AgentCore relay port (default of
-      // MetaDslExecutor.SetProcessInfo, overridable with --agentport).
+      // MetaDslExecutor.SetProcessInfo, overridable with --agent_port).
       websocket: {
         port: 9527,
         reconnectDelay: 3000

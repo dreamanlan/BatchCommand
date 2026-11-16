@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Diagnostics;
 using static GlslRewriter.Program;
 using Dsl;
@@ -67,7 +67,7 @@ namespace GlslRewriter
                             }
                         }
                     }
-                    else if (0 == string.Compare(args[i], "-argcfg", true)) {
+                    else if (0 == string.Compare(args[i], "-arg_cfg", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
@@ -75,7 +75,7 @@ namespace GlslRewriter
                                     Config.ActiveArgCfgId = ix;
                                 }
                                 else {
-                                    Console.WriteLine("argcfg must be integer ! {0}", arg);
+                                    Console.WriteLine("arg_cfg must be integer ! {0}", arg);
                                 }
                                 ++i;
                             }
@@ -111,7 +111,7 @@ namespace GlslRewriter
                     else if (0 == string.Compare(args[i], "-ssa", true)) {
                         s_SSA = true;
                     }
-                    else if (0 == string.Compare(args[i], "-nossa", true)) {
+                    else if (0 == string.Compare(args[i], "-no_ssa", true)) {
                         s_SSA = false;
                     }
                     else if (0 == string.Compare(args[i], "-h", true)) {
@@ -216,16 +216,16 @@ namespace GlslRewriter
         }
         static void PrintHelp()
         {
-            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-cfg cfg_dsl_file] [-argcfg id_in_cfg] [-vs] [-ps] [-cs] [-i] [-r] [-src] glsl_file");
+            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-cfg cfg_dsl_file] [-arg_cfg id_in_cfg] [-vs] [-ps] [-cs] [-i] [-r] [-src] glsl_file");
             Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
             Console.WriteLine(" [-cfg cfg_dsl_file] config file path and name, default is [glsl_file_name]_cfg.dsl");
-            Console.WriteLine(" [-argcfg id_in_config] arg config id in config file, default is 0");
+            Console.WriteLine(" [-arg_cfg id_in_config] arg config id in config file, default is 0");
             Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
             Console.WriteLine(" [-cs] glsl_file is compute shader");
             Console.WriteLine(" [-i] interactive computing mode, don't write outfile");
             Console.WriteLine(" [-r] do string replacement");
             Console.WriteLine(" [-ssa] transform to SSA (default)");
-            Console.WriteLine(" [-nossa] don't transform to SSA");
+            Console.WriteLine(" [-no_ssa] don't transform to SSA");
             Console.WriteLine(" [-src] glsl_file source glsl file, -src can be omitted when file is the last argument");
         }
 
@@ -795,7 +795,7 @@ namespace GlslRewriter
             BatchCommand.BatchScript.Register("shader", "shader(code1,code2,...) api", new ExpressionFactoryHelper<ShaderExp>());
             BatchCommand.BatchScript.Register("add_svar", "add_svar(name,val[,dim_for_array]) api", new ExpressionFactoryHelper<AddShaderVarExp>());
             BatchCommand.BatchScript.Register("set_svar", "set_svar(var_code,val) api", new ExpressionFactoryHelper<SetShaderVarExp>());
-            BatchCommand.BatchScript.Register("add_unsvar", "add_unsvar(var_code_1,var_code_2,...) api", new ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
+            BatchCommand.BatchScript.Register("add_unassignable_shader_var", "add_unassignable_shader_var(var_code_1,var_code_2,...) api", new ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
             BatchCommand.BatchScript.Register("import_inout", "import_inout(index) api", new ExpressionFactoryHelper<ImportInOutExp>());
             BatchCommand.BatchScript.Register("recalc", "recalc([bool_full]) api", new ExpressionFactoryHelper<ReCalcExp>());
             BatchCommand.BatchScript.Register("rand_color", "rand_color() api", new ExpressionFactoryHelper<RandColorExp>());
@@ -2314,7 +2314,7 @@ namespace GlslRewriter
                 //this check would discard assignment expressions for variables used solely for phi variable assignments. Additionally,
                 //in code that has already undergone SSA processing, variable definitions and assignments are separate.
                 //Processing it again as input would result in these variables being renamed again.
-                //We can avoid this confusion by using the command-line parameter "-nossa".
+                //We can avoid this confusion by using the command-line parameter "-no_ssa".
                 if (!IsPhiVar(nvname)) {
                     Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname, string.Empty);
                 }

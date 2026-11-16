@@ -18,7 +18,7 @@ namespace AgentCore.Core
     /// unified error collection, result truncation, the call_metadsl_task
     /// worker pool and the common framework apis) lives in the shared
     /// BatchCommand.Api.DslHost; this class wires the host up to AgentCore
-    /// (logger, agent api set, agentport global, DslContext task routing) and
+    /// (logger, agent api set, agent_port global, DslContext task routing) and
     /// keeps the thin static facade used across AgentCore.
     /// </summary>
     internal static class MetaDslExecutor
@@ -66,15 +66,15 @@ namespace AgentCore.Core
         }
 
         // Agent specific dsl globals (the common ones come from
-        // DslHost.RefreshGlobalVars): agentport, initialprojectidentity and
-        // the fixed processtype (-1: the standalone agent is not a CEF
+        // DslHost.RefreshGlobalVars): agent_port, initial_project_identity and
+        // the fixed process_type (-1: the standalone agent is not a CEF
         // process; the former DslHost fields moved back here).
         private static void SetAgentGlobalVars()
         {
-            BatchCommand.BatchScript.SetGlobalVariable("agentport", BoxedValue.From(s_AgentPort));
-            BatchCommand.BatchScript.SetGlobalVariable("httpproxyport", BoxedValue.From(s_HttpProxyPort));
-            BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
-            BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(-1));
+            BatchCommand.BatchScript.SetGlobalVariable("agent_port", BoxedValue.From(s_AgentPort));
+            BatchCommand.BatchScript.SetGlobalVariable("http_proxy_port", BoxedValue.From(s_HttpProxyPort));
+            BatchCommand.BatchScript.SetGlobalVariable("initial_project_identity", BoxedValue.FromString(s_InitialProjectIdentity));
+            BatchCommand.BatchScript.SetGlobalVariable("process_type", BoxedValue.From(-1));
         }
 
         // ---- dsl host facade (delegates to the shared DslHost) --------------
@@ -264,24 +264,24 @@ namespace AgentCore.Core
             // The standalone agent process is not a sandboxed cef renderer.
             host.NoSandbox = false;
             host.DslScriptFile = "script_agent.dsl";
-            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "agentscript", out var scriptFile) && !string.IsNullOrEmpty(scriptFile)) {
+            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "agent_script", out var scriptFile) && !string.IsNullOrEmpty(scriptFile)) {
                 host.DslScriptFile = scriptFile;
             }
             // Default relay port 9527 (the original relay port, site ports
-            // are retired); overridable with --agentport.
+            // are retired); overridable with --agent_port.
             s_AgentPort = 9527;
-            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "agentport", out var portValue) && int.TryParse(portValue, out int port) && port > 0 && port <= 65535) {
+            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "agent_port", out var portValue) && int.TryParse(portValue, out int port) && port > 0 && port <= 65535) {
                 s_AgentPort = port;
             }
-            // Default http proxy port 9528; overridable with --httpproxyport.
+            // Default http proxy port 9528; overridable with --http_proxy_port.
             s_HttpProxyPort = 9528;
-            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "httpproxyport", out var proxyPortValue) && int.TryParse(proxyPortValue, out int proxyPort) && proxyPort > 0 && proxyPort <= 65535) {
+            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "http_proxy_port", out var proxyPortValue) && int.TryParse(proxyPortValue, out int proxyPort) && proxyPort > 0 && proxyPort <= 65535) {
                 s_HttpProxyPort = proxyPort;
             }
-            // The browser relays its --projectidentity switch so the agent
+            // The browser relays its --project_identity switch so the agent
             // process knows the initial project identity (exposed to dsl as
-            // the initialprojectidentity global via SetAgentGlobalVars).
-            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "projectidentity", out var identityValue) && !string.IsNullOrEmpty(identityValue)) {
+            // the initial_project_identity global via SetAgentGlobalVars).
+            if (DslHost.TryGetSwitchValueFromRawCommandLine(host.CmdLine, "project_identity", out var identityValue) && !string.IsNullOrEmpty(identityValue)) {
                 s_InitialProjectIdentity = identityValue;
             }
         }

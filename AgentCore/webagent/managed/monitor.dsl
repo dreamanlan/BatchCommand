@@ -32,15 +32,15 @@
 
 script(on_init)
 {
-    nativelog("[monitor] on_init, monitor pid={0}, basepath={1}", pid(), basepath);
+    native_log("[monitor] on_init, monitor pid={0}, base_path={1}", pid(), base_path);
 
-    @WebAgentExe = combine_path(basepath, "webagent.exe");
-    @RequestFile = combine_path(basepath, "upgrade_request.json");
-    @StateFile = combine_path(basepath, "upgrade_state.json");
-    @CmdLineFile = combine_path(basepath, "webagent_cmdline.txt");
-    @AliveFile = combine_path(basepath, "monitor_alive.txt");
+    @WebAgentExe = combine_path(base_path, "webagent.exe");
+    @RequestFile = combine_path(base_path, "upgrade_request.json");
+    @StateFile = combine_path(base_path, "upgrade_state.json");
+    @CmdLineFile = combine_path(base_path, "webagent_cmdline.txt");
+    @AliveFile = combine_path(base_path, "monitor_alive.txt");
     // Used when webagent_cmdline.txt does not exist yet (first run).
-    @DefaultCmdLine = " --url=https://evaluation.woa.com/chat --projectidentity=aiclaw --metadsl=script.dsl,script_renderer.dsl --remote-debugging-port=9228 --remote-allow-origins=*";
+    @DefaultCmdLine = " --url=https://evaluation.woa.com/chat --project_identity=aiclaw --metadsl=script.dsl,script_renderer.dsl --remote-debugging-port=9228 --remote-allow-origins=*";
 
     // Ticks between two checks (the host default is 1000ms per tick).
     @CheckEveryTicks = 3;
@@ -62,13 +62,13 @@ script(on_init)
 
 script(on_finalize)
 {
-    nativelog("[monitor] on_finalize");
+    native_log("[monitor] on_finalize");
 };
 
 script(on_tick)
 {
     $n = get_context_var("monitorTick");
-    if (isnull($n)) {
+    if (is_null($n)) {
         $n = 0;
     };
     $n = $n + 1;
@@ -85,11 +85,11 @@ script(on_tick)
         return(0);
     };
 
-    nativelog("[monitor] webagent is not running");
+    native_log("[monitor] webagent is not running");
 
     // ---- upgrade gate: hand over to the one-shot script and stop ourselves ----
     if (file_exists(@RequestFile)) {
-        nativelog("[monitor] update requested (upgrade_request.json), launching the upgrade script and stopping this monitor");
+        native_log("[monitor] update requested (upgrade_request.json), launching the upgrade script and stopping this monitor");
         consume_upgrade_request();
         launch_upgrade_script();
         return(1);
@@ -99,18 +99,18 @@ script(on_tick)
     // It exits on its own (parent watchdog); only kill it when it does not, and
     // then by pid - a kill by name would hit this monitor too (same exe name).
     $agentIds = search_process("", "--plugin=managed/AgentCore.dll");
-    if (listsize($agentIds) > 0) {
+    if (list_size($agentIds) > 0) {
         $w = get_context_var("agentWaitChecks");
-        if (isnull($w)) {
+        if (is_null($w)) {
             $w = 0;
         };
         $w = $w + 1;
         set_context_var("agentWaitChecks", $w);
         if ($w <= @AgentExitChecks) {
-            nativelog("[monitor] agent host still alive ({0}), wait for its own exit", $w);
+            native_log("[monitor] agent host still alive ({0}), wait for its own exit", $w);
             return(0);
         };
-        nativelog("[monitor] agent host did not exit, kill pid={0}", $agentIds[0]);
+        native_log("[monitor] agent host did not exit, kill pid={0}", $agentIds[0]);
         kill_process($agentIds[0]);
         return(0);
     };
@@ -132,15 +132,15 @@ script(heartbeat)
 script(webagent_alive)
 {
     $wpid = get_context_var("webagentPid");
-    if (!isnull($wpid) && $wpid > 0) {
+    if (!is_null($wpid) && $wpid > 0) {
         if (get_process_memory($wpid) > 0) {
             return(true);
         };
-        nativelog("[monitor] our webagent (pid={0}) is gone", $wpid);
+        native_log("[monitor] our webagent (pid={0}) is gone", $wpid);
         remove_context_var("webagentPid");
     };
     $ids = search_process("webagent");
-    if (listsize($ids) > 0) {
+    if (list_size($ids) > 0) {
         return(true);
     };
     return(false);
@@ -156,9 +156,9 @@ script(consume_upgrade_request)
     $req = from_json("{}");
     if (file_exists(@RequestFile)) {
         $txt = read_file(@RequestFile);
-        if (!isnullorempty($txt)) {
+        if (!is_null_or_empty($txt)) {
             $parsed = from_json($txt);
-            if (!isnull($parsed)) {
+            if (!is_null($parsed)) {
                 $req = $parsed;
             };
         };
@@ -166,9 +166,9 @@ script(consume_upgrade_request)
     $v = from_json("{}");
     if (file_exists(@StateFile)) {
         $s = read_file(@StateFile);
-        if (!isnullorempty($s)) {
+        if (!is_null_or_empty($s)) {
             $parsed = from_json($s);
-            if (!isnull($parsed)) {
+            if (!is_null($parsed)) {
                 $v = $parsed;
             };
         };
@@ -180,7 +180,7 @@ script(consume_upgrade_request)
     dict_or_json_set($v, "stageSince", now());
     write_file(@StateFile, to_json($v));
     delete_file(@RequestFile);
-    nativelog("[monitor] upgrade request consumed (goal={0}), state stage -> updating", to_string(dict_or_json_get($req, "goal")));
+    native_log("[monitor] upgrade request consumed (goal={0}), state stage -> updating", to_string(dict_or_json_get($req, "goal")));
 };
 
 // The webagent command line: the recorded one (so the project identity, and
@@ -189,7 +189,7 @@ script(read_cmdline)
 {
     if (file_exists(@CmdLineFile)) {
         $s = read_file(@CmdLineFile);
-        if (!isnullorempty($s)) {
+        if (!is_null_or_empty($s)) {
             return($s);
         };
     };
@@ -206,10 +206,10 @@ script(start_webagent)
     // resumePrompt back to the page.
     advance_upgrade_stage_after_deploy();
     $cmdline = read_cmdline();
-    $wpid = launch_process(@WebAgentExe, $cmdline, basepath);
+    $wpid = launch_process(@WebAgentExe, $cmdline, base_path);
     set_context_var("webagentPid", $wpid);
     write_file(@CmdLineFile, $cmdline);
-    nativelog("[monitor] launched webagent pid={0} args={1}", $wpid, $cmdline);
+    native_log("[monitor] launched webagent pid={0} args={1}", $wpid, $cmdline);
 };
 
 // RSI: stage updating -> verify_pending (before relaunching webagent after a
@@ -217,11 +217,11 @@ script(start_webagent)
 script(advance_upgrade_stage_after_deploy)
 {
     $txt = read_file(@StateFile);
-    if (isnullorempty($txt)) {
+    if (is_null_or_empty($txt)) {
         return;
     };
     $v = from_json($txt);
-    if (isnull($v)) {
+    if (is_null($v)) {
         return;
     };
     if (to_string(dict_or_json_get($v, "stage")) != "updating") {
@@ -230,7 +230,7 @@ script(advance_upgrade_stage_after_deploy)
     dict_or_json_set($v, "stage", "verify_pending");
     dict_or_json_set($v, "stageSince", now());
     write_file(@StateFile, to_json($v));
-    nativelog("[monitor] upgrade deployed, stage -> verify_pending");
+    native_log("[monitor] upgrade deployed, stage -> verify_pending");
 };
 
 // RSI attempt counting: the two non-terminal stages must not hang.
@@ -247,11 +247,11 @@ script(advance_upgrade_stage_after_deploy)
 script(check_upgrade_stuck)
 {
     $txt = read_file(@StateFile);
-    if (isnullorempty($txt)) {
+    if (is_null_or_empty($txt)) {
         return;
     };
     $v = from_json($txt);
-    if (isnull($v)) {
+    if (is_null($v)) {
         return;
     };
     $stage = to_string(dict_or_json_get($v, "stage"));
@@ -259,7 +259,7 @@ script(check_upgrade_stuck)
         return;
     };
     $t = parse_date_time(to_string(dict_or_json_get($v, "stageSince")));
-    if (isnull($t)) {
+    if (is_null($t)) {
         return;
     };
     if ($stage == "verify_pending") {
@@ -283,10 +283,10 @@ script(check_upgrade_stuck)
     if ($attempt >= 2) {
         dict_or_json_set($v, "stage", "aborted");
         dict_or_json_set($v, "lastError", format("upgrade stalled in {0}", $stage));
-        nativelog("[monitor] upgrade aborted (attempt={0}, stalled in {1})", $attempt, $stage);
+        native_log("[monitor] upgrade aborted (attempt={0}, stalled in {1})", $attempt, $stage);
     }
     else {
-        nativelog("[monitor] upgrade stalled in {0} (attempt={1}), new deadline started", $stage, $attempt);
+        native_log("[monitor] upgrade stalled in {0} (attempt={1}), new deadline started", $stage, $attempt);
     };
     write_file(@StateFile, to_json($v));
 };
@@ -296,10 +296,10 @@ script(check_upgrade_stuck)
 // is done.
 script(launch_upgrade_script)
 {
-    if (ismac) {
-        launch_process_detached("/bin/bash", "upgrade_and_restart.sh", basepath);
+    if (is_mac) {
+        launch_process_detached("/bin/bash", "upgrade_and_restart.sh", base_path);
     }
     else {
-        launch_process_detached("cmd.exe", "/c upgrade_and_restart.bat", basepath);
+        launch_process_detached("cmd.exe", "/c upgrade_and_restart.bat", base_path);
     };
 };

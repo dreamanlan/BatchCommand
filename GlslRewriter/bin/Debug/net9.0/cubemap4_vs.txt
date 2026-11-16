@@ -1,0 +1,42 @@
+#version 460
+#pragma optionNV(fastmath off)
+#extension GL_ARB_separate_shader_objects : enable
+out gl_PerVertex { vec4 gl_Position; };
+layout(location = 0) in vec4 in_attr0;
+layout(location = 1) in vec4 in_attr1;
+layout(location = 0) out vec4 out_attr0;
+#define ftoi floatBitsToInt
+#define ftou floatBitsToUint
+#define itof intBitsToFloat
+#define utof uintBitsToFloat
+
+void main()
+{
+	// 1065353216 = 1.00f;
+
+	// -1.00  <=>  float(-1.00)
+	gl_Position.x = float(-1.00);
+	// 1.00  <=>  float(1.00)
+	gl_Position.y = float(1.00);
+	// 0.00  <=>  float(0.00)
+	gl_Position.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	gl_Position.w = float(1.00);
+	// 0.00  <=>  float(0.00)
+	out_attr0.x = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr0.y = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr0.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr0.w = float(1.00);
+	// 0.00  <=>  {in_attr1.x : 0.00}
+	out_attr0.x = in_attr1.x;
+	// 0.00  <=>  {in_attr1.y : 0.00}
+	out_attr0.y = in_attr1.y;
+	// -1.00  <=>  ({in_attr0.x : -0.50} * 2.f)
+	gl_Position.x = (in_attr0.x * 2.f);
+	// 1.00  <=>  ({in_attr0.y : 0.50} * 2.f)
+	gl_Position.y = (in_attr0.y * 2.f);
+	return;
+}

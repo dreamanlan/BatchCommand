@@ -73,7 +73,7 @@ namespace DotNetLib
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                throw new Exception("Expected: redirecttoplugin(dllpath[, init_cmdline]) api");
+                throw new Exception("Expected: redirect_to_plugin(dllpath[, init_cmdline]) api");
             }
             string dllPath = operands[0].AsString;
             string initCmdLine = string.Empty;
@@ -89,7 +89,7 @@ namespace DotNetLib
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1) {
-                throw new Exception("Expected: setinterval(ms) api");
+                throw new Exception("Expected: set_interval(ms) api");
             }
             int ms = operands[0].GetInt();
             Program.SetTickInterval(ms);
@@ -197,35 +197,35 @@ public static class Program
 
     /// <summary>
     /// Load a plugin dll implementing IBatchCmdPlugin and hand over tick/shutdown to it.
-    /// Called by the redirecttoplugin dsl api. Once it succeeds, dsl on_tick/on_shutdown
+    /// Called by the redirect_to_plugin dsl api. Once it succeeds, dsl on_tick/on_shutdown
     /// are no longer called.
     /// </summary>
     public static bool RedirectToPlugin(string dllPath, string initCmdLine)
     {
         try {
             if (string.IsNullOrEmpty(dllPath)) {
-                NativeLogNoLock("[csharp] redirecttoplugin: empty dll path");
+                NativeLogNoLock("[csharp] redirect_to_plugin: empty dll path");
                 return false;
             }
             string path = ResolveInputPath(dllPath);
             string cmdLine = string.IsNullOrEmpty(initCmdLine) ? s_CmdLine : initCmdLine;
             var plugin = PluginService.Instance.LoadPlugin(path, cmdLine, s_BasePath);
             if (null == plugin) {
-                NativeLogNoLock("[csharp] redirecttoplugin: failed to load plugin: " + path);
+                NativeLogNoLock("[csharp] redirect_to_plugin: failed to load plugin: " + path);
                 return false;
             }
             s_Plugin = plugin;
-            NativeLogNoLock("[csharp] redirecttoplugin: redirected to plugin: " + path);
+            NativeLogNoLock("[csharp] redirect_to_plugin: redirected to plugin: " + path);
             return true;
         }
         catch (Exception e) {
-            NativeLogNoLock("[csharp] redirecttoplugin exception:" + e.Message + "\n" + e.StackTrace);
+            NativeLogNoLock("[csharp] redirect_to_plugin exception:" + e.Message + "\n" + e.StackTrace);
             return false;
         }
     }
 
     /// <summary>
-    /// Set the tick interval in milliseconds. Called by the setinterval dsl api.
+    /// Set the tick interval in milliseconds. Called by the set_interval dsl api.
     /// </summary>
     public static void SetTickInterval(int ms)
     {
@@ -369,8 +369,8 @@ public static class Program
     // All interpreter machinery (per-thread init, timestamp based hot
     // reload, unified error collection, the shared api set and the
     // call_metadsl_task worker pool) lives in the shared DslHost; this wires
-    // it to the console host (native log sink, nativeapi/cmdargs/cmdswitches
-    // globals, the setinterval/redirecttoplugin apis).
+    // it to the console host (native log sink, native_api/cmd_args/cmd_switches
+    // globals, the set_interval/redirect_to_plugin apis).
 
     private static DslHost? s_DslHost;
     private static DslHost Host {
@@ -403,19 +403,19 @@ public static class Program
     }
 
     // Console specific dsl globals (the common ones come from
-    // DslHost.RefreshGlobalVars): nativeapi plus the parsed command line
+    // DslHost.RefreshGlobalVars): native_api plus the parsed command line
     // args and switches.
     private static void SetConsoleGlobalVars()
     {
-        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-        BatchCommand.BatchScript.SetGlobalVariable("cmdargs", BoxedValue.FromObject(s_CmdArgs));
-        BatchCommand.BatchScript.SetGlobalVariable("cmdswitches", BoxedValue.FromObject(s_CmdSwitches));
+        BatchCommand.BatchScript.SetGlobalVariable("native_api", BoxedValue.FromObject(s_NativeApi));
+        BatchCommand.BatchScript.SetGlobalVariable("cmd_args", BoxedValue.FromObject(s_CmdArgs));
+        BatchCommand.BatchScript.SetGlobalVariable("cmd_switches", BoxedValue.FromObject(s_CmdSwitches));
     }
 
     private static void RegisterConsoleApis()
     {
-        BatchCommand.BatchScript.Register("setinterval", "setinterval(ms) api, set tick interval in milliseconds", new ExpressionFactoryHelper<DotNetLib.SetIntervalExp>());
-        BatchCommand.BatchScript.Register("redirecttoplugin", "redirecttoplugin(dllpath[, init_cmdline]) api, load a plugin dll implementing IBatchCmdPlugin and hand over tick/shutdown to it", new ExpressionFactoryHelper<DotNetLib.RedirectToPluginExp>());
+        BatchCommand.BatchScript.Register("set_interval", "set_interval(ms) api, set tick interval in milliseconds", new ExpressionFactoryHelper<DotNetLib.SetIntervalExp>());
+        BatchCommand.BatchScript.Register("redirect_to_plugin", "redirect_to_plugin(dllpath[, init_cmdline]) api, load a plugin dll implementing IBatchCmdPlugin and hand over tick/shutdown to it", new ExpressionFactoryHelper<DotNetLib.RedirectToPluginExp>());
     }
 
     private static string s_BasePath = string.Empty;

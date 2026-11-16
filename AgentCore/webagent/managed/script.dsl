@@ -4,22 +4,22 @@
 script(init_global_consts)
 {
     // Initialize global constants for browser here
-    setenv("PLAYWRIGHT_DRIVER_SEARCH_PATH", combinepath(basepath, "managed"));
+    set_env("PLAYWRIGHT_DRIVER_SEARCH_PATH", combine_path(base_path, "managed"));
     // Standalone agent process (AgentCore host) config.
     // 9527: the relay port (default of MetaDslExecutor.SetProcessInfo,
-    // overridable with --agentport; the site ports are retired).
+    // overridable with --agent_port; the site ports are retired).
     // Note: the launcher is the native host BatchCmdDslHost at the webagent
     // root (managed/BatchCmdDsl is just an empty-main apphost). On macOS the
-    // bundle layout puts it in webagent.app/Contents/MacOS/ (basepath is
+    // bundle layout puts it in webagent.app/Contents/MacOS/ (base_path is
     // webagent.app/Contents there, no .exe suffix).
     @AgentPort = 9527;
-    if (ismac) {
-        @AgentExe = combinepath(basepath, "MacOS", "BatchCmdDslHost");
+    if (is_mac) {
+        @AgentExe = combine_path(base_path, "MacOS", "BatchCmdDslHost");
     }
     else {
-        @AgentExe = combinepath(basepath, "BatchCmdDslHost.exe");
+        @AgentExe = combine_path(base_path, "BatchCmdDslHost.exe");
     };
-    @AgentArgs = format("--plugin=managed/AgentCore.dll --interval=50 --agentport={0}", @AgentPort);
+    @AgentArgs = format("--plugin=managed/AgentCore.dll --interval=50 --agent_port={0}", @AgentPort);
     // Relay segment: the browser process is the only websocket client of the
     // standalone AgentCore (page js reaches it through cefQuery + this relay).
     // NOTE: must be "localhost", not "127.0.0.1" - the AgentCore HttpListener
@@ -44,7 +44,7 @@ script(init_global_consts)
     // with get_process_memory: private bytes on Windows, the working set
     // elsewhere; the working set includes shared pages and runs higher, hence
     // the larger value off Windows.
-    if (ismac) {
+    if (is_mac) {
         @MemGuardThresholdMB = 3500;
     }
     else {
@@ -54,8 +54,8 @@ script(init_global_consts)
     // upgrade request file the LLM writes when it asks for an upgrade
     // restart (its PRESENCE is the request), and the monitor supervision
     // heartbeat.
-    @UpgradeRequestFile = combine_path(basepath, "upgrade_request.json");
-    @MonitorAliveFile = combine_path(basepath, "monitor_alive.txt");
+    @UpgradeRequestFile = combine_path(base_path, "upgrade_request.json");
+    @MonitorAliveFile = combine_path(base_path, "monitor_alive.txt");
 };
 
 // Start the standalone agent host process when it is not running.
@@ -70,33 +70,33 @@ script(start_agent_process)
     // agent that is already up. The agent watches its parent and exits by
     // itself when this browser dies (on_tick in script_agent.dsl), so an agent
     // left behind by a killed browser is not a case to handle here.
-    $ct = nativeapi.CountProcess("--plugin=managed/AgentCore.dll");
+    $ct = native_api.CountProcess("--plugin=managed/AgentCore.dll");
     // -1 is the error return of the native counter, not "none found": reading
     // it as "start one" would launch an agent on every heartbeat.
     if ($ct < 0) {
-        nativelog("[dsl] start_agent_process: native process count failed ({0}), skip", $ct);
+        native_log("[dsl] start_agent_process: native process count failed ({0}), skip", $ct);
         return;
     };
     if ($ct == 0) {
         // Pass the project identity through so the agent process knows the
-        // initial identity (initialprojectidentity global in script_agent.dsl).
+        // initial identity (initial_project_identity global in script_agent.dsl).
         $args = @AgentArgs;
-        if (!isnullorempty(initialprojectidentity)) {
-            $args = format("{0} --projectidentity={1}", $args, initialprojectidentity);
+        if (!is_null_or_empty(initial_project_identity)) {
+            $args = format("{0} --project_identity={1}", $args, initial_project_identity);
         };
         // Forward the browser's app instance dir (webagentdbg when
-        // debugging; equals basepath in a normal deployment). The agent exe
+        // debugging; equals base_path in a normal deployment). The agent exe
         // lives in the shared webagent dir, so it cannot know the instance
         // it serves by itself. Parsed in BatchCmdPluginImpl.Init as
-        // AgentCore's appDir (skill env appdir / dsl global appdir).
-        if (!isnullorempty(appdir)) {
-            $args = format("{0} --appdir={1}", $args, appdir);
+        // AgentCore's appDir (skill env app_dir / dsl global app_dir).
+        if (!is_null_or_empty(app_dir)) {
+            $args = format("{0} --app_dir={1}", $args, app_dir);
         };
-        $pid = launch_process(@AgentExe, $args, basepath);
+        $pid = launch_process(@AgentExe, $args, base_path);
         // Record the pid: on browser exit the agent host is stopped ONLY if
         // this instance launched it (see on_browser_finalize).
         set_context_var("agentSelfLaunchPid", $pid);
-        nativelog("[dsl] start_agent_process: launched pid={0} args={1}", $pid, $args);
+        native_log("[dsl] start_agent_process: launched pid={0} args={1}", $pid, $args);
     };
 };
 
@@ -120,12 +120,12 @@ script(start_agent_process)
 // Port of a local page url (http://localhost:<port>/...), 0 when it is not one.
 script(local_page_port)params($url)
 {
-    if (isnullorempty($url) || string_not_contains($url, "http://localhost:")) {
+    if (is_null_or_empty($url) || string_not_contains($url, "http://localhost:")) {
         return(0);
     };
     // "http://localhost:8080/agent.html" -> ["http", "//localhost", "8080/agent.html"]
     $parts = split($url, ":");
-    if (listsize($parts) < 3) {
+    if (list_size($parts) < 3) {
         return(0);
     };
     $tail = split($parts[2], "/");
@@ -142,22 +142,22 @@ script(arm_local_page_retry)params($url)
     // The failing browser is the current context when on_load_error runs; the
     // url key lookup is the fallback for the calls that arrive without one.
     $bid = 0;
-    $browser = nativeapi.GetBrowser();
-    if (!isnull($browser)) {
+    $browser = native_api.GetBrowser();
+    if (!is_null($browser)) {
         $bid = $browser.Id;
     };
     if ($bid <= 0) {
         $bid = find_browser_id_by_url_key(format("localhost:{0}", $port));
     };
     if ($bid <= 0) {
-        nativelog("[retry] local page {0} refused but no browser found, retry skipped", $url);
+        native_log("[retry] local page {0} refused but no browser found, retry skipped", $url);
         return(0);
     };
     set_context_var("localPageRetryBid", $bid);
     set_context_var("localPageRetryPort", $port);
     set_context_var("localPageRetryUrl", $url);
     set_context_var("localPageRetryAt", now());
-    nativelog("[retry] local page {0} refused, armed retry on browser {1} (give up after {2}s)", $url, $bid, @LocalPageRetrySeconds);
+    native_log("[retry] local page {0} refused, armed retry on browser {1} (give up after {2}s)", $url, $bid, @LocalPageRetrySeconds);
     return($bid);
 };
 // One retry step: probe the pending port, reload the page once it is listening.
@@ -165,13 +165,13 @@ script(arm_local_page_retry)params($url)
 script(tick_local_page_retry)
 {
     $bid = get_context_var("localPageRetryBid");
-    if (isnull($bid) || $bid <= 0) {
+    if (is_null($bid) || $bid <= 0) {
         return(0);
     };
     $port = get_context_var("localPageRetryPort");
     $armedAt = get_context_var("localPageRetryAt");
-    if (!isnull($armedAt) && get_diff_time_seconds($armedAt, now()) > @LocalPageRetrySeconds) {
-        nativelog("[retry] local page port {0} still down after {1}s, give up (browser {2})", $port, @LocalPageRetrySeconds, $bid);
+    if (!is_null($armedAt) && get_diff_time_seconds($armedAt, now()) > @LocalPageRetrySeconds) {
+        native_log("[retry] local page port {0} still down after {1}s, give up (browser {2})", $port, @LocalPageRetrySeconds, $bid);
         clear_local_page_retry();
         tcpclient_close(@LocalPageProbeId);
         return(0);
@@ -181,8 +181,8 @@ script(tick_local_page_retry)
     // Fallback swap in case the loading-state callback was missed: check the
     // browser's current url directly.
     if (set_context_by_id($bid)) {
-        $curBrowser = nativeapi.GetBrowser();
-        if (!isnull($curBrowser)) {
+        $curBrowser = native_api.GetBrowser();
+        if (!is_null($curBrowser)) {
             maybe_swap_local_page_error($curBrowser.Url);
         };
     };
@@ -190,7 +190,7 @@ script(tick_local_page_retry)
     if ($state == "connected") {
         tcpclient_close(@LocalPageProbeId);
         if (!set_context_by_id($bid)) {
-            nativelog("[retry] browser {0} is gone, stop the retry", $bid);
+            native_log("[retry] browser {0} is gone, stop the retry", $bid);
             clear_local_page_retry();
             return(0);
         };
@@ -199,11 +199,11 @@ script(tick_local_page_retry)
         // data:text/html error page, a reload would just reload that).
         // A navigation that fails again re-arms through on_load_error.
         $retryUrl = get_context_var("localPageRetryUrl");
-        $browser = nativeapi.GetBrowser();
-        if (!isnull($browser) && !isnullorempty($retryUrl)) {
+        $browser = native_api.GetBrowser();
+        if (!is_null($browser) && !is_null_or_empty($retryUrl)) {
             $frame = $browser.GetMainFrame();
-            if (!isnull($frame)) {
-                nativelog("[retry] local page port {0} is up, navigate browser {1} back to {2}", $port, $bid, $retryUrl);
+            if (!is_null($frame)) {
+                native_log("[retry] local page port {0} is up, navigate browser {1} back to {2}", $port, $bid, $retryUrl);
                 $frame.LoadUrl($retryUrl);
             };
         };
@@ -233,7 +233,7 @@ script(clear_local_page_retry)
 script(maybe_swap_local_page_error)params($url)
 {
     $bid = get_context_var("localPageRetryBid");
-    if (isnull($bid) || $bid <= 0) {
+    if (is_null($bid) || $bid <= 0) {
         return;
     };
     // Never loop on our own waiting page.
@@ -242,23 +242,23 @@ script(maybe_swap_local_page_error)params($url)
     };
     $retryUrl = get_context_var("localPageRetryUrl");
     $isErrorPage = string_contains($url, "data:text/html");
-    $isStuckOnFailed = (!isnullorempty($retryUrl) && string_contains($url, $retryUrl)) || isnull($url) || $url == "";
+    $isStuckOnFailed = (!is_null_or_empty($retryUrl) && string_contains($url, $retryUrl)) || is_null($url) || $url == "";
     if (!$isErrorPage && !$isStuckOnFailed) {
         return;
     };
-    $browser = nativeapi.GetBrowser();
-    if (!isnull($browser) && $browser.Id == $bid) {
+    $browser = native_api.GetBrowser();
+    if (!is_null($browser) && $browser.Id == $bid) {
         $frame = $browser.GetMainFrame();
-        if (!isnull($frame)) {
-            nativelog("[retry] swap the error page for the waiting page (browser {0})", $bid);
+        if (!is_null($frame)) {
+            native_log("[retry] swap the error page for the waiting page (browser {0})", $bid);
             $frame.LoadUrl(@LocalPageWaitUrl);
         };
     };
 };
 script(on_init)
 {
-    nativelog("[dsl] on_init finish, pid:{0}, type:{1}", pid(), processtype);
-    fileecho(true);
+    native_log("[dsl] on_init finish, pid:{0}, type:{1}", pid(), process_type);
+    file_echo(true);
     // RSI: record the command line the monitor should restart us with. The
     // monitor writes this file itself when IT launches webagent; this covers
     // a manually started browser supervised later by a monitor.
@@ -281,17 +281,17 @@ script(on_init)
 };
 script(on_finalize)
 {
-    nativelog("[dsl] on_finalize finish, pid:{0}, type:{1}", pid(), processtype);
+    native_log("[dsl] on_finalize finish, pid:{0}, type:{1}", pid(), process_type);
 };
 
 // Relay callbacks (drained on the browser main thread, see WsClientManager).
 script(on_wsclient_state)params($id, $state)
 {
-    nativelog("[relay] wsclient {0} state: {1}", $id, $state);
+    native_log("[relay] wsclient {0} state: {1}", $id, $state);
     if ($state == "connected") {
         // Pending agent_register answer: return the client id as the payload.
         $pending = get_context_var("relayPending_" + $id);
-        if (!isnull($pending)) {
+        if (!is_null($pending)) {
             remove_context_var("relayPending_" + $id);
             complete_native_callback($pending, true, $id);
         };
@@ -300,13 +300,13 @@ script(on_wsclient_state)params($id, $state)
         // Doing it here (not only via the page push) makes the re-send
         // independent of renderer pushes - it cannot be lost.
         $bindAgentId = get_context_var("relayAgent_" + $id);
-        if (!isnull($bindAgentId)) {
+        if (!is_null($bindAgentId)) {
             wsclient_send($id, to_json({"type": "agent_bind", "agentId": $bindAgentId}));
         };
         // Notify the page: after a link-layer reconnect the server-side
         // connection is new (slots may re-send agent_bind too; idempotent).
         $urlKey = get_context_var("relayUrl_" + $id);
-        if (!isnull($urlKey)) {
+        if (!is_null($urlKey)) {
             relay_push_to_page($id, to_json({"type": "relay_state", "state": "connected"}), $urlKey);
         };
     };
@@ -321,14 +321,14 @@ script(on_wsclient_state)params($id, $state)
         $ok = wsclient_send($id, $envelope);
         set_context_var("smokeSentAt", now());
         set_context_var("smokeResult", "");
-        nativelog("[relay] smoke ping sent: {0}", $ok);
+        native_log("[relay] smoke ping sent: {0}", $ok);
     };
     // Link-layer retry in progress (same wsclient id): notify the page but
     // keep the url-key mapping and any pending register - the link layer
     // either reconnects (connected) or exhausts its budget (failed).
     if ($state == "reconnecting") {
         $urlKey = get_context_var("relayUrl_" + $id);
-        if (!isnull($urlKey)) {
+        if (!is_null($urlKey)) {
             relay_push_to_page($id, to_json({"type": "relay_state", "state": $state}), $urlKey);
         };
     };
@@ -337,13 +337,13 @@ script(on_wsclient_state)params($id, $state)
     // re-registers) and drop the url-key mapping.
     if ($state == "disconnected" || $state == "failed") {
         $pending = get_context_var("relayPending_" + $id);
-        if (!isnull($pending)) {
+        if (!is_null($pending)) {
             // The register never completed: fail the query instead of hanging it.
             remove_context_var("relayPending_" + $id);
             complete_native_callback($pending, false, "", -3);
         };
         $urlKey = get_context_var("relayUrl_" + $id);
-        if (!isnull($urlKey)) {
+        if (!is_null($urlKey)) {
             relay_push_to_page($id, to_json({"type": "relay_state", "state": $state}), $urlKey);
             remove_context_var("relayUrl_" + $id);
             remove_context_var("relayAgent_" + $id);
@@ -356,7 +356,7 @@ script(on_wsclient_message)params($id, $msg)
 {
     // The plain "agent" connection is the smoke link: judge the round trip.
     $urlKey = get_context_var("relayUrl_" + $id);
-    if (isnull($urlKey)) {
+    if (is_null($urlKey)) {
         if ($id == "agent") {
             $env = dev_tools_parse_bytes($msg);
             $type = "";
@@ -365,21 +365,21 @@ script(on_wsclient_message)params($id, $msg)
             };
             if ($type == "agent_result") {
                 $prev = get_context_var("smokeResult");
-                if (isnull($prev) || $prev == "") {
+                if (is_null($prev) || $prev == "") {
                     // Log once per ping cycle: the envelope machinery replies
                     // to every command (branch response first, envelope reply
                     // second), later results are just noise.
                     $elapsed = get_diff_time_seconds(get_context_var("smokeSentAt"), now());
                     set_context_var("smokeResult", "pass");
-                    nativelog("[relay] SMOKE PASS: browser->AgentCore->browser round trip OK in {0}s (success={1}, data={2}, error={3})", $elapsed, $env["success"], $env["data"], $env["error"]);
+                    native_log("[relay] SMOKE PASS: browser->AgentCore->browser round trip OK in {0}s (success={1}, data={2}, error={3})", $elapsed, $env["success"], $env["data"], $env["error"]);
                 };
             }
             else {
-                nativelog("[relay] wsclient agent message (non-result, expecting agent_result): {0}", get_string_in_length($msg, 200));
+                native_log("[relay] wsclient agent message (non-result, expecting agent_result): {0}", get_string_in_length($msg, 200));
             };
         }
         else {
-            nativelog("[relay] wsclient {0} message: {1}", $id, get_string_in_length($msg, 200));
+            native_log("[relay] wsclient {0} message: {1}", $id, get_string_in_length($msg, 200));
         };
         return;
     };
@@ -400,34 +400,34 @@ script(relay_push_to_page)params($id, $msg, $urlKey)
         send_javascript_code($js);
     }
     else {
-        nativelog("[relay] push failed: no browser for url key {0} (client {1}, bid={2})", $urlKey, $id, $bid);
+        native_log("[relay] push failed: no browser for url key {0} (client {1}, bid={2})", $urlKey, $id, $bid);
     };
 };
 
 script(on_browser_init)
 {
-    nativelog("[dsl] on_browser_init finish");
-    $browser = nativeapi.GetBrowser();
-    if (!isnull($browser)) {
+    native_log("[dsl] on_browser_init finish");
+    $browser = native_api.GetBrowser();
+    if (!is_null($browser)) {
         $browser.SetCspBypass(true);
     };
     $notFirst = get_context_var("notFirst");
-    if (isnull($notFirst)) {
+    if (is_null($notFirst)) {
         set_context_var("notFirst", 1);
         // Keep the previous run as *.prev.log instead of deleting it, so the
         // logs of a failure survive one restart. agentcore.log is written by
-        // the agent host next to its own exe (basepath); debug.log sits next to
-        // webagent.exe (appdir, which differs from basepath in webagentdbg).
-        // Copy then delete, not movefile: movefile deletes the target first, so
+        // the agent host next to its own exe (base_path); debug.log sits next to
+        // webagent.exe (app_dir, which differs from base_path in webagentdbg).
+        // Copy then delete, not move_file: move_file deletes the target first, so
         // a locked source would cost the previous backup. debug.log goes last:
         // a child process that is still writing its early log lines can hold
         // it, and the exception skips only this step.
         // chrome_debug.log is rotated in on_before_command_line_processing,
         // because CEF holds it open from then on.
-        copyfile(combinepath(basepath, "agentcore.log"), combinepath(basepath, "agentcore.prev.log"));
-        deletefile(combinepath(basepath, "agentcore.log"));
-        copyfile(combinepath(appdir, "debug.log"), combinepath(appdir, "debug.prev.log"));
-        deletefile(combinepath(appdir, "debug.log"));
+        copy_file(combine_path(base_path, "agentcore.log"), combine_path(base_path, "agentcore.prev.log"));
+        delete_file(combine_path(base_path, "agentcore.log"));
+        copy_file(combine_path(app_dir, "debug.log"), combine_path(app_dir, "debug.prev.log"));
+        delete_file(combine_path(app_dir, "debug.log"));
     };
 };
 // Default handler for the C# hot reload watcher (watch_file / watch_dir /
@@ -439,7 +439,7 @@ script(on_browser_init)
 // heavier should enqueue to the main thread instead.
 script(on_file_changed)params($filePath, $fileType)
 {
-    nativelog("[dsl] on_file_changed: {0} ({1})", $filePath, $fileType);
+    native_log("[dsl] on_file_changed: {0} ({1})", $filePath, $fileType);
     return((true, ""));
 };
 script(on_browser_finalize)params($remainingBrowsers)
@@ -450,7 +450,7 @@ script(on_browser_finalize)params($remainingBrowsers)
     // handled by pagehide (js), on_render_process_terminated and the
     // heartbeat reaper instead.
     if ($remainingBrowsers > 0) {
-        nativelog("[dsl] on_browser_finalize: {0} browser(s) still open, skip the agent teardown", $remainingBrowsers);
+        native_log("[dsl] on_browser_finalize: {0} browser(s) still open, skip the agent teardown", $remainingBrowsers);
         return;
     };
     // Stop the standalone agent host IF this browser instance launched it
@@ -459,14 +459,14 @@ script(on_browser_finalize)params($remainingBrowsers)
     // instance is still running, its heartbeat keep-alive relaunches the
     // agent within ~2s, so the multi-instance case stays safe.
     $agentPid = get_context_var("agentSelfLaunchPid");
-    if (!isnull($agentPid) && $agentPid > 0) {
+    if (!is_null($agentPid) && $agentPid > 0) {
         $stopped = kill_process($agentPid);
         remove_context_var("agentSelfLaunchPid");
-        nativelog("[dsl] on_browser_finalize: stopped self-launched agent host (pid={0}, stopped={1})", $agentPid, $stopped);
+        native_log("[dsl] on_browser_finalize: stopped self-launched agent host (pid={0}, stopped={1})", $agentPid, $stopped);
     };
     // The relay connections belong to this browser process.
     wsclient_close_all();
-    nativelog("[dsl] on_browser_finalize finish");
+    native_log("[dsl] on_browser_finalize finish");
 };
 
 // ----------------------------------------------------------------------------
@@ -481,13 +481,13 @@ script(on_browser_finalize)params($remainingBrowsers)
 script(write_cmdline_file)
 {
     $args = cmdlineargs();
-    if (listsize($args) <= 1) {
+    if (list_size($args) <= 1) {
         return;
     };
     $line = "";
     $first = true;
     $idx = 0;
-    looplist($args) {
+    loop_list($args) {
         $a = $$;
         $idx = $idx + 1;
         if ($idx > 1) {
@@ -503,8 +503,8 @@ script(write_cmdline_file)
             };
         };
     };
-    write_file(combine_path(basepath, "webagent_cmdline.txt"), $line);
-    nativelog("[dsl] command line recorded for the monitor");
+    write_file(combine_path(base_path, "webagent_cmdline.txt"), $line);
+    native_log("[dsl] command line recorded for the monitor");
 };
 
 // Whether the LLM asked for an upgrade restart: upgrade_request.json
@@ -525,11 +525,11 @@ script(monitor_heartbeat_fresh)
         return(false);
     };
     $txt = read_file(@MonitorAliveFile);
-    if (isnullorempty($txt)) {
+    if (is_null_or_empty($txt)) {
         return(false);
     };
     $t = parse_date_time(to_string($txt));
-    if (isnull($t)) {
+    if (is_null($t)) {
         return(false);
     };
     $age = get_diff_time_seconds($t, now());
@@ -546,7 +546,7 @@ script(on_heartbeat)params($processType,$deltaTime)
         handle_wsclient_queue(100);
         // Throttle the process keep-alive + relay reconnect to ~2s.
         $hbCount = get_context_var("hbCount");
-        if (isnull($hbCount)) {
+        if (is_null($hbCount)) {
             $hbCount = 0;
         };
         $hbCount = $hbCount + 1;
@@ -565,15 +565,15 @@ script(on_heartbeat)params($processType,$deltaTime)
             // can exit, but only when supervised - unsupervised, nobody would
             // ever restart it. One-shot per process lifetime: the flag keeps
             // this from racing the heartbeat again while the windows close.
-            if (isnull(get_context_var("upgradeRestartRequested"))) {
+            if (is_null(get_context_var("upgradeRestartRequested"))) {
                 if (upgrade_request_present()) {
                     if (monitor_heartbeat_fresh()) {
                         set_context_var("upgradeRestartRequested", true);
-                        nativelog("[dsl] upgrade restart requested and supervised, exiting the browser");
+                        native_log("[dsl] upgrade restart requested and supervised, exiting the browser");
                         exit_browser();
                     }
                     else {
-                        nativelog("[dsl] upgrade restart requested but unsupervised (no fresh monitor heartbeat), not exiting");
+                        native_log("[dsl] upgrade restart requested but unsupervised (no fresh monitor heartbeat), not exiting");
                     };
                 };
             };
@@ -581,16 +581,16 @@ script(on_heartbeat)params($processType,$deltaTime)
             // browser no longer exists (page closed / renderer died without
             // unregistering; the graceful pagehide path is in relay_transport).
             $wscList = wsclient_list();
-            looplist($wscList) {
+            loop_list($wscList) {
                 $entry = $$;
                 $parts = split($entry, "|");
                 $cid = $parts[0];
                 $urlKey = get_context_var("relayUrl_" + $cid);
-                if (!isnull($urlKey)) {
+                if (!is_null($urlKey)) {
                     $bid = get_context_var("relayBrowser_" + $cid);
-                    if (!isnull($bid) && $bid > 0) {
+                    if (!is_null($bid) && $bid > 0) {
                         if (!set_context_by_id($bid)) {
-                            nativelog("[relay] reaper: browser {0} gone, closing zombie connection {1} (url key {2})", $bid, $cid, $urlKey);
+                            native_log("[relay] reaper: browser {0} gone, closing zombie connection {1} (url key {2})", $bid, $cid, $urlKey);
                             wsclient_close($cid);
                             remove_context_var("relayUrl_" + $cid);
                             remove_context_var("relayAgent_" + $cid);
@@ -602,11 +602,11 @@ script(on_heartbeat)params($processType,$deltaTime)
             // Smoke watchdog: the ping was sent but no agent_result came back.
             $smokeSentAt = get_context_var("smokeSentAt");
             $smokeResult = get_context_var("smokeResult");
-            if (!isnull($smokeSentAt) && (isnull($smokeResult) || $smokeResult == "")) {
+            if (!is_null($smokeSentAt) && (is_null($smokeResult) || $smokeResult == "")) {
                 $elapsed = get_diff_time_seconds($smokeSentAt, now());
                 if ($elapsed > 10) {
                     set_context_var("smokeResult", "fail");
-                    nativelog("[relay] SMOKE FAIL: no agent_result within {0}s. Check: 1) AgentCore console (script_agent.dsl on_init / ws server on port {1}) 2) wsclient state: {2} 3) ws clients: {3}", $elapsed, @AgentPort, wsclient_state("agent"), to_json(wsclient_list()));
+                    native_log("[relay] SMOKE FAIL: no agent_result within {0}s. Check: 1) AgentCore console (script_agent.dsl on_init / ws server on port {1}) 2) wsclient state: {2} 3) ws clients: {3}", $elapsed, @AgentPort, wsclient_state("agent"), to_json(wsclient_list()));
                 };
             };
         };
@@ -623,7 +623,7 @@ script(on_heartbeat)params($processType,$deltaTime)
                     wsclient_close("agent");
                 };
                 $id = wsclient_open(@AgentWsUrl, "agent");
-                nativelog("[relay] reconnect attempt from state {0}: {1}", $state, $id);
+                native_log("[relay] reconnect attempt from state {0}: {1}", $state, $id);
             };
         };
     };
@@ -667,9 +667,9 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 
     $url = $cmdLine.GetSwitchValue("url");
 
-    nativelog("[dsl] on_before_command_line_processing: process_type={0}, url={1}, pid={2}", $processType, $url, pid());
+    native_log("[dsl] on_before_command_line_processing: process_type={0}, url={1}, pid={2}", $processType, $url, pid());
 
-    if (stringcontainsany($url, "file:///", "http://localhost") && stringcontainsany($url, "AgentCore/hotreload_test.html", "http://localhost:8080/agent.html", "http://localhost:8081", "http://localhost:8082")) {
+    if (string_contains_any($url, "file:///", "http://localhost") && string_contains_any($url, "AgentCore/hotreload_test.html", "http://localhost:8080/agent.html", "http://localhost:8081", "http://localhost:8082")) {
         $cmdLine.AppendSwitch("allow-file-access-from-files");
     };
 
@@ -697,14 +697,14 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
     // (relaunch) the file is held open by it, the copy throws, and only this
     // step is skipped.
     if ($processType == 0) {
-        copyfile(combinepath(appdir, "webagent_cache/chrome_debug.log"), combinepath(appdir, "webagent_cache/chrome_debug.prev.log"));
+        copy_file(combine_path(app_dir, "webagent_cache/chrome_debug.log"), combine_path(app_dir, "webagent_cache/chrome_debug.prev.log"));
     };
 };
 
 script(on_before_child_process_launch)params($processType, $cmdLine)
 {
     // $cmdLine is the child process command line (passed as parameter)
-    nativelog("[dsl] on_before_child_process_launch {0}", $processType);
+    native_log("[dsl] on_before_child_process_launch {0}", $processType);
     // Suppress the DCHECK_IS_ON paint property tree dumps: with VLOG level >= 1
     // pre_paint_tree_walk.cc prints 4 full property trees via LOG(INFO) on
     // every paint update, flooding chrome_debug.log (~1.4GB/h). vmodule
@@ -716,7 +716,7 @@ script(on_before_child_process_launch)params($processType, $cmdLine)
 
 script(on_already_running_app_relaunch)params($cmdLine, $curDir)
 {
-    nativelog("[dsl] on_already_running_app_relaunch {0} {1}", $cmdLine.CommandLineString, $curDir);
+    native_log("[dsl] on_already_running_app_relaunch {0} {1}", $cmdLine.CommandLineString, $curDir);
     // Return true to use default behavior (create new chrome window)
     // Return false to indicate relaunch was NOT handled (CEF default)
     return(false);
@@ -724,7 +724,7 @@ script(on_already_running_app_relaunch)params($cmdLine, $curDir)
 
 script(on_before_browse)params($request,$userGesture,$isRedirect)
 {
-    nativelog("[dsl] on_before_browse: url={0} method={1} userGesture={2} isRedirect={3}", $request.Url, $request.Method, $userGesture, $isRedirect);
+    native_log("[dsl] on_before_browse: url={0} method={1} userGesture={2} isRedirect={3}", $request.Url, $request.Method, $userGesture, $isRedirect);
     // Local page retry: cancel the native data: error page navigation the
     // moment it starts, so it never renders (zero flicker). The waiting page
     // is put up by the retry tick fallback (maybe_swap_local_page_error
@@ -733,10 +733,10 @@ script(on_before_browse)params($request,$userGesture,$isRedirect)
     // page (data:text/html without our WaitingAgentCore marker) - our own
     // waiting page navigation and everything else pass through untouched.
     $bid = get_context_var("localPageRetryBid");
-    if (!isnull($bid) && $bid > 0) {
+    if (!is_null($bid) && $bid > 0) {
         $navUrl = $request.Url;
         if (string_contains($navUrl, "data:text/html") && !string_contains($navUrl, "WaitingAgentCore")) {
-            nativelog("[retry] cancel the error page navigation (browser {0})", $bid);
+            native_log("[retry] cancel the error page navigation (browser {0})", $bid);
             return((true, true));
         };
     };
@@ -752,7 +752,7 @@ script(on_before_browse)params($request,$userGesture,$isRedirect)
 // Return (handled, cef_return_value_t): RV_CANCEL=0, RV_CONTINUE=1, RV_CONTINUE_ASYNC=2.
 script(on_before_resource_load)params($request,$handle)
 {
-    //nativelog("[dsl] on_before_resource_load: type={0} url={1} method={2}", $request.ResourceType, $request.Url, $request.Method);
+    //native_log("[dsl] on_before_resource_load: type={0} url={1} method={2}", $request.ResourceType, $request.Url, $request.Method);
     return((false, 1));
 };
 
@@ -774,7 +774,7 @@ script(on_before_resource_load)params($request,$handle)
 // renderer, so it does not block the UI thread).
 script(on_js_dialog)params($dialogType,$originUrl,$message,$defaultText,$handle)
 {
-    nativelog("[dsl] on_js_dialog: type={0} origin={1} handle={2}", $dialogType, $originUrl, $handle);
+    native_log("[dsl] on_js_dialog: type={0} origin={1} handle={2}", $dialogType, $originUrl, $handle);
 
     // Default: take nothing over, CEF shows its own dialogs (current behavior).
     // To use the in-page AgentDialog component instead, uncomment the block
@@ -785,7 +785,7 @@ script(on_js_dialog)params($dialogType,$originUrl,$message,$defaultText,$handle)
     // in on_browser_cef_query below; if the page has no AgentDialog it reports
     // js_dialog_unavailable instead and the dialog gets canceled.
     //
-    // if ($dialogType != 3 && stringcontainsany($originUrl, "localhost:8080")) {
+    // if ($dialogType != 3 && string_contains_any($originUrl, "localhost:8080")) {
     //     show_native_js_dialog($handle, $dialogType, $message, $defaultText);
     //     return((true, 1));
     // };
@@ -804,7 +804,7 @@ script(on_resource_redirect)params($request,$response,$new_url)
 // type, charset and response headers may be changed before CEF processes them.
 script(on_before_resource_response)params($request,$response)
 {
-    if (stringcontainsany($request.Url, "gamexyz.net:8080", "www.google.com/ai", "www.google.com/search", "gemini.google.com", "chatgpt.com", "chat.openai.com")) {
+    if (string_contains_any($request.Url, "gamexyz.net:8080", "www.google.com/ai", "www.google.com/search", "gemini.google.com", "chatgpt.com", "chat.openai.com")) {
         $response.RemoveHeaderByName("Content-Security-Policy");
     };
 };
@@ -830,7 +830,7 @@ script(on_protocol_execution)params($request,$allow_os_execution)
 //   replace_content: false = skip the body filter (inspection only).
 script(on_resource_response_filter)params($request, $response)
 {
-    //nativelog("[dsl] on_resource_response_filter: inspection headers: {0}", $response.HeaderMap);
+    //native_log("[dsl] on_resource_response_filter: inspection headers: {0}", $response.HeaderMap);
     return((false, false));
 };
 
@@ -852,16 +852,16 @@ script(on_resource_response_filter)params($request, $response)
 // input as-is).
 script(on_response_content_filter)params($data_in)
 {
-    return((false, 0, $data_in, len($data_in)));
+    return((false, 0, $data_in, list_size($data_in)));
 };
 
 script(on_load_start)params($url,$transitionType,$isMainFrame)
 {
-    nativelog("[dsl] on_load_start:{0} {1} {2}", $url, $transitionType, $isMainFrame);
+    native_log("[dsl] on_load_start:{0} {1} {2}", $url, $transitionType, $isMainFrame);
 };
 script(on_load_end)params($url,$httpStatusCode,$injectAllFrame,$isMainFrame)
 {
-    nativelog("[dsl] on_load_end:{0} {1} {2} {3}", $url, $httpStatusCode, $injectAllFrame, $isMainFrame);
+    native_log("[dsl] on_load_end:{0} {1} {2} {3}", $url, $httpStatusCode, $injectAllFrame, $isMainFrame);
     return((true, ""));
 };
 // Note: this function will be called on the browser process UI thread.
@@ -879,19 +879,19 @@ script(on_load_end)params($url,$httpStatusCode,$injectAllFrame,$isMainFrame)
 //                       cancels the request with an error status.
 script(on_custom_scheme)params($scheme,$url,$method,$referrer,$handle)
 {
-    nativelog("[dsl] on_custom_scheme: scheme={0} url={1} method={2} referrer={3} handle={4}", $scheme, $url, $method, $referrer, $handle);
+    native_log("[dsl] on_custom_scheme: scheme={0} url={1} method={2} referrer={3} handle={4}", $scheme, $url, $method, $referrer, $handle);
     return((false, ""));
 };
 script(on_loading_state_change)params($url,$isLoading,$canGoBack,$canGoForward)
 {
-    nativelog("[dsl] on_loading_state_change: url={0}, isLoading={1}, canGoBack={2}, canGoForward={3}", $url, $isLoading, $canGoBack, $canGoForward);
+    native_log("[dsl] on_loading_state_change: url={0}, isLoading={1}, canGoBack={2}, canGoForward={3}", $url, $isLoading, $canGoBack, $canGoForward);
     // Local page retry: put the waiting page over the native error page as
     // soon as it starts loading (see maybe_swap_local_page_error).
     maybe_swap_local_page_error($url);
 };
 script(on_load_error)params($errorCode,$errorText,$failedUrl)
 {
-    nativelog("[dsl] on_load_error:{0} {1} {2}", $errorCode, $errorText, $failedUrl);
+    native_log("[dsl] on_load_error:{0} {1} {2}", $errorCode, $errorText, $failedUrl);
     // -102 = ERR_CONNECTION_REFUSED: a local page was requested before the
     // standalone AgentCore opened its site port. Arm the retry (see
     // arm_local_page_retry); every other error keeps the CEF error page.
@@ -901,24 +901,24 @@ script(on_load_error)params($errorCode,$errorText,$failedUrl)
 };
 script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$errorString)
 {
-    nativelog("[dsl] on_render_process_terminated: startup_url={0}, url={1}, status={2}, error_code={3}, error_string={4}", $startupUrl, $url, $status, $errorCode, $errorString);
+    native_log("[dsl] on_render_process_terminated: startup_url={0}, url={1}, status={2}, error_code={3}, error_string={4}", $startupUrl, $url, $status, $errorCode, $errorString);
     // The renderer serving $url is dead: its relay registrations are zombies
     // now (the js could not unregister). Close every connection whose url key
     // matches the dead renderer's url. A live same-site tab sharing this url
     // key gets its connections closed too — its js auto re-registers via the
     // relay_state push, so the worst case is a brief reconnect.
     $wscList = wsclient_list();
-    looplist($wscList) {
+    loop_list($wscList) {
         $entry = $$;
         $parts = split($entry, "|");
         $cid = $parts[0];
         $urlKey = get_context_var("relayUrl_" + $cid);
-        if (!isnull($urlKey) && string_contains($url, $urlKey)) {
+        if (!is_null($urlKey) && string_contains($url, $urlKey)) {
             wsclient_close($cid);
             remove_context_var("relayUrl_" + $cid);
             remove_context_var("relayAgent_" + $cid);
             remove_context_var("relayBrowser_" + $cid);
-            nativelog("[relay] renderer terminated: closed connection {0} (url key {1})", $cid, $urlKey);
+            native_log("[relay] renderer terminated: closed connection {0} (url key {1})", $cid, $urlKey);
         };
     };
     return((true, ""));
@@ -940,7 +940,7 @@ script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$
 // The default implementation always declines so that the user is prompted.
 script(on_get_auth_credentials)params($isProxy,$host,$port,$realm,$scheme,$originUrl,$handle,$attempt)
 {
-    nativelog("[dsl] on_get_auth_credentials: isProxy={0}, host={1}, port={2}, realm={3}, scheme={4}, origin={5}, handle={6}, attempt={7}", $isProxy, $host, $port, $realm, $scheme, $originUrl, $handle, $attempt);
+    native_log("[dsl] on_get_auth_credentials: isProxy={0}, host={1}, port={2}, realm={3}, scheme={4}, origin={5}, handle={6}, attempt={7}", $isProxy, $host, $port, $realm, $scheme, $originUrl, $handle, $attempt);
     // Supply hard-coded credentials for the outbound proxy. Only apply to
     // proxy challenges; leave target-server auth (e.g. site logins) alone so
     // the user is still prompted for those.
@@ -969,7 +969,7 @@ script(on_get_auth_credentials)params($isProxy,$host,$port,$realm,$scheme,$origi
 // Default implementation always declines so that the user is prompted.
 script(on_request_media_access_permission)params($origin,$requested,$menuDisabled)
 {
-    nativelog("[dsl] on_request_media_access_permission: origin={0}, requested={1}, menu_disabled={2}", $origin, $requested, $menuDisabled);
+    native_log("[dsl] on_request_media_access_permission: origin={0}, requested={1}, menu_disabled={2}", $origin, $requested, $menuDisabled);
     return((false, 0));
 };
 
@@ -997,7 +997,7 @@ script(on_request_media_access_permission)params($origin,$requested,$menuDisable
 // behaviour before this handler existed).
 script(on_show_permission_prompt)params($promptId,$origin,$requested)
 {
-    nativelog("[dsl] on_show_permission_prompt: prompt_id={0}, origin={1}, requested={2}", $promptId, $origin, $requested);
+    native_log("[dsl] on_show_permission_prompt: prompt_id={0}, origin={1}, requested={2}", $promptId, $origin, $requested);
     // CEF_PERMISSION_TYPE_NOTIFICATIONS = 1 << 15 = 0x8000 = 32768
     if($requested == 32768){
         return((true, 1));
@@ -1018,23 +1018,23 @@ script(on_show_permission_prompt)params($promptId,$origin,$requested)
 // Default implementation always declines so the user sees the standard UI.
 script(on_certificate_error)params($certError,$requestUrl)
 {
-    nativelog("[dsl] on_certificate_error: cert_error={0}, url={1}", $certError, $requestUrl);
+    native_log("[dsl] on_certificate_error: cert_error={0}, url={1}", $certError, $requestUrl);
     return((false, 0));
 };
 
 script(on_receive_cef_message)params($msg,$args,$srcProcId)
 {
-    nativelog("[dsl] on_receive_cef_message:{0} argnum:{1} from:{2} processtype:{3}",$msg,listsize($args),$srcProcId,processtype);
-    if (processtype == 0) {
+    native_log("[dsl] on_receive_cef_message:{0} arg_num:{1} from:{2} process_type:{3}",$msg,list_size($args),$srcProcId,process_type);
+    if (process_type == 0) {
         //Browser: forward all cef messages back to renderer
         //Note: The API in AgentCore.dll cannot be used.
-        nativeapi.SendCefMessage($msg,$args,$srcProcId);
+        native_api.SendCefMessage($msg,$args,$srcProcId);
     };
 };
 
 script(on_call_metadsl)params($func,$args)
 {
-    nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
+    native_log("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
 };
 
 // Called after the renderer processes are gone and before the page is
@@ -1043,15 +1043,15 @@ script(on_call_metadsl)params($func,$args)
 // of the file list carried by the request.
 script(on_browser_hot_reload_before_restart)params($url)
 {
-    nativelog("[dsl] on_browser_hot_reload_before_restart called, url: {0}", $url);
+    native_log("[dsl] on_browser_hot_reload_before_restart called, url: {0}", $url);
     return(false);
 };
 
 // Called after the page has been restarted (new window up and running)
 script(on_browser_hot_reload_completed)params($url)
 {
-    nativelog("[dsl] on_browser_hot_reload called - browser reloaded, url: {0}", $url);
-    nativelog("[dsl] Browser window was closed and reopened");
+    native_log("[dsl] on_browser_hot_reload called - browser reloaded, url: {0}", $url);
+    native_log("[dsl] Browser window was closed and reopened");
 
     // You can add initialization logic here after hot reload
     // For example: reload configuration, reinitialize state, etc.
@@ -1080,7 +1080,7 @@ script(on_browser_hot_reload_completed)params($url)
 // owns is released when it closes.
 script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
 {
-    nativelog("[dsl] on_browser_cef_query called - query_id: {0}, request: {1}, persistent: {2}, handle: {3}", $query_id, $request, $persistent, $handle);
+    native_log("[dsl] on_browser_cef_query called - query_id: {0}, request: {1}, persistent: {2}, handle: {3}", $query_id, $request, $persistent, $handle);
 
     $msg = dev_tools_parse_bytes($request);
     if ($msg != null) {
@@ -1094,7 +1094,7 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
         elif ($action == "js_dialog_unavailable") {
             // The page has no AgentDialog implementation: cancel the dialog so
             // the pending confirm() cannot hang.
-            nativelog("[dsl] js dialog UI unavailable, canceling handle {0}", $msg["handle"]);
+            native_log("[dsl] js dialog UI unavailable, canceling handle {0}", $msg["handle"]);
             complete_native_callback($msg["handle"], false, "");
             return((false, 0));
         }
@@ -1115,7 +1115,7 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
             };
             set_context_var("relayUrl_" + $clientId, $urlKey);
             $agentId = $msg["agentId"];
-            if (!isnullorempty($agentId)) {
+            if (!is_null_or_empty($agentId)) {
                 set_context_var("relayAgent_" + $clientId, $agentId);
             };
             set_context_var("relayPending_" + $clientId, $handle);
@@ -1159,7 +1159,7 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
             // CAVEAT: runs synchronously on this thread - keep snippets
             // short, long work blocks the browser UI (panel.js Exec BDSL).
             $code = dict_or_json_get($msg, "script");
-            if (isnullorempty($code)) {
+            if (is_null_or_empty($code)) {
                 complete_native_callback($handle, false, "empty script");
                 return((true, 0));
             };
@@ -1206,10 +1206,10 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
             $cid = $msg["connId"];
             $url = $msg["url"];
             $urlKey = $msg["urlKey"];
-            if (isnullorempty($cid) || isnull($urlKey)) {
+            if (is_null_or_empty($cid) || is_null($urlKey)) {
                 return((false, -1));
             };
-            if (isnullorempty($url)) {
+            if (is_null_or_empty($url)) {
                 $url = @LiteBridgeUrl;
             };
             set_context_var("relayUrl_" + $cid, $urlKey);
@@ -1247,7 +1247,7 @@ script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
 // that would be a no-op. No return value.
 script(on_browser_cef_query_canceled)params($query_id, $handle)
 {
-    nativelog("[dsl] on_browser_cef_query_canceled - query_id: {0}, handle: {1}", $query_id, $handle);
+    native_log("[dsl] on_browser_cef_query_canceled - query_id: {0}, handle: {1}", $query_id, $handle);
 };
 
 // DevTools observer callbacks (browser process only, fired on UI thread).
@@ -1259,40 +1259,40 @@ script(on_browser_cef_query_canceled)params($query_id, $handle)
 // The active browser is the one C# set via SetContext (see on_dev_tools_* entry).
 script(on_dev_tools_message)params($bytes)
 {
-    //nativelog("[dsl] on_dev_tools_message");
+    //native_log("[dsl] on_dev_tools_message");
     return(0);
 };
 
 // Result of a previous ExecuteDevToolsMethod call, matched by $message_id.
 script(on_dev_tools_method_result)params($message_id, $success, $bytes)
 {
-    nativelog("[dsl] on_dev_tools_method_result: message_id={0} success={1}", $message_id, $success);
+    native_log("[dsl] on_dev_tools_method_result: message_id={0} success={1}", $message_id, $success);
 };
 
 // Unsolicited CDP event from the agent (e.g. Network.responseReceived).
 script(on_dev_tools_event)params($method, $bytes)
 {
-    //nativelog("[dsl] on_dev_tools_event: method={0}", $method);
+    //native_log("[dsl] on_dev_tools_event: method={0}", $method);
 };
 
 // DevTools agent attached to the browser (CDP channel is ready).
 script(on_dev_tools_agent_attached)
 {
-    nativelog("[dsl] on_dev_tools_agent_attached");
+    native_log("[dsl] on_dev_tools_agent_attached");
 };
 
 // DevTools agent detached from the browser.
 script(on_dev_tools_agent_detached)
 {
-    nativelog("[dsl] on_dev_tools_agent_detached");
+    native_log("[dsl] on_dev_tools_agent_detached");
 };
 
 script(get_user_name)
 {
-    if (ismac) {
-        return(getenv("USER"));
+    if (is_mac) {
+        return(get_env("USER"));
     }
     else {
-        return(getenv("USERNAME"));
+        return(get_env("USERNAME"));
     };
 };

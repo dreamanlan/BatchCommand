@@ -48,7 +48,7 @@ namespace BatchCommand.Api
 
         // ---- process info exposed as dsl globals (set before first use) ----
         // Only the truly common fields live here. Host specific process info
-        // (processtype/startupurl/... for CEF, agentport/initialprojectidentity
+        // (processtype/startup_url/... for CEF, agentport/initialprojectidentity
         // for the agent) is owned by the host module and set through the
         // SetHostGlobalVars hook, keeping this class host agnostic.
 
@@ -116,7 +116,7 @@ namespace BatchCommand.Api
             Current = this;
         }
 
-        /// <summary>Path of the dsl script loaded on the current thread (the dslpath global).</summary>
+        /// <summary>Path of the dsl script loaded on the current thread (the dsl_path global).</summary>
         public string DslScriptPath {
             get {
                 return tls_ScriptPath ?? string.Empty;
@@ -186,13 +186,13 @@ namespace BatchCommand.Api
         public void RefreshGlobalVars()
         {
             //reset global vars
-            BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(CmdLine));
-            BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(BasePath));
-            BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(AppDir));
-            BatchScript.SetGlobalVariable("ismac", BoxedValue.From(IsMac));
-            BatchScript.SetGlobalVariable("nosandbox", BoxedValue.From(NoSandbox));
-            BatchScript.SetGlobalVariable("dslpath", BoxedValue.FromString(DslScriptPath));
-            BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(DslScriptFile));
+            BatchScript.SetGlobalVariable("command_line", BoxedValue.FromString(CmdLine));
+            BatchScript.SetGlobalVariable("base_path", BoxedValue.FromString(BasePath));
+            BatchScript.SetGlobalVariable("app_dir", BoxedValue.FromString(AppDir));
+            BatchScript.SetGlobalVariable("is_mac", BoxedValue.From(IsMac));
+            BatchScript.SetGlobalVariable("no_sandbox", BoxedValue.From(NoSandbox));
+            BatchScript.SetGlobalVariable("dsl_path", BoxedValue.FromString(DslScriptPath));
+            BatchScript.SetGlobalVariable("dsl_file", BoxedValue.FromString(DslScriptFile));
             SetHostGlobalVars?.Invoke();
             BatchScript.ClearDslErrors();
         }
@@ -537,7 +537,7 @@ namespace BatchCommand.Api
                 }
                 else {
                     // BatchScript.Load cleared the globals: re-establish the
-                    // common + host ones, with dslpath pointing at the
+                    // common + host ones, with dsl_path pointing at the
                     // executed file, before running the entry.
                     tls_ScriptPath = job.Path;
                     RefreshGlobalVars();
@@ -766,7 +766,7 @@ namespace BatchCommand.Api
             BatchScript.AddUserApiDoc("clone", "clone(list_or_hashtable) api");
             BatchScript.AddUserApiDoc("args", "args() api");
             BatchScript.AddUserApiDoc("arg", "arg(ix) api");
-            BatchScript.AddUserApiDoc("argnum", "argnum() api");
+            BatchScript.AddUserApiDoc("arg_num", "arg_num() api");
             BatchScript.AddUserApiDoc("inc", "inc(var) or inc(var,val) api");
             BatchScript.AddUserApiDoc("dec", "dec(var) or dec(var,val) api");
             BatchScript.AddUserApiDoc("+", "add operator");
@@ -793,20 +793,20 @@ namespace BatchCommand.Api
             BatchScript.AddUserApiDoc("if", "if(cond)func(args); or if(cond){...}[elseif/elif(cond){...}else{...}]; statement");
             BatchScript.AddUserApiDoc("while", "while(cond)func(args); or while(cond){...}; statement, iterator is $$");
             BatchScript.AddUserApiDoc("loop", "loop(ct)func(args); or loop(ct){...}; statement, iterator is $$");
-            BatchScript.AddUserApiDoc("looplist", "looplist(list)func(args); or looplist(list){...}; statement, iterator is $$");
-            BatchScript.AddUserApiDoc("foreachvalue", "foreachvalue(arg1,arg2,...)func(args); or foreachvalue(arg1,arg2,...){...}; statement, iterator is $$");
+            BatchScript.AddUserApiDoc("loop_list", "loop_list(list)func(args); or loop_list(list){...}; statement, iterator is $$");
+            BatchScript.AddUserApiDoc("for_each_value", "for_each_value(arg1,arg2,...)func(args); or for_each_value(arg1,arg2,...){...}; statement, iterator is $$");
             BatchScript.AddUserApiDoc("return", "return([val]) api");
-            BatchScript.AddUserApiDoc("dotnetcall", "dotnetcall api, internal implementation, using csharp object syntax");
-            BatchScript.AddUserApiDoc("dotnetset", "dotnetset api, internal implementation, using csharp object syntax");
-            BatchScript.AddUserApiDoc("dotnetget", "dotnetget api, internal implementation, using csharp object syntax");
-            BatchScript.AddUserApiDoc("collectioncall", "collectioncall api, internal implementation, using csharp object syntax");
-            BatchScript.AddUserApiDoc("collectionset", "collectionset api, internal implementation, using csharp object syntax");
-            BatchScript.AddUserApiDoc("collectionget", "collectionget api, internal implementation, using csharp object syntax");
+            BatchScript.AddUserApiDoc("dotnet_call", "dotnet_call api, internal implementation, using csharp object syntax");
+            BatchScript.AddUserApiDoc("dotnet_set", "dotnet_set api, internal implementation, using csharp object syntax");
+            BatchScript.AddUserApiDoc("dotnet_get", "dotnet_get api, internal implementation, using csharp object syntax");
+            BatchScript.AddUserApiDoc("collection_call", "collection_call api, internal implementation, using csharp object syntax");
+            BatchScript.AddUserApiDoc("collection_set", "collection_set api, internal implementation, using csharp object syntax");
+            BatchScript.AddUserApiDoc("collection_get", "collection_get api, internal implementation, using csharp object syntax");
             BatchScript.AddUserApiDoc("linq", "linq(list,method,arg1,arg2,...) statement, internal implementation, using obj.method(arg1,arg2,...) syntax, method can be where/filter/select/map/top/take/skip/distinct/concat/groupby/orderby/orderbydesc/aggregate/reduce/any/all/count/first/last/tolist/sum/min/max/average, iterator is $$ (An additional iterator $$acc for aggregate/reduce operators)");
             BatchScript.AddUserApiDoc("null", "null() api");
-            BatchScript.AddUserApiDoc("propset", "propset(varname,val) - set variable");
-            BatchScript.AddUserApiDoc("propget", "propget(varname[,defval]) - get variable");
-            BatchScript.AddUserApiDoc("propexists", "propexists(varname) - check variable");
+            BatchScript.AddUserApiDoc("prop_set", "prop_set(varname,val) - set variable");
+            BatchScript.AddUserApiDoc("prop_get", "prop_get(varname[,defval]) - get variable");
+            BatchScript.AddUserApiDoc("prop_exists", "prop_exists(varname) - check variable");
             BatchScript.AddUserApiDoc("max", "max(v1,v2)");
             BatchScript.AddUserApiDoc("min", "min(v1,v2)");
             BatchScript.AddUserApiDoc("abs", "abs(v)");
@@ -816,17 +816,17 @@ namespace BatchCommand.Api
             BatchScript.AddUserApiDoc("asin", "asin(v)");
             BatchScript.AddUserApiDoc("acos", "acos(v)");
             BatchScript.AddUserApiDoc("atan", "atan(v)");
-            BatchScript.AddUserApiDoc("atan2", "atan2(v1,v2)");
+            BatchScript.AddUserApiDoc("atan_2", "atan_2(v1,v2)");
             BatchScript.AddUserApiDoc("sinh", "sinh(v)");
             BatchScript.AddUserApiDoc("cosh", "cosh(v)");
             BatchScript.AddUserApiDoc("tanh", "tanh(v)");
             BatchScript.AddUserApiDoc("pow", "pow(v1,v2)");
             BatchScript.AddUserApiDoc("sqrt", "sqrt(v)");
             BatchScript.AddUserApiDoc("exp", "exp(v)");
-            BatchScript.AddUserApiDoc("exp2", "exp2(v)");
+            BatchScript.AddUserApiDoc("exp_2", "exp_2(v)");
             BatchScript.AddUserApiDoc("log", "log(v)");
-            BatchScript.AddUserApiDoc("log2", "log2(v)");
-            BatchScript.AddUserApiDoc("log10", "log10(v)");
+            BatchScript.AddUserApiDoc("log_2", "log_2(v)");
+            BatchScript.AddUserApiDoc("log_10", "log_10(v)");
             BatchScript.AddUserApiDoc("floor", "floor(v)");
             BatchScript.AddUserApiDoc("ceiling", "ceiling(v)");
             BatchScript.AddUserApiDoc("round", "round(v)");
@@ -844,18 +844,18 @@ namespace BatchCommand.Api
             BatchScript.AddUserApiDoc("double", "double(v)");
             BatchScript.AddUserApiDoc("decimal", "decimal(v)");
             BatchScript.AddUserApiDoc("datetime", "datetime(v) api");
-            BatchScript.AddUserApiDoc("isobject", "isobject(v)");
-            BatchScript.AddUserApiDoc("isstring", "isstring(v)");
-            BatchScript.AddUserApiDoc("isboolean", "isboolean(v)");
-            BatchScript.AddUserApiDoc("ischar", "ischar(v)");
-            BatchScript.AddUserApiDoc("isinteger", "isinteger(v)");
-            BatchScript.AddUserApiDoc("issignedinteger", "issignedinteger(v)");
-            BatchScript.AddUserApiDoc("isunsignedinteger", "isunsignedinteger(v)");
-            BatchScript.AddUserApiDoc("isnumber", "isnumber(v)");
-            BatchScript.AddUserApiDoc("isdatetime", "isdatetime(v)");
-            BatchScript.AddUserApiDoc("istuple", "istuple(v)");
-            BatchScript.AddUserApiDoc("boxedvaluetype", "boxedvaluetype(v)");
-            BatchScript.AddUserApiDoc("boxedvaluetypename", "boxedvaluetypename(v)");
+            BatchScript.AddUserApiDoc("is_object", "is_object(v)");
+            BatchScript.AddUserApiDoc("is_string", "is_string(v)");
+            BatchScript.AddUserApiDoc("is_boolean", "is_boolean(v)");
+            BatchScript.AddUserApiDoc("is_char", "is_char(v)");
+            BatchScript.AddUserApiDoc("is_integer", "is_integer(v)");
+            BatchScript.AddUserApiDoc("is_signed_integer", "is_signed_integer(v)");
+            BatchScript.AddUserApiDoc("is_unsigned_integer", "is_unsigned_integer(v)");
+            BatchScript.AddUserApiDoc("is_number", "is_number(v)");
+            BatchScript.AddUserApiDoc("is_date_time", "is_date_time(v)");
+            BatchScript.AddUserApiDoc("is_tuple", "is_tuple(v)");
+            BatchScript.AddUserApiDoc("boxed_value_type", "boxed_value_type(v)");
+            BatchScript.AddUserApiDoc("boxed_value_type_name", "boxed_value_type_name(v)");
             BatchScript.AddUserApiDoc("ftoi", "ftoi(v) api");
             BatchScript.AddUserApiDoc("itof", "itof(v) api");
             BatchScript.AddUserApiDoc("ftou", "ftou(v) api");
@@ -865,7 +865,7 @@ namespace BatchCommand.Api
             BatchScript.AddUserApiDoc("dtou", "dtou(v) api");
             BatchScript.AddUserApiDoc("utod", "utod(v) api");
             BatchScript.AddUserApiDoc("lerp", "lerp(a,b,t)");
-            BatchScript.AddUserApiDoc("clamp01", "clamp01(v)");
+            BatchScript.AddUserApiDoc("clamp_01", "clamp_01(v)");
             BatchScript.AddUserApiDoc("clamp", "clamp(v,v1,v2)");
             BatchScript.AddUserApiDoc("approximately", "approximately(v1,v2)");
             BatchScript.AddUserApiDoc("format", "format(fmt,arg1,arg2,...)");
@@ -886,15 +886,15 @@ namespace BatchCommand.Api
             BatchScript.AddUserApiDoc("pwd", "pwd()");
             BatchScript.AddUserApiDoc("os", "os()");
             BatchScript.AddUserApiDoc("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine");
-            BatchScript.AddUserApiDoc("calcmd5", "calcmd5(file) api");
+            BatchScript.AddUserApiDoc("calc_md5", "calc_md5(file) api");
             BatchScript.AddUserApiDoc("pid", "pid() api");
             BatchScript.AddUserApiDoc("sleep", "sleep(milliseconds) api");
             BatchScript.AddUserApiDoc("now", "now() api");
-            BatchScript.AddUserApiDoc("isnullorempty", "isnullorempty(str) api");
+            BatchScript.AddUserApiDoc("is_null_or_empty", "is_null_or_empty(str) api");
             BatchScript.AddUserApiDoc("time", "time() or timestamp() api, return milliseconds since startup");
             BatchScript.AddUserApiDoc("timestamp", "time() or timestamp() api, return milliseconds since startup");
-            BatchScript.AddUserApiDoc("getelapsedms", "getelapsedms() api, return elapsed milliseconds (time)");
-            BatchScript.AddUserApiDoc("getelapsedus", "getelapsedus() api, return elapsed microseconds (time)");
+            BatchScript.AddUserApiDoc("get_elapsed_time_ms", "get_elapsed_time_ms() api, return elapsed milliseconds (time)");
+            BatchScript.AddUserApiDoc("get_elapsed_time_us", "get_elapsed_time_us() api, return elapsed microseconds (time)");
         }
 
         // ---- call_metadsl_task worker pool -----------------------------------

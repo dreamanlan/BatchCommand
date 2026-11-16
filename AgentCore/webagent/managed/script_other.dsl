@@ -3,36 +3,36 @@
 // for configuring constants, and each hot-reload operation executes independently.
 script(init_global_consts)
 {
-    setenv("PLAYWRIGHT_DRIVER_SEARCH_PATH", combinepath(basepath, "managed"));
+    set_env("PLAYWRIGHT_DRIVER_SEARCH_PATH", combine_path(base_path, "managed"));
 
-    if (processtype == 1) {
-        @UserName = getfilename(getdirectoryname(getdirectoryname(getenv("LOCALAPPDATA"))));
+    if (process_type == 1) {
+        @UserName = get_file_name(get_directory_name(get_directory_name(get_env("LOCALAPPDATA"))));
     }
-    elif (ismac) {
-        @UserName = getenv("USER");
+    elif (is_mac) {
+        @UserName = get_env("USER");
     }
     else {
-        @UserName = getenv("USERNAME");
+        @UserName = get_env("USERNAME");
     };
 };
 script(on_init)
 {
-    nativelog("[dsl] on_init finish, pid:{0}, type:{1}", pid(), processtype);
-    fileecho(true);
+    native_log("[dsl] on_init finish, pid:{0}, type:{1}", pid(), process_type);
+    file_echo(true);
     // no-sandbox = false
     // Always return false in the renderer.
     return(false);
 };
 script(on_finalize)
 {
-    nativelog("[dsl] on_finalize finish, pid:{0}, type:{1}", pid(), processtype);
+    native_log("[dsl] on_finalize finish, pid:{0}, type:{1}", pid(), process_type);
 };
 script(on_before_command_line_processing)params($processType, $cmdLine)
 {
     // At this point, the sandbox has not yet fully taken effect, so files can still be accessed.
     if ($processType > 1) {
-        //debuggerlaunch();
+        //debugger_launch();
     };
 
-    nativelog("[dsl] on_before_command_line_processing: process_type={0}, pid={1}", $processType, pid());
+    native_log("[dsl] on_before_command_line_processing: process_type={0}, pid={1}", $processType, pid());
 };

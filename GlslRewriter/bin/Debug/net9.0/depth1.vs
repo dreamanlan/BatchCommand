@@ -1,0 +1,46 @@
+#version 460
+#pragma optionNV(fastmath off)
+#extension GL_ARB_separate_shader_objects : enable
+out gl_PerVertex { vec4 gl_Position; };
+layout(location = 0) in vec4 in_attr0;
+layout(location = 1) in vec4 in_attr1;
+layout(location = 0) out vec4 out_attr0;
+layout(binding = 0) uniform sampler2D tex0;
+#define ftoi floatBitsToInt
+#define ftou floatBitsToUint
+#define itof intBitsToFloat
+#define utof uintBitsToFloat
+void main() {
+  uint u_0 = uint(0);
+  uint u_1 = uint(0);
+  float f_0 = float(0);
+  float f_1 = float(0);
+  float f_2 = float(0);
+  float f_3 = float(0);
+  uvec4 u4_0 = uvec4(0);
+  precise float pf_0 = float(0);
+  precise float pf_1 = float(0);
+  gl_Position = vec4(0, 0, 0, 1);
+  out_attr0 = vec4(0, 0, 0, 1);
+  u4_0 = uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u);
+  u_0 = u4_0.x;
+  u_1 = u4_0.y;
+  f_0 = in_attr0.x;
+  f_1 = in_attr1.x;
+  f_2 = in_attr1.y;
+  f_3 = in_attr0.y;
+  gl_Position.z = 1.f;
+  pf_0 = f_0 * 2.f;
+  gl_Position.x = pf_0;
+  pf_0 = f_3 * 2.f;
+  gl_Position.y = pf_0;
+  f_0 = float(int(u_0));
+  f_3 = float(int(u_1));
+  f_0 = (1.0f) / f_0;
+  f_3 = (1.0f) / f_3;
+  pf_0 = fma(f_0, -0.01f, f_1);
+  pf_1 = fma(f_3, -0.01f, f_2);
+  out_attr0.x = pf_0;
+  out_attr0.y = pf_1;
+  return;
+}

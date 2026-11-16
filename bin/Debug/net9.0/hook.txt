@@ -50,7 +50,7 @@ hook(CompileTest)
 		$d = $c < 1 ? 2 : 3;
 		$e[0] = $d ?? 1;
 		$f : int = struct($d, ptr(ptr(TestStru3.ptest2).ptest).size);
-		$g : int = dumpcascadeptr(addr($e), 0x08, 0x08);
+		$g : int = dump_cascade_ptr(addr($e), 0x08, 0x08);
 		$h1 : int = offset(TestStru3.ptest2[3].size);
 		$h2 : int = size(TestStru3);
 		ffi(proto(void,noparams,[int,int],[],[]),0x1234,121,121);
@@ -68,7 +68,7 @@ hook(TestMacro1)
 		printf("TestMacro1 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
 		
 		SetTimeScale(0.0001);
-		printf("TimeScale:%f time:%f\n",GetTimeScale(), floattime());
+		printf("TimeScale:%f time:%f\n",GetTimeScale(), float_time());
 		WriteLog("test test test");
 		FlushLog();
 
@@ -108,7 +108,7 @@ hook(TestMacro3)
 		
 		if(platform()==0){
 			//test code on windows
-			dumpcascadeptr(argv(2),0);
+			dump_cascade_ptr(argv(2),0);
 			if($a==123){
 				ptrset(argv(0),4,1);
 			}
@@ -130,10 +130,10 @@ hook(TestMacro3)
 			printf(">>> %f\n", inc($j, 2.0));
 			printf(">>> %f\n", inc($j, 3.0));
 			printf("%d %d %d\n", stkix(), hookid(), hookver());
-			printf("str contains %d %d\n", stringcontains("test","es","te"), stringnotcontains("test","es","fg"));
-			printf("str contains any %d %d\n", stringcontainsany("test","es","te"), stringnotcontainsany("test","es","fg"));
-			printf("str find %d %d\n", stringfind("test","es"), stringrfind("test","es"));
-			printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
+			printf("str contains %d %d\n", string_contains("test","es","te"), string_not_contains("test","es","fg"));
+			printf("str contains any %d %d\n", string_contains_any("test","es","te"), string_not_contains_any("test","es","fg"));
+			printf("str find %d %d\n", string_find("test","es"), string_right_find("test","es"));
+			printf("str find2 %d %d\n", string_find("test","es",1), string_right_find("test","es",0));
 			printf("load:%llx\n", LoadLib("kernel32.dll"));
 			printf("proc:%llx\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
 			$addr:int = 0x800010004003;
@@ -253,19 +253,19 @@ hook("MemoryManager::GetAllocator")
 		$c:int = ptrget(argv(2),4);
 		if ($a == 0) {
 			printf("MemoryManager::GetAllocator memlabel:%d return null\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
+			//dump_stack("MemoryManager::GetAllocator");
 		}
 		elif ($c == 2) {
 			//assert(0);
 		}
 		elif ($c == 153) {
 			//printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
+			//dump_stack("MemoryManager::GetAllocator");
 			//assert(0);
 		}
 		elif ($c >= 166) {
 			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
+			//dump_stack("MemoryManager::GetAllocator");
 		};
 	};
 };
@@ -279,7 +279,7 @@ hook("MemoryManager::GetAllocatorOnNull")
 		printf("%s",$str);
 		WriteLog($str);
 		
-		//dumpstack("MemoryManager::GetAllocatorOnNull");
+		//dump_stack("MemoryManager::GetAllocatorOnNull");
 		return 0;
 	};
 	onexit{
@@ -345,7 +345,7 @@ hook("MemoryManager::Allocate_NonTemp")
 			}
 			else{
 				/*
-				if(stringcontains($file,"VKAsyncPipelineCompiler.cpp") && $line==272 && @g_enable_watch_point){
+				if(string_contains($file,"VKAsyncPipelineCompiler.cpp") && $line==272 && @g_enable_watch_point){
 					$info_size:int;
 					$info_align:int;
 					$info_locking:int;
@@ -427,7 +427,7 @@ hook("MemoryManager::Deallocate_NonTemp")
 				WriteLog($str);
 			};
 
-			if(stringcontains($file,"UnsafeUtility.bindings.h") && $line==186){
+			if(string_contains($file,"UnsafeUtility.bindings.h") && $line==186){
 				LogStack("UnsafeUtility.Free.kPersistent");
 			};
 		};

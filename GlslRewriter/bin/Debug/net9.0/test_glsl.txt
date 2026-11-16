@@ -1,0 +1,163 @@
+vec4 gl_FragCoord;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1 )in;
+layout(std140, binding = 0 )uniform cs_cbuf_0
+{
+	uvec4 cs_cbuf0[4096 ];
+};
+layout(std140, binding = 1 )uniform cs_cbuf_3
+{
+	uvec4 cs_cbuf3[4096 ];
+};
+layout(std430, binding = 0 )buffer cs_ssbo_0
+{
+	uint cs_ssbo0[];
+};
+layout(binding = 0 )uniform sampler2D tex0;
+uint CasMinS32(uint op_a, uint op_b )
+{
+	return(uint(min(int(op_a ), int(op_b ) ) ) );
+}
+void main()
+{
+	bool b_0 = bool(0 );	//  False
+	bool b_1 = bool(0 );	//  False
+	uint tu_0 = uint(0 );	//  0
+	uint u_0 = uint(0 );	//  0
+	uint u_1 = uint(0 );	//  0
+	uint u_2 = uint(0 );	//  0
+	uint u_3 = uint(0 );	//  0
+	uint u_4 = uint(0 );	//  0
+	uint u_5 = uint(0 );	//  0
+	uint u_6 = uint(0 );	//  0
+	uint u_7 = uint(0 );	//  0
+	uint u_8 = uint(0 );	//  0
+	float f_0 = float(0 );	//  0
+	float f_1 = float(0 );	//  0
+	float f_2 = float(0 );	//  0
+	uvec2 u2_0 = uvec2(0 );	//  uvec2(0,0)
+	uvec2 u2_1 = uvec2(0 );	//  uvec2(0,0)
+	uvec3 u3_0 = uvec3(0 );	//  uvec3(0,0,0)
+	uvec4 u4_0 = uvec4(0 );	//  uvec4(0,0,0,0)
+	vec4 f4_0 = vec4(0 );	//  vec4(0,0,0,0)
+	precise float pf_0 = float(0 );	//  0
+	precise float pf_1 = float(0 );	//  0
+	bool shfl_in_bounds;
+	u4_0_0 = uvec4(uvec2(textureSize(tex0, int(0u ) ) ), 0u, 0u );	//  uvec4(uvec2(textureSize(tex0,0)),0,0)
+	u_0_0 = u4_0_0.x ;	//  uvec4(uvec2(textureSize(tex0,0)),0,0).x
+	u_1_0 = u4_0_0.y ;	//  uvec4(uvec2(textureSize(tex0,0)),0,0).y
+	u3_0_0 = gl_WorkGroupID;	//  False
+	u_2_0 = u3_0_0.x ;	//  0
+	u3_0_1 = gl_LocalInvocationID;	//  False
+	u_3_0 = u3_0_1.x ;	//  0
+	u3_0_2 = gl_WorkGroupID;	//  False
+	u_4_0 = u3_0_2.y ;	//  0
+	u3_0_3 = gl_LocalInvocationID;	//  False
+	u_5_0 = u3_0_3.y ;	//  0
+	u_2_1 = u_2_0 << 3u;	//  (0 << 3)
+	u_2_2 = u_2_1 + u_3_0;	//  ((0 << 3) + 0)
+	f_0_0 = float(int(u_1_0 ) );	//  float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y))
+	f_1_0 = float(int(u_0_0 ) );	//  float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).x))
+	u_1_1 = u_1_0 + 4294967295u;	//  (uvec4(uvec2(textureSize(tex0,0)),0,0).y + 4294967295)
+	u_0_1 = u_0_0 + 4294967295u;	//  (uvec4(uvec2(textureSize(tex0,0)),0,0).x + 4294967295)
+	f_2_0 = utof(cs_cbuf3[0 ].y  );	//  0
+	f_2_1 = 0.f - (f_2_0 );	//  0
+	pf_0_0 = fma(f_0_0, f_2_1, f_0_0 );	//  fma(float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y)),0,float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y)))
+	f_0_1 = utof(cs_cbuf3[0 ].x  );	//  0
+	pf_1_0 = f_1_0 * f_0_1;	//  (float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).x)) * 0)
+	f_0_2 = trunc(pf_0_0 );	//  trunc(fma(float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y)),0,float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y))))
+	f_0_3 = min(max(f_0_2, float(-2147483600.f ) ), float(2147483600.f ) );	//  min(max(trunc(fma(float(int(u4_0_0.y)),0,float(int(u4_0_0.y)))),-2147483600),2147483600)
+	u_3_1 = int(f_0_3 );	//  int(min(max(trunc(fma(float(int(u_1_0)),0,float(int(u_1_0)))),-2147483600),2147483600))
+	b_0_0 = isnan(pf_0_0 );	//  isnan(fma(float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y)),0,float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y))))
+	u_3_2 = b_0_0 ? (0u) : (u_3_1);	//  (isnan(fma(float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y)),0,float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).y)))) ? 0 : int(min(max(trunc(fma(float(int(u_1_0)),0,float(int(u_1_0)))),-2147483600),2147483600)))
+	f_0_4 = trunc(pf_1_0 );	//  trunc((float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).x)) * 0))
+	f_0_5 = min(max(f_0_4, float(-2147483600.f ) ), float(2147483600.f ) );	//  min(max(trunc((float(int(u4_0_0.x)) * 0)),-2147483600),2147483600)
+	u_6_0 = int(f_0_5 );	//  int(min(max(trunc((float(int(u_0_0)) * 0)),-2147483600),2147483600))
+	b_0_1 = isnan(pf_1_0 );	//  isnan((float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).x)) * 0))
+	u_6_1 = b_0_1 ? (0u) : (u_6_0);	//  (isnan((float(int(uvec4(uvec2(textureSize(tex0,0)),0,0).x)) * 0)) ? 0 : int(min(max(trunc((float(int(u_0_0)) * 0)),-2147483600),2147483600)))
+	u_1_2 = uint(int(0 ) - int(u_1_1 ) );	//  uint((0 - int((uvec4(uvec2(textureSize(tex0,0)),0,0).y + 4294967295))))
+	u_1_3 = u_1_2 + 4u;	//  (uint((0 - int((uvec4(uvec2(textureSize(tex0,0)),0,0).y + 4294967295)))) + 4)
+	u_1_4 = u_1_3 + u_3_2;	//  ((uint((0 - int((u4_0_0.y + 4294967295)))) + 4) + (isnan(fma(float(int(u4_0_0.y)),0,float(int(u4_0_0.y)))) ? 0 : int(min(max(trunc(fma(f_0_0,0,f_0_0)),-2147483600),2147483600))))
+	u_7_0 = u_3_2 + 4294967293u;	//  ((isnan(fma(float(int(u4_0_0.y)),0,float(int(u4_0_0.y)))) ? 0 : int(min(max(trunc(fma(f_0_0,0,f_0_0)),-2147483600),2147483600))) + 4294967293)
+	u_0_2 = uint(int(0 ) - int(u_0_1 ) );	//  uint((0 - int((uvec4(uvec2(textureSize(tex0,0)),0,0).x + 4294967295))))
+	u_0_3 = u_0_2 + 4u;	//  (uint((0 - int((uvec4(uvec2(textureSize(tex0,0)),0,0).x + 4294967295)))) + 4)
+	u_0_4 = u_0_3 + u_6_1;	//  ((uint((0 - int((u4_0_0.x + 4294967295)))) + 4) + (isnan((float(int(u4_0_0.x)) * 0)) ? 0 : int(min(max(trunc((f_1_0 * 0)),-2147483600),2147483600))))
+	u_8_0 = u_6_1 + 4294967293u;	//  ((isnan((float(int(u4_0_0.x)) * 0)) ? 0 : int(min(max(trunc((f_1_0 * 0)),-2147483600),2147483600))) + 4294967293)
+	u_1_5 = max(int(0u ), int(u_1_4 ) );	//  max(0,int(((uint((0 - int((u_1_0 + 4294967295)))) + 4) + (isnan(fma(float(int(u_1_0)),0,float(int(u_1_0)))) ? 0 : int(min(max(f_0_2,-2147483600),2147483600))))))
+	u_0_5 = max(int(0u ), int(u_0_4 ) );	//  max(0,int(((uint((0 - int((u_0_0 + 4294967295)))) + 4) + (isnan((float(int(u_0_0)) * 0)) ? 0 : int(min(max(f_0_4,-2147483600),2147483600))))))
+	u_8_1 = min(int(0u ), int(u_8_0 ) );	//  min(0,int(((isnan((float(int(u_0_0)) * 0)) ? 0 : int(min(max(f_0_4,-2147483600),2147483600))) + 4294967293)))
+	u_7_1 = min(int(0u ), int(u_7_0 ) );	//  min(0,int(((isnan(fma(float(int(u_1_0)),0,float(int(u_1_0)))) ? 0 : int(min(max(f_0_2,-2147483600),2147483600))) + 4294967293)))
+	u_4_1 = u_4_0 << 3u;	//  (0 << 3)
+	u_4_2 = u_4_1 + u_5_0;	//  ((0 << 3) + 0)
+	u_0_6 = uint(int(0 ) - int(u_0_5 ) );	//  uint((0 - int(max(0,int(((uint((0 - int(u_0_1))) + 4) + (isnan(pf_1_0) ? 0 : int(f_0_5))))))))
+	u_5_1 = uint(int(0 ) - int(u_8_1 ) );	//  uint((0 - int(min(0,int(((isnan(pf_1_0) ? 0 : int(f_0_5)) + 4294967293))))))
+	u_0_7 = u_0_6 + u_6_1;	//  (uint((0 - int(max(0,int(((u_0_2 + 4) + (b_0_1 ? 0 : u_6_0))))))) + (isnan((float(int(u4_0_0.x)) * 0)) ? 0 : int(min(max(trunc((f_1_0 * 0)),-2147483600),2147483600))))
+	u_0_8 = u_0_7 + u_5_1;	//  ((uint((0 - int(max(0,int((u_0_3 + u_6_1)))))) + (isnan((float(int(u_0_0)) * 0)) ? 0 : int(min(max(trunc(pf_1_0),-2147483600),2147483600)))) + uint((0 - int(min(0,int(((b_0_1 ? 0 : u_6_0) + 4294967293)))))))
+	u_1_6 = uint(int(0 ) - int(u_1_5 ) );	//  uint((0 - int(max(0,int(((uint((0 - int(u_1_1))) + 4) + (isnan(pf_0_0) ? 0 : int(f_0_3))))))))
+	u_5_2 = uint(int(0 ) - int(u_7_1 ) );	//  uint((0 - int(min(0,int(((isnan(pf_0_0) ? 0 : int(f_0_3)) + 4294967293))))))
+	u_1_7 = u_1_6 + u_3_2;	//  (uint((0 - int(max(0,int(((u_1_2 + 4) + (b_0_0 ? 0 : u_3_1))))))) + (isnan(fma(float(int(u4_0_0.y)),0,float(int(u4_0_0.y)))) ? 0 : int(min(max(trunc(fma(f_0_0,0,f_0_0)),-2147483600),2147483600))))
+	u_1_8 = u_1_7 + u_5_2;	//  ((uint((0 - int(max(0,int((u_1_3 + u_3_2)))))) + (isnan(fma(float(int(u_1_0)),0,float(int(u_1_0)))) ? 0 : int(min(max(trunc(pf_0_0),-2147483600),2147483600)))) + uint((0 - int(min(0,int(((b_0_0 ? 0 : u_3_1) + 4294967293)))))))
+	u_0_9 = u_0_8 + u_2_2;	//  (((uint((0 - int(max(0,int(u_0_4))))) + (isnan((f_1_0 * 0)) ? 0 : int(min(max(f_0_4,-2147483600),2147483600)))) + uint((0 - int(min(0,int((u_6_1 + 4294967293))))))) + ((0 << 3) + 0))
+	u_1_9 = u_1_8 + u_4_2;	//  (((uint((0 - int(max(0,int(u_1_4))))) + (isnan(fma(f_0_0,0,f_0_0)) ? 0 : int(min(max(f_0_2,-2147483600),2147483600)))) + uint((0 - int(min(0,int((u_3_2 + 4294967293))))))) + ((0 << 3) + 0))
+	u2_0_0 = uvec2(u_0_9, u_1_9 );	//  uvec2((((uint((0 - int(u_0_5))) + (isnan(pf_1_0) ? 0 : int(f_0_5))) + uint((0 - int(min(0,int(u_8_0)))))) + ((0 << 3) + 0)),(((uint((0 - int(u_1_5))) + (isnan(pf_0_0) ? 0 : int(f_0_3))) + uint((0 - int(min(0,int(u_7_0)))))) + ((0 << 3) + 0)))
+	u2_1_0 = uvec2(4294967293u, 4294967293u );	//  uvec2(4294967293,4294967293)
+	f4_0_0 = texelFetchOffset(tex0, ivec2(u2_0_0 ), int(0u ), ivec2(u2_1_0 ) );	//  texelFetchOffset(tex0,ivec2(uvec2((((uint((0 - int(u_0_5))) + (b_0_1 ? 0 : u_6_0)) + uint((0 - int(u_8_1)))) + ((0 << 3) + 0)),(((uint((0 - int(u_1_5))) + (b_0_0 ? 0 : u_3_1)) + uint((0 - int(u_7_1)))) + ((0 << 3) + 0)))),0,ivec2(-3,-3))
+	f_0_6 = f4_0_0.w ;	//  texelFetchOffset(tex0,ivec2(uvec2((((u_0_6 + u_6_1) + uint((0 - int(u_8_1)))) + ((0 << 3) + 0)),(((u_1_6 + u_3_2) + uint((0 - int(u_7_1)))) + ((0 << 3) + 0)))),0,ivec2(-3,-3)).w
+	u_0_10 = gl_SubGroupInvocationARB & 31u;	//  (False & 31)
+	b_0_2 = u_0_10 == 0u;	//  ((False & 31) == 0)
+	pf_0_1 = f_0_6 * 1000.f;	//  (texelFetchOffset(tex0,ivec2(uvec2(((u_0_7 + u_5_1) + (u_2_1 + 0)),((u_1_7 + u_5_2) + (u_4_1 + 0)))),0,ivec2(-3,-3)).w * 1000)
+	u_0_11 = (cs_cbuf0[49 ].x  );	//  0
+	f_0_7 = trunc(pf_0_1 );	//  trunc((texelFetchOffset(tex0,ivec2(uvec2((u_0_8 + u_2_2),(u_1_8 + u_4_2))),0,ivec2(-3,-3)).w * 1000))
+	f_0_8 = min(max(f_0_7, float(-2147483600.f ) ), float(2147483600.f ) );	//  min(max(trunc((texelFetchOffset(tex0,ivec2(u2_0_0),0,ivec2(u2_1_0)).w * 1000)),-2147483600),2147483600)
+	u_1_10 = int(f_0_8 );	//  int(min(max(trunc((texelFetchOffset(tex0,ivec2(u2_0_0),0,ivec2(u2_1_0)).w * 1000)),-2147483600),2147483600))
+	b_1_0 = isnan(pf_0_1 );	//  isnan((texelFetchOffset(tex0,ivec2(uvec2((u_0_8 + u_2_2),(u_1_8 + u_4_2))),0,ivec2(-3,-3)).w * 1000))
+	u_1_11 = b_1_0 ? (0u) : (u_1_10);	//  (isnan((texelFetchOffset(tex0,ivec2(uvec2(u_0_9,u_1_9)),0,ivec2(-3,-3)).w * 1000)) ? 0 : int(min(max(trunc((f4_0_0.w * 1000)),-2147483600),2147483600)))
+	shfl_in_bounds_0 = int((gl_SubGroupInvocationARB ^ 1u ) ) <= int((gl_SubGroupInvocationARB & 0u ) | (31u & (~ 0u ) ) );	//  (int((False ^ 1)) <= int(((False & 0) | 31)))
+	u_2_3 = shfl_in_bounds_0 ? (readInvocationARB(u_1_11,(gl_SubGroupInvocationARB ^ 1u))) : (u_1_11);	//  ((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((isnan((texelFetchOffset(tex0,ivec2(u2_0_0),0,ivec2(u2_1_0)).w * 1000)) ? 0 : int(min(max(trunc(pf_0_1),-2147483600),2147483600))),(False ^ 1)) : (isnan((texelFetchOffset(tex0,ivec2(u2_0_0),0,ivec2(u2_1_0)).w * 1000)) ? 0 : int(min(max(trunc((f_0_6 * 1000)),-2147483600),2147483600))))
+	u_1_12 = min(int(u_1_11 ), int(u_2_3 ) );	//  min(int((isnan((texelFetchOffset(tex0,ivec2(u2_0_0),0,ivec2(u2_1_0)).w * 1000)) ? 0 : int(min(max(trunc(pf_0_1),-2147483600),2147483600)))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((isnan((f_0_6 * 1000)) ? 0 : int(min(max(f_0_7,-2147483600),2147483600))),(False ^ 1)) : (isnan((f4_0_0.w * 1000)) ? 0 : int(min(max(f_0_7,-2147483600),2147483600))))))
+	shfl_in_bounds_1 = int((gl_SubGroupInvocationARB ^ 2u ) ) <= int((gl_SubGroupInvocationARB & 0u ) | (31u & (~ 0u ) ) );	//  (int((False ^ 2)) <= int(((False & 0) | 31)))
+	u_2_4 = shfl_in_bounds_1 ? (readInvocationARB(u_1_12,(gl_SubGroupInvocationARB ^ 2u))) : (u_1_12);	//  ((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int((isnan((f_0_6 * 1000)) ? 0 : int(min(max(f_0_7,-2147483600),2147483600)))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((isnan(pf_0_1) ? 0 : int(f_0_8)),(False ^ 1)) : (isnan(pf_0_1) ? 0 : int(f_0_8))))),(False ^ 2)) : min(int((isnan((f4_0_0.w * 1000)) ? 0 : int(min(max(f_0_7,-2147483600),2147483600)))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((isnan(pf_0_1) ? 0 : int(f_0_8)),(False ^ 1)) : (isnan((f_0_6 * 1000)) ? 0 : int(min(max(f_0_7,-2147483600),2147483600)))))))
+	u_1_13 = min(int(u_1_12 ), int(u_2_4 ) );	//  min(int(min(int((isnan((f_0_6 * 1000)) ? 0 : int(min(max(f_0_7,-2147483600),2147483600)))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((isnan(pf_0_1) ? 0 : int(f_0_8)),(False ^ 1)) : (isnan(pf_0_1) ? 0 : int(f_0_8)))))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int((isnan(pf_0_1) ? 0 : int(f_0_8))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((b_1_0 ? 0 : u_1_10),(False ^ 1)) : (b_1_0 ? 0 : u_1_10)))),(False ^ 2)) : min(int((isnan(pf_0_1) ? 0 : int(f_0_8))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((b_1_0 ? 0 : u_1_10),(False ^ 1)) : (b_1_0 ? 0 : u_1_10)))))))
+	shfl_in_bounds_2 = int((gl_SubGroupInvocationARB ^ 4u ) ) <= int((gl_SubGroupInvocationARB & 0u ) | (31u & (~ 0u ) ) );	//  (int((False ^ 4)) <= int(((False & 0) | 31)))
+	u_2_5 = shfl_in_bounds_2 ? (readInvocationARB(u_1_13,(gl_SubGroupInvocationARB ^ 4u))) : (u_1_13);	//  ((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int((isnan(pf_0_1) ? 0 : int(f_0_8))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((b_1_0 ? 0 : u_1_10),(False ^ 1)) : (b_1_0 ? 0 : u_1_10))))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11))),(False ^ 2)) : min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11)))))),(False ^ 4)) : min(int(min(int((isnan(pf_0_1) ? 0 : int(f_0_8))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((b_1_0 ? 0 : u_1_10),(False ^ 1)) : (b_1_0 ? 0 : u_1_10))))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11))),(False ^ 2)) : min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11)))))))
+	u_1_14 = min(int(u_1_13 ), int(u_2_5 ) );	//  min(int(min(int(min(int((isnan(pf_0_1) ? 0 : int(f_0_8))),int(((int((False ^ 1)) <= int(((False & 0) | 31))) ? readInvocationARB((b_1_0 ? 0 : u_1_10),(False ^ 1)) : (b_1_0 ? 0 : u_1_10))))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11))),(False ^ 2)) : min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11))))))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11)))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_11),int(u_2_3)),(False ^ 2)) : min(int(u_1_11),int(u_2_3))))),(False ^ 4)) : min(int(min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11)))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_11),int(u_2_3)),(False ^ 2)) : min(int(u_1_11),int(u_2_3))))))))
+	shfl_in_bounds_3 = int((gl_SubGroupInvocationARB ^ 8u ) ) <= int((gl_SubGroupInvocationARB & 0u ) | (31u & (~ 0u ) ) );	//  (int((False ^ 8)) <= int(((False & 0) | 31)))
+	u_2_6 = shfl_in_bounds_3 ? (readInvocationARB(u_1_14,(gl_SubGroupInvocationARB ^ 8u))) : (u_1_14);	//  ((int((False ^ 8)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11)))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_11),int(u_2_3)),(False ^ 2)) : min(int(u_1_11),int(u_2_3)))))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12))),(False ^ 4)) : min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12)))))),(False ^ 8)) : min(int(min(int(min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11)))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_11),int(u_2_3)),(False ^ 2)) : min(int(u_1_11),int(u_2_3)))))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12))),(False ^ 4)) : min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12)))))))
+	u_1_15 = min(int(u_1_14 ), int(u_2_6 ) );	//  min(int(min(int(min(int(min(int((b_1_0 ? 0 : u_1_10)),int((shfl_in_bounds_0 ? readInvocationARB(u_1_11,(False ^ 1)) : u_1_11)))),int(((int((False ^ 2)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_11),int(u_2_3)),(False ^ 2)) : min(int(u_1_11),int(u_2_3)))))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12))),(False ^ 4)) : min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12))))))),int(((int((False ^ 8)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12)))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_12),int(u_2_4)),(False ^ 4)) : min(int(u_1_12),int(u_2_4))))),(False ^ 8)) : min(int(min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12)))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_12),int(u_2_4)),(False ^ 4)) : min(int(u_1_12),int(u_2_4))))))))
+	shfl_in_bounds_4 = int((gl_SubGroupInvocationARB ^ 16u ) ) <= int((gl_SubGroupInvocationARB & 0u ) | (31u & (~ 0u ) ) );	//  (int((False ^ 16)) <= int(((False & 0) | 31)))
+	u_2_7 = shfl_in_bounds_4 ? (readInvocationARB(u_1_15,(gl_SubGroupInvocationARB ^ 16u))) : (u_1_15);	//  ((int((False ^ 16)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12)))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_12),int(u_2_4)),(False ^ 4)) : min(int(u_1_12),int(u_2_4)))))),int(((int((False ^ 8)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(u_1_12),int(u_2_4))),int((shfl_in_bounds_2 ? readInvocationARB(u_1_13,(False ^ 4)) : u_1_13))),(False ^ 8)) : min(int(min(int(u_1_12),int(u_2_4))),int((shfl_in_bounds_2 ? readInvocationARB(u_1_13,(False ^ 4)) : u_1_13)))))),(False ^ 16)) : min(int(min(int(min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12)))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_12),int(u_2_4)),(False ^ 4)) : min(int(u_1_12),int(u_2_4)))))),int(((int((False ^ 8)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(u_1_12),int(u_2_4))),int((shfl_in_bounds_2 ? readInvocationARB(u_1_13,(False ^ 4)) : u_1_13))),(False ^ 8)) : min(int(min(int(u_1_12),int(u_2_4))),int((shfl_in_bounds_2 ? readInvocationARB(u_1_13,(False ^ 4)) : u_1_13)))))))
+	u_1_16 = min(int(u_1_15 ), int(u_2_7 ) );	//  min(int(min(int(min(int(min(int(min(int(u_1_11),int(u_2_3))),int((shfl_in_bounds_1 ? readInvocationARB(u_1_12,(False ^ 2)) : u_1_12)))),int(((int((False ^ 4)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_12),int(u_2_4)),(False ^ 4)) : min(int(u_1_12),int(u_2_4)))))),int(((int((False ^ 8)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(u_1_12),int(u_2_4))),int((shfl_in_bounds_2 ? readInvocationARB(u_1_13,(False ^ 4)) : u_1_13))),(False ^ 8)) : min(int(min(int(u_1_12),int(u_2_4))),int((shfl_in_bounds_2 ? readInvocationARB(u_1_13,(False ^ 4)) : u_1_13))))))),int(((int((False ^ 16)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(min(int(min(int(u_1_12),int(u_2_4))),int((shfl_in_bounds_2 ? readInvocationARB(u_1_13,(False ^ 4)) : u_1_13)))),int(((int((False ^ 8)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_13),int(u_2_5)),(False ^ 8)) : min(int(u_1_13),int(u_2_5))))),(False ^ 16)) : min(int(min(int(min(int(u_1_12),int(u_2_4))),int((shfl_in_bounds_2 ? readInvocationARB(u_1_13,(False ^ 4)) : u_1_13)))),int(((int((False ^ 8)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_13),int(u_2_5)),(False ^ 8)) : min(int(u_1_13),int(u_2_5))))))))
+	b_1_1 = b_0_2 ? (true) : (false);	//  (((False & 31) == 0) ? true : false)
+	if(b_1_1 )
+	{
+		u_2_8 = (cs_cbuf0[49 ].x  );	//  0
+		u_0_12 = u_0_11 - u_2_8;	//  0
+		tu_0_phi_2 = tu_0;
+		u_0_phi_2 = u_0_12;
+		for(; ;  )
+		{
+			uint old = cs_ssbo0[u_0_phi_2 >> 2 ];	//  cs_ssbo0[(0 >> 2)]
+			tu_0_0 = atomicCompSwap(cs_ssbo0[u_0_phi_2 >> 2 ], old, CasMinS32(cs_ssbo0[u_0_phi_2 >> 2 ], uint(u_1_16 ) ) );	//  atomicCompSwap(cs_ssbo0[(0 >> 2)],cs_ssbo0[(0 >> 2)],CasMinS32(cs_ssbo0[(0 >> 2)],uint(min(int(min(int(min(int(u_1_13),int(u_2_5))),int(((int((False ^ 8)) <= int(((False & 0) | 31))) ? readInvocationARB(u_1_14,(False ^ 8)) : min(int(u_1_13),int(u_2_5)))))),int(((int((False ^ 16)) <= int(((False & 0) | 31))) ? readInvocationARB(min(int(u_1_14),int(u_2_6)),(False ^ 16)) : min(int(min(int(u_1_13),int(u_2_5))),int((shfl_in_bounds_3 ? readInvocationARB(u_1_14,(False ^ 8)) : u_1_14)))))))))
+			if(tu_0_0 == old )
+			{
+				tu_0_phi_2 = tu_0_0;
+				break;
+			} 
+			else
+			{
+			} 
+			u_0_13 = 123;	//  123
+			tu_0_phi_2 = tu_0_0;
+			u_0_phi_2 = u_0_13;
+		} 
+		u_2_phi_1 = u_2_8;
+		u_0_phi_1 = u_0_12;
+		tu_0_phi_1 = tu_0;
+	} 
+	else
+	{
+		u_2_phi_1 = u_2_7;
+		u_0_phi_1 = u_0_11;
+		tu_0_phi_1 = tu_0;
+	} 
+	return;
+} 

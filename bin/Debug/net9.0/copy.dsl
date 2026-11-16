@@ -1,26 +1,28 @@
 script(main)
 {
-	curdir = getscriptdir();
+	curdir = get_script_directory();
 	cd(curdir);
-	fileecho(true);
+	file_echo(true);
 
 	echo("curdir: " + curdir);
 
-	foreachvalue("GameDemo", "CSharpGameFramework", "apkstudio/DotnetApp/copytool", "myuzu/tools/dbg_scp_compiler", "Hlsl2Python/gencode", "Hlsl2Numpy/gencode") {
-		setenv("CopyTargetDir", $$);
-		copyfiles(".", "../../../../%CopyTargetDir%", "BatchCommand.*");
-		copyfiles(".", "../../../../%CopyTargetDir%", "BatchScriptApi.*");
-		copyfiles(".", "../../../../%CopyTargetDir%", "Common.*");
-		copyfiles(".", "../../../../%CopyTargetDir%", "DotnetStoryScript.*");
-		copyfiles(".", "../../../../%CopyTargetDir%", "dsl.*");
+	for_each_value("GameDemo", "CSharpGameFramework", "apkstudio/DotnetApp/copytool", "myuzu/tools/dbg_scp_compiler", "Hlsl2Python/gencode", "Hlsl2Numpy/gencode") {
+		copy_files(".", "../../../../" + $$, "BatchCommand.*");
+		copy_files(".", "../../../../" + $$, "BatchScriptApi.*");
+		copy_files(".", "../../../../" + $$, "Common.*");
+		copy_files(".", "../../../../" + $$, "DotnetStoryScript.*");
+		copy_files(".", "../../../../" + $$, "dsl.*");
 
-		copyfile("TextCopy.dll", "../../../../%CopyTargetDir%/TextCopy.dll");
-		copyfile("LitJson.dll", "../../../../%CopyTargetDir%/LitJson.dll");
-		copyfile("ScriptFrameworkLibrary.dll", "../../../../%CopyTargetDir%/ScriptFrameworkLibrary.dll");
-		copyfile("Microsoft.Extensions.DependencyInjection.Abstractions.dll", "../../../../%CopyTargetDir%/Microsoft.Extensions.DependencyInjection.Abstractions.dll");
+		copy_file("TextCopy.dll", "../../../../" + $$ + "/TextCopy.dll");
+		copy_file("LitJson.dll", "../../../../" + $$ + "/LitJson.dll");
+		copy_file("ScriptFrameworkLibrary.dll", "../../../../" + $$ + "/ScriptFrameworkLibrary.dll");
+		copy_file("Microsoft.Extensions.DependencyInjection.Abstractions.dll", "../../../../" + $$ + "/Microsoft.Extensions.DependencyInjection.Abstractions.dll");
 	};
 
-	if (argnum() <= 1) {
+	// DebugScript VM (only used by the myuzu debug-script compiler toolchain)
+	copy_files(".", "../../../../myuzu/tools/dbg_scp_compiler", "DebugScriptVM.*");
+
+	if (arg_num() <= 1) {
 		echo("press any key ...");
 		read();
 	};

@@ -1,12 +1,12 @@
 script(main)
 {
-	curdir = getscriptdir();
+	curdir = get_script_directory();
 	cd(curdir);
-	fileecho(true);
+	file_echo(true);
 
-	copyfiles(".", "../../x64/Debug/Managed","MyApp.*");
+	copy_files(".", "../../x64/Debug/Managed","MyApp.*");
 
-	if (argnum() <= 1) {
+	if (arg_num() <= 1) {
 		echo("press any key ...");
 		read();
 	};

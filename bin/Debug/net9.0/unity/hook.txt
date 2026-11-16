@@ -47,7 +47,7 @@ hook(CompileTest)
 		$d = $c < 1 ? 2 : 3;
 		$e[0] = $d ?? 1;
 		$f : int = struct($d, ptr(ptr(TestStru3.ptest2).ptest).size);
-		$g : int = dumpcascadeptr(addr($e), 0x08, 0x08);
+		$g : int = dump_cascade_ptr(addr($e), 0x08, 0x08);
 		$h1 : int = offset(TestStru3.ptest2[3].size);
 		$h2 : int = size(TestStru3);
 		ffi(proto(void,noparams,[int,int],[],[]),0x1234,121,121);
@@ -65,7 +65,7 @@ hook(TestMacro1)
 		printf("TestMacro1 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
 
 		SetTimeScale(0.0001);
-		printf("TimeScale:%f time:%f\n",GetTimeScale(), floattime());
+		printf("TimeScale:%f time:%f\n",GetTimeScale(), float_time());
 		WriteLog("test test test");
 		FlushLog();
 
@@ -105,7 +105,7 @@ hook(TestMacro3)
 
 		if(platform()==0){
 			//test code on windows
-			dumpcascadeptr(argv(2),0);
+			dump_cascade_ptr(argv(2),0);
 			if($a==123){
 				ptrset(argv(0),4,1);
 			}
@@ -127,10 +127,10 @@ hook(TestMacro3)
 			printf(">>> %f\n", inc($j, 2.0));
 			printf(">>> %f\n", inc($j, 3.0));
 			printf("%d %d %d\n", stkix(), hookid(), hookver());
-			printf("str contains %d %d\n", stringcontains("test","es","te"), stringnotcontains("test","es","fg"));
-			printf("str contains any %d %d\n", stringcontainsany("test","es","te"), stringnotcontainsany("test","es","fg"));
-			printf("str find %d %d\n", stringfind("test","es"), stringrfind("test","es"));
-			printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
+			printf("str contains %d %d\n", string_contains("test","es","te"), string_not_contains("test","es","fg"));
+			printf("str contains any %d %d\n", string_contains_any("test","es","te"), string_not_contains_any("test","es","fg"));
+			printf("str find %d %d\n", string_find("test","es"), string_right_find("test","es"));
+			printf("str find2 %d %d\n", string_find("test","es",1), string_right_find("test","es",0));
 			printf("load:%llx\n", LoadLib("kernel32.dll"));
 			printf("proc:%llx\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
 			$addr:int = 0x800010004003;
@@ -245,7 +245,7 @@ hook("MonoBehaviour::CallAwake")
 		//printf("%s",$str);
 		if($className=="MainCameraTag"){
 			WriteLog($str);
-			dumpstack("#MonoBehaviour::CallAwake");
+			dump_stack("#MonoBehaviour::CallAwake");
 			LogStack("#MonoBehaviour::CallAwake");
 
 			if (@g_run_startup == 0) {
@@ -279,7 +279,7 @@ hook("MonoBehaviour::Start")
 		//printf("%s",$str);
 		if($className=="MainCameraTag"){
 			WriteLog($str);
-			dumpstack("#MonoBehaviour::Start");
+			dump_stack("#MonoBehaviour::Start");
 			LogStack("#MonoBehaviour::Start");
 
 			if (@g_run_startup == 0) {
@@ -307,7 +307,7 @@ hook("MonoBehaviour::Start")
 //		$cmd:int = ptrget(argv(0),4);
 //		$cmdName:string = ptrget(argv(1),8);
 //		//printf("ExecuteCommandBufferRenderCommand:%d %s\n", $cmd, $cmdName);
-//		//dumpstack("#ExecuteCommandBufferRenderCommand");
+//		//dump_stack("#ExecuteCommandBufferRenderCommand");
 //	};
 //};
 //hook("GfxDeviceWorker::RunCommand")
@@ -319,7 +319,7 @@ hook("MonoBehaviour::Start")
 //		$cmdName:string = ptrget(argv(3),8);
 //
 //		//printf("GfxDeviceWorker::RunCommand:%d %s\n", $cmd, $cmdName);
-//		//dumpstack("#GfxDeviceWorker::RunCommand");
+//		//dump_stack("#GfxDeviceWorker::RunCommand");
 //	};
 //};
 //hook("TaskExecutor::HandleCommandStream")
@@ -331,7 +331,7 @@ hook("MonoBehaviour::Start")
 //		$cmdName:string = ptrget(argv(3),8);
 //
 //		//printf("TaskExecutor::HandleCommandStream cmd:%d %s\n", $cmdType, $cmdName);
-//		//dumpstack("#TaskExecutor::HandleCommandStream");
+//		//dump_stack("#TaskExecutor::HandleCommandStream");
 //	};
 //};
 //hook("HookGfxDeviceClient")
@@ -339,7 +339,7 @@ hook("MonoBehaviour::Start")
 //	onenter{
 //		$tag:string = ptrget(argv(0),8);
 //		//printf("HookGfxDeviceClient:%s\n", $tag);
-//		//dumpstack("#"+$tag);
+//		//dump_stack("#"+$tag);
 //	};
 //};
 //hook("HookGfxDeviceVK")
@@ -348,7 +348,7 @@ hook("MonoBehaviour::Start")
 //		$tag:string = ptrget(argv(0),8);
 //		$shader:string = ptrget(argv(1),8);
 //		//printf("HookGfxDeviceVK:%s shader:%s\n", $tag, $shader);
-//		//dumpstack("#"+$tag);
+//		//dump_stack("#"+$tag);
 //	};
 //};
 hook("MemoryManager::GetAllocator")
@@ -362,19 +362,19 @@ hook("MemoryManager::GetAllocator")
 		$c:int = ptrget(argv(2),4);
 		if ($a == 0) {
 			printf("MemoryManager::GetAllocator memlabel:%d return null\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
+			//dump_stack("MemoryManager::GetAllocator");
 		}
 		elif ($c == 2) {
 			//assert(0);
 		}
 		elif ($c == 153) {
 			//printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
+			//dump_stack("MemoryManager::GetAllocator");
 			//assert(0);
 		}
 		elif ($c >= 166) {
 			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
+			//dump_stack("MemoryManager::GetAllocator");
 		};
 	};
 };
@@ -388,7 +388,7 @@ hook("MemoryManager::GetAllocatorOnNull")
 		printf("%s",$str);
 		WriteLog($str);
 
-		//dumpstack("MemoryManager::GetAllocatorOnNull");
+		//dump_stack("MemoryManager::GetAllocatorOnNull");
 		return 0;
 	};
 	onexit{

@@ -29,7 +29,6 @@ namespace BatchCommand.Api
             RegisterFileApis();
             RegisterDiffApis();
             RegisterOtherUtilApis();
-            RegisterClipboardApis();
             RegisterDslContextApis();
             RegisterRegexApis();
             RegisterFrameworkAliasApis();
@@ -70,12 +69,12 @@ namespace BatchCommand.Api
             Api.ProcessApi.RegisterApis();
         }
 
-        /// <summary>BatchScript related apis (BatchScriptApi.cs): import, redirectcall, executemetadsl, the script task pool, nativelog, quote/strip, help, ...</summary>
+        /// <summary>BatchScript related apis (BatchScriptApi.cs): import, redirect_call, executemetadsl, the script task pool, native_log, quote/strip, help, ...</summary>
         public static void RegisterBatchScriptApis()
         {
             // Basic framework APIs
             BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
-            BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name, args, ...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
+            BatchScript.Register("redirect_call", "redirect_call(func_name) or redirect_call(func_name,args) or redirect_call(func_name, args, ...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
             BatchScript.Register("executemetadsl", "executemetadsl(dsl_code), return (bool, result)", false, new ExpressionFactoryHelper<ExecuteMetaDslExp>());
             BatchScript.Register("execute_metadsl", "execute_metadsl(dsl_code), return (bool, result)", new ExpressionFactoryHelper<ExecuteMetaDslExp>());
             BatchScript.Register("call_metadsl_task", "call_metadsl_task(task_index,func_name,arg1,arg2,...) - queue a dsl func to worker thread task_index, an index at or past the default num raises the default to task_index+1 (an index more than 10 past it is rejected as a typo), for slow non-ui work such as sqlite writes, fire-and-forget, returns bool", new ExpressionFactoryHelper<CallMetaDslTaskExp>());
@@ -84,7 +83,7 @@ namespace BatchCommand.Api
             BatchScript.Register("set_dsl_file_worker_count", "set_dsl_file_worker_count(num) - set the default worker thread num of the dsl file execution pool (web pages / filter callbacks, ExecuteDslFileInWorker; hosts may reserve leading workers - AgentCore reserves worker 0 for filter callbacks and worker 1 for web pages), never below the host minimum, extra workers retire after being idle, returns the live num", new ExpressionFactoryHelper<SetDslFileWorkerCountExp>());
             BatchScript.Register("get_dsl_file_worker_count", "get_dsl_file_worker_count() - returns the live worker thread num of the dsl file execution pool", new ExpressionFactoryHelper<GetDslFileWorkerCountExp>());
             BatchScript.Register("execute_dsl_file_in_worker", "execute_dsl_file_in_worker(path, func [, args] [, timeout_ms] [, worker_index]) - run a named function of a full dsl file on the worker pool (relative paths resolve against the script base path); args is a list or null, timeout_ms defaults to 10000 (<0 infinite, 0 fire and forget), worker_index defaults to the host worker minimum (AgentCore: 2 - leading workers are reserved); an index past the live worker count temporarily grows the pool (extra workers retire after being idle), indices above 100 are rejected; blocks the caller up to the timeout; returns (return_value, has_error, error_text); must not be called from inside a worker script (use call_metadsl_task there)", new ExpressionFactoryHelper<ExecuteDslFileInWorkerExp>());
-            BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
+            BatchScript.Register("native_log", "native_log(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
             BatchScript.Register("quote_string", "quote_string(str)", new ExpressionFactoryHelper<QuoteStringExp>());
             BatchScript.Register("stripquotes", "stripquotes(str)", false, new ExpressionFactoryHelper<StripQuotesExp>());
@@ -93,9 +92,8 @@ namespace BatchCommand.Api
             BatchScript.Register("try_get_raw_switch", "try_get_raw_switch(str)", new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
             BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
-            BatchScript.Register("get_string_in_length", "get_string_in_length(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
             BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
-            BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
+            BatchScript.Register("help_all", "help_all(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
         }
 
         /// <summary>
@@ -107,7 +105,79 @@ namespace BatchCommand.Api
         /// </summary>
         public static void RegisterSharedApis()
         {
-            BatchScript.Register("append_line", "append_line(stringbuilder, val)", new ExpressionFactoryHelper<AppendLineExp>());
+            BatchCommand.BatchScript.Register("append", "append(stringbuilder, val)", new ExpressionFactoryHelper<AppendExp>());
+            BatchCommand.BatchScript.Register("append_string", "append_string(stringbuilder, val)", false, new ExpressionFactoryHelper<AppendExp>());
+            BatchCommand.BatchScript.Register("append_line", "append_line(stringbuilder, val)", new ExpressionFactoryHelper<AppendLineExp>());
+            BatchCommand.BatchScript.Register("string_index_of", "string_index_of(str, substr[, start, count])", new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("string_last_index_of", "string_last_index_of(str, substr[, start, count])", new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("string_index_of_any", "string_index_of_any(str, substr[, start, count])", new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("string_last_index_of_any", "string_last_index_of_any(str, substr[, start, count])", new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("str_index_of", "str_index_of(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("str_last_index_of", "str_last_index_of(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("str_index_of_any", "str_index_of_any(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("str_last_index_of_any", "str_last_index_of_any(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("string_concat", "string_concat(str1, str2, ...)", new ExpressionFactoryHelper<StringConcatExp>());
+            BatchCommand.BatchScript.Register("str_concat", "str_concat(str1, str2, ...)", false, new ExpressionFactoryHelper<StringConcatExp>());
+            BatchCommand.BatchScript.Register("concat_string", "concat_string(str1, str2, ...)", new ExpressionFactoryHelper<StringConcatExp>());
+            BatchCommand.BatchScript.Register("concat_str", "concat_str(str1, str2, ...)", false, new ExpressionFactoryHelper<StringConcatExp>());
+            BatchCommand.BatchScript.Register("char_to_int", "char_to_int(char_str)", new ExpressionFactoryHelper<CharToIntExp>());
+            BatchCommand.BatchScript.Register("int_to_char", "int_to_char(int_ascii)", new ExpressionFactoryHelper<IntToCharExp>());
+
+            // alias for LLM Imaginary
+            BatchCommand.BatchScript.Register("string_find", "string_find(str, substr[, start, count])", new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("stringfind", "stringfind(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("find_string", "find_string(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("findstring", "findstring(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("find_in_string", "find_in_string(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("str_find", "str_find(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("strfind", "strfind(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("find_str", "find_str(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("findstr", "findstr(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("find_in_str", "find_in_str(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("index_of", "index_of(str, substr[, start, count])", new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("find_index_of", "find_index_of(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("last_index_of", "last_index_of(str, substr[, start, count])", new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("find_last_index_of", "find_last_index_of(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("index_of_any", "index_of_any(str, char_list[, start, count])", new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("find_index_of_any", "find_index_of_any(str, char_list[, start, count])", new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("last_index_of_any", "last_index_of_any(str, char_list[, start, count])", new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("find_last_index_of_any", "find_last_index_of_any(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("indexof", "indexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("lastindexof", "lastindexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("indexofany", "indexofany(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("lastindexofany", "lastindexofany(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("string_indexof", "string_indexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("string_last_indexof", "string_last_indexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("string_indexof_any", "string_indexof_any(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("string_last_indexof_any", "string_last_indexof_any(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("stringindexof", "stringindexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("stringlastindexof", "stringlastindexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("stringindexofany", "stringindexofany(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("stringlastindexofany", "stringlastindexofany(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("str_indexof", "str_indexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("str_last_indexof", "str_last_indexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("str_indexof_any", "str_indexof_any(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("str_last_indexof_any", "str_last_indexof_any(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("strindexof", "strindexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            BatchCommand.BatchScript.Register("strlastindexof", "strlastindexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            BatchCommand.BatchScript.Register("strindexofany", "strindexofany(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("strlastindexofany", "strlastindexofany(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            BatchCommand.BatchScript.Register("length", "length(str) or length(list) or length(hashtable)", new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("len", "len(str) or len(list) or len(hashtable)", new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("size", "size(str) or size(list) or size(hashtable)", new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("count", "count(str) or count(list) or count(hashtable)", new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("size_of", "size_of(str) or size_of(list) or size_of(hashtable)", false, new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("get_count", "get_count(str) or get_count(list) or get_count(hashtable)", false, new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("get_size", "get_size(str) or get_size(list) or get_size(hashtable)", false, new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("get_length", "get_length(str) or get_length(list) or get_length(hashtable)", false, new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("array_size", "array_size(list)", false, new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("array_count", "array_count(list)", false, new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("array_length", "array_length(list)", false, new ExpressionFactoryHelper<SizeExp>());
+            BatchCommand.BatchScript.Register("string_append", "string_append(str1, str2, ...)", false, new ExpressionFactoryHelper<StringConcatExp>());
+            BatchCommand.BatchScript.Register("str_append", "str_append(str1, str2, ...)", false, new ExpressionFactoryHelper<StringConcatExp>());
+            BatchCommand.BatchScript.Register("concat", "concat(str1, str2, ...)", new ExpressionFactoryHelper<StringConcatExp>());
+            BatchCommand.BatchScript.Register("strcat", "strcat(str1, str2, ...)", new ExpressionFactoryHelper<StringConcatExp>());
+            BatchCommand.BatchScript.Register("str_cat", "str_cat(str1, str2, ...)", false, new ExpressionFactoryHelper<StringConcatExp>());
         }
 
         /// <summary>
@@ -142,11 +212,9 @@ namespace BatchCommand.Api
             BatchScript.Register("append_text_to_file", "append_text_to_file(path, content[, encoding])", false, new ExpressionFactoryHelper<AppendFileExp>());
             BatchScript.Register("append_line_to_file", "append_line_to_file(path, content[, encoding])", false, new ExpressionFactoryHelper<AppendFileExp>());
             BatchScript.Register("append_all_text", "append_all_text(path, content[, encoding])", false, new ExpressionFactoryHelper<AppendFileExp>());
-            BatchScript.Register("copy_file", "copy_file(sourcePath, destPath, overwrite)", new ExpressionFactoryHelper<CopyFileExp>());
-            BatchScript.Register("move_file", "move_file(sourcePath, destPath, overwrite)", new ExpressionFactoryHelper<MoveFileExp>());
+            BatchScript.Register("copy_file_ex", "copy_file_ex(sourcePath, destPath, overwrite) - copy file with explicit overwrite control (copy_file is the 2-arg always-overwrite FrameworkApiAlias clone)", new ExpressionFactoryHelper<CopyFileExp>());
+            BatchScript.Register("move_file_ex", "move_file_ex(sourcePath, destPath, overwrite) - move file with explicit overwrite control (move_file is the 2-arg always-overwrite FrameworkApiAlias clone)", new ExpressionFactoryHelper<MoveFileExp>());
             BatchScript.Register("rename_file", "rename_file(source, destination)", new ExpressionFactoryHelper<MoveFileExp>());
-            BatchScript.Register("file_exists", "file_exists(path)", new ExpressionFactoryHelper<FileExistsExp>());
-            BatchScript.Register("file_exist", "file_exist(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             BatchScript.Register("exist_file", "exist_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             BatchScript.Register("exists_file", "exists_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             BatchScript.Register("is_file", "is_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
@@ -158,12 +226,6 @@ namespace BatchCommand.Api
             BatchScript.Register("file_has_bom", "file_has_bom(path) - check whether file has BOM", new ExpressionFactoryHelper<FileHasBomExp>());
             BatchScript.Register("file_add_bom", "file_add_bom(path) - add BOM to file (skip if already has BOM)", new ExpressionFactoryHelper<FileAddBomExp>());
             BatchScript.Register("file_remove_bom", "file_remove_bom(path) - remove BOM from file (skip if no BOM)", new ExpressionFactoryHelper<FileRemoveBomExp>());
-            BatchScript.Register("dir_exists", "dir_exists(path)", new ExpressionFactoryHelper<DirExistsExp>());
-            BatchScript.Register("dir_exist", "dir_exist(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
-            BatchScript.Register("exist_dir", "exist_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
-            BatchScript.Register("exists_dir", "exists_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
-            BatchScript.Register("is_dir", "is_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
-            BatchScript.Register("isdir", "isdir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
             BatchScript.Register("dir_not_exists", "dir_not_exists(path)", new ExpressionFactoryHelper<DirNotExistsExp>());
             BatchScript.Register("dir_not_exist", "dir_not_exist(path)", false, new ExpressionFactoryHelper<DirNotExistsExp>());
             BatchScript.Register("not_exist_dir", "not_exist_dir(path)", false, new ExpressionFactoryHelper<DirNotExistsExp>());
@@ -172,8 +234,6 @@ namespace BatchCommand.Api
             BatchScript.Register("directory_not_exist", "directory_not_exist(path)", false, new ExpressionFactoryHelper<DirNotExistsExp>());
             BatchScript.Register("not_exist_directory", "not_exist_directory(path)", false, new ExpressionFactoryHelper<DirNotExistsExp>());
             BatchScript.Register("not_exists_directory", "not_exists_directory(path)", false, new ExpressionFactoryHelper<DirNotExistsExp>());
-            BatchScript.Register("path_exists", "path_exists(path)", new ExpressionFactoryHelper<PathExistsExp>());
-            BatchScript.Register("path_exist", "path_exist(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             BatchScript.Register("exist_path", "exist_path(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             BatchScript.Register("exists_path", "exists_path(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             BatchScript.Register("exist", "exist(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
@@ -283,8 +343,6 @@ namespace BatchCommand.Api
             BatchScript.Register("toprettystring", "toprettystring(val) - convert to a more readable form by unescaping escape sequences (\\n \\r \\t \\\" \\\\ \\uXXXX \\xH...) into their actual characters", new ExpressionFactoryHelper<ToPrettyStringExp>());
             BatchScript.Register("to_pretty_str", "to_pretty_str(val) - convert to a more readable form by unescaping escape sequences (\\n \\r \\t \\\" \\\\ \\uXXXX \\xH...) into their actual characters", false, new ExpressionFactoryHelper<ToPrettyStringExp>());
             BatchScript.Register("toprettystr", "toprettystr(val) - convert to a more readable form by unescaping escape sequences (\\n \\r \\t \\\" \\\\ \\uXXXX \\xH...) into their actual characters", false, new ExpressionFactoryHelper<ToPrettyStringExp>());
-            BatchScript.Register("string_length", "string_length(str)", new ExpressionFactoryHelper<StringLengthExp>());
-            BatchScript.Register("str_length", "str_length(str)", false, new ExpressionFactoryHelper<StringLengthExp>());
             BatchScript.Register("string_starts_with", "string_starts_with(str, substr)", new ExpressionFactoryHelper<StringStartsWithExp>());
             BatchScript.Register("str_starts_with", "str_starts_with(str, substr)", false, new ExpressionFactoryHelper<StringStartsWithExp>());
             BatchScript.Register("string_ends_with", "string_ends_with(str, substr)", new ExpressionFactoryHelper<StringEndsWithExp>());
@@ -321,20 +379,8 @@ namespace BatchCommand.Api
             BatchScript.Register("array_slice", "array_slice(array[, index, count])", false, new ExpressionFactoryHelper<SubArrayExp>());
             BatchScript.Register("array_get_range", "array_get_range(array[, index, count])", false, new ExpressionFactoryHelper<SubArrayExp>());
 
-            // string length aliases
-            BatchScript.Register("stringlength", "stringlength(val)", false, new ExpressionFactoryHelper<StringLengthExp>());
-            BatchScript.Register("strlength", "strlength(val)", false, new ExpressionFactoryHelper<StringLengthExp>());
-            BatchScript.Register("strlen", "strlen(val)", new ExpressionFactoryHelper<StringLengthExp>());
-            BatchScript.Register("str_len", "str_len(val)", false, new ExpressionFactoryHelper<StringLengthExp>());
             BatchScript.Register("starts_with", "starts_with(str, substr)", new ExpressionFactoryHelper<StringStartsWithExp>());
             BatchScript.Register("ends_with", "ends_with(str, substr)", new ExpressionFactoryHelper<StringEndsWithExp>());
-        }
-
-        /// <summary>Clipboard apis (TextCopy, moved from AgentCore OtherOperationsApi.cs).</summary>
-        public static void RegisterClipboardApis()
-        {
-            BatchScript.Register("get_clipboard", "get_clipboard()", new ExpressionFactoryHelper<GetClipboardExp>());
-            BatchScript.Register("set_clipboard", "set_clipboard(text)", new ExpressionFactoryHelper<SetClipboardExp>());
         }
 
         /// <summary>

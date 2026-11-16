@@ -24,7 +24,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1)
-                throw new Exception("Expected: startasynctask(func_name, args...) api");
+                throw new Exception("Expected: start_async_task(func_name, args...) api");
             string funcName = operands[0].AsString;
             var args = BatchScript.NewCalculatorValueList();
             for (int i = 1; i < operands.Count; i++) {
@@ -40,7 +40,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 0)
-                throw new Exception("Expected: tickasynctasks() api");
+                throw new Exception("Expected: tick_async_tasks() api");
             int activeCount = BatchScript.TickAsyncTasks();
             return BoxedValue.From(activeCount);
         }
@@ -50,7 +50,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
-                throw new Exception("Expected: stopasynctask(handle) api");
+                throw new Exception("Expected: stop_async_task(handle) api");
             long handle = operands[0].GetLong();
             bool removed = BatchScript.StopAsyncTask(handle);
             return BoxedValue.FromBool(removed);
@@ -61,7 +61,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 0)
-                throw new Exception("Expected: stopcompletedasynctasks() api");
+                throw new Exception("Expected: stop_completed_async_tasks() api");
             int removedCount = BatchScript.StopCompletedAsyncTasks();
             return BoxedValue.From(removedCount);
         }
@@ -71,7 +71,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
-                throw new Exception("Expected: getasynctaskresult(handle) api");
+                throw new Exception("Expected: get_async_task_result(handle) api");
             long handle = operands[0].GetLong();
             bool res = BatchScript.TryGetAsyncTaskResult(handle, out bool isCompleted, out BoxedValue value);
             return Tuple.Create(BoxedValue.FromBool(res), BoxedValue.FromBool(isCompleted), value);
@@ -82,7 +82,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: debuggerlaunch() api");
+                throw new Exception("Expected: debugger_launch() api");
             bool r = false;
             if (!Debugger.IsAttached) {
                 r = Debugger.Launch();
@@ -95,7 +95,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: debuggerbreak() api");
+                throw new Exception("Expected: debugger_break() api");
             Debugger.Break();
             return BoxedValue.FromBool(Debugger.IsAttached);
         }
@@ -105,7 +105,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
-                throw new Exception("Expected: isosplatform(str_osp) api");
+                throw new Exception("Expected: is_os_platform(str_osp) api");
             if (operands.Count > 0) {
                 string os = operands[0].AsString;
                 if (!string.IsNullOrEmpty(os)) {
@@ -129,7 +129,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 1)
-                throw new Exception("Expected: timestat(bool) or timestat() api");
+                throw new Exception("Expected: time_statistic_on(bool) or time_statistic_on() api");
             if (operands.Count >= 1) {
                 BatchScript.TimeStatisticOn = operands[0].GetBool();
             }
@@ -335,7 +335,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getscriptdir() api");
+                throw new Exception("Expected: get_script_directory() api");
             return BatchScript.ScriptDirectory;
         }
     }
@@ -356,7 +356,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 2)
-                throw new Exception("Expected: readline() api, Console.ReadLine");
+                throw new Exception("Expected: read_line() api, Console.ReadLine");
             if (operands.Count >= 1) {
                 string dir = operands[0].AsString;
                 if (string.IsNullOrEmpty(dir)) {
@@ -648,7 +648,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: gettitle() api, Console.Title, only on win32");
+                throw new Exception("Expected: get_title() api, Console.Title, only on win32");
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 return Console.Title;
             }
@@ -661,7 +661,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
-                throw new Exception("Expected: settitle(title) api");
+                throw new Exception("Expected: set_title(title) api");
             if (operands.Count >= 1) {
                 var title = operands[0].AsString;
                 if (null != title) {
@@ -677,7 +677,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getbufferwidth() api");
+                throw new Exception("Expected: get_buffer_width() api");
             return Console.BufferWidth;
         }
     }
@@ -687,7 +687,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getbufferheight() api");
+                throw new Exception("Expected: get_buffer_height() api");
             return Console.BufferHeight;
         }
     }
@@ -697,7 +697,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2)
-                throw new Exception("Expected: setbuffersize(width,height) api");
+                throw new Exception("Expected: set_buffer_size(width,height) api");
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 if (operands.Count >= 2) {
                     int w = operands[0].GetInt();
@@ -714,7 +714,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getcursorleft() api");
+                throw new Exception("Expected: get_cursor_left() api");
             return Console.CursorLeft;
         }
     }
@@ -724,7 +724,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getcursortop() api");
+                throw new Exception("Expected: get_cursor_top() api");
             return Console.CursorTop;
         }
     }
@@ -734,7 +734,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 2)
-                throw new Exception("Expected: setcursorpos(left,top) api");
+                throw new Exception("Expected: set_cursor_pos(left,top) api");
             if (operands.Count >= 2) {
                 int left = operands[0].GetInt();
                 int top = operands[1].GetInt();
@@ -749,7 +749,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getbgcolor() api, return str");
+                throw new Exception("Expected: get_bg_color() api, return str");
             //Enum.GetName(typeof(ConsoleColor), Console.BackgroundColor);
             return Console.BackgroundColor.ToString();
         }
@@ -760,7 +760,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
-                throw new Exception("Expected: setbgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White");
+                throw new Exception("Expected: set_bg_color(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White");
             if (operands.Count >= 1) {
                 var color = operands[0].AsString;
                 if (!string.IsNullOrEmpty(color)) {
@@ -776,7 +776,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getfgcolor() api, return str");
+                throw new Exception("Expected: get_fg_color() api, return str");
             //Enum.GetName(typeof(ConsoleColor), Console.ForegroundColor);
             return Console.ForegroundColor.ToString();
         }
@@ -787,7 +787,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 1)
-                throw new Exception("Expected: setfgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White");
+                throw new Exception("Expected: set_fg_color(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White");
             if (operands.Count >= 1) {
                 var color = operands[0].AsString;
                 if (!string.IsNullOrEmpty(color)) {
@@ -803,7 +803,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: resetcolor() api");
+                throw new Exception("Expected: reset_color() api");
             Console.ResetColor();
             return BoxedValue.NullObject;
         }
@@ -814,7 +814,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count > 2)
-                throw new Exception("Expected: setencoding([input[,output]]) api, def is UTF8");
+                throw new Exception("Expected: set_encoding([input[,output]]) api, def is UTF8");
             if (operands.Count >= 1) {
                 var encoding1 = operands[0];
                 var encoding2 = encoding1;
@@ -837,7 +837,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getinputencoding() api, return Encoding");
+                throw new Exception("Expected: get_input_encoding() api, return Encoding");
             return BoxedValue.FromObject(Console.InputEncoding);
         }
     }
@@ -847,7 +847,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: getoutputencoding() api, return Encoding");
+                throw new Exception("Expected: get_output_encoding() api, return Encoding");
             return BoxedValue.FromObject(Console.OutputEncoding);
         }
     }
@@ -877,7 +877,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count != 0)
-                throw new Exception("Expected: runtimeinfo() api, return typeof(RuntimeInformation)");
+                throw new Exception("Expected: runtime_information() api, return typeof(RuntimeInformation)");
             return typeof(RuntimeInformation);
         }
     }
@@ -916,7 +916,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3)
-                throw new Exception("Expected: regread(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG");
+                throw new Exception("Expected: reg_read(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG");
             if (operands.Count >= 2) {
                 string keyName = operands[0].AsString;
                 string valName = operands[1].AsString;
@@ -936,7 +936,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 4)
-                throw new Exception("Expected: regwrite(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword");
+                throw new Exception("Expected: reg_write(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword");
             if (operands.Count >= 3) {
                 string keyName = operands[0].AsString;
                 string valName = operands[1].AsString;
@@ -971,7 +971,7 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2)
-                throw new Exception("Expected: regdelete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG");
+                throw new Exception("Expected: reg_delete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG");
             if (operands.Count >= 1) {
                 string keyName = operands[0].AsString;
                 bool delVal = false;
@@ -1456,60 +1456,61 @@ namespace BatchCommand
             }
 
             //register Gm Command
-            Calculator.Register("startasynctask", "startasynctask(func_name,arg1,arg2,...) api, start an async script function and return a handle", new ExpressionFactoryHelper<StartAsyncTaskExp>());
-            Calculator.Register("tickasynctasks", "tickasynctasks() api, tick all async tasks, return active task count", new ExpressionFactoryHelper<TickAsyncTasksExp>());
-            Calculator.Register("stopasynctask", "stopasynctask(handle) api, stop and remove an async task by handle", new ExpressionFactoryHelper<StopAsyncTaskExp>());
-            Calculator.Register("stopcompletedasynctasks", "stopcompletedasynctasks() api, remove all completed async tasks and return removed count", new ExpressionFactoryHelper<StopCompletedAsyncTasksExp>());
-            Calculator.Register("getasynctaskresult", "getasynctaskresult(handle) api, get the result of a completed async task, tuple (success, completed, result)", new ExpressionFactoryHelper<GetAsyncTaskResultExp>());
-            Calculator.Register("debuggerlaunch", "debuggerlaunch() api", new ExpressionFactoryHelper<DebuggerLaunchExp>());
-            Calculator.Register("debuggerbreak", "debuggerbreak() api", new ExpressionFactoryHelper<DebuggerBreakExp>());
-            Calculator.Register("isosplatform", "isosplatform(str_osp) api", new ExpressionFactoryHelper<IsOsPlatformExp>());
-            Calculator.Register("getstringlength", "getstringlength(str)", new ExpressionFactoryHelper<BatchCommand.Api.StringLengthExp>());
-            Calculator.Register("getstringinlength", "getstringinlength(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<BatchCommand.Api.GetStringInLengthExp>());
-            Calculator.Register("clone", "clone(v)", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.CloneExp>());
-            Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
-            Calculator.Register("time", "time() or timestamp() api", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.TimeStampExp>());
-            Calculator.Register("timestamp", "time() or timestamp() api", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.TimeStampExp>());
-            Calculator.Register("getelapsedms", "getelapsedms() api, return elapsed milliseconds (time)", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.GetElapsedTimeMsExp>());
-            Calculator.Register("getelapsedus", "getelapsedus() api, return elapsed microseconds (time)", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.GetElapsedTimeUsExp>());
+            Calculator.Register("start_async_task", "start_async_task(func_name,arg1,arg2,...) api, start an async script function and return a handle", new ExpressionFactoryHelper<StartAsyncTaskExp>());
+            Calculator.Register("tick_async_tasks", "tick_async_tasks() api, tick all async tasks, return active task count", new ExpressionFactoryHelper<TickAsyncTasksExp>());
+            Calculator.Register("stop_async_task", "stop_async_task(handle) api, stop and remove an async task by handle", new ExpressionFactoryHelper<StopAsyncTaskExp>());
+            Calculator.Register("stop_completed_async_tasks", "stop_completed_async_tasks() api, remove all completed async tasks and return removed count", new ExpressionFactoryHelper<StopCompletedAsyncTasksExp>());
+            Calculator.Register("get_async_task_result", "get_async_task_result(handle) api, get the result of a completed async task, tuple (success, completed, result)", new ExpressionFactoryHelper<GetAsyncTaskResultExp>());
+            Calculator.Register("debugger_launch", "debugger_launch() api", new ExpressionFactoryHelper<DebuggerLaunchExp>());
+            Calculator.Register("debugger_break", "debugger_break() api", new ExpressionFactoryHelper<DebuggerBreakExp>());
+            Calculator.Register("is_os_platform", "is_os_platform(str_osp) api", new ExpressionFactoryHelper<IsOsPlatformExp>());
+            Calculator.Register("time_statistic_on", "time_statistic_on(bool) or time_statistic_on() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
             Calculator.Register("grep", "grep(lines,regex[,context_lines_after,context_lines_before]) api", new ExpressionFactoryHelper<GrepExp>());
             Calculator.Register("subst", "subst(lines,regex,subst[,count]) api, count is the max count of per subst", new ExpressionFactoryHelper<SubstExp>());
             Calculator.Register("awk", "awk(lines,scp[,removeEmpties,sep1,sep2,...]) api", new ExpressionFactoryHelper<AwkExp>());
-            Calculator.Register("getscriptdir", "getscriptdir() api", new ExpressionFactoryHelper<GetScriptDirectoryExp>());
+            Calculator.Register("get_script_directory", "get_script_directory() api", new ExpressionFactoryHelper<GetScriptDirectoryExp>());
             Calculator.Register("pause", "pause() api", new ExpressionFactoryHelper<PauseExp>());
             Calculator.Register("clear", "clear() api, clear console", new ExpressionFactoryHelper<ClearExp>());
             Calculator.Register("write", "write(fmt,arg1,arg2,....) api, Console.Write", new ExpressionFactoryHelper<WriteExp>());
-            Calculator.Register("writeblock", "writeblock{:txt:} or writeblock(begin_template_code_chars,end_template_code_chars){:txt:} api, Console.Write with macro expand, The default template code delimiters are \"{%{#\" and \"%}#}\"; specifically, {% %} serve as the template code brackets, while {# #} denote template code comments.", new ExpressionFactoryHelper<WriteBlockExp>());
+            Calculator.Register("write_block", "write_block{:txt:} or write_block(begin_template_code_chars,end_template_code_chars){:txt:} api, Console.Write with macro expand, The default template code delimiters are \"{%{#\" and \"%}#}\"; specifically, {% %} serve as the template code brackets, while {# #} denote template code comments.", new ExpressionFactoryHelper<WriteBlockExp>());
             Calculator.Register("block", "block{:txt:} or block(begin_template_code_chars,end_template_code_chars){:txt:} api, macro expand, The default template code delimiters are \"{%{#\" and \"%}#}\"; specifically, {% %} serve as the template code brackets, while {# #} denote template code comments.", new ExpressionFactoryHelper<BlockExp>());
-            Calculator.Register("readline", "readline() api, Console.ReadLine", new ExpressionFactoryHelper<ReadLineExp>());
+            Calculator.Register("read_line", "read_line() api, Console.ReadLine", new ExpressionFactoryHelper<ReadLineExp>());
             Calculator.Register("read", "read([nodisplay]) api, Console.Read", new ExpressionFactoryHelper<ReadExp>());
             Calculator.Register("beep", "beep([frequence,duration]) api, Console.Beep, only on win32", new ExpressionFactoryHelper<BeepExp>());
-            Calculator.Register("gettitle", "gettitle() api, Console.Title, only on win32", new ExpressionFactoryHelper<GetTitleExp>());
-            Calculator.Register("settitle", "settitle(title) api", new ExpressionFactoryHelper<SetTitleExp>());
-            Calculator.Register("getbufferwidth", "getbufferwidth() api", new ExpressionFactoryHelper<GetBufferWidthExp>());
-            Calculator.Register("getbufferheight", "getbufferheight() api", new ExpressionFactoryHelper<GetBufferHeightExp>());
-            Calculator.Register("setbuffersize", "setbuffersize(width,height) api", new ExpressionFactoryHelper<SetBufferSizeExp>());
-            Calculator.Register("getcursorleft", "getcursorleft() api", new ExpressionFactoryHelper<GetCursorLeftExp>());
-            Calculator.Register("getcursortop", "getcursortop() api", new ExpressionFactoryHelper<GetCursorTopExp>());
-            Calculator.Register("setcursorpos", "setcursorpos(left,top) api", new ExpressionFactoryHelper<SetCursorPosExp>());
-            Calculator.Register("getbgcolor", "getbgcolor() api, return str", new ExpressionFactoryHelper<GetBgColorExp>());
-            Calculator.Register("setbgcolor", "setbgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetBgColorExp>());
-            Calculator.Register("getfgcolor", "getfgcolor() api, return str", new ExpressionFactoryHelper<GetFgColorExp>());
-            Calculator.Register("setfgcolor", "setfgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetFgColorExp>());
-            Calculator.Register("resetcolor", "resetcolor() api", new ExpressionFactoryHelper<ResetColorExp>());
-            Calculator.Register("setencoding", "setencoding([input[,output]]) api, def is UTF8", new ExpressionFactoryHelper<SetEncodingExp>());
-            Calculator.Register("getinputencoding", "getinputencoding() api, return Encoding", new ExpressionFactoryHelper<GetInputEncodingExp>());
-            Calculator.Register("getoutputencoding", "getoutputencoding() api, return Encoding", new ExpressionFactoryHelper<GetOutputEncodingExp>());
+            Calculator.Register("get_title", "get_title() api, Console.Title, only on win32", new ExpressionFactoryHelper<GetTitleExp>());
+            Calculator.Register("set_title", "set_title(title) api", new ExpressionFactoryHelper<SetTitleExp>());
+            Calculator.Register("get_buffer_width", "get_buffer_width() api", new ExpressionFactoryHelper<GetBufferWidthExp>());
+            Calculator.Register("get_buffer_height", "get_buffer_height() api", new ExpressionFactoryHelper<GetBufferHeightExp>());
+            Calculator.Register("set_buffer_size", "set_buffer_size(width,height) api", new ExpressionFactoryHelper<SetBufferSizeExp>());
+            Calculator.Register("get_cursor_left", "get_cursor_left() api", new ExpressionFactoryHelper<GetCursorLeftExp>());
+            Calculator.Register("get_cursor_top", "get_cursor_top() api", new ExpressionFactoryHelper<GetCursorTopExp>());
+            Calculator.Register("set_cursor_pos", "set_cursor_pos(left,top) api", new ExpressionFactoryHelper<SetCursorPosExp>());
+            Calculator.Register("get_bg_color", "get_bg_color() api, return str", new ExpressionFactoryHelper<GetBgColorExp>());
+            Calculator.Register("set_bg_color", "set_bg_color(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetBgColorExp>());
+            Calculator.Register("get_fg_color", "get_fg_color() api, return str", new ExpressionFactoryHelper<GetFgColorExp>());
+            Calculator.Register("set_fg_color", "set_fg_color(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetFgColorExp>());
+            Calculator.Register("reset_color", "reset_color() api", new ExpressionFactoryHelper<ResetColorExp>());
+            Calculator.Register("set_encoding", "set_encoding([input[,output]]) api, def is UTF8", new ExpressionFactoryHelper<SetEncodingExp>());
+            Calculator.Register("get_input_encoding", "get_input_encoding() api, return Encoding", new ExpressionFactoryHelper<GetInputEncodingExp>());
+            Calculator.Register("get_output_encoding", "get_output_encoding() api, return Encoding", new ExpressionFactoryHelper<GetOutputEncodingExp>());
             Calculator.Register("console", "console() api, return typeof(Console)", new ExpressionFactoryHelper<ConsoleExp>());
             Calculator.Register("encoding", "encoding() api, return typeof(Encoding)", new ExpressionFactoryHelper<EncodingExp>());
-            Calculator.Register("runtimeinfo", "runtimeinfo() api, return typeof(RuntimeInformation)", new ExpressionFactoryHelper<RuntimeInformationExp>());
+            Calculator.Register("runtime_information", "runtime_information() api, return typeof(RuntimeInformation)", new ExpressionFactoryHelper<RuntimeInformationExp>());
             Calculator.Register("env", "env() api, return typeof(Environment)", new ExpressionFactoryHelper<EnvironmentExp>());
             Calculator.Register("exit_process", "exit_process([exit_code]) api, terminate the current process immediately with the code (default 0); hard exit: no graceful shutdown hook runs, use the host's exit_browser() first when a clean shutdown is possible", new ExpressionFactoryHelper<ExitProcessExp>());
-            Calculator.Register("getclipboard", "getclipboard() api", new ExpressionFactoryHelper<BatchCommand.Api.GetClipboardExp>());
-            Calculator.Register("setclipboard", "setclipboard(txt) api", new ExpressionFactoryHelper<BatchCommand.Api.SetClipboardExp>());
-            Calculator.Register("regread", "regread(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegReadExp>());
-            Calculator.Register("regwrite", "regwrite(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword", new ExpressionFactoryHelper<RegWriteExp>());
-            Calculator.Register("regdelete", "regdelete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegDeleteExp>());
+            Calculator.Register("reg_read", "reg_read(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegReadExp>());
+            Calculator.Register("reg_write", "reg_write(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword", new ExpressionFactoryHelper<RegWriteExp>());
+            Calculator.Register("reg_delete", "reg_delete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegDeleteExp>());
+
+            Calculator.Register("clone", "clone(v)", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.CloneExp>());
+            Calculator.Register("time", "time() or timestamp() api", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.TimeStampExp>());
+            Calculator.Register("timestamp", "time() or timestamp() api", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.TimeStampExp>());
+            Calculator.Register("get_elapsed_time_ms", "get_elapsed_time_ms() api, return elapsed milliseconds (time)", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.GetElapsedTimeMsExp>());
+            Calculator.Register("get_elapsed_time_us", "get_elapsed_time_us() api, return elapsed microseconds (time)", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.GetElapsedTimeUsExp>());
+            Calculator.Register("get_string_length", "get_string_length(str)", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.StringLengthExp>());
+            Calculator.Register("get_string_in_length", "get_string_in_length(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.GetStringInLengthExp>());
+            Calculator.Register("get_clipboard", "get_clipboard() api", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.GetClipboardExp>());
+            Calculator.Register("set_clipboard", "set_clipboard(txt) api", new ExpressionFactoryHelper<BatchCommand.Api.FrameworkApiAlias.SetClipboardExp>());
         }
         public static void Register(string name, string doc, IExpressionFactory factory)
         {

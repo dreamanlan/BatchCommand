@@ -311,13 +311,14 @@ namespace BatchCommand.Api
         }
     }
 
-    // copy_file(sourcePath, destPath, overwrite) - copy file
+    // copy_file_ex(sourcePath, destPath, overwrite) - copy file with explicit overwrite
+    // control (the 2-arg copy_file name is owned by the FrameworkApiAlias clone)
     public sealed class CopyFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiTextInfo.Error.AppendLine("Expected: copy_file(sourcePath, destPath, overwrite)");
+                ApiTextInfo.Error.AppendLine("Expected: copy_file_ex(sourcePath, destPath, overwrite)");
                 return BoxedValue.From(false);
             }
 
@@ -329,19 +330,20 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiTextInfo.Error.AppendLine($"copy_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"copy_file_ex error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
     }
 
-    // move_file(sourcePath, destPath, overwrite) - move file
+    // move_file_ex(sourcePath, destPath, overwrite) - move file with explicit overwrite
+    // control (the 2-arg move_file name is owned by the FrameworkApiAlias clone)
     public sealed class MoveFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                ApiTextInfo.Error.AppendLine("Expected: move_file(sourcePath, destPath, overwrite)");
+                ApiTextInfo.Error.AppendLine("Expected: move_file_ex(sourcePath, destPath, overwrite)");
                 return BoxedValue.From(false);
             }
 
@@ -353,7 +355,7 @@ namespace BatchCommand.Api
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                ApiTextInfo.Error.AppendLine($"move_file error: {ex.Message}");
+                ApiTextInfo.Error.AppendLine($"move_file_ex error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }

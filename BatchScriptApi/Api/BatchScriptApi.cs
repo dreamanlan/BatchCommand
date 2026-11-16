@@ -349,22 +349,6 @@ namespace BatchCommand.Api
         }
     }
 
-    // get_string_in_length(str, len[, begin0_end1_or_beginend2])
-    public sealed class GetStringInLengthExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(DslCalculator calculator, IList<BoxedValue> operands)
-        {
-            if (operands.Count < 2 || operands.Count > 3) {
-                ApiTextInfo.Error.AppendLine("Expected: get_string_in_length(str,len[,begin0_end1_or_beginend2])");
-                return BoxedValue.EmptyString;
-            }
-            string str = operands[0].AsString;
-            int len = operands[1].GetInt();
-            int beginOrEndOrBeginEnd = operands.Count > 2 ? operands[2].GetInt() : 0;
-            return BoxedValue.FromString(DslHost.GetStringInLength(str, len, beginOrEndOrBeginEnd));
-        }
-    }
-
     // help(pattern, ...) - regex search over user api docs
     public sealed class HelpExp : SimpleExpressionBase
     {

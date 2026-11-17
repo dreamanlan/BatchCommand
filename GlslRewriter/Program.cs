@@ -34,7 +34,9 @@ namespace GlslRewriter
                 string cfgFilePath = string.Empty;
                 bool typeByExt = true;
                 for (int i = 0; i < args.Length; ++i) {
-                    if (0 == string.Compare(args[i], "-out", true)) {
+                    string opt = NormalizeCommandLineOption(args[i]);
+                    bool isOption = !string.IsNullOrEmpty(args[i]) && args[i][0] == '-';
+                    if (0 == string.Compare(opt, "out", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
@@ -43,7 +45,7 @@ namespace GlslRewriter
                             }
                         }
                     }
-                    else if (0 == string.Compare(args[i], "-src", true)) {
+                    else if (0 == string.Compare(opt, "src", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
@@ -55,7 +57,7 @@ namespace GlslRewriter
                             }
                         }
                     }
-                    else if (0 == string.Compare(args[i], "-cfg", true)) {
+                    else if (0 == string.Compare(opt, "cfg", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
@@ -67,7 +69,7 @@ namespace GlslRewriter
                             }
                         }
                     }
-                    else if (0 == string.Compare(args[i], "-arg_cfg", true)) {
+                    else if (0 == string.Compare(opt, "arg-cfg", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
@@ -75,51 +77,54 @@ namespace GlslRewriter
                                     Config.ActiveArgCfgId = ix;
                                 }
                                 else {
-                                    Console.WriteLine("arg_cfg must be integer ! {0}", arg);
+                                    Console.WriteLine("arg-cfg must be integer ! {0}", arg);
                                 }
                                 ++i;
                             }
                         }
                     }
-                    else if (0 == string.Compare(args[i], "-vs", true)) {
+                    else if (0 == string.Compare(opt, "vs", true)) {
                         s_IsVsShader = true;
                         s_IsPsShader = false;
                         s_IsCsShader = false;
 
                         typeByExt = false;
                     }
-                    else if (0 == string.Compare(args[i], "-ps", true)) {
+                    else if (0 == string.Compare(opt, "ps", true)) {
                         s_IsPsShader = true;
                         s_IsVsShader = false;
                         s_IsCsShader = false;
 
                         typeByExt = false;
                     }
-                    else if (0 == string.Compare(args[i], "-cs", true)) {
+                    else if (0 == string.Compare(opt, "cs", true)) {
                         s_IsCsShader = true;
                         s_IsVsShader = false;
                         s_IsPsShader = false;
 
                         typeByExt = false;
                     }
-                    else if (0 == string.Compare(args[i], "-i", true)) {
+                    else if (0 == string.Compare(opt, "i", true)) {
                         s_InteractiveComputing = true;
                     }
-                    else if (0 == string.Compare(args[i], "-r", true)) {
+                    else if (0 == string.Compare(opt, "r", true)) {
                         s_DoReplacement = true;
                     }
-                    else if (0 == string.Compare(args[i], "-ssa", true)) {
+                    else if (0 == string.Compare(opt, "ssa", true)) {
                         s_SSA = true;
                     }
-                    else if (0 == string.Compare(args[i], "-no_ssa", true)) {
+                    else if (0 == string.Compare(opt, "no-ssa", true)) {
                         s_SSA = false;
                     }
-                    else if (0 == string.Compare(args[i], "-h", true)) {
+                    else if (0 == string.Compare(opt, "h", true)) {
                         PrintHelp();
                         return;
                     }
-                    else if (args[i][0] == '-') {
-                        Console.WriteLine("unknown command option ! {0}", args[i]);
+                    else if (isOption) {
+                        Console.Error.WriteLine("unknown command option ! {0}", args[i]);
+                        PrintHelp();
+                        Environment.ExitCode = 2;
+                        return;
                     }
                     else {
                         srcFilePath = args[i];
@@ -214,18 +219,34 @@ namespace GlslRewriter
                 }
             }
         }
+        // Canonical option names are hyphen-separated; both -name and --name
+        // are accepted. Underscore-joined spellings are intentionally rejected.
+        private static string NormalizeCommandLineOption(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return string.Empty;
+            int start = 0;
+            if (token[start] == '-') {
+                ++start;
+                if (start < token.Length && token[start] == '-')
+                    ++start;
+            }
+            if (start >= token.Length)
+                return string.Empty;
+            return token.Substring(start).ToLowerInvariant();
+        }
         static void PrintHelp()
         {
-            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-cfg cfg_dsl_file] [-arg_cfg id_in_cfg] [-vs] [-ps] [-cs] [-i] [-r] [-src] glsl_file");
+            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-cfg cfg_dsl_file] [-arg-cfg id_in_cfg] [-vs] [-ps] [-cs] [-i] [-r] [-src] glsl_file");
             Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
             Console.WriteLine(" [-cfg cfg_dsl_file] config file path and name, default is [glsl_file_name]_cfg.dsl");
-            Console.WriteLine(" [-arg_cfg id_in_config] arg config id in config file, default is 0");
+            Console.WriteLine(" [-arg-cfg id_in_config] arg config id in config file, default is 0");
             Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
             Console.WriteLine(" [-cs] glsl_file is compute shader");
             Console.WriteLine(" [-i] interactive computing mode, don't write outfile");
             Console.WriteLine(" [-r] do string replacement");
             Console.WriteLine(" [-ssa] transform to SSA (default)");
-            Console.WriteLine(" [-no_ssa] don't transform to SSA");
+            Console.WriteLine(" [-no-ssa] don't transform to SSA");
             Console.WriteLine(" [-src] glsl_file source glsl file, -src can be omitted when file is the last argument");
         }
 
@@ -2314,7 +2335,7 @@ namespace GlslRewriter
                 //this check would discard assignment expressions for variables used solely for phi variable assignments. Additionally,
                 //in code that has already undergone SSA processing, variable definitions and assignments are separate.
                 //Processing it again as input would result in these variables being renamed again.
-                //We can avoid this confusion by using the command-line parameter "-no_ssa".
+                //We can avoid this confusion by using the command-line parameter "-no-ssa".
                 if (!IsPhiVar(nvname)) {
                     Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname, string.Empty);
                 }

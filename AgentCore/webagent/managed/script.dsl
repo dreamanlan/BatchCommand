@@ -7,7 +7,7 @@ script(init_global_consts)
     set_env("PLAYWRIGHT_DRIVER_SEARCH_PATH", combine_path(base_path, "managed"));
     // Standalone agent process (AgentCore host) config.
     // 9527: the relay port (default of MetaDslExecutor.SetProcessInfo,
-    // overridable with --agent_port; the site ports are retired).
+    // overridable with --agent-port; the site ports are retired).
     // Note: the launcher is the native host BatchCmdDslHost at the webagent
     // root (managed/BatchCmdDsl is just an empty-main apphost). On macOS the
     // bundle layout puts it in webagent.app/Contents/MacOS/ (base_path is
@@ -19,7 +19,7 @@ script(init_global_consts)
     else {
         @AgentExe = combine_path(base_path, "BatchCmdDslHost.exe");
     };
-    @AgentArgs = format("--plugin=managed/AgentCore.dll --interval=50 --agent_port={0}", @AgentPort);
+    @AgentArgs = format("--plugin=managed/AgentCore.dll --interval=50 --agent-port={0}", @AgentPort);
     // Relay segment: the browser process is the only websocket client of the
     // standalone AgentCore (page js reaches it through cefQuery + this relay).
     // NOTE: must be "localhost", not "127.0.0.1" - the AgentCore HttpListener
@@ -82,7 +82,7 @@ script(start_agent_process)
         // initial identity (initial_project_identity global in script_agent.dsl).
         $args = @AgentArgs;
         if (!is_null_or_empty(initial_project_identity)) {
-            $args = format("{0} --project_identity={1}", $args, initial_project_identity);
+            $args = format("{0} --project-identity={1}", $args, initial_project_identity);
         };
         // Forward the browser's app instance dir (webagentdbg when
         // debugging; equals base_path in a normal deployment). The agent exe
@@ -90,7 +90,7 @@ script(start_agent_process)
         // it serves by itself. Parsed in BatchCmdPluginImpl.Init as
         // AgentCore's appDir (skill env app_dir / dsl global app_dir).
         if (!is_null_or_empty(app_dir)) {
-            $args = format("{0} --app_dir={1}", $args, app_dir);
+            $args = format("{0} --app-dir={1}", $args, app_dir);
         };
         $pid = launch_process(@AgentExe, $args, base_path);
         // Record the pid: on browser exit the agent host is stopped ONLY if

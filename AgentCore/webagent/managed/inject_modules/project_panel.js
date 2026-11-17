@@ -280,7 +280,7 @@ class ProjectPanel {
   }
 
   // Query the renderer process dsl for the initial project identity (the
-  // command line --project_identity value) via the synchronous callMetaDSL
+  // command line --project-identity value) via the synchronous callMetaDSL
   // bridge. Returns null when unavailable (e.g. outside webagent) so the
   // caller keeps the last-used project.
   _queryInitialProjectIdentity() {

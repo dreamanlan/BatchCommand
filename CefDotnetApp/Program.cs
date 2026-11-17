@@ -2467,9 +2467,9 @@ namespace DotNetLib
                             NativeLog(string.Format("[csharp] parse --metadsl:{0} error, the value must adhere to the format 'xxx.dsl,xxx_renderer.dsl'", switchValue));
                         }
                     }
-                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "project_identity", out string prjSwitchValue)) {
+                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "project-identity", out string prjSwitchValue)) {
                         s_ProjectSwitch = prjSwitchValue;
-                        NativeLog(string.Format("[csharp] parse --project_identity:{0}", s_ProjectSwitch));
+                        NativeLog(string.Format("[csharp] parse --project-identity:{0}", s_ProjectSwitch));
 
                         s_InitialProjectIdentity = s_ProjectSwitch;
                     }
@@ -3773,8 +3773,8 @@ namespace DotNetLib
                         NativeLog($"[dsl] on_before_child_process_launch: copied --metadsl={s_MetaDslSwitch} to child process");
                     }
                     if (!string.IsNullOrEmpty(s_ProjectSwitch)) {
-                        cmdLineProxy.AppendSwitchWithValue("project_identity", s_ProjectSwitch);
-                        NativeLog($"[dsl] on_before_child_process_launch: copied --project_identity={s_ProjectSwitch} to child process");
+                        cmdLineProxy.AppendSwitchWithValue("project-identity", s_ProjectSwitch);
+                        NativeLog($"[dsl] on_before_child_process_launch: copied --project-identity={s_ProjectSwitch} to child process");
                     }
 
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();

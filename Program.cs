@@ -52,7 +52,11 @@ namespace BatchCommand
             else {
                 bool isScpPart = false;
                 for (int i = 0; i < args.Length; ++i) {
-                    if (0 == string.Compare(args[i], "-e", true)) {
+                    // Normalize -name / --name so both spellings resolve to the
+                    // same canonical option. Underscore-joined names are not accepted.
+                    string opt = NormalizeCommandLineOption(args[i]);
+                    bool isOption = !string.IsNullOrEmpty(args[i]) && args[i][0] == '-';
+                    if (0 == string.Compare(opt, "e", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
@@ -61,7 +65,7 @@ namespace BatchCommand
                             }
                         }
                     }
-                    else if (0 == string.Compare(args[i], "-s", true)) {
+                    else if (0 == string.Compare(opt, "s", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
@@ -75,15 +79,18 @@ namespace BatchCommand
                             }
                         }
                     }
-                    else if (0 == string.Compare(args[i], "-i", true)) {
+                    else if (0 == string.Compare(opt, "i", true)) {
                         interactiveComputing = true;
                     }
-                    else if (0 == string.Compare(args[i], "-h", true)) {
+                    else if (0 == string.Compare(opt, "h", true)) {
                         PrintHelp();
                         return;
                     }
-                    else if (!isScpPart && args[i][0] == '-') {
-                        Console.WriteLine("unknown command option ! {0}", args[i]);
+                    else if (!isScpPart && isOption) {
+                        Console.Error.WriteLine("unknown command option ! {0}", args[i]);
+                        PrintHelp();
+                        Environment.ExitCode = 2;
+                        return;
                     }
                     else {
                         if (string.IsNullOrEmpty(scpFile)) {
@@ -131,6 +138,22 @@ namespace BatchCommand
             }
             BatchScript.RecycleCalculatorValueList(vargs);
             Environment.Exit(exitCode);
+        }
+        // Canonical option names are hyphen-separated; both -name and --name
+        // are accepted. Underscore-joined spellings are intentionally rejected.
+        private static string NormalizeCommandLineOption(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return string.Empty;
+            int start = 0;
+            if (token[start] == '-') {
+                ++start;
+                if (start < token.Length && token[start] == '-')
+                    ++start;
+            }
+            if (start >= token.Length)
+                return string.Empty;
+            return token.Substring(start).ToLowerInvariant();
         }
         private static void PrintHelp()
         {

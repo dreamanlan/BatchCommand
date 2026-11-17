@@ -736,25 +736,51 @@ namespace BatchCommand.Api
             return s;
         }
 
-        // Parse --switchname=value from raw command line string
+        // Normalize a command-line option token: strip one or two leading
+        // dashes, then lowercase. Both -name and --name are accepted.
+        // Underscore-joined names are intentionally NOT normalized here;
+        // callers use hyphen-separated switch names only.
+        public static string NormalizeCommandLineOption(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return string.Empty;
+            int start = 0;
+            if (token[start] == '-') {
+                ++start;
+                if (start < token.Length && token[start] == '-')
+                    ++start;
+            }
+            if (start >= token.Length)
+                return string.Empty;
+            return token.Substring(start).ToLowerInvariant();
+        }
+
+        // Parse -switchname=value / --switchname=value from a raw command line.
+        // switchName must be the canonical hyphen-separated name. Both one and
+        // two leading dashes are accepted; underscore-joined spellings are not.
         public static bool TryGetSwitchValueFromRawCommandLine(string cmdLine, string switchName, out string switchValue)
         {
             switchValue = string.Empty;
-            string prefix = "--" + switchName + "=";
-            int idx = cmdLine.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
+            if (string.IsNullOrEmpty(cmdLine) || string.IsNullOrEmpty(switchName))
                 return false;
-            int start = idx + prefix.Length;
-            // Handle quoted value
-            if (start < cmdLine.Length && cmdLine[start] == '"') {
-                int end = cmdLine.IndexOf('"', start + 1);
-                switchValue = end > start ? cmdLine.Substring(start + 1, end - start - 1) : string.Empty;
+            string canonical = NormalizeCommandLineOption(switchName);
+            // Match a whole "-name=value" / "--name=value" token at a token
+            // boundary. The value may be quoted (and contain spaces) or bare.
+            // A prefix match such as --agent-port-extra=... is not mistaken for
+            // --agent-port=... because the name group must end at '='.
+            var rx = new Regex(@"(?<!\S)-{1,2}(?<name>[A-Za-z][A-Za-z0-9\-]*)=(?<val>""[^""]*""|\S*)",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            foreach (Match m in rx.Matches(cmdLine)) {
+                if (!string.Equals(m.Groups["name"].Value.ToLowerInvariant(), canonical, StringComparison.Ordinal))
+                    continue;
+                string val = m.Groups["val"].Value;
+                if (val.Length >= 2 && val[0] == '"' && val[val.Length - 1] == '"') {
+                    val = val.Substring(1, val.Length - 2);
+                }
+                switchValue = val;
                 return true;
             }
-            // Unquoted: take until next space
-            int spaceIdx = cmdLine.IndexOf(' ', start);
-            switchValue = spaceIdx > start ? cmdLine.Substring(start, spaceIdx - start) : cmdLine.Substring(start);
-            return true;
+            return false;
         }
 
         // ---- common api registration -----------------------------------------

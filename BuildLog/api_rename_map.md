@@ -142,12 +142,12 @@
 | `--agentscript` | `--agent_script` | MetaDslExecutor.cs | 注释 |
 | `--agentport` | `--agent_port` | MetaDslExecutor.cs | script.dsl(×2 拼接)、config.js(注释)、BatchCmdPluginImpl(注释) |
 | `--httpproxyport` | `--http_proxy_port` | MetaDslExecutor.cs | script_agent.dsl(注释) |
-| `--projectidentity` | `--project_identity` | MetaDslExecutor.cs、CefDotnetApp(解析+AppendSwitchWithValue 转发子进程) | script.dsl(拼接)、monitor.dsl(默认命令行)、script_agent/renderer.dsl(注释)、project_panel.js(注释) |
+| `--project-identity` | `--project-identity` | MetaDslExecutor.cs、CefDotnetApp(解析+AppendSwitchWithValue 转发子进程) | script.dsl(拼接)、monitor.dsl(默认命令行)、script_agent/renderer.dsl(注释)、project_panel.js(注释) |
 | `--appdir` | `--app_dir` | BatchCmdPluginImpl.cs | script.dsl(拼接) |
 
 - `--metadsl`（专有名词 MetaDSL）与 `--managed`、`--plugin`、`--interval`、`--url` 等**单词开关不动**。
 - 解析器 `TryGetSwitchValueFromRawCommandLine` 为纯 `IndexOf("--key=")` 匹配，下划线 key 完全支持。
-- **用户环境注意**：手动启动 webagent 的快捷方式/脚本里若写死 `--projectidentity=` 需同步改（monitor.dsl 的 @DefaultCmdLine 已改）。
+- **用户环境注意**：手动启动 webagent 的快捷方式/脚本里若写死 `--project-identity=` 需同步改（monitor.dsl 的 @DefaultCmdLine 已改）。
 - webagent managed 的 js/dsl 中**只改了带 `--` 前缀的开关字符串**；裸的 DSL 变量引用（agentport/httpproxyport/appdir/projectidentity 等）是批次 5 变量断链，留待统一修 DSL。
 
 ### DslHost.cs AddUserApiDoc 旧名 doc 修正（33 个，68 处）
@@ -435,7 +435,7 @@ doc 条目名与文本同步为实际有效注册名（内建规范名/批次 1 
 - ~~webagent `managed/*.dsl`~~（**已完成 2026-11-16 批次 11**：两镜像全部修复，见批次 11 段）
 - ~~copy.dsl 修复~~（**已完成 2026-11-16**：全工作区扫描后修 AgentCore/BatchCmdDslHost/BatchScriptApi/CefDotnetApp/HostCLR MyApp 五个 copy.dsl，getscriptdir→get_script_directory/fileecho→file_echo/copyfiles→copy_files/argnum→arg_num；根目录 copy.dsl 实际不存在；BatchCmdDsl PostBuild 实测通过）
 - `AutoComplete.txt`（主仓/webagent 侧的，Flow 的已修）
-- 用户环境：手动启动 webagent 的快捷方式/脚本若写死 `--projectidentity=` 需改 `--project_identity=`
+- 用户环境：手动启动 webagent 的快捷方式/脚本若写死 `--project-identity=` 需改 `--project-identity=`
 
 ## 批次 10：三个 C++ 工程（2026-11-16，用户授权"最后一批"）
 
@@ -674,3 +674,122 @@ KEEP 原则（63 条不改动）：已含下划线合规名（cam_info/asset_ref
 - 冒烟：bin64 就地 `node.exe -e "require('./center_client.node')"` 加载成功（11 exports、v26.13.1）；addon 依赖 `CenterClientLibrary.dll` 由 bin64 提供（dumpbin 确认 + 显式 PATH 验证）。
 
 生效说明：ServerEnv 目录的部署由用户自行完成（bin64 已就绪）。
+---
+
+## 批次 14：命令行参数统一为连字符分隔 + 解析层归一化（2026-11-17）
+
+用户决策：**参数名统一连字符分隔（Google 风格），废弃下划线连接写法**；解析层同时接受单连字符 `-name` 与双连字符 `--name`；未知选项报错退出；**不提供 `_` <-> `-` 兼容层**（按用户要求"双写法不用支持下划线连接的风格"）。
+
+### 全仓命令行入口盘点（d:/GitHub，39 个含 Main/GetCommandLineArgs 的 cs）
+
+| 类别 | 工程 | 结论 |
+|---|---|---|
+| 手写 `-key value` 解析 | `BatchCommand.exe`(4 option)、`GlslRewriter`(12)、`Hlsl2Numpy`(40)、`Hlsl2Python`(46) | **本次改造** |
+| Chrome 风格 `--key=value` | `DslHost.TryGetSwitchValueFromRawCommandLine`（1 个共享实现，7 处调用）+ `CefDotnetApp` 子进程转发 | **本次改造** |
+| 仅位置参数 | `CppLua2Dsl`、`UnrealCodeTransform`、`DslCopy`、`TableReaderGenerator`、`LogicDataGenerator`、`GenerateFileList`、`DocGenerator`、`MetaDSL`、`CSharpClientTest`、CSharpGameFramework 各服务端、SDK samples | 无 option，**不改** |
+| 第三方/工具 | DirectXShaderCompiler、ILMerge、litjson benchmark、vkquality、BRT_Options 等 | **不改** |
+
+### 参数名映射（下划线连接 -> 连字符分隔）
+
+| 旧 | 新 | 位置 |
+|---|---|---|
+| `--agent_script` | `--agent-script` | MetaDslExecutor + BatchCmdPluginImpl 注释 |
+| `--agent_port` | `--agent-port` | MetaDslExecutor + script.dsl + 注释 |
+| `--http_proxy_port` | `--http-proxy-port` | MetaDslExecutor + script_agent.dsl 注释 |
+| `--project-identity` | `--project-identity` | MetaDslExecutor/CefDotnetApp/BatchCmdPluginImpl + 两镜像 dsl + 10 个 .cmd + launchSettings.json |
+| `--projectidentity`（批次6 漏网） | `--project-identity` | WebAgent/webagentdbg 的 4 个 .cmd |
+| `--app_dir` | `--app-dir` | BatchCmdPluginImpl + script.dsl + 注释 |
+| `-arg_cfg` | `-arg-cfg` | GlslRewriter |
+| `-no_ssa` | `-no-ssa` | GlslRewriter |
+
+单词/专有名词不动：`--metadsl`/`--plugin`/`--interval`/`--url`、`-out`/`-src`/`-cfg`/`-vs`/`-ps`/`-cs`/`-i`/`-r`/`-ssa`/`-h`/`-e`/`-s`；Hlsl2* 的粘连式 option（`-gendsl`/`-notorch`/`-printblocks` 等 86 个）保持原名——它们不是下划线连接风格，且解析层归一化后同样支持 `-`/`--` 双引导。
+
+### 解析层实现
+
+1. `DslHost.NormalizeCommandLineOption(token)`：剥离 1~2 个前导 `-`、转小写，得到规范名；`-arg-cfg` 与 `--arg-cfg` 等价；下划线名不匹配（硬切）。
+2. `DslHost.TryGetSwitchValueFromRawCommandLine`：改用正则 `(?<!\S)-{1,2}(?<name>[A-Za-z][A-Za-z0-9\-]*)=(?<val>"[^"]*"|\S*)` 精确匹配 token，支持引号含空格的值、值内含 `=`、避免 `--agent-port-extra` 前缀误匹配；不再用 `IndexOf("--key=")`。
+3. 4 个手写解析入口：循环内 `opt = NormalizeCommandLineOption(args[i])` + `isOption` 标志，`string.Compare(opt, "<canonical>", true)`；未知选项分支改为 `stderr` + `PrintHelp()` + `Environment.ExitCode = 2` + `return`（原先仅打印后继续，会把值误当源文件并崩溃）。
+4. 顺带修正 Hlsl2Numpy/Hlsl2Python 的 `-h` 只打印 help 不返回、随后空路径抛未处理异常的既有缺陷。
+
+### 调用端同步
+
+`BatchCommand/AgentCore/webagent/managed/` 与 `WebAgent/webagent/managed/` 两镜像 `script.dsl`/`monitor.dsl`/`script_agent.dsl`/`script_renderer.dsl`/`inject_modules/*.js`（hash 校验 SYNCED）；`WebAgent/`、`WebAgent/webagent/`、`WebAgent/webagentdbg/` 下 10 个 `*.cmd`；`CefDotnetApp/Properties/launchSettings.json`；各 C# 注释；GlslRewriter usage 文本。旧下划线 switch 在源码/脚本中残留 **0**；DSL 全局变量名（`agent_port`/`http_proxy_port`/`initial_project_identity`）与 C# 标识符（`app_dir` 形参、`s_InitialProjectIdentity`）是变量不是 switch，刻意不动。
+
+### 验证
+
+- 构建：BatchScriptApi / BatchCommand / GlslRewriter / CefDotnetApp / Hlsl2Numpy / Hlsl2Python 均 0 错误；AgentCore C# 编译 0 错误（PostBuild 因 webagent 进程占用 `BatchCmdDsl.dll` 报 MSB3073，与本次改动无关）。
+- GlslRewriter 冒烟：`-h`/`--h`/`-arg-cfg`/`--arg-cfg`/`-no-ssa`/`--no-ssa` 通过；旧 `-arg_cfg`/`-no_ssa`、`-bogus`、`--arg-cfg=3` 均 exit=2。
+- Hlsl2Numpy/Hlsl2Python 冒烟：`-h`/`--h`/`-gendsl`/`--gendsl`/`--notorch` 通过，`-bogus` exit=2。
+- BatchCommand.exe 冒烟：`-h`/`--h`/`-e`/`--e` 通过，`-bogus` exit=2。
+- Chrome switch 存根冒烟 13/13 PASS（新名、双引导、旧下划线名拒绝、前缀不误匹配、引号含空格值、值含 `=`、规范化一致性）。
+- 说明：手写 `-key value` 入口不支持 `-key=value` 形式（原设计如此）；Chrome 风格入口保持 `=` 形式。
+
+### 注意
+
+- 用户在 Windows 上手动启动 webagent 的**快捷方式/外部脚本**若写死旧 `--project-identity=`，需同步改成 `--project-identity=`（仓内 .cmd 已全改）。
+- 本次为硬切，无别名兼容层；部署时需同时更新解析端 DLL 与调用端脚本/快捷方式。
+---
+
+## 批次 15：Hlsl2Numpy / Hlsl2Python 命令行粘连式 option 改连字符分隔（2026-11-17）
+
+用户指令：`@Hlsl2Numpy/Program.cs @Hlsl2Python/Program.cs 这2个命令行里参数还是连写的，改成用连字符分隔单词吧`。批次 14 当时按"非下划线风格"保留了 86 个粘连式 option，本批次补做。
+
+### 分词依据（按 `api_rename_sop.md` 第 3 节：不能纯算法猜）
+
+以源码 PascalCase 字段/属性名为**权威词边界**，数字独立 token，单词/缩写/专有名词不拆：
+
+| 旧 | 新 | 词边界依据 |
+|---|---|---|
+| `gendsl` | `gen-dsl` | `GenDsl` |
+| `rewritedsl` | `rewrite-dsl` | `RewriteDsl` |
+| `printblocks` | `print-blocks` | `PrintBlocks` |
+| `printfinalblocks` | `print-final-blocks` | `PrintFinalBlocks` |
+| `printgraph` | `print-graph` | `PrintGraph` |
+| `printfinalgraph` | `print-final-graph` | `PrintFinalGraph` |
+| `printvecvars` | `print-vec-vars` | `PrintVecVars` |
+| `autodiff` | `auto-diff` | `AutoDiff` |
+| `maxloop` | `max-loop` | `MaxLoop` |
+| `hlsl2018` / `hlsl2021` | `hlsl-2018` / `hlsl-2021` | 数字独立 token |
+| `vectorizebranch` | `vectorize-branch` | `VectorizeBranch` |
+| `tex2d0..3` | `tex-2d-0..-3` | `tex` + 类型名 `2d`（整体）+ 通道号独立 |
+| `tex3d0..3` | `tex-3d-0..-3` | 同上 |
+| `texcube0..3` | `tex-cube-0..-3` | `tex` + `cube` + 通道号 |
+| `notgendsl` | `not-gen-dsl` | `not` + `GenDsl` |
+| `notrewritedsl` | `not-rewrite-dsl` | `not` + `RewriteDsl` |
+| `notprintblocks` | `not-print-blocks` | `not` + `PrintBlocks` |
+| `notprintfinalblocks` | `not-print-final-blocks` | `not` + `PrintFinalBlocks` |
+| `notprintgraph` | `not-print-graph` | `not` + `PrintGraph` |
+| `notprintfinalgraph` | `not-print-final-graph` | `not` + `PrintFinalGraph` |
+| `notprintvecvars` | `not-print-vec-vars` | `not` + `PrintVecVars` |
+| `notprofiling` | `not-profiling` | `not` + 单词 `profiling` |
+| `notshadertoy` | `not-shadertoy` | `not` + 专有名词 `ShaderToy`（整体保留） |
+| `notunroll` | `not-unroll` | `not` + 单词 `unroll` |
+| `notvectorizebranch` | `not-vectorize-branch` | `not` + `VectorizeBranch` |
+| `notorch` | `no-torch` | README "dont use pytorch lib" = no + torch（不是 `not`+`orch`） |
+| `noautodiff` | `no-auto-diff` | `no` + `AutoDiff` |
+| `noconst` | `no-const` | `no` + 单词 `const` |
+| `novectorization` | `no-vectorization` | `no` + 单词 `vectorization` |
+| `novecterization` / `vecterization`（README 拼写错误） | `no-vectorization` / `vectorization` | 修正既有笔误 |
+
+单词/缩写/专有名词**保留**：`args`、`const`、`debug`、`entry`、`gl`、`ngl`、`h`、`multiple`、`out`、`profiling`、`shadertoy`、`single`、`src`、`torch`、`unroll`、`vectorization`。
+
+### 易漏的断链点（本次修复）
+
+`Program.cs` 的 tex/entry/maxloop 分支原本用 `string key = args[i].Substring(1);` 把 option 名当内部 argId，改名后会得到 `tex-2d-0`，导致：
+1. `SetShaderToyTex` 的 `key.Substring(key.Length - 3, 2)` 取不到 `2d`/`3d`/`ub` 维度；
+2. `s_CmdArgKeys` 与 args DSL 的 `argId`（`tex2d0`）不匹配，命令行覆盖 DSL 的语义失效；
+3. 双引导 `--tex-2d-0` 时 `Substring(1)` 还会残留一个前导 `-`。
+
+统一改为 `string key = opt.Replace("-", "");`（4 处：Hlsl2Numpy 1、Hlsl2Python 3），把规范 option 名反归一为内部 argId。`Program_ShaderArgs.cs` 里的 `"tex2d0"` 等是 args DSL 参数名，**刻意不动**。
+
+### 调用端同步
+
+两工程 `Program.cs` 的 option 比较字面量与 usage、`README.md`（含 `[-tex-2d-0~3]` 改为明确的 `[-tex-2d-0 .. -tex-2d-3]`、修 `[- shadertoy]`/`[- novecterization]`/`[-unroll max_loop]` 既有笔误）、`Properties/launchSettings.json`、`test/*.bat`、`bin/Debug/net6.0/workdir/*.bat`；共 704 处替换。跨仓仅 `api_rename_map.md` 批次 14 的说明需更新（已标注过时）。
+
+### 验证
+
+- 构建：Hlsl2Numpy 0 警告 0 错误；Hlsl2Python 0 错误（CS0414 `s_IsDebugMode` 为既有警告，该文件本次未改）。
+- 冒烟 24/24 PASS：`-h`/`--h`、新名 `-gen-dsl`/`--gen-dsl`/`-print-final-blocks`/`--auto-diff`/`-hlsl-2018`/`-max-loop 64` 均 exit=0；旧连写名 `-gendsl`/`-printblocks`/`-maxloop`/`-tex2d0` 与未知项 `-bogus` 均 exit=2（硬切，无别名层，沿用批次 14）。
+- tex 实测：`-tex-2d-0`/`--tex-2d-0`/`-tex-cube-3` 被接受并进入 `file path not found` 检查（证明 argId 反归一后到达 `SetShaderToyTex`），旧 `-tex2d0` 被拒绝。
+- 旧 option 名在源码/文档/脚本中残留 0（仅 `Program_ShaderArgs.cs` 的 args DSL 参数名保留，属另一套命名）。
+- 备份 `e:/tmp/hlsl_backup`（24 文件 + manifest.tsv）。

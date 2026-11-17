@@ -68,7 +68,7 @@ class ConfigManager {
 
       // WebSocket settings
       // 9527: the standalone AgentCore relay port (default of
-      // MetaDslExecutor.SetProcessInfo, overridable with --agent_port).
+      // MetaDslExecutor.SetProcessInfo, overridable with --agent-port).
       websocket: {
         port: 9527,
         reconnectDelay: 3000

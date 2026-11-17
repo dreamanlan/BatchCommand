@@ -40,7 +40,7 @@ script(on_init)
     @CmdLineFile = combine_path(base_path, "webagent_cmdline.txt");
     @AliveFile = combine_path(base_path, "monitor_alive.txt");
     // Used when webagent_cmdline.txt does not exist yet (first run).
-    @DefaultCmdLine = " --url=https://evaluation.woa.com/chat --project_identity=aiclaw --metadsl=script.dsl,script_renderer.dsl --remote-debugging-port=9228 --remote-allow-origins=*";
+    @DefaultCmdLine = " --url=https://evaluation.woa.com/chat --project-identity=aiclaw --metadsl=script.dsl,script_renderer.dsl --remote-debugging-port=9228 --remote-allow-origins=*";
 
     // Ticks between two checks (the host default is 1000ms per tick).
     @CheckEveryTicks = 3;

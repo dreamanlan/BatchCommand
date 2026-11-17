@@ -35,7 +35,7 @@ script(init_global_consts)
     // etc.): pages from other local origins fetch this port with the upstream
     // url in the 'target' query parameter. See Core/HttpProxyServer.cs and
     // ScriptApi/HttpProxyApi.cs. Default 9528, overridable with
-    // --http_proxy_port (exposed to dsl as the http_proxy_port global).
+    // --http-proxy-port (exposed to dsl as the http_proxy_port global).
 
     @SiteIdentity = hashtable("webagent":"webagent","hyarena":"hyarena","venus":"venus","aichat":"aichat","gemini":"gemini","openai":"openai","imate":"imate","with":"with","google":"google");
     // mac: AiFreebie sits in the app dir (./AiFreebie), not above it
@@ -61,7 +61,7 @@ script(init_global_consts)
 
     @ProjectIdentity = agent_get_project_identity(@AgentId);
     @ProjectDirectory = agent_get_project_dir(@AgentId);
-    // P1a: the browser passes --project_identity through to this process; seed
+    // P1a: the browser passes --project-identity through to this process; seed
     // the agent state with it when nothing is configured yet.
     if (is_null_or_empty(@ProjectIdentity) && !is_null_or_empty(initial_project_identity)) {
         @ProjectIdentity = initial_project_identity;

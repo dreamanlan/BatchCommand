@@ -162,7 +162,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("asin", "asin(v)", new ExpressionFactoryHelper<AsinExp>());
             BatchCommand.BatchScript.Register("acos", "acos(v)", new ExpressionFactoryHelper<AcosExp>());
             BatchCommand.BatchScript.Register("atan", "atan(v)", new ExpressionFactoryHelper<AtanExp>());
-            BatchCommand.BatchScript.Register("atan_2", "atan_2(v1,v2)", new ExpressionFactoryHelper<Atan2Exp>());
+            BatchCommand.BatchScript.Register("atan2", "atan2(v1,v2)", new ExpressionFactoryHelper<Atan2Exp>());
             BatchCommand.BatchScript.Register("sinh", "sinh(v)", new ExpressionFactoryHelper<SinhExp>());
             BatchCommand.BatchScript.Register("cosh", "cosh(v)", new ExpressionFactoryHelper<CoshExp>());
             BatchCommand.BatchScript.Register("tanh", "tanh(v)", new ExpressionFactoryHelper<TanhExp>());
@@ -171,10 +171,10 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("pow", "pow(v1,v2)", new ExpressionFactoryHelper<PowExp>());
             BatchCommand.BatchScript.Register("sqrt", "sqrt(v)", new ExpressionFactoryHelper<SqrtExp>());
             BatchCommand.BatchScript.Register("exp", "exp(v)", new ExpressionFactoryHelper<ExpExp>());
-            BatchCommand.BatchScript.Register("exp_2", "exp_2(v)", new ExpressionFactoryHelper<Exp2Exp>());
+            BatchCommand.BatchScript.Register("exp2", "exp2(v)", new ExpressionFactoryHelper<Exp2Exp>());
             BatchCommand.BatchScript.Register("log", "log(v)", new ExpressionFactoryHelper<LogExp>());
-            BatchCommand.BatchScript.Register("log_2", "log_2(v)", new ExpressionFactoryHelper<Log2Exp>());
-            BatchCommand.BatchScript.Register("log_10", "log_10(v)", new ExpressionFactoryHelper<Log10Exp>());
+            BatchCommand.BatchScript.Register("log2", "log2(v)", new ExpressionFactoryHelper<Log2Exp>());
+            BatchCommand.BatchScript.Register("log10", "log10(v)", new ExpressionFactoryHelper<Log10Exp>());
             BatchCommand.BatchScript.Register("floor", "floor(v)", new ExpressionFactoryHelper<FloorExp>());
             BatchCommand.BatchScript.Register("ceiling", "ceiling(v)", new ExpressionFactoryHelper<CeilingExp>());
             BatchCommand.BatchScript.Register("round", "round(v)", new ExpressionFactoryHelper<RoundExp>());
@@ -219,7 +219,7 @@ namespace BatchCommand.Api
             BatchCommand.BatchScript.Register("lerp_unclamped", "lerp_unclamped(a,b,t)", new ExpressionFactoryHelper<LerpUnclampedExp>());
             BatchCommand.BatchScript.Register("lerp_angle", "lerp_angle(a,b,t)", new ExpressionFactoryHelper<LerpAngleExp>());
             BatchCommand.BatchScript.Register("smooth_step", "smooth_step(from,to,t)", new ExpressionFactoryHelper<SmoothStepExp>());
-            BatchCommand.BatchScript.Register("clamp_01", "clamp_01(v)", new ExpressionFactoryHelper<Clamp01Exp>());
+            BatchCommand.BatchScript.Register("clamp01", "clamp01(v)", new ExpressionFactoryHelper<Clamp01Exp>());
             BatchCommand.BatchScript.Register("clamp", "clamp(v,v1,v2)", new ExpressionFactoryHelper<ClampExp>());
             BatchCommand.BatchScript.Register("approximately", "approximately(v1,v2)", new ExpressionFactoryHelper<ApproximatelyExp>());
             BatchCommand.BatchScript.Register("is_power_of_two", "is_power_of_two(v)", new ExpressionFactoryHelper<IsPowerOfTwoExp>());

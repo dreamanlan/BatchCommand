@@ -107,7 +107,7 @@
 | nosandbox | no_sandbox | DslHost.cs | DSL 全局变量 |
 | dslpath | dsl_path | DslHost.cs | DSL 全局变量 |
 | dslfile | dsl_file | DslHost.cs | DSL 全局变量（解决批次 3 的跨层分叉，与 CEF 侧对齐） |
-| atan2 / exp2 / log2 / log10 / clamp01 | atan_2 / exp_2 / log_2 / log_10 / clamp_01 | FrameworkApiAlias.cs | **注释掉的参考注册**，仅注释一致性，运行时无影响（真名由 DotnetStoryScript 内建提供） |
+| atan2 / exp2 / log2 / log10 / clamp01 | atan2 / exp2 / log2 / log10 / clamp01 | FrameworkApiAlias.cs | **注释掉的参考注册**，仅注释一致性，运行时无影响（真名由 DotnetStoryScript 内建提供） |
 | fileexists / pathexists / copyfile / movefile | file_exists / path_exists / copy_file / move_file | FrameworkApiAlias.cs | 同上，注释一致性 |
 
 批次 4 说明：
@@ -153,7 +153,7 @@
 ### DslHost.cs AddUserApiDoc 旧名 doc 修正（33 个，68 处）
 
 doc 条目名与文本同步为实际有效注册名（内建规范名/批次 1 名）：
-`arg_num`、`loop_list`、`for_each_value`、`atan_2`、`exp_2`、`log_2`、`log_10`、`clamp_01`、`is_null_or_empty`、`is_object`、`is_string`、`is_boolean`、`is_char`、`is_integer`、`is_signed_integer`、`is_unsigned_integer`、`is_number`、`is_date_time`、`is_tuple`、`boxed_value_type`、`boxed_value_type_name`、`dotnet_call/set/get`、`collection_call/set/get`、`prop_set/get/exists`、`calc_md5`、`get_elapsed_time_ms`、`get_elapsed_time_us`。
+`arg_num`、`loop_list`、`for_each_value`、`atan2`、`exp2`、`log2`、`log10`、`clamp01`、`is_null_or_empty`、`is_object`、`is_string`、`is_boolean`、`is_char`、`is_integer`、`is_signed_integer`、`is_unsigned_integer`、`is_number`、`is_date_time`、`is_tuple`、`boxed_value_type`、`boxed_value_type_name`、`dotnet_call/set/get`、`collection_call/set/get`、`prop_set/get/exists`、`calc_md5`、`get_elapsed_time_ms`、`get_elapsed_time_us`。
 （验证：每个新名在内建注册表/Registrar/FrameworkApiAlias/BatchScript.cs 至少一处注册存在。）
 
 ## 既有断链（非本系列批次产生，但修 DSL 时同样需要）
@@ -507,7 +507,7 @@ BraceScript 146 条映射与 ScriptableUnreal 同名部分同源（见下表）�
 
 修改面：`Plugins\Myself\MyPluginRuntime\Source\Brace\Private\BraceScriptInterpreter.cpp`（注册 L7097-7283 + doc + 错误消息 + runscp 内嵌示例串，313 处）、`MathApi.h`/`BraceObject.inl`（错误消息，字符串内替换）、`UnrealStatsApi.cpp`（错误文案 37 处，含 `getstatcallcount` 旧文案修正为 `stat_get_call_count`——原文案与注册名 statgetcallcount 本就不一致）、`Content\Debug\Brace\brace.bytes`/`memstat.bytes` 脚本（43+35 处）。
 
-与 myuzu 同名同映射（membercall→member_call、loop_list→loop_list、typetag→type_tag、strconcat→str_concat、csvecho/csvconcat/csvdebug→csv_echo/csv_concat/csv_debug、fileexists→file_exists、loadfiletoarray→load_file_to_array、arraymax 系→array_max 系、atan2→atan_2 等 68 条）。UE 特有：
+与 myuzu 同名同映射（membercall→member_call、loop_list→loop_list、typetag→type_tag、strconcat→str_concat、csvecho/csvconcat/csvdebug→csv_echo/csv_concat/csv_debug、fileexists→file_exists、loadfiletoarray→load_file_to_array、arraymax 系→array_max 系、atan2→atan2 等 68 条）。UE 特有：
 
 | 旧名 | 新名 | 说明 |
 |---|---|---|
@@ -548,7 +548,7 @@ BraceScript 146 条映射与 ScriptableUnreal 同名部分同源（见下表）�
 |---|---|---|
 | WebAgent + BatchCommand\AgentCore\webagent（镜像） | managed 6 个 dsl + skills 3 个 | webagent 待办断链全修：nativelog/native_api/base_path/app_dir/is_mac/process_type/agent_port/http_proxy_port/initial_project_identity/startup_url/set_dsl_file/redirect_call/arg_num/file_echo/loop_list/is_null/list_size/combine_path/get_directory_name/get_file_name 等 |
 | BatchCommand | bin\Debug\net9.0\copy.dsl 与 main.dsl（bin 副本）、BatchStudio\managed\Script.dsl、Flow main.dsl×2 | bin 下副本此前漏修；Script.dsl 的 nativeapi×36→native_api、getextension/copydir 等 |
-| BatchCommand | GlslRewriter 19 个 args.dsl | exp2→exp_2、log2→log_2（其 bin 下 DotnetStoryScript.dll 已 fc 实证与主仓字节一致=新版） |
+| BatchCommand | GlslRewriter 19 个 args.dsl | exp2→exp2、log2→log2（其 bin 下 DotnetStoryScript.dll 已 fc 实证与主仓字节一致=新版） |
 | CSharpGameFramework / GameDemo | buildclient/buildserver/build.dsl、storydoc.dsl(writefile/dslfile→write_file/dsl_file) | Tools\Batch 工具脚本 |
 | MetaDSL | CppDsl\BraceScript\genbracecode.dsl | hashtableget/writeblock/listsize→hashtable_get/write_block/list_size |
 | apkstudio | build\managed\script.dsl | outputlog→output_log、isnullorempty→is_null_or_empty |
@@ -597,8 +597,8 @@ UnityEditorApi.Register 49 条连写注册（与批次 9 处理的 `Assets\Edito
 - GameDemo storydoc.dsl 的 `dotnetexec`/`dictparse`/`followtarget`/`pauselocalmessagehandler`：vscode snippet 名（dsl.json 定义）与游戏域调用
 - GameDemo ForPPT VisualStory.dsl 的 `defapi`×244/`initval`×354：自有 DSL 语法（defapi 体系）
 - table.dsl 的 `fielddef`×283：TableReaderGenerator 自有语法
-- ~~Hlsl2Python/Hlsl2Numpy 11 个 dsl：旧 DLL 决策（批次 9），暂不破~~（**已完成 2026-11-16 追加**：用户确认升级。gencode 运行时 10 文件（BatchCommand.exe+9 DLL）已从主仓 `bin\Debug\net9.0` 同步（SHA256 一致）；10 个 dsl 全修（gencode 4 个 hashtableset/hashtableget→hashtable_set/hashtable_get，bin tmp 6 个 smoothstep/atan2→smooth_step/atan_2）；冒烟：新名零报错 + 旧名报 unknown func 双向验证）
-- 游戏 StorySystem 自有 API（get_leader_id/fire_message/vector_3/create_npc/onmessage 等）：游戏域非本工程对象
+- ~~Hlsl2Python/Hlsl2Numpy 11 个 dsl：旧 DLL 决策（批次 9），暂不破~~（**已完成 2026-11-16 追加**：用户确认升级。gencode 运行时 10 文件（BatchCommand.exe+9 DLL）已从主仓 `bin\Debug\net9.0` 同步（SHA256 一致）；10 个 dsl 全修（gencode 4 个 hashtableset/hashtableget→hashtable_set/hashtable_get，bin tmp 6 个 smoothstep/atan2→smooth_step/atan2）；冒烟：新名零报错 + 旧名报 unknown func 双向验证）
+- 游戏 StorySystem 自有 API（get_leader_id/fire_message/vector3/create_npc/onmessage 等）：游戏域非本工程对象
 
 ### 验证
 

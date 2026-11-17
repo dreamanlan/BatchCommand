@@ -27,7 +27,7 @@ vs
         add_utof(1065353216u);
 
         auto_split(5){
-            split_on("exp_2", 3);
+            split_on("exp2", 3);
             split_on("inversesqrt", 3);
             split_on("texture", 1);
             split_on("textureLod", 1);
@@ -35,7 +35,7 @@ vs
             split_on("texelQueryLod", 1);
             split_on("texelSize", 1);
             split_on("textureGather", 1);
-            split_on("log_2", 3);
+            split_on("log2", 3);
         };
 
         variable_assignment
@@ -241,7 +241,7 @@ ps
         remove_duplicate_expression;
 
         auto_split(5){
-            split_on("exp_2", 3);
+            split_on("exp2", 3);
             split_on("inversesqrt", 3);
             split_on("texture", 1);
             split_on("textureLod", 1);
@@ -249,7 +249,7 @@ ps
             split_on("texelQueryLod", 1);
             split_on("texelSize", 1);
             split_on("textureGather", 1);
-            split_on("log_2", 3);
+            split_on("log2", 3);
         };
 
         split_object_assignment{

@@ -181,9 +181,9 @@ class ResponseDecider {
 
       // MetaDSL Result
       const hasMetaDslResult =
-        this.containsAll(msg, 'MetaDSL', '<{:>', '<:}>') ||
-        this.containsAll(msg, 'MetaDsl', '<{:>', '<:}>') ||
-        this.containsAll(msg, 'metadsl', '<{:>', '<:}>');
+        this.containsAll(msg, '<{:>', '<:}>') ||
+        this.containsAll(msg, '<{:>', '<:}>') ||
+        this.containsAll(msg, '<{:>', '<:}>');
       // @execute blocks: structural detection. A real submission is either a
       // fenced code block whose first non-blank line is a marker line, or a
       // marker line in plain text (unfenced raw code). Prose that merely
@@ -195,7 +195,7 @@ class ResponseDecider {
       if (hasMetaDslResult) {
         return {
           action: 'reply',
-          text: `ref <{:>\n${msg}\n<:}>;\n\nmetadsl代码需要使用markdown代码块语法`,
+          text: `ref ~~~\n${msg}\n~~~;\n\nmetadsl代码需要使用markdown代码块语法`,
         };
       }
       else if (hasMetaDsl) {

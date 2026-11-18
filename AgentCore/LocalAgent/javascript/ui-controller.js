@@ -1322,20 +1322,76 @@ class UIController {
     }
 
     handleClearHistory() {
-        // Confirm before clearing
-        if (confirm('Are you sure you want to clear all conversation history? This action cannot be undone.')) {
-            // Clear history from MessageHandler
-            this.messageHandler.clearHistory();
-
-            // Reset API client conversation state
-            this.apiClient.resetConversation();
-
-            // Clear displayed messages
-            this.elements.messagesArea.innerHTML = '';
-
-            if (uiLogger) uiLogger.info('Conversation history cleared');
-        }
+        // In-page confirmation replaces the native confirm(): the native dialog
+        // blocks the renderer through CEF's synchronous JS dialog callback and
+        // can stop responding after long runs.
+        this.showConfirmDialog('Are you sure you want to clear all conversation history? This action cannot be undone.')
+            .then(ok => {
+                if (ok) this.clearHistoryNow();
+            });
     }
+
+    // Runs the actual clear-history work after the user confirmed.
+    clearHistoryNow() {
+        this.messageHandler.clearHistory();
+        this.apiClient.resetConversation();
+        this.elements.messagesArea.innerHTML = '';
+        if (uiLogger) uiLogger.info('Conversation history cleared');
+    }
+
+    // In-page confirm dialog, resolves to true when confirmed.
+    // window.__clearHistoryAutoConfirm lets injected automation answer it.
+    showConfirmDialog(message) {
+        return new Promise(resolve => {
+            if (window.__clearHistoryAutoConfirm) {
+                window.__clearHistoryAutoConfirm = false;
+                resolve(true);
+                return;
+            }
+            const overlay = document.createElement('div');
+            overlay.className = 'config-modal active';
+            const content = document.createElement('div');
+            content.className = 'config-content';
+            const text = document.createElement('div');
+            text.textContent = message;
+            text.style.margin = '0 0 20px';
+            text.style.color = '#2c3e50';
+            text.style.lineHeight = '1.6';
+            const actions = document.createElement('div');
+            actions.className = 'config-actions';
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn-cancel';
+            cancelBtn.textContent = 'Cancel';
+            const okBtn = document.createElement('button');
+            okBtn.className = 'btn-save';
+            okBtn.textContent = 'OK';
+            actions.appendChild(cancelBtn);
+            actions.appendChild(okBtn);
+            content.appendChild(text);
+            content.appendChild(actions);
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            let done = false;
+            const cleanup = result => {
+                if (done) return;
+                done = true;
+                document.removeEventListener('keydown', onKey);
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                resolve(result);
+            };
+            function onKey(e) {
+                if (e.key === 'Escape') cleanup(false);
+            }
+            cancelBtn.addEventListener('click', () => cleanup(false));
+            okBtn.addEventListener('click', () => cleanup(true));
+            overlay.addEventListener('click', e => {
+                if (e.target === overlay) cleanup(false);
+            });
+            document.addEventListener('keydown', onKey);
+            okBtn.focus();
+        });
+    }
+
 
     /**
      * Update the visibility and label of the quick model chip in the chat

@@ -491,15 +491,19 @@ class RelayPanel {
     const clearBtn = document.querySelector('#clear-history-btn')
       || document.querySelector('.vac-svg-button i.el-icon[style*="409EFC"]');
     if (clearBtn) {
-      // Suppress confirm() dialog during click (local-agent handleClearHistory
-      // calls confirm() synchronously in the click handler).
+      // Newer local-agent builds answer the in-page confirm dialog through
+      // this flag; window.confirm is still suppressed for older pages whose
+      // handleClearHistory calls the native dialog synchronously.
+      window.__clearHistoryAutoConfirm = true;
       const origConfirm = window.confirm;
       window.confirm = function () { return true; };
       try {
         clearBtn.click();
       } finally {
         window.confirm = origConfirm;
+        window.__clearHistoryAutoConfirm = false;
       }
+
       this._chatLog('[clrhist] Clear history button clicked');
     } else {
       this._chatLog('[clrhist] Clear history button not found');

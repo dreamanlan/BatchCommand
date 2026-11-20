@@ -20,13 +20,6 @@ D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5074,5): warning C5051: �
 D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5078,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
 D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5085,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
 D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5089,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-  DllMain.cpp
-  GpuCaptureManager_HuaweiSquid.cpp
-  GpuCaptureManager_RenderDoc.cpp
-  ReadableRange.cpp
-  ReadableRangeAndroid.cpp
-  ReadableRangeIOS.cpp
-  ReadableRangeWin.cpp
   WinStackTrace.cpp
   正在生成代码...
     正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp

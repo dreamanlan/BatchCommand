@@ -54,6 +54,14 @@ class ResponseDecider {
     return this.getMetadslMarkers().some(marker => t.startsWith(marker));
   }
 
+  // A line whose trimmed text IS exactly a marker (nothing else on the
+  // line): the shape a raw unfenced submission's marker line has.
+  isMetadslMarkerOnlyLine(line) {
+    const t = String(line || '').trim();
+    if (!t) return false;
+    return this.getMetadslMarkers().some(marker => t === marker);
+  }
+
   // Split markdown text into {type:'fence'|'text', content} segments.
   // A fence opens on a line that is (aside from indentation) solely a 3+
   // backtick/tilda run plus an optional whitespace-free info string, and
@@ -101,11 +109,13 @@ class ResponseDecider {
   // Structural MetaDSL detection, aligned with metadsl_monitor:
   //   - fencedMetadsl: fenced code blocks whose first non-blank line is a
   //     marker line (the exact rule extractMetaDSLCode uses to run code);
-  //   - textMetadsl: marker lines in plain text (unfenced raw code).
+  //   - textMetadsl: marker lines in plain text (unfenced raw code);
+  //   - textMarkerOnly: plain-text lines that trim to EXACTLY the marker
+  //     (no trailing prose) - a bare standalone marker line.
   // Prose that only MENTIONS ``` or // @execute mid-sentence (e.g. the
   // model's own syntax self-check confirmation) matches neither.
   analyzeMetadslStructure(msg) {
-    const result = { fencedMetadsl: 0, textMetadsl: 0 };
+    const result = { fencedMetadsl: 0, textMetadsl: 0, textMarkerOnly: 0 };
     for (const seg of this.parseMarkdownSegments(msg)) {
       const lines = seg.content.split('\n');
       if (seg.type === 'fence') {
@@ -114,6 +124,7 @@ class ResponseDecider {
       } else {
         for (const l of lines) {
           if (this.isMetadslMarkerLine(l)) result.textMetadsl++;
+          if (this.isMetadslMarkerOnlyLine(l)) result.textMarkerOnly++;
         }
       }
     }
@@ -182,8 +193,7 @@ class ResponseDecider {
       // MetaDSL Result
       const hasMetaDslResult =
         this.containsAll(msg, '<{:>', '<:}>') ||
-        this.containsAll(msg, '<{:>', '<:}>') ||
-        this.containsAll(msg, '<{:>', '<:}>');
+        this.containsAll(msg, '<{:', ':}>');
       // @execute blocks: structural detection. A real submission is either a
       // fenced code block whose first non-blank line is a marker line, or a
       // marker line in plain text (unfenced raw code). Prose that merely
@@ -202,11 +212,13 @@ class ResponseDecider {
         if (this.containsAny(msg, 'sleep(')) {
           return { action: 'skip', reason: 'sleep submitted' };
         }
-        // Trigger the syntax reminder only when the marker lives INSIDE a
-        // markdown fence (structure.fencedMetadsl): same semantics as the old
-        // "fence before @execute" positional check, but immune to prose that
-        // mentions a fence earlier and the marker later in running text.
-        if (structure.fencedMetadsl > 0) {
+        // Trigger the syntax reminder when the marker lives INSIDE a
+        // markdown fence (fencedMetadsl), or when a plain-text line trimmed
+        // of leading/trailing whitespace IS exactly the marker
+        // (textMarkerOnly: a bare standalone marker line, i.e. raw unfenced
+        // submission). Lines that merely START with a marker but carry
+        // trailing prose do not count.
+        if (structure.fencedMetadsl > 0 || structure.textMarkerOnly > 0) {
           return {
             action: 'reply',
             text: `ref <{:>\n${msg}\n<:}>;\n\n请检查metadsl代码是否正确使用了markdown代码块语法，如果没有请重新提交;确认正确请等待执行结果`,

@@ -1252,8 +1252,8 @@ class UIController {
         this.elements.numCtxInput.value = t.numCtx || APIClient.DEFAULT_OLLAMA_NUM_CTX;
         this.updateUsernameFieldVisibility(t.authMode || 'personal');
         this.updateModelOptions(apiType);
-        // Model list manage area: only for types with runtime model lists
-        const isRuntimeList = (apiType !== 'knot');
+        // All supported API types now have a runtime model list.
+        const isRuntimeList = ['openai', 'claude', 'knot', 'ollama', 'local_openai'].includes(apiType);
         this.elements.configModelManage.style.display = isRuntimeList ? 'block' : 'none';
         if (isRuntimeList) {
             this.updateConfigModelStatus(apiType);
@@ -1287,11 +1287,19 @@ class UIController {
      */
     async handleConfigAutoDetect() {
         const apiType = this.elements.configApiType.value;
-        if (apiType === 'knot') return;
         const endpoint = this.elements.apiEndpointInput.value.trim();
         const apiKey = this.elements.apiKeyInput.value.trim();
+        let modelOptions = null;
+        if (apiType === 'knot') {
+            modelOptions = {
+                endpoint: endpoint,
+                token: apiKey,
+                user: this.elements.usernameInput.value.trim(),
+                agentId: this.elements.agentIdInput.value.trim()
+            };
+        }
         this.elements.configModelStatus.textContent = 'Querying model list...';
-        await this.autoDetectModels(apiType, endpoint, apiKey);
+        await this.autoDetectModels(apiType, endpoint, apiKey, modelOptions);
         // Keep the current dropdown selection when still available
         this.updateModelOptions(apiType, true);
         this.updateConfigModelStatus(apiType);
@@ -1303,7 +1311,6 @@ class UIController {
      */
     handleConfigAddModel() {
         const apiType = this.elements.configApiType.value;
-        if (apiType === 'knot') return;
         const name = (this.elements.configModelAddInput.value || '').trim();
         if (!name) return;
         const list = this.apiClient.getUserModelList(apiType);
@@ -1441,57 +1448,11 @@ class UIController {
         // Always start from the model list without a hover flyout
         this.hideModelFlyout();
         const config = this.apiClient.getConfig();
-        if (config.apiType === 'knot') {
-            // knot uses the builtin list from api-client.js
-            this.elements.ollamaManageSection.style.display = 'none';
-            this.renderPredefinedModelList(config.apiType);
-        } else {
-            // All other types: auto-detected / user-configured model list
-            this.renderLocalModelList(config.apiType);
-        }
+        this.renderLocalModelList(config.apiType);
     }
 
     /**
-     * Render the model list for knot from the predefined list in
-     * api-client.js. Clicking a row selects the model and closes the panel;
-     * hovering a row (models with options) shows a flyout with that
-     * model's options, like a menu.
-     */
-    renderPredefinedModelList(apiType) {
-        const config = this.apiClient.getConfig();
-        const models = this.apiClient.getAvailableModels(apiType);
-        const title = this.elements.modelQuickListSection.querySelector('.model-quick-section-title');
-        title.textContent = 'Model';
-        const list = this.elements.modelQuickList;
-        list.innerHTML = '';
-        models.forEach(model => {
-            const row = document.createElement('div');
-            row.className = 'model-quick-item-row';
-            const item = document.createElement('button');
-            item.type = 'button';
-            item.className = 'model-quick-item' + (model.value === config.model ? ' active' : '');
-            item.textContent = model.label;
-            item.addEventListener('click', () => {
-                // Clicking a model in the list selects it and closes the panel
-                this.apiClient.saveConfig({ model: model.value });
-                this.updateModelQuickBar();
-                this.closeModelQuickPanel();
-            });
-            row.appendChild(item);
-            if (this.modelHasQuickOptions(apiType, model.value)) {
-                row.addEventListener('mouseenter', () => {
-                    this.showModelFlyout(model.value, row);
-                });
-                row.addEventListener('mouseleave', () => {
-                    this.scheduleHideModelFlyout();
-                });
-            }
-            list.appendChild(row);
-        });
-    }
-
-    /**
-     * Get (or create) the auto-detection state of a local API type.
+     * Get (or create) the auto-detection state of an API type.
      */
     ensureLocalState(apiType) {
         if (!this._localState[apiType]) {
@@ -1502,11 +1463,12 @@ class UIController {
     }
 
     /**
-     * Query the model list of an API type via its standard protocol
-     * (/api/tags for ollama, /v1/models for the others). Optional
-     * endpoint / apiKey let callers probe unsaved form values.
+     * Query the model list of an API type via its standard protocol.
+     * Knot uses the dedicated model-list endpoint; optional values let
+     * callers probe unsaved form values.
      */
-    async fetchModelsForType(apiType, endpoint, apiKey) {
+    async fetchModelsForType(apiType, endpoint, apiKey, modelOptions) {
+        if (apiType === 'knot') return await this.apiClient.fetchKnotModels(modelOptions || {});
         if (apiType === 'ollama') return await this.apiClient.fetchOllamaModels(endpoint);
         if (apiType === 'local_openai') return await this.apiClient.fetchLocalOpenAIModels(endpoint);
         if (apiType === 'openai') return await this.apiClient.fetchOpenAIModels(endpoint, apiKey);
@@ -1521,23 +1483,24 @@ class UIController {
      *
      * The detected list (plus the user-configured list) is the full model
      * list: when the selected model is no longer in it (e.g. the vendor
-     * retired it), the selection automatically switches to the first
-     * available model.
+     * retired it), the selection switches to the server-preferred model
+     * or the first available model.
      */
-    async autoDetectModels(apiType, endpoint, apiKey) {
+    async autoDetectModels(apiType, endpoint, apiKey, modelOptions) {
         const state = this.ensureLocalState(apiType);
         state.models = [];
+        state.fetched = false;
         state.error = '';
         state.querying = true;
         try {
-            state.models = await this.fetchModelsForType(apiType, endpoint, apiKey);
+            state.models = await this.fetchModelsForType(apiType, endpoint, apiKey, modelOptions);
             state.fetched = true;
         } catch (e) {
             if (uiLogger) uiLogger.warn('Model auto-detect failed:', e);
             state.error = (e && e.message) ? e.message : String(e);
         }
         state.querying = false;
-        // Auto-switch when the selected model was retired
+        // Auto-switch when the selected model was retired or missing
         if (state.fetched && state.models.length > 0) {
             const t = this.apiClient.getTypeConfig(apiType);
             const custom = this.apiClient.getUserModelList(apiType);
@@ -1545,18 +1508,21 @@ class UIController {
             state.models.concat(custom).forEach(name => {
                 if (name && !full.includes(name)) full.push(name);
             });
-            if (t.model && full.length > 0 && !full.includes(t.model)) {
-                if (uiLogger) uiLogger.info('Selected model no longer available, switching:', { from: t.model, to: full[0] });
-                this.apiClient.setModelForType(apiType, full[0]);
+            const preferred = apiType === 'knot'
+                ? (this.apiClient.knotSpecifiedModel || this.apiClient.knotDefaultModel || '')
+                : '';
+            const target = full.includes(preferred) ? preferred : full[0];
+            if (full.length > 0 && (!t.model || !full.includes(t.model))) {
+                if (uiLogger) uiLogger.info('Selected model unavailable, switching:', { from: t.model, to: target });
+                this.apiClient.setModelForType(apiType, target);
             }
         }
     }
 
     /**
-     * Render the runtime model list of an API type (openai / claude /
-     * local_openai / ollama). Auto-detects models on first open (or when
-     * forceFetch is true); on failure falls back to the user-configured
-     * list (add / remove below the list).
+     * Render the runtime model list of an API type. Auto-detects models
+     * on first open (or when forceFetch is true); on failure falls back
+     * only to the user-configured list. No builtin model table is used.
      */
     async renderLocalModelList(apiType, forceFetch) {
         const state = this.ensureLocalState(apiType);
@@ -1574,10 +1540,15 @@ class UIController {
     renderLocalModelItems(apiType) {
         const config = this.apiClient.getConfig();
         const state = this.ensureLocalState(apiType);
-        const fetched = state.models || [];
         const custom = this.apiClient.getUserModelList(apiType);
+        const fetched = (state.models || []).slice();
+        const knotInfo = {};
+        if (apiType === 'knot') {
+            this.apiClient.getAvailableModels('knot').forEach(model => { knotInfo[model.value] = model; });
+        }
         const title = this.elements.modelQuickListSection.querySelector('.model-quick-section-title');
         const titles = {
+            knot: 'Knot Models',
             ollama: 'Ollama Models',
             local_openai: 'Local Models',
             openai: 'OpenAI Models',
@@ -1591,13 +1562,14 @@ class UIController {
         const addItem = (name, removable) => {
             if (seen.includes(name)) return;
             seen.push(name);
+            const info = knotInfo[name];
             const row = document.createElement('div');
             row.className = 'model-quick-item-row';
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'model-quick-item' + (name === config.model ? ' active' : '');
-            btn.textContent = name;
-            btn.title = 'Use this model';
+            btn.textContent = (info && info.label) || name;
+            btn.title = (info && info.desc) || 'Use this model';
             btn.addEventListener('click', () => {
                 // Clicking a model selects it and closes the panel
                 this.apiClient.saveConfig({ model: name });
@@ -1605,6 +1577,14 @@ class UIController {
                 this.closeModelQuickPanel();
             });
             row.appendChild(btn);
+            if (this.modelHasQuickOptions(apiType, name)) {
+                row.addEventListener('mouseenter', () => {
+                    this.showModelFlyout(name, row);
+                });
+                row.addEventListener('mouseleave', () => {
+                    this.scheduleHideModelFlyout();
+                });
+            }
             if (removable) {
                 const rm = document.createElement('button');
                 rm.type = 'button';
@@ -1636,6 +1616,9 @@ class UIController {
         } else if (state.error) {
             this.elements.ollamaStatus.textContent =
                 'Auto-detect failed: ' + state.error + ' Add model names manually below.';
+        } else if (!state.fetched) {
+            this.elements.ollamaStatus.textContent =
+                'Model list not detected yet. Click Auto Detect or add model names below.';
         } else {
             this.elements.ollamaStatus.textContent =
                 'Auto-detected ' + fetched.length + ' model(s).';
@@ -1838,11 +1821,10 @@ class UIController {
     }
 
     /**
-     * Populate the config modal model dropdown. knot uses the
-     * builtin list; all other types use the merged list of auto-detected
-     * and user-configured models. When preferCurrent is true the current
-     * dropdown selection is kept if still present (e.g. after detecting
-     * or adding a model); otherwise the type's saved model is selected.
+     * Populate the config modal model dropdown. Knot uses runtime
+     * metadata only; all other types use the merged list of
+     * auto-detected and user-configured models. When preferCurrent
+     * is true the current dropdown selection is kept if still present.
      */
     updateModelOptions(apiType, preferCurrent) {
         const config = this.apiClient.getTypeConfig(apiType);
@@ -1853,10 +1835,18 @@ class UIController {
 
         if (apiType === 'knot') {
             const models = this.apiClient.getAvailableModels('knot');
+            if (models.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '(no models yet - detect or add below)';
+                select.appendChild(option);
+                return;
+            }
             models.forEach(model => {
                 const option = document.createElement('option');
                 option.value = model.value;
                 option.textContent = model.label;
+                option.title = model.desc || '';
                 select.appendChild(option);
                 values.push(model.value);
             });
@@ -1897,7 +1887,7 @@ class UIController {
     }
 
     updateKnotFields(apiType) {
-        // Show auth mode and username fields only for knot
+        // Show knot-specific fields only for knot
         if (apiType === 'knot') {
             this.elements.authModeGroup.style.display = 'block';
             this.elements.usernameGroup.style.display = 'block';
@@ -1991,10 +1981,10 @@ class UIController {
 
         if (authMode === 'agent') {
             usernameLabel.textContent = 'Username (Required):';
-            usernameHint.textContent = 'Required for agent token mode.';
+            usernameHint.textContent = 'Required for agent token mode and Knot model detection.';
         } else {
-            usernameLabel.textContent = 'Username (Optional):';
-            usernameHint.textContent = 'Optional for personal token mode.';
+            usernameLabel.textContent = 'Username (Required for Knot model detection):';
+            usernameHint.textContent = 'Required for Knot model detection; optional for chat requests.';
         }
     }
 
@@ -2005,7 +1995,7 @@ class UIController {
         const username = this.elements.usernameInput.value.trim();
         const apiEndpoint = this.elements.apiEndpointInput.value.trim();
         const agentId = this.elements.agentIdInput ? this.elements.agentIdInput.value.trim() : '';
-        // Read model from the dropdown (merged list or builtin list)
+        // Read model from the runtime list
         const model = this.elements.modelSelect.value;
         const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);
         const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
@@ -2020,9 +2010,9 @@ class UIController {
         // local_openai/ollama endpoint is optional: defaults to http://localhost:11434
         // and the proper suffix is appended automatically when missing.
 
-        // Username is required for agent token mode
-        if (apiType === 'knot' && authMode === 'agent' && !username) {
-            this.showError('Username is required for agent token mode');
+        // Username is required for Knot model-list detection.
+        if (apiType === 'knot' && !username) {
+            this.showError('Username is required for Knot model detection');
             return;
         }
 
@@ -2090,6 +2080,12 @@ class UIController {
         }
 
         this.apiClient.saveConfig(config);
+        if (apiType === 'knot') {
+            this.apiClient.knotModelDetails = [];
+            this.apiClient.knotDefaultModel = '';
+            this.apiClient.knotSpecifiedModel = '';
+            delete this._localState.knot;
+        }
         this.elements.apiTypeSelect.value = apiType;
 
         // Save context configuration

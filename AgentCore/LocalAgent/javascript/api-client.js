@@ -18,6 +18,10 @@ class APIClient {
         this.conversationRound = 0;
         this.knotRunInfo = null;
         this.lastRunInfo = null;
+        // Runtime metadata returned by the Knot model-list API.
+        this.knotModelDetails = [];
+        this.knotDefaultModel = '';
+        this.knotSpecifiedModel = '';
         // knot conversation mode settings: runtime only (NOT persisted, reset
         // to these defaults after page reload, same as the context config).
         // A session is reopened once prompt_tokens reaches the reset
@@ -93,7 +97,7 @@ class APIClient {
      *     knot: { apiKey, authMode, username, stream, enableWebSearch,
      *                     apiEndpoint, agentId, model,
      *                     modelSettings: {                    // per-model settings
-     *                       'claude-opus-5': { enableThinking, reasoningEffort, maxContextTokens },
+     *                       '<model>': { enableThinking, reasoningEffort, maxContextTokens },
      *                       ...
      *                     } },
      *     local_openai: { ... }, ollama: { ... }
@@ -106,8 +110,16 @@ class APIClient {
         return ['apiKey', 'apiEndpoint', 'model', 'agentId', 'authMode', 'username', 'stream', 'enableWebSearch', 'numCtx'];
     }
 
+    static get LEGACY_KNOT_MODEL_KEYS() {
+        return ['knotModelsEndpoint', 'knotModelsToken', 'knotModelsUser', 'knotModelsAgentId'];
+    }
+
     static get MODEL_LEVEL_KEYS() {
         return ['enableThinking', 'reasoningEffort', 'maxContextTokens'];
+    }
+
+    static get DEFAULT_KNOT_MODELS_ENDPOINT() {
+        return 'https://knot.woa.com/apigw/openapi/v1/agents/models/list';
     }
 
     static get DEFAULT_OLLAMA_NUM_CTX() {
@@ -165,7 +177,27 @@ class APIClient {
             this.store = { apiType: 'openai', perType: {} };
             this.ensureType(this.store.apiType);
         }
+        const cleaned = this.stripLegacyKnotModelFields();
+        if (cleaned) this.persist();
         this.rebuildView();
+    }
+
+    stripLegacyKnotModelFields() {
+        let changed = false;
+        const remove = obj => {
+            if (!obj || typeof obj !== 'object') return;
+            APIClient.LEGACY_KNOT_MODEL_KEYS.forEach(key => {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    delete obj[key];
+                    changed = true;
+                }
+            });
+        };
+        remove(this.store);
+        if (this.store && this.store.perType && typeof this.store.perType === 'object') {
+            Object.keys(this.store.perType).forEach(apiType => remove(this.store.perType[apiType]));
+        }
+        return changed;
     }
 
     persist() {
@@ -190,10 +222,11 @@ class APIClient {
                 modelSettings: {}
             };
         }
-        if (!this.store.perType[apiType].modelSettings) {
-            this.store.perType[apiType].modelSettings = {};
+        const t = this.store.perType[apiType];
+        if (!t.modelSettings) {
+            t.modelSettings = {};
         }
-        return this.store.perType[apiType];
+        return t;
     }
 
     /**
@@ -209,6 +242,8 @@ class APIClient {
 
     saveConfig(config) {
         const patch = { ...config };
+        APIClient.LEGACY_KNOT_MODEL_KEYS.forEach(key => delete patch[key]);
+        this.stripLegacyKnotModelFields();
         // 1) API type switch: subsequent fields belong to the target type
         if (patch.apiType !== undefined) {
             this.store.apiType = patch.apiType;
@@ -320,6 +355,9 @@ class APIClient {
         if (this.config.apiType === 'knot' &&
             !this.config.apiEndpoint && !this.config.agentId) {
             throw new Error('For knot, either API endpoint or agent id must be specified');
+        }
+        if (this.config.apiType === 'knot' && !this.config.model) {
+            throw new Error('For knot, a model must be selected from the live model list');
         }
         return true;
     }
@@ -937,7 +975,7 @@ class APIClient {
             input: {
                 message: messageContent,
                 conversation_id: continueSession ? this.conversationId : '',
-                model: this.config.model || 'deepseek-v3.1',
+                model: this.config.model,
                 stream: !!this.config.stream,
                 enable_web_search: !!this.config.enableWebSearch,
                 chat_extra: chatExtra,
@@ -1262,9 +1300,9 @@ class APIClient {
     }
 
     /**
-     * Read the user-configured model list of a local API type
-     * (ollama / local_openai) from localStorage. Used as a fallback when
-     * auto-detection is unavailable. Storage key: '<apiType>_model_list'.
+     * Read the user-configured model list of an API type from
+     * localStorage. Used as a fallback when auto-detection is
+     * unavailable. Storage key: '<apiType>_model_list'.
      */
     getUserModelList(apiType) {
         try {
@@ -1415,53 +1453,149 @@ class APIClient {
         return models;
     }
 
-    getAvailableModels(apiType) {
-        if (apiType === 'knot') {
-            // knot has no model-list query API, so its list (with
-            // per-model capability matrix) is maintained in code. All other
-            // API types query model lists at runtime (/v1/models or
-            // /api/tags) with a user-configured fallback list.
-            // Model attributes (per capability matrix):
-            //   thinking: whether the model supports the enable_thinking toggle
-            //   reasoningEfforts: allowed chat_extra.reasoning_effort values ([] = unsupported)
-            //   contextWindows: allowed chat_extra.max_context_tokens values ([] = unsupported)
-            return [
-                { value: 'claude-opus-5.5', label: 'Claude-Opus-5.5', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'claude-sonnet-5.5', label: 'Claude-Sonnet-5.5', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'claude-haiku-5.5', label: 'Claude-Haiku-5.5', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [100000, 1000000] },
-                { value: 'claude-opus-5', label: 'Claude-Opus-5', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'claude-5-sonnet', label: 'Claude-5-Sonnet', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'claude-4.8-opus', label: 'Claude-4.8-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'gpt-6.1-sol', label: 'GPT-6.1-Sol', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
-                { value: 'gpt-6.1-terra', label: 'GPT-6.1-Terra', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
-                { value: 'gpt-6-astra', label: 'GPT-6-Astra', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
-                { value: 'gpt-6-sol', label: 'GPT-6-Sol', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
-                { value: 'gpt-6-luna', label: 'GPT-6-Luna', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [272000, 1000000] },
-                { value: 'gpt-5.6-sol', label: 'GPT-5.6-Sol', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
-                { value: 'gpt-5.6-terra', label: 'GPT-5.6-Terra', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
-                { value: 'gpt-5.6-luna', label: 'GPT-5.6-Luna', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
-                { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro (Ext)', thinking: false, reasoningEfforts: ['high', 'max'], contextWindows: [] },
-                { value: 'tokenhub_deepseek-v4.1-flash', label: 'DeepSeek-V4.1-Flash (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'ext-glm-5.3', label: 'GLM-5.3 (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'tokenhub_glm-5.3-flash', label: 'GLM-5.3-Flash (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'tokenhub_kimi-k3.1-pro', label: 'Kimi-K3.1-Pro (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [] },
-                { value: 'tokenhub_kimi-k3', label: 'Kimi-K3', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
-                { value: 'gemini-4-argon', label: 'Gemini-4-Argon', thinking: false, reasoningEfforts: ['low', 'medium', 'high'], contextWindows: [] },
-                { value: 'gemini-3.8-flash', label: 'Gemini-3.8-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'gemini-3.5-flash', label: 'Gemini-3.5-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'hy4', label: 'HY-4', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
-                { value: 'hy4-flash', label: 'HY-4-Flash', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
-                { value: 'hy3', label: 'HY-3', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
-                { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'glm-5.3-flash', label: 'GLM-5.3-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'glm-5.3', label: 'GLM-5.3', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'deepseek-v4-pro', label: 'DeepSeek-V4-Pro', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] }
-            ];
+    /**
+     * Derive the model-list endpoint from the configured AGUI endpoint.
+     * The fixed default is used when no /apigw prefix is available.
+     */
+    getKnotModelsEndpoint(endpoint) {
+        const raw = (endpoint || '').trim();
+        const marker = '/apigw';
+        const index = raw.toLowerCase().indexOf(marker);
+        if (index < 0) return APIClient.DEFAULT_KNOT_MODELS_ENDPOINT;
+        return raw.substring(0, index + marker.length).replace(/\/+$/, '')
+            + '/openapi/v1/agents/models/list';
+    }
+
+    /**
+     * Query the Knot agent model-list API. The returned model_name values
+     * are used as input.model; the extra fields are kept as runtime metadata
+     * for display names, thinking, reasoning effort and context windows.
+     */
+    async fetchKnotModels(options) {
+        const opts = options || {};
+        this.knotModelDetails = [];
+        this.knotDefaultModel = '';
+        this.knotSpecifiedModel = '';
+        const pick = (...values) => {
+            for (const value of values) {
+                if (value !== undefined && value !== null) return String(value).trim();
+            }
+            return '';
+        };
+        const chatEndpoint = pick(opts.endpoint, this.config.apiEndpoint);
+        const endpoint = this.getKnotModelsEndpoint(chatEndpoint);
+        const token = pick(opts.token, this.config.apiKey);
+        const user = pick(opts.user, this.config.username);
+        const agentId = pick(opts.agentId, this.config.agentId);
+        if (!token) throw new Error('Knot model list token is required (x-knot-api-token)');
+        if (!user) throw new Error('Knot model list user is required (x-knot-api-user)');
+        if (!agentId) throw new Error('Knot model list agent id is required (agent_id)');
+        const init = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-knot-api-token': token,
+                'x-knot-api-user': user
+            },
+            body: JSON.stringify({ agent_id: agentId })
+        };
+        const data = await this.fetchJsonWithTimeout(endpoint, init, 10000);
+        if (!data || Number(data.code) !== 0) {
+            const msg = data && data.msg ? String(data.msg) : 'Invalid Knot model list response';
+            throw new Error('Knot model list failed: ' + msg);
         }
-        // Other API types: models come from runtime queries plus the
-        // user-configured list, so no predefined list is returned.
-        return [];
+        const payload = data.data || {};
+        const rawModels = Array.isArray(payload.models) ? payload.models : [];
+        const seen = {};
+        for (const raw of rawModels) {
+            if (!raw || typeof raw !== 'object') continue;
+            const value = String(raw.model_name || '').trim();
+            if (!value || seen[value]) continue;
+            seen[value] = true;
+            const rawEfforts = Array.isArray(raw.reasoning_effort) ? raw.reasoning_effort : [];
+            const efforts = rawEfforts.map(entry => {
+                if (typeof entry === 'string') return entry.trim();
+                if (entry && (entry.name || entry.display_name)) return String(entry.name || entry.display_name).trim();
+                return '';
+            }).filter(Boolean);
+            const rawWindows = Array.isArray(raw.max_context_token_list) ? raw.max_context_token_list : [];
+            let windows = rawWindows.map(v => Number(v))
+                .filter(v => Number.isFinite(v) && v > 0)
+                .map(v => Math.floor(v));
+            const costMap = raw.max_context_token_cost_rate_map;
+            if (windows.length === 0 && costMap && typeof costMap === 'object') {
+                windows = Object.keys(costMap).map(v => Number(v))
+                    .filter(v => Number.isFinite(v) && v > 0)
+                    .map(v => Math.floor(v));
+            }
+            windows = windows.filter((v, i, arr) => arr.indexOf(v) === i);
+            const descParts = [];
+            if (raw.desc) descParts.push(String(raw.desc).trim());
+            if (raw.token_cost_rate) descParts.push('Cost x' + String(raw.token_cost_rate));
+            if (raw.is_support_multimodal) descParts.push('Multimodal');
+            if (raw.is_peak_time) descParts.push('Peak time');
+            const label = String(raw.display_name || value).trim() || value;
+            this.knotModelDetails.push({
+                value: value,
+                label: label,
+                desc: descParts.filter(Boolean).join(' | '),
+                thinking: !!raw.is_support_thinking,
+                reasoningEfforts: efforts,
+                contextWindows: windows,
+                isOuterModel: !!raw.is_outer_model,
+                isCustomModel: !!raw.is_custom_model,
+                isSupportMultimodal: !!raw.is_support_multimodal,
+                isRecommended: !!raw.is_recommand,
+                tokenCostRate: raw.token_cost_rate || '',
+                fastOption: raw.fast_option || null,
+                tierOption: Array.isArray(raw.tier_option) ? raw.tier_option : [],
+                peakConfig: raw.peak_config || null,
+                isPeakTime: !!raw.is_peak_time,
+                error: raw.error || null,
+                isExternalModelRestricted: !!payload.is_external_model_restricted
+            });
+        }
+        this.knotDefaultModel = String(payload.default_model || '').trim();
+        this.knotSpecifiedModel = String(payload.specified_model || '').trim();
+        const models = this.knotModelDetails.map(model => model.value);
+        if (apiLogger) apiLogger.info('Knot models fetched:', { count: models.length });
+        return models;
+    }
+
+    getKnotModelInfo(modelValue) {
+        return this.getAvailableModels('knot').find(model => model.value === modelValue) || null;
+    }
+
+    /**
+     * Knot models come only from the runtime API and user-added list.
+     * No builtin model table is maintained.
+     */
+    getAvailableModels(apiType) {
+        if (apiType !== 'knot') return [];
+        const t = this.getTypeConfig('knot');
+        const runtime = Array.isArray(this.knotModelDetails) ? this.knotModelDetails : [];
+        const values = [];
+        const byValue = {};
+        const add = entry => {
+            const value = typeof entry === 'string'
+                ? entry.trim()
+                : (entry && entry.value ? String(entry.value).trim() : '');
+            if (!value || byValue[value]) return;
+            const detail = typeof entry === 'string' ? {
+                value: value,
+                label: value,
+                desc: '',
+                thinking: false,
+                reasoningEfforts: [],
+                contextWindows: []
+            } : { ...entry, value: value };
+            byValue[value] = detail;
+            values.push(value);
+        };
+        runtime.forEach(add);
+        this.getUserModelList('knot').forEach(add);
+        if (t.model) add(t.model);
+        return values.map(value => byValue[value]);
     }
 }
 

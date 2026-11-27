@@ -1063,7 +1063,7 @@
                             <div class="model-quick-section-title">Custom Models</div>
                             <div class="model-quick-hint" id="ollama-status"></div>
                             <div class="model-quick-add-row">
-                                <input type="text" id="ollama-add-input" placeholder="e.g. qwen3:8b">
+                                <input type="text" id="ollama-add-input" placeholder="model name">
                                 <button type="button" id="ollama-add-btn">Add</button>
                                 <button type="button" id="ollama-refresh-btn">Auto Detect</button>
                             </div>
@@ -1109,8 +1109,8 @@
             <div class="config-group" id="username-group" style="display: none;">
                 <label for="username">Username:</label>
                 <input type="text" id="username" placeholder="Enter your username">
-                <small style="color: #7f8c8d; font-size: 12px;">Required for agent token mode, optional for personal
-                    token mode.</small>
+                <small style="color: #7f8c8d; font-size: 12px;">Required for Knot model detection; optional for chat
+                    requests in personal token mode.</small>
             </div>
 
             <div class="config-group">
@@ -1122,7 +1122,7 @@
                 <label for="agent-id">Agent ID:</label>
                 <input type="text" id="agent-id" placeholder="e.g. 114631ca85184f639f69572bbcfcbe7a">
                 <small style="color: #7f8c8d; font-size: 12px;">For knot: either this or API Endpoint must be
-                    specified.</small>
+                    specified. Also used as agent_id in the model-list request.</small>
             </div>
 
             <div class="config-group" id="stream-group" style="display: none;">
@@ -1148,6 +1148,8 @@
                 </select>
                 <div id="config-model-manage" style="display: none; margin-top: 6px;">
                     <small id="config-model-status" style="color: #7f8c8d; font-size: 12px;"></small>
+                    <small style="display: block; color: #7f8c8d; font-size: 12px;">Knot auto detect uses API Key,
+                        Username, and Agent ID; no separate model-list settings.</small>
                     <div class="model-quick-add-row">
                         <input type="text" id="config-model-add-input" placeholder="model name">
                         <button type="button" id="config-model-add-btn">Add</button>

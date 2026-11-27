@@ -586,7 +586,7 @@ UnityEditorApi.Register 49 条连写注册（与批次 9 处理的 `Assets\Edito
 ### 配套 C# 修复（3 处，历史批次漏网）
 
 1. `AgentCore\Core\SkillManager.cs:62-63`：`_envs["basepath"]/_envs["appdir"]` → `base_path`/`app_dir`（批次 5 漏改，skills 脚本同步）
-2. `FrameworkApiAlias.cs:2672`：简写语法分支 `firstId == "looplist"` → `"loop_list" || "looplist"`（双名兼容，旧脚本不受影响）
+2. `FrameworkApiAlias.cs:2672`：简写语法分支 `firstId == "loop_list"` → `"loop_list" || "loop_list"`（双名兼容，旧脚本不受影响）
 3. `FrameworkApiAlias.cs:2974`：同上 foreachvalue → for_each_value 双名兼容
 
 ### 不改项（甄别结论）
@@ -644,7 +644,7 @@ KEEP 原则（63 条不改动）：已含下划线合规名（cam_info/asset_ref
 
 消费端：6 个注册 C# 文件（注册名+doc+错误消息，728 处）+ 补漏 4 文件（StartScript.cs 的 DebugConsole.Execute DSL 字符串、GeneralCommands.cs 实现类 doc/Expected 消息、GmCommands.cs 错误日志/case 注释、GmSocketServer.cs 示例注释，29 处）+ dsl 脚本 102 个（tools/dsl_scripts，494 处）。
 
-重要发现：TestUC 运行时引擎是 GameDemo 的 StoryScript（netstandard2.1，非 DotnetStoryScript），using StoryScript; using StoryScript.DslExpression;——该引擎已是 snake_case 新版。批次11 全目录扫描漏了 e 盘工程，dsl 里残留 32 个内建旧名（stringcontains/looplist/readalllines/appendlineformat→append_format_line/stringbuildertostring→stringbuilder_tostring 等），本次补改 526 处。dsl_tools 执行器 smol-v-test.exe 是单文件打包（内嵌旧构建），改源码后需重新构建 exe 才能跑新名脚本。
+重要发现：TestUC 运行时引擎是 GameDemo 的 StoryScript（netstandard2.1，非 DotnetStoryScript），using StoryScript; using StoryScript.DslExpression;——该引擎已是 snake_case 新版。批次11 全目录扫描漏了 e 盘工程，dsl 里残留 32 个内建旧名（stringcontains/loop_list/readalllines/appendlineformat→append_format_line/stringbuildertostring→stringbuilder_tostring 等），本次补改 526 处。dsl_tools 执行器 smol-v-test.exe 是单文件打包（内嵌旧构建），改源码后需重新构建 exe 才能跑新名脚本。
 
 验证：代码区裸出现预检 0 命中（PowerShell -match 不区分大小写会误报 GetComponent 等 Unity 驼峰 API，须用 -cmatch）；区分大小写残留扫描仅剩 Odin 第三方（import 英文词）与 proto 生成字段（appid）噪音；反向断链审计（dsl 调用名 ⊆ TestUC 470 注册 ∪ StoryScript 354 内建 ∪ 本地 script() 定义 ∪ smol 宿主 UI 描述语法白名单 button/input/popup/table/string/float/range/multiple/inthash/stringhash/label/file/encoding/feature/rect/sampler 及 startup 系 log_sysinfo/set_timescale/resettrees/mapmyhooksymbols/updatetexturedb）= 0 断链。Unity 工程内编译与 smol-v-test.exe 重建留用户。
 ## 批次 13：StoryDsl.txt 编码修复 + ServerPlatform 部署升级（2026-11-17，用户授权）
@@ -653,7 +653,7 @@ KEEP 原则（63 条不改动）：已含下划线合规名（cam_info/asset_ref
 
 现象：工作区文件 65958B 混合编码（首字节 `D2-BB` GBK "一" + 11382 个 `EF-BF-BD` U+FFFD），中文不可逆损坏；git HEAD blob（40820B）是完好的 GB18030 原文；`GameDemo/Tools/DocGenerator/bin/Debug/StoryDsl.txt` 是另一份 UTF-8 生成器输出（2131 行/356 API 头，不是同一文件）。
 
-修复：以 HEAD blob（GB18030 完好中文）为底；把工作区乱码版与 HEAD 逐行对齐（1992 行、1621 行 ASCII token 一致）推导出 191 个干净的旧名→snake_case 改名对（排除 2 个 mojibake token 噪音 `key->keloop_list`、`looplist->loop_listlooplist`）；加 rustdsl_map.tsv 旧名兜底共 299 对，按长度降序整词替换；输出 UTF-8 无 BOM（49951B）。
+修复：以 HEAD blob（GB18030 完好中文）为底；把工作区乱码版与 HEAD 逐行对齐（1992 行、1621 行 ASCII token 一致）推导出 191 个干净的旧名→snake_case 改名对（排除 2 个 mojibake token 噪音 `key->keloop_list`、`loop_list->loop_listlooplist`）；加 rustdsl_map.tsv 旧名兜底共 299 对，按长度降序整词替换；输出 UTF-8 无 BOM（49951B）。
 
 验证：strict UTF-8 YES、U+FFFD 0、中文 7054 字、1991 行、rustdsl 旧名残留 0、260 个编号 API 头全为 snake_case。刻意不动：文档里游戏域粘连名（isjsonarray/json2str/npcpatrol 等，注册表无权威映射证据，按"无证据不猜"保留）。
 
